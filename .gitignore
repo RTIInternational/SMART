@@ -1,3 +1,5 @@
+assets/bundles/
+webpack-stats.json
 node_modules/
 .DS_Store
 *.pyc

@@ -2,7 +2,7 @@ postgres:
   image: postgres:9.6.2
   environment:
     - POSTGRES_PASSWORD=my-secret-password
-    - POSTGRES_USER=postgres
+    - POSTGRES_USER=smart
     - POSTGRES_DB=smart
   ports:
     - "5433:5432"
