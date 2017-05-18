@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "build": "webpack",
+    "build": "npm install && webpack",
     "dev": "npm run manage.py runserver",
     "manage.py": "python django/smart/manage.py",
     "test": "echo \"Error: no test specified\" && exit 1"
