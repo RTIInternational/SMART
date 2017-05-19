@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'core.apps.CoreConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -122,3 +123,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# SMART app config
+
+# Base directory in which to store model pickles
+MODEL_PICKLE_PATH = os.path.join(BASE_DIR, 'models')
+
+if not os.path.isdir(MODEL_PICKLE_PATH):
+    os.mkdir(MODEL_PICKLE_PATH)
