@@ -1,0 +1,21 @@
+{
+  "rules": {
+    "block-no-empty": true,
+    "color-hex-case": "upper",
+    "color-hex-length" "long",
+    "color-no-invalid-hex": true,
+    "comment-empty-line-before": [ 
+        "always", {
+            "ignore": ["stylelint-command", "after-comment"]
+        }
+    ],
+    "declaration-bang-space-before": "always",
+    "declaration-colon-space-after": "always",
+    "font-family-name-quotes": true,
+    "font-family-no-duplicate-names": false,
+    "font-weight": "numeric",
+    "indentation": 4,
+    "max-empty-lines": 2,
+    "rule-nested-empty-line-before": "always"
+  }
+}
