@@ -1,0 +1,11 @@
+{
+    "presets": [
+        ["es2015", {"loose": true, "modules": false}],
+        "react"
+    ],
+    "plugins": [
+        "transform-runtime",
+        "transform-object-rest-spread",
+        "transform-react-remove-prop-types"
+    ]
+}

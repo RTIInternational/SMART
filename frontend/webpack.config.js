@@ -19,30 +19,31 @@ var config = {
     },
     devtool: release ? 'source-map' : 'eval-source-map',
     entry: {
-        smart: './smart.jsx'
+        smart: './smart.tsx',
+        vendor: [
+            'react',
+            'react-dom',
+            'react-redux',
+            'redux'
+        ]
     },
     module: {
         rules: [
             {
+                test: /\.tsx?$/,
+                exclude: /node_modules/,
+                use: [
+                    'babel-loader',
+                    'eslint-loader',
+                    'ts-loader'
+                ]
+            },
+            {
                 test: /\.jsx?$/,
                 exclude: /node_modules/,
                 use: [
-                    {
-                        loader: 'babel-loader',
-                        options: {
-                            presets: [
-                                ["es2015", {"loose": true, "modules": false}],
-                                "react"
-                            ],
-                            plugins: [
-                                "transform-object-rest-spread",
-                                "transform-react-remove-prop-types"
-                            ]
-                        }
-                    },
-                    {
-                        loader: "eslint-loader"
-                    }
+                    'babel-loader',
+                    'eslint-loader'
                 ]
             },
             {
@@ -91,7 +92,7 @@ var config = {
             'node_modules',
             path.join(__dirname, "src")
         ],
-        extensions: ['.js', '.jsx']
+        extensions: ['.js', '.jsx', '.ts', '.tsx'],
     }
 }
 
