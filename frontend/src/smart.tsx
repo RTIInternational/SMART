@@ -1,18 +1,22 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-import { createStore } from 'redux';
+import { createStore, applyMiddleware } from 'redux';
 import { Provider } from 'react-redux';
 import thunkMiddleware from 'redux-thunk';
 
 import reducers from './reducers/index.js';
 
-import Smart from './components/smart.jsx';
+import Smart from './components/smart';
+
+import './styles/smart.scss';
 
 const store = createStore(
     reducers,
-    thunkMiddleware
+    applyMiddleware(thunkMiddleware)
 );
+
+const Store = createStore(reducers);
 
 ReactDOM.render(
     <Provider store={store}>

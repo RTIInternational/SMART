@@ -1,8 +1,6 @@
 import React from 'react';
 
-import Wrapper from './wrapper.jsx';
-
-import '../styles/smart.scss';
+import Wrapper from './wrapper';
 
 const Smart = () => (
     <Wrapper>
