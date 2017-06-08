@@ -1,0 +1,14 @@
+html {
+    font-size: $base-font-size;
+
+    @include breakpoint(large) { 
+        font-size: 1.25rem;
+    }
+}
+
+body {
+    background: $base-color;
+    font-family: $body-font-family;
+    color: $primary-text-color;
+    line-height: 1.6;
+}

@@ -1,3 +1,36 @@
-@import 'reset';
+//General
+@import 'includes';
 
-@import 'wrapper';
+header {
+    @include border($attribute: border-top, $size: 8px, $color: $primary-color-dark);
+    @include flexbox;
+    @include justify-content(space-between);
+    @include align-items(center);
+
+    height: 64px;
+    padding: 0 16px;
+
+    background: $primary-color;
+
+    box-shadow: $box-shadow;
+
+    h1 {
+        color: $primary-color-text;
+        font-size: 1.5rem;
+        font-weight: 300;
+    }
+}
+
+main {
+    @include card;
+
+    width: 90%;
+    max-width: $breakpoint-large;
+    margin: 16px auto 0;
+    padding: 12px 24px;
+
+    @include breakpoint(large) { 
+        margin: 24px auto 0;
+        padding: 16px 32px;
+    }
+}
