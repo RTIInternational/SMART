@@ -12,7 +12,7 @@ class Project(models.Model):
     pass
 
 class Model(models.Model):
-    pickle_path = models.FilePathField(path=settings.MODEL_PICKLE_PATH)
+    pickle_path = models.TextField()
     project = models.ForeignKey('Project')
     predictions = models.ManyToManyField(
         'Data', related_name='models', through='DataPrediction'
