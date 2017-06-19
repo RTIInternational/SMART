@@ -9,7 +9,7 @@ class User(models.Model):
     )
 
 class Project(models.Model):
-    pass
+    name = models.TextField()
 
 class Model(models.Model):
     pickle_path = models.TextField()
