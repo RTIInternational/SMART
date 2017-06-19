@@ -22,12 +22,16 @@ class Data(models.Model):
     text = models.TextField()
     project = models.ForeignKey('Project')
 
+class Label(models.Model):
+    name = models.TextField()
+    project = models.ForeignKey('Project')
+
 class DataLabel(models.Model):
     class Meta:
         unique_together = (('data', 'user'))
     data = models.ForeignKey('Data')
     user = models.ForeignKey('User')
-    label = models.TextField()
+    label = models.ForeignKey('Label')
 
 class DataPrediction(models.Model):
     class Meta:
