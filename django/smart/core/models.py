@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 
 class User(models.Model):
     # Link to the auth user, since we're basically just extending it
@@ -61,3 +62,4 @@ class AssignedData(models.Model):
     user = models.ForeignKey('User')
     data = models.ForeignKey('Data')
     queue = models.ForeignKey('Queue')
+    assigned_timestamp = models.DateTimeField(default = timezone.now)
