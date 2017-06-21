@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 
 class User(models.Model):
     # Link to the auth user, since we're basically just extending it
@@ -9,7 +10,7 @@ class User(models.Model):
     )
 
 class Project(models.Model):
-    pass
+    name = models.TextField()
 
 class Model(models.Model):
     pickle_path = models.TextField()
@@ -22,12 +23,16 @@ class Data(models.Model):
     text = models.TextField()
     project = models.ForeignKey('Project')
 
+class Label(models.Model):
+    name = models.TextField()
+    project = models.ForeignKey('Project')
+
 class DataLabel(models.Model):
     class Meta:
         unique_together = (('data', 'user'))
     data = models.ForeignKey('Data')
     user = models.ForeignKey('User')
-    label = models.TextField()
+    label = models.ForeignKey('Label')
 
 class DataPrediction(models.Model):
     class Meta:
@@ -50,3 +55,11 @@ class DataQueue(models.Model):
         unique_together = (('queue', 'data'))
     queue = models.ForeignKey('Queue')
     data = models.ForeignKey('Data')
+
+class AssignedData(models.Model):
+    class Meta:
+        unique_together = (('user', 'queue'))
+    user = models.ForeignKey('User')
+    data = models.ForeignKey('Data')
+    queue = models.ForeignKey('Queue')
+    assigned_timestamp = models.DateTimeField(default = timezone.now)
