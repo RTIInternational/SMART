@@ -1,0 +1,41 @@
+version: '2'
+
+services:
+  postgres:
+    extends:
+      file: ../docker-common.yml
+      service: postgres
+    volumes_from:
+      - pgdata
+
+  redis:
+    extends:
+      file: ../docker-common.yml
+      service: redis
+
+  pgdata:
+    extends:
+      file: ../docker-common.yml
+      service: pgdata
+
+  smart_backend:
+    extends:
+      file: ../docker-common.yml
+      service: smart_backend
+    build: 
+      context: ../../backend/
+      dockerfile: Dockerfile.prod
+    image: rti/smart-backend-prod:R_0_0_1
+    restart: always
+
+  smart_frontend:
+    extends:
+      file: ../docker-common.yml
+      service: smart_frontend
+    build: 
+      context: ../../frontend/
+      dockerfile: Dockerfile.prod
+    image: rti/smart-frontend-prod:R_0_0_1
+    ports:
+      - "8080:8080"
+    command: nginx -c /code/nginx.conf -g "daemon off;"
