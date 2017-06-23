@@ -9,6 +9,18 @@ ul, li, fieldset, form, label, article, aside, footer, header, main, menu, nav, 
     box-sizing: border-box;
 }
 
+h1 {
+    font-size: 2rem;
+}
+
+h2 {
+    font-size: 1.6rem;
+}
+
+h3 {
+    font-size: 1.2rem;
+}
+
 /* HTML5 display-role reset for older browsers */
 article, aside, footer, header, menu, nav, section {
     display: block;

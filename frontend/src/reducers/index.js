@@ -1,6 +1,6 @@
 import { combineReducers } from 'redux';
-import reducers from './reducers.js';
+import classifier from './classifier';
 
 export default combineReducers({
-    reducers
+    classifier
 });

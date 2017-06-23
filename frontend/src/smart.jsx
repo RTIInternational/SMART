@@ -7,7 +7,7 @@ import thunkMiddleware from 'redux-thunk';
 
 import reducers from './reducers/index.js';
 
-import Smart from './components/smart';
+import SmartContainer from './containers/smart_container';
 
 import './styles/smart.scss';
 
@@ -16,11 +16,9 @@ const store = createStore(
     applyMiddleware(thunkMiddleware)
 );
 
-const Store = createStore(reducers);
-
 ReactDOM.render(
     <Provider store={store}>
-        <Smart />
+        <SmartContainer />
     </Provider>,
     document.getElementById('mount')
 );

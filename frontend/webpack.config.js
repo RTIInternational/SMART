@@ -15,11 +15,12 @@ var config = {
     context: path.join(__dirname, "src"),
     devServer: {
         contentBase: path.join(__dirname, "dist"),
-        port: 3000
+        port: 3000,
+        host: "0.0.0.0"
     },
     devtool: release ? 'source-map' : 'eval-source-map',
     entry: {
-        smart: './smart.tsx',
+        smart: './smart.jsx',
         vendor: [
             'react',
             'react-dom',
@@ -29,15 +30,6 @@ var config = {
     },
     module: {
         rules: [
-            {
-                test: /\.tsx?$/,
-                exclude: /node_modules/,
-                use: [
-                    'babel-loader',
-                    'eslint-loader',
-                    'ts-loader'
-                ]
-            },
             {
                 test: /\.jsx?$/,
                 exclude: /node_modules/,
@@ -92,7 +84,7 @@ var config = {
             'node_modules',
             path.join(__dirname, "src")
         ],
-        extensions: ['.js', '.jsx', '.ts', '.tsx'],
+        extensions: ['.js', '.jsx'],
     }
 }
 
