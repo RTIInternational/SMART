@@ -80,8 +80,8 @@ DATABASES = {
         'NAME': 'smart',
         'USER': 'smart',
         'PASSWORD': 'my-secret-password',
-        'HOST': 'localhost',
-        'PORT': '5433',
+        'HOST': 'postgres',
+        'PORT': '5432',
     }
 }
 

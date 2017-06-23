@@ -23,7 +23,7 @@ services:
   smart_backend:
     container_name: smart_backend
     volumes:
-      - ../django:/code
+      - ../backend/django:/code
     ports:
       - "8000:8000"
     command: ./runserver.sh

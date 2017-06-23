@@ -22,7 +22,7 @@ services:
     extends:
       file: ../docker-common.yml
       service: smart_backend
-    build: ../../django/
+    build: ../../backend/
     image: rti/smart-backend:R_0_0_1
 
   smart_frontend:
