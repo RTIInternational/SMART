@@ -1,4 +1,4 @@
-version: '2'
+version: '2.1'
 
 services:
   postgres:
@@ -8,12 +8,12 @@ services:
       - POSTGRES_USER=smart
       - POSTGRES_DB=smart
     ports:
-      - "5433:5432"
+      - "${EXTERNAL_POSTGRES_PORT:-5432}:5432"
 
   redis:
     image: redis:3.0
     ports:
-      - "6379:6379"
+      - "${EXTERNAL_REDIS_PORT:-6379}:6379"
 
   pgdata:
     image: tianon/true
@@ -25,7 +25,7 @@ services:
     volumes:
       - ../backend/django:/code
     ports:
-      - "8000:8000"
+      - "${EXTERNAL_BACKEND_PORT:-8000}:8000"
     command: ./runserver.sh
 
   smart_frontend:

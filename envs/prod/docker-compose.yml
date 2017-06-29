@@ -1,4 +1,4 @@
-version: '2'
+version: '2.1'
 
 services:
   postgres:
@@ -37,5 +37,5 @@ services:
       dockerfile: Dockerfile.prod
     image: rti/smart-frontend-prod:R_0_0_1
     ports:
-      - "8080:8080"
+      - "${EXTERNAL_FRONTEND_PORT:-8080}:8080"
     command: nginx -c /code/nginx.conf -g "daemon off;"
