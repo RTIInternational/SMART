@@ -27,6 +27,9 @@ services:
     ports:
       - "${EXTERNAL_BACKEND_PORT:-8000}:8000"
     command: ./runserver.sh
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=${EXTERNAL_POSTGRES_PORT:-5432}
 
   smart_frontend:
     container_name: smart_frontend

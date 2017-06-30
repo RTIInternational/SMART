@@ -27,6 +27,9 @@ services:
       dockerfile: Dockerfile.prod
     image: rti/smart-backend-prod:R_0_0_1
     restart: always
+    depends_on:
+      - postgres
+      - redis
 
   smart_frontend:
     extends:

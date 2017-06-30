@@ -24,6 +24,9 @@ services:
       service: smart_backend
     build: ../../backend/
     image: rti/smart-backend:R_0_0_1
+    depends_on:
+      - postgres
+      - redis
 
   smart_frontend:
     extends:
