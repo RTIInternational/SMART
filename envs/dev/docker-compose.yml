@@ -1,4 +1,4 @@
-version: '2'
+version: '2.1'
 
 services:
   postgres:
@@ -24,6 +24,9 @@ services:
       service: smart_backend
     build: ../../backend/
     image: rti/smart-backend:R_0_0_1
+    depends_on:
+      - postgres
+      - redis
 
   smart_frontend:
     extends:
@@ -32,5 +35,5 @@ services:
     build: ../../frontend/
     image: rti/smart-frontend:R_0_0_1
     ports:
-      - "3000:3000"
+      - "${EXTERNAL_FRONTEND_PORT:-3000}:3000"
     command: node_modules/.bin/webpack-dev-server

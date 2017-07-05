@@ -5,3 +5,5 @@
 frontend/dist/
 frontend/webpack-stats.json
 frontend/node_modules/
+
+.env
