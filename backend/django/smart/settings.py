@@ -25,7 +25,7 @@ SECRET_KEY = '3m+ivzqtm6&@27jc10%w+*&ah6m%&1l)5vp%05ui1v$$y6%db7'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['0.0.0.0']
 
 
 # Application definition
@@ -37,8 +37,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
+    'django_extensions',
     'rest_framework',
+    'rest_framework.authtoken',
+    'rest_auth',
+    'django.contrib.sites',
+    'allauth',
+    'allauth.account',
+    'rest_auth.registration',    
     'core',
 ]
 
@@ -130,6 +136,12 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSIONS_CLASSES': [
         'rest_framework.permissions.IsAdminUser',
     ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+        # should remove these later -- only here for testing
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ],
     'PAGE_SIZE': 10
 }
 
@@ -140,3 +152,14 @@ MODEL_PICKLE_PATH = os.path.join(BASE_DIR, 'models')
 
 if not os.path.isdir(MODEL_PICKLE_PATH):
     os.mkdir(MODEL_PICKLE_PATH)
+
+AUTH_USER_MODEL = 'auth.User'
+
+SITE_ID = 1
+
+REST_USE_JWT = True
+
+# This is temporary until we can get an email server setup
+# for registration emails
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
