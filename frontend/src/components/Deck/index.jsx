@@ -2,7 +2,6 @@ import React from 'react';
 import { Button, ButtonToolbar, Clearfix, Well } from "react-bootstrap";
 
 import Card from '../Card';
-import Container from '../container';
 
 const SCALE_FACTOR = 400;
 
