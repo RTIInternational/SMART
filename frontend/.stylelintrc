@@ -1,0 +1,31 @@
+{
+    "rules": {
+        "block-no-empty": true,
+        "color-hex-case": "upper",
+        "color-hex-length": "long",
+        "color-no-invalid-hex": true,
+        "comment-empty-line-before": [
+            "always", {
+                "ignore": ["stylelint-command", "after-comment"]
+            }
+        ],
+        "declaration-bang-space-before": "always",
+        "declaration-colon-space-after": "always",
+        "font-family-name-quotes": "always-where-required",
+        "font-family-no-duplicate-names": true,
+        "font-weight-notation": "numeric",
+        "function-calc-no-unspaced-operator": true,
+        "indentation": 4,
+        "max-empty-lines": 2,
+        "number-leading-zero": "always",
+        "number-max-precision": 2,
+        "rule-empty-line-before": [
+            "always", {
+                "except": ["after-single-line-comment"]
+            }
+        ],
+        "shorthand-property-no-redundant-values": true,
+        "string-no-newline": true,
+        "string-quotes": "single"
+    }
+}

@@ -1,0 +1,39 @@
+version: '2.1'
+
+services:
+  postgres:
+    extends:
+      file: ../docker-common.yml
+      service: postgres
+    volumes_from:
+      - pgdata
+
+  redis:
+    extends:
+      file: ../docker-common.yml
+      service: redis
+
+  pgdata:
+    extends:
+      file: ../docker-common.yml
+      service: pgdata
+
+  smart_backend:
+    extends:
+      file: ../docker-common.yml
+      service: smart_backend
+    build: ../../backend/
+    image: rti/smart-backend:R_0_0_1
+    depends_on:
+      - postgres
+      - redis
+
+  smart_frontend:
+    extends:
+      file: ../docker-common.yml
+      service: smart_frontend
+    build: ../../frontend/
+    image: rti/smart-frontend:R_0_0_1
+    ports:
+      - "${EXTERNAL_FRONTEND_PORT:-3000}:3000"
+    command: node_modules/.bin/webpack-dev-server

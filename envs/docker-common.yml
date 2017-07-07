@@ -1,0 +1,35 @@
+version: '2.1'
+
+services:
+  postgres:
+    image: postgres:9.6.2
+    environment:
+      - POSTGRES_PASSWORD=my-secret-password
+      - POSTGRES_USER=smart
+      - POSTGRES_DB=smart
+    ports:
+      - "${EXTERNAL_POSTGRES_PORT:-5432}:5432"
+
+  redis:
+    image: redis:3.0
+    ports:
+      - "${EXTERNAL_REDIS_PORT:-6379}:6379"
+
+  pgdata:
+    image: tianon/true
+    volumes:
+      - /var/lib/postgresql/data
+
+  smart_backend:
+    container_name: smart_backend
+    volumes:
+      - ../backend/django:/code
+    ports:
+      - "${EXTERNAL_BACKEND_PORT:-8000}:8000"
+    command: ./runserver.sh
+
+  smart_frontend:
+    container_name: smart_frontend
+    volumes:
+      - ../frontend/:/code
+      - /code/node_modules

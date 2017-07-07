@@ -1,5 +1,9 @@
-assets/bundles/
-webpack-stats.json
-node_modules/
 .DS_Store
 *.pyc
+
+# Frontend
+frontend/dist/
+frontend/webpack-stats.json
+frontend/node_modules/
+
+.env
