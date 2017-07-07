@@ -1,0 +1,33 @@
+/*  Mobile first breakpoints
+        small:  < 600px
+        medium: 600px - 839px
+        large: 840px - 1279px
+        xlarge: > 1280px
+    Usage: @include breakpoint([medium|large|xlarge]) { ... }
+*/
+@mixin breakpoint($point) {
+    @if $point == medium {
+        @media (min-width: $breakpoint-small) {
+            @content;
+        }
+    }
+    @else if $point == large {
+        @media (min-width: $breakpoint-medium) {
+            @content;
+        }
+    }
+    @else if $point == xlarge {
+        @media (min-width: $breakpoint-large) {
+            @content;
+        }
+    }
+}
+
+@mixin border($attribute: border, $size: 1px, $style: solid, $color: $divider-color) {
+    #{$attribute}: $size $style $color
+}
+
+@mixin card() {
+    background: $card-color;
+    box-shadow: $box-shadow;
+}
