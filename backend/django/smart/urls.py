@@ -22,6 +22,14 @@ api_router = routers.DefaultRouter()
 api_router.register(r'users', views.UserViewSet)
 api_router.register(r'auth_users', views.AuthUserViewSet)
 api_router.register(r'auth_groups', views.AuthUserGroupViewSet)
+api_router.register(r'projects', views.ProjectViewSet)
+api_router.register(r'models', views.ModelViewSet)
+api_router.register(r'data', views.DataViewSet)
+api_router.register(r'data_labels', views.DataLabelViewSet)
+api_router.register(r'data_predictions', views.DataPredictionViewSet)
+api_router.register(r'queue', views.QueueViewSet)
+api_router.register(r'data_queues', views.QueueViewSet)
+api_router.register(r'assigned_data', views.AssignedDataViewSet)
 
 urlpatterns = [
     url(r'^api/', include(api_router.urls)),
