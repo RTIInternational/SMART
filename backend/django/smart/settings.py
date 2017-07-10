@@ -131,3 +131,10 @@ MODEL_PICKLE_PATH = os.path.join(BASE_DIR, 'models')
 
 if not os.path.isdir(MODEL_PICKLE_PATH):
     os.mkdir(MODEL_PICKLE_PATH)
+
+
+# CELERY SETTINGS
+CELERY_BROKER_URL = 'redis://redis:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
