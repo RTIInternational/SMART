@@ -14,6 +14,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
 from django.conf.urls import url, include
+from django.conf import settings
 from django.contrib import admin
 from rest_framework import routers
 from rest_framework_swagger.views import get_swagger_view
@@ -32,11 +33,14 @@ api_router.register(r'queue', views.QueueViewSet)
 api_router.register(r'data_queues', views.QueueViewSet)
 api_router.register(r'assigned_data', views.AssignedDataViewSet)
 
-swagger_docs_view = get_swagger_view(title='SMART')
-
 urlpatterns = [
     url(r'^api/', include(api_router.urls)),
-    url(r'^docs/', swagger_docs_view),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     url(r'^admin/', admin.site.urls),
 ]
+
+# Don't show API docs in production
+if settings.DEBUG:
+    swagger_docs_view = get_swagger_view(title='SMART')
+
+    urlpatterns.append(url(r'^docs/', swagger_docs_view))
