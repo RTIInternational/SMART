@@ -7,4 +7,4 @@ from .models import Project, Data, Label
 
 @shared_task
 def test():
-    return print("Test Task run")
+    return "Test Task run"
