@@ -1,8 +1,9 @@
 import React from 'react';
 
-const Header = () => (
+const Header = (props) => (
     <header>
-        <h1>SMART</h1>
+        <a href="/"><h1>SMART</h1></a>
+        {props.children}
     </header>
 );
 

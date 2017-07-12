@@ -25,7 +25,7 @@ SECRET_KEY = '3m+ivzqtm6&@27jc10%w+*&ah6m%&1l)5vp%05ui1v$$y6%db7'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['0.0.0.0']
+ALLOWED_HOSTS = ['0.0.0.0', 'localhost']
 
 
 # Application definition
@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'allauth.account',
     'rest_auth.registration',    
     'rest_framework_swagger',
+    'webpack_loader',
     'core',
 ]
 
@@ -131,7 +132,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
-STATIC_URL = '/static/'
+STATIC_URL = '/dist/'
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSIONS_CLASSES': [
@@ -164,3 +165,15 @@ REST_USE_JWT = True
 # for registration emails
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
+STATICFILES_DIRS = (os.path.join(BASE_DIR, 'frontend', 'dist'), )
+
+WEBPACK_LOADER = {
+    'DEFAULT': {
+        'CACHE': not DEBUG,
+        'BUNDLE_DIR_NAME': '/',
+        'STATS_FILE': os.path.join(BASE_DIR, 'frontend', 'webpack-stats.json'),
+        'POLL_INTERVAL': 0.1,
+        'TIMEOUT': None,
+        'IGNORE': ['.+\.hot-update.js', '.+\.map']
+    }
+}

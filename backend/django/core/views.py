@@ -12,6 +12,10 @@ from core.serializers import (UserSerializer, AuthUserGroupSerializer,
 from core.models import (User, Project, Model, Data, Label, DataLabel,
                          DataPrediction, Queue, DataQueue, AssignedData)
 
+
+def index(request):
+    return render(request, 'index.html')
+
 # TODO establish more restrictive permissions
 # AuthUsers should be write-only for unauthenticated users
 # Creation/update/deletion of certain objects that will be

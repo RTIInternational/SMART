@@ -34,6 +34,7 @@ api_router.register(r'data_queues', views.QueueViewSet)
 api_router.register(r'assigned_data', views.AssignedDataViewSet)
 
 urlpatterns = [
+    url(r'^$', views.index, name='index'),
     url(r'^api/', include(api_router.urls)),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     url(r'^admin/', admin.site.urls),

@@ -1,0 +1,25 @@
+{% load render_bundle from webpack_loader %}
+
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8"/>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="index, follow, NOODP">
+        <meta name="description" content="Smarter Manual Annotation for Resource-constrained collection of Training data (SMART) is a tool that leverages elements of active learning, gamification, and UI/UX design to help data scientists and researchers reduce manual coding time and effort, making machine learning classification tasks more affordable and widely accessible."/>
+        <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,700" rel="stylesheet">
+        <title>SMART</title>
+        <!-- <link rel="canonical" href="">
+        <link rel="icon" type="image/png" href="">
+        <base href=""> -->
+        {% render_bundle 'smart' 'css' %}
+    </head>
+    <body>
+        <div id="mount"></main>
+        {% render_bundle 'vendor' 'js' %}
+        {% render_bundle 'smart' 'js' %}
+    </body>
+</html>
