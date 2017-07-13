@@ -34,3 +34,8 @@ services:
     volumes:
       - ../frontend/:/code
       - /code/node_modules
+
+  celery_worker:
+    volumes:
+      - ../backend/django:/code
+    command: ./runcelery.sh
