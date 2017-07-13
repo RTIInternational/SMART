@@ -1,0 +1,6 @@
+test-frontend:
+  image: node:latest
+  script:
+    - cd frontend
+    - yarn
+    - yarn run test
