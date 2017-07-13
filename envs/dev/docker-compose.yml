@@ -37,3 +37,14 @@ services:
     ports:
       - "${EXTERNAL_FRONTEND_PORT:-3000}:3000"
     command: node_modules/.bin/webpack-dev-server
+
+  celery_worker:
+    extends:
+      file: ../docker-common.yml
+      service: celery_worker
+    build: ../../backend/
+    image: rti/smart-backend:R_0_0_1
+    depends_on:
+      - postgres
+      - redis
+      - smart_backend
