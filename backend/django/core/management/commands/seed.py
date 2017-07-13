@@ -6,7 +6,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import User as AuthUser
 from core.models import User as User, Project, Label, Data
 
-def seed_database(nouser, nodata):
+def seed_database(nouser=False, nodata=False):
     if not nouser:
         try:
             user = User.objects.get(auth_user__username='test')
@@ -46,4 +46,5 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        seed_database(options['nouser'], options['nodata'])
+        seed_database(nouser=options['nouser'],
+                      nodata=options['nodata'])
