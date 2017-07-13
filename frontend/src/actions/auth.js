@@ -51,7 +51,7 @@ export const login = (data) => {
     };
 };
 
-export const logout = (data) => {
+export const logout = () => {
     const url = '/rest-auth/logout/'
     
     const config = {
@@ -65,7 +65,7 @@ export const logout = (data) => {
 
     return dispatch => {
         api(url, config)
-            .then(data => {
+            .then( () => {
                 dispatch(clearToken);
                 window.sessionStorage.removeItem(SMART_TOKEN);
                 window.location.reload();
