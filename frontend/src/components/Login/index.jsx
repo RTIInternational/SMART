@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Form, FormGroup, ControlLabel, FormControl, Button } from "react-bootstrap";
 
 class Login extends React.Component {
@@ -49,5 +50,9 @@ class Login extends React.Component {
         );
     };
 }
+
+Login.propTypes = {
+    login: PropTypes.func.isRequired
+};
 
 export default Login;

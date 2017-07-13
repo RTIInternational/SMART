@@ -2,6 +2,7 @@ import React from 'react';
 import { Button, ButtonToolbar, Clearfix, Well } from "react-bootstrap";
 
 import Card from '../Card';
+import PropTypes from 'prop-types';
 
 const SCALE_FACTOR = 400;
 
@@ -74,5 +75,12 @@ class Deck extends React.Component {
         );
     }
 }
+
+Deck.propTypes = {
+    fetchCards: PropTypes.func.isRequired,
+    passCard: PropTypes.func.isRequired,
+    popCard: PropTypes.func.isRequired,
+    cards: PropTypes.arrayOf(PropTypes.object),
+};
 
 export default Deck;

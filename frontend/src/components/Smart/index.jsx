@@ -1,4 +1,6 @@
 import React from 'react';
+import PropTypes from 'prop-types';
+
 import { Button } from "react-bootstrap";
 
 import Deck from '../Deck';
@@ -45,6 +47,15 @@ class Smart extends React.Component {
             </div>
         );
     }
+};
+
+Header.propTypes = {
+    cards: PropTypes.arrayOf(PropTypes.object),
+    token: PropTypes.string,
+    children: PropTypes.oneOfType([
+        PropTypes.arrayOf(PropTypes.node),
+        PropTypes.node
+    ])
 };
 
 export default Smart;
