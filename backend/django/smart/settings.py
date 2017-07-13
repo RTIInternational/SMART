@@ -37,7 +37,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+<<<<<<< HEAD
     'django_extensions',
+=======
+    'django_celery_results',
+>>>>>>> master
     'rest_framework',
     'rest_framework.authtoken',
     'rest_auth',
@@ -164,3 +168,9 @@ REST_USE_JWT = True
 # for registration emails
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
+# CELERY SETTINGS
+CELERY_BROKER_URL = 'redis://redis:6379/0'
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
