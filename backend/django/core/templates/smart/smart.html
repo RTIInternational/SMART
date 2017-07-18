@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% load render_bundle from webpack_loader %}
+
+{% block content %}
+<div id="mount"></main>
+{% render_bundle 'vendor' 'js' %}
+{% render_bundle 'smart' 'js' %}
+
+{% endblock %}

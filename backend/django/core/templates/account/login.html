@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row card">
+    <h1 class="text-center">Sign In</h1>
+    <div class="col-md-6 col-md-offset-3">
+        {% if form.non_field_errors %}
+        <div class="bg-danger alert">
+            {% for err in form.non_field_errors %}
+            <p class="form-error">{{ err }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+        <form role="form" method="post" action="."> 
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="control-label" for="{{ form.login.id_for_label }}">{{ form.login.label }}</label>
+                <input class="form-control" id="{{ form.login.id_for_label }}" maxlength="30" name="{{ form.login.html_name }}" type="text" placeholder="{{ form.login.label }}" /> 
+                {{ form.login.errors }}
+            </div>
+                <div class="form-group">
+                <label class="control-label" for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>
+                <input class="form-control" id="{{ form.password.id_for_label }}" maxlength="30" name="{{ form.password.html_name }}" type="password" placeholder="{{ form.password.label }}"/> 
+                {{ form.password.errors }}
+            </div>
+            <div class="form-group">
+                <div class="checkbox">
+                    <label>
+                        <input id="{{ form.remember.id_for_label }}" name="{{ form.remember.html_name }}" type="checkbox">
+                        {{ form.remember.label }}
+                    </label>
+                </div>  
+            </div>  
+            <div class="form-group">
+                <button class="btn btn-primary" type="submit">Sign In</button> 
+                <input type="hidden" name="next" value="{{ next }}" />
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -31,27 +31,25 @@ ALLOWED_HOSTS = ['0.0.0.0', 'localhost']
 # Application definition
 
 INSTALLED_APPS = [
+    'core',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-<<<<<<< HEAD
     'django_extensions',
-=======
     'django_celery_results',
->>>>>>> master
     'rest_framework',
     'rest_framework.authtoken',
     'rest_auth',
     'django.contrib.sites',
     'allauth',
     'allauth.account',
-    'rest_auth.registration',    
+    'allauth.socialaccount',
+    'rest_auth.registration',
     'rest_framework_swagger',
-    'webpack_loader',
-    'core',
+    'webpack_loader'
 ]
 
 MIDDLEWARE = [
@@ -66,10 +64,14 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'smart.urls'
 
+LOGIN_REDIRECT_URL = 'index'
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            os.path.join(BASE_DIR, 'core', 'templates')
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
