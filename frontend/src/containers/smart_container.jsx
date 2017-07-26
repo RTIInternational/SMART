@@ -2,14 +2,12 @@ import React from 'react';
 import { connect } from 'react-redux';
 
 import { fetchCards, passCard, popCard } from '../actions/classifier';
-import { login, logout } from '../actions/auth';
 
 import Smart from '../components/Smart';
 
 const mapStateToProps = (state) => {
     return {
-        cards: state.classifier.cards,
-        token: state.auth.token
+        cards: state.classifier.cards
     };
 };
 
@@ -23,13 +21,7 @@ const mapDispatchToProps = (dispatch) => {
         },
         popCard: () => {
             dispatch(popCard())
-        },
-        login: (data) => {
-            dispatch(login(data))
-        },
-        logout: () => {
-            dispatch(logout())
-        },
+        }
     };
 };
 
