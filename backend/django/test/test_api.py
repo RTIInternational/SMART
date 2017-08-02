@@ -1,7 +1,10 @@
-from core.management.commands.seed import (SEED_PROJECT,
-                                           SEED_USERNAME,
-                                           SEED_EMAIL,
-                                           SEED_PASSWORD)
+import csv
+from django.conf import settings
+
+from core.management.commands.seed import (
+    SEED_PROJECT, SEED_USERNAME, SEED_EMAIL,
+    SEED_PASSWORD, SEED_FILE_PATH, SEED_LABELS)
+from core.pagination import SmartPagination
 
 # Need a hashable dict so we can put them in a set
 class HashableDict(dict):
@@ -63,3 +66,20 @@ def test_get_auth_users(admin_client):
 
 def test_login(client, db):
     assert client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
+
+def test_get_labels(admin_client):
+    response = admin_client.get('/api/labels/')
+    compare_api_response(response, [
+        { 'name': label } for label in SEED_LABELS
+    ], ['name'])
+
+def test_get_data(admin_client):
+    with open(SEED_FILE_PATH) as f:
+        expected = [{'text': d['Tweet']} for d in csv.DictReader(f)]
+
+    assert SmartPagination.max_page_size >= len(expected), \
+            "SmartPagination's max_page_size setting must be larger than the " \
+            "size of the sample dataset for this test to run properly."
+
+    response = admin_client.get('/api/data/?page_size={}'.format(len(expected)))
+    compare_api_response(response, expected, ['text'])

@@ -10,6 +10,8 @@ SEED_USERNAME = 'test'
 SEED_PASSWORD = 'password'
 SEED_EMAIL = 'dummy@smart.org'
 SEED_PROJECT = 'seed-data'
+SEED_FILE_PATH = './core/data/SemEval-2016-Task6/train-feminism.csv'
+SEED_LABELS = ['AGAINST', 'FAVOR', 'NONE']
 
 def seed_database(nouser=False, nodata=False):
     if not nouser:
@@ -26,11 +28,11 @@ def seed_database(nouser=False, nodata=False):
         if not created:
             print('SEED: seed-data Project Already Exists - project.pk: {}'.format(project.pk))
         else:
-            with open('./core/data/SemEval-2016-Task6/train-feminism.csv') as inf:
+            with open(SEED_FILE_PATH) as inf:
                 reader = csv.DictReader(inf)
                 sample_data = [Data(text=row['Tweet'], project=project) for row in reader]
                 dataset = Data.objects.bulk_create(sample_data)
-            for label in ['AGAINST', 'FAVOR', 'NONE']:
+            for label in SEED_LABELS:
                 Label.objects.create(name=label, project=project)
             print('SEED: seed-data Project Seeded with Data - project.pk: {}'.format(project.pk))
 

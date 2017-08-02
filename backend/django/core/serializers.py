@@ -30,6 +30,11 @@ class ModelSerializer(serializers.HyperlinkedModelSerializer):
         model = Model
         fields = ('pickle_path', 'project', 'predictions')
 
+class LabelSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = Label
+        fields = ('name', 'project')
+
 class DataSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Data

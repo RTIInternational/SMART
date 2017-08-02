@@ -5,7 +5,7 @@ from rest_framework import viewsets, permissions
 
 from core.serializers import (UserSerializer, AuthUserGroupSerializer,
                               AuthUserSerializer, ProjectSerializer,
-                              ModelSerializer, DataSerializer,
+                              ModelSerializer, LabelSerializer, DataSerializer,
                               DataLabelSerializer, DataPredictionSerializer,
                               QueueSerializer, DataQueueSerializer,
                               AssignedDataSerializer)
@@ -46,6 +46,11 @@ class ModelViewSet(viewsets.ModelViewSet):
 class DataViewSet(viewsets.ModelViewSet):
     queryset = Data.objects.all().order_by('id')
     serializer_class = DataSerializer
+    permission_classes = (permissions.IsAuthenticated,)
+
+class LabelViewSet(viewsets.ModelViewSet):
+    queryset = Label.objects.all().order_by('id')
+    serializer_class = LabelSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
 class DataLabelViewSet(viewsets.ModelViewSet):

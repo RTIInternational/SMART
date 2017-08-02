@@ -131,7 +131,8 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSIONS_CLASSES': [
         'rest_framework.permissions.IsAdminUser',
     ],
-    'PAGE_SIZE': 10
+    'DEFAULT_PAGINATION_CLASS': 'core.pagination.SmartPagination',
+    'PAGE_SIZE': 10,
 }
 
 # SMART app config
