@@ -6,18 +6,23 @@ from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import User as AuthUser
 from core.models import User as User, Project, Label, Data
 
+SEED_USERNAME = 'test'
+SEED_PASSWORD = 'password'
+SEED_EMAIL = 'dummy@smart.org'
+SEED_PROJECT = 'seed-data'
+
 def seed_database(nouser=False, nodata=False):
     if not nouser:
         try:
-            user = User.objects.get(auth_user__username='test')
+            user = User.objects.get(auth_user__username=SEED_USERNAME)
             print("SEED: test User Already Exists - user.pk: {}".format(user.pk))
         except User.DoesNotExist:
-            auth_user = AuthUser.objects.create_user(username='test', password='password', email='dummy@smart.org')
+            auth_user = AuthUser.objects.create_user(username=SEED_USERNAME, password=SEED_PASSWORD, email=SEED_EMAIL)
             user = User.objects.create(auth_user=auth_user)
             print("SEED: New test User Created - user.pk: {}".format(user.pk))
 
     if not nodata:
-        project, created = Project.objects.get_or_create(name='seed-data')
+        project, created = Project.objects.get_or_create(name=SEED_PROJECT)
         if not created:
             print('SEED: seed-data Project Already Exists - project.pk: {}'.format(project.pk))
         else:
