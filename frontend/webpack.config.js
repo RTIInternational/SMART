@@ -5,7 +5,6 @@ var path = require('path');
 var release = (process.env.NODE_ENV === 'production');
 
 var CleanWebpackPlugin = require('clean-webpack-plugin');
-var HtmlWebpackPlugin = require('html-webpack-plugin');
 var ExtractTextPlugin = require("extract-text-webpack-plugin");
 var OptimizeCssAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 var StyleLintPlugin = require('stylelint-webpack-plugin');
@@ -13,15 +12,9 @@ var BundleTracker = require('webpack-bundle-tracker');
 
 var config = {
     context: path.join(__dirname, "src"),
-    devtool: release ? 'source-map' : 'eval-source-map',
+    devtool: 'source-map',
     entry: {
-        smart: './smart.jsx',
-        vendor: [
-            'react',
-            'react-dom',
-            'react-redux',
-            'redux'
-        ]
+        smart: './smart.jsx'
     },
     module: {
         rules: [
@@ -32,6 +25,41 @@ var config = {
                     'babel-loader',
                     'eslint-loader'
                 ]
+            },
+            {
+                test: /\.css$/,
+                use: ExtractTextPlugin.extract({
+                    fallback: "style-loader",
+                    use: "css-loader"
+                })
+            },
+            {
+                test: /\.scss$/,
+                use: ExtractTextPlugin.extract({
+                    fallback: "style-loader",
+                    use: [
+                        {
+                            loader: 'css-loader',
+                            options: {
+                                sourceMap: true,
+                            }
+                        },
+                        {
+                            loader: 'resolve-url-loader',
+                            options: {
+                                sourceMap: true,
+                                keepQuery: true
+                            }
+                        },
+                        {
+                            loader: 'sass-loader',
+                            options: {
+                                sourceMap: true,
+                                outputStyle: release ? "compress" : "expanded"
+                            }
+                        }
+                    ]
+                }),
             },
             {
                 test: /\.(jpe?g|gif|html)$/,
@@ -66,14 +94,14 @@ var config = {
     },
     output: {
          path: path.resolve(__dirname, 'dist'),
-         filename: '[name].js'
+         filename: '[name].[chunkhash].js'
     },
     plugins: [
         new BundleTracker({ filename: './webpack-stats.json' }),
         new StyleLintPlugin({
             context: './src/styles/'
         }),
-        new ExtractTextPlugin({ filename: '[name].css', allChunks: true }),
+        new ExtractTextPlugin({ filename: '[name].[contenthash].css' })
     ],
     performance: {
         assetFilter: function(assetFilename) {
@@ -93,42 +121,16 @@ var config = {
 }
 
 if (release) {
-    config.module.rules.push(
-        {
-            test: /\.scss$/,
-            use: ExtractTextPlugin.extract({
-                fallback: "style-loader",
-                use: [
-                    {
-                        loader: 'css-loader',
-                        options: {
-                            sourceMap: true,
-                        }
-                    },
-                    {
-                        loader: 'resolve-url-loader',
-                        options: {
-                            sourceMap: true,
-                            keepQuery: true
-                        }
-                    },
-                    {
-                        loader: 'sass-loader',
-                        options: {
-                            sourceMap: true,
-                            outputStyle: "compress"
-                        }
-                    }
-                ]
-            })
-        }
-    );
-
     config.plugins.push(
         new webpack.DefinePlugin({
             'DEBUG': false,
             'PRODUCTION': true,
             'process.env.NODE_ENV': JSON.stringify('production')
+        }),
+        new CleanWebpackPlugin(['dist'], {
+          root: path.resolve(),
+          verbose: true,
+          dry: false
         }),
         new OptimizeCssAssetsPlugin({
           cssProcessor: require('cssnano'),
@@ -158,43 +160,33 @@ if (release) {
         new webpack.LoaderOptionsPlugin({
             minimize: true,
             debug: false
+        }),
+        new webpack.optimize.CommonsChunkPlugin({
+            name: 'vendor',
+            minChunks: function (module) {
+               return module.context && module.context.indexOf('node_modules') !== -1;
+            }
+        }),
+        new webpack.optimize.CommonsChunkPlugin({
+            name: "manifest",
+            minChunks: Infinity
         })
     );
 } else {
-    config.module.rules.push(
-        {
-            test: /\.scss$/,
-            use: ExtractTextPlugin.extract({
-                fallback: "style-loader",
-                use: [
-                    {
-                        loader: 'css-loader',
-                        options: {
-                            sourceMap: true,
-                        }
-                    },
-                    {
-                        loader: 'resolve-url-loader',
-                        options: {
-                            sourceMap: true,
-                            keepQuery: true
-                        }
-                    },
-                    {
-                        loader: 'sass-loader',
-                        options: {
-                            sourceMap: true,
-                        }
-                    }
-                ]
-            })
-        }
-    );
-
     config.plugins.push(
         new webpack.DefinePlugin({
             'DEBUG': true,
             'PRODUCTION': false
+        }),
+        new webpack.optimize.CommonsChunkPlugin({
+            name: 'vendor',
+            minChunks: function (module) {
+               return module.context && module.context.indexOf('node_modules') !== -1;
+            }
+        }),
+        new webpack.optimize.CommonsChunkPlugin({
+            name: "manifest",
+            minChunks: Infinity
         })
     );
 }
