@@ -24,11 +24,15 @@ The `.env` file is ignored by `.gitignore`.
 
 ### Running backend tests
 
+Before running tests locally, be sure your container is rebuilt to contain pytest and the latest tests by using `docker-compose build smart_backend`.
+
 Backend tests use [py.test](https://docs.pytest.org/en/latest/).  To run them, use the following `docker-compose` command:
 
 ```
 docker-compose run --rm smart_backend py.test
 ```
+
+()
 
 Use `py.test -h` to see all the options, but a few useful ones are highlighted below:
 
