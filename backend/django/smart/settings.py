@@ -37,18 +37,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-<<<<<<< HEAD
     'django_extensions',
-=======
     'django_celery_results',
->>>>>>> master
     'rest_framework',
     'rest_framework.authtoken',
     'rest_auth',
     'django.contrib.sites',
     'allauth',
     'allauth.account',
-    'rest_auth.registration',    
+    'rest_auth.registration',
     'rest_framework_swagger',
     'webpack_loader',
     'core',
