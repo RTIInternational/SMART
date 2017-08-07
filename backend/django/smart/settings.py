@@ -31,6 +31,7 @@ ALLOWED_HOSTS = ['0.0.0.0', 'localhost']
 # Application definition
 
 INSTALLED_APPS = [
+    'core',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -45,10 +46,10 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'allauth',
     'allauth.account',
+    'allauth.socialaccount',
     'rest_auth.registration',
     'rest_framework_swagger',
-    'webpack_loader',
-    'core',
+    'webpack_loader'
 ]
 
 MIDDLEWARE = [
@@ -63,10 +64,15 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'smart.urls'
 
+LOGIN_REDIRECT_URL = 'index'
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            os.path.join(BASE_DIR, 'smart', 'templates'),
+            os.path.join(BASE_DIR, 'core', 'templates')
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -139,13 +145,14 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSIONS_CLASSES': [
         'rest_framework.permissions.IsAdminUser',
     ],
+    'DEFAULT_PAGINATION_CLASS': 'core.pagination.SmartPagination',
+    'PAGE_SIZE': 10,
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
         # should remove these later -- only here for testing
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
     ],
-    'PAGE_SIZE': 10
 }
 
 # SMART app config
@@ -166,6 +173,13 @@ REST_USE_JWT = True
 # for registration emails
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
+# CELERY SETTINGS
+CELERY_BROKER_URL = 'redis://redis:6379/0'
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+
 STATICFILES_DIRS = (os.path.join(BASE_DIR, 'frontend', 'dist'), )
 
 WEBPACK_LOADER = {
@@ -178,10 +192,3 @@ WEBPACK_LOADER = {
         'IGNORE': ['.+\.hot-update.js', '.+\.map']
     }
 }
-
-# CELERY SETTINGS
-CELERY_BROKER_URL = 'redis://redis:6379/0'
-CELERY_RESULT_BACKEND = 'django-db'
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
