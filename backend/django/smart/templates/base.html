@@ -16,6 +16,17 @@
     <body>
         <header>
             <a href="/"><h1>SMART</h1></a>
+            {% if user.is_authenticated %}
+            <div class="btn-group">
+                <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                {{ user }} <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-right">
+                    <li><a href="{% url 'account_change_password' %}">Update Password</a></li>
+                    <li><a href="{% url 'account_logout' %}">Logout</a></li>
+                </ul>
+            </div>
+            {% endif %}
         </header>
         <main class="container-fluid">
         {% block content %} {% endblock %}
