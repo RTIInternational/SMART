@@ -70,6 +70,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
+            os.path.join(BASE_DIR, 'smart', 'templates'),
             os.path.join(BASE_DIR, 'core', 'templates')
         ],
         'APP_DIRS': True,
@@ -172,6 +173,13 @@ REST_USE_JWT = True
 # for registration emails
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
+# CELERY SETTINGS
+CELERY_BROKER_URL = 'redis://redis:6379/0'
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+
 STATICFILES_DIRS = (os.path.join(BASE_DIR, 'frontend', 'dist'), )
 
 WEBPACK_LOADER = {
@@ -184,10 +192,3 @@ WEBPACK_LOADER = {
         'IGNORE': ['.+\.hot-update.js', '.+\.map']
     }
 }
-
-# CELERY SETTINGS
-CELERY_BROKER_URL = 'redis://redis:6379/0'
-CELERY_RESULT_BACKEND = 'django-db'
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
