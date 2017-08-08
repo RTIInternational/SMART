@@ -1,12 +1,21 @@
 import React from 'react';
+import PropTypes from 'prop-types';
+
+import { Button } from "react-bootstrap";
 
 import Deck from '../Deck';
-import Wrapper from '../Wrapper';
 
-const Smart = ( props ) => (
-    <Wrapper>
-        <Deck {...props} />
-    </Wrapper>
+const Smart = ({fetchCards, passCard, popCard, cards }) => (
+    <Deck 
+        fetchCards={fetchCards}
+        passCard={passCard}
+        popCard={popCard}
+        cards={cards}
+    />
 );
+
+Smart.propTypes = {
+    cards: PropTypes.arrayOf(PropTypes.object)
+};
 
 export default Smart;

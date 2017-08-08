@@ -5,3 +5,10 @@ test-backend:
     pip install -r requirements.txt
     cd django
     py.test
+
+test-frontend:
+  image: node:latest
+  script:
+    - cd frontend
+    - yarn
+    - yarn run test
