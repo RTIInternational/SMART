@@ -1,10 +1,12 @@
-import csv
 from django.conf import settings
 
 from core.management.commands.seed import (
     SEED_PROJECT, SEED_USERNAME, SEED_EMAIL,
-    SEED_PASSWORD, SEED_FILE_PATH, SEED_LABELS)
+    SEED_PASSWORD, SEED_LABELS)
 from core.pagination import SmartPagination
+from core.models import (Project)
+
+from test.util import read_test_data
 
 # Need a hashable dict so we can put them in a set
 class HashableDict(dict):
@@ -90,8 +92,7 @@ def test_get_labels(admin_client):
     ], ['name'])
 
 def test_get_data(admin_client):
-    with open(SEED_FILE_PATH) as f:
-        expected = [{'text': d['Tweet']} for d in csv.DictReader(f)]
+    expected = read_test_data()
 
     assert SmartPagination.max_page_size >= len(expected), \
             "SmartPagination's max_page_size setting must be larger than the " \

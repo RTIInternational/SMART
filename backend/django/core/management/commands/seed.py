@@ -2,9 +2,11 @@ import os.path
 import csv
 
 from django.core.management.base import BaseCommand, CommandError
+from django.contrib.auth import get_user_model
 
-from django.contrib.auth.models import User as AuthUser
 from core.models import User as User, Project, Label, Data
+
+AuthUser = get_user_model()
 
 SEED_USERNAME = 'test'
 SEED_PASSWORD = 'password'
