@@ -1,20 +1,9 @@
 import React from 'react';
 import { connect } from 'react-redux';
+
 import { fetchCards, passCard, popCard } from '../actions/classifier';
 
 import Smart from '../components/Smart';
-
-class SmartContainer extends React.Component {
-    componentWillMount() {
-        this.props.fetchCards();
-    }
-
-    render() {
-        return (
-            <Smart {...this.props} />
-        );
-    }
-};
 
 const mapStateToProps = (state) => {
     return {
@@ -36,4 +25,4 @@ const mapDispatchToProps = (dispatch) => {
     };
 };
 
-export default connect(mapStateToProps, mapDispatchToProps)(SmartContainer);
+export default connect(mapStateToProps, mapDispatchToProps)(Smart);
