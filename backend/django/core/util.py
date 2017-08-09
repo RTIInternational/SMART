@@ -60,9 +60,6 @@ def fill_queue(queue):
     If there isn't enough unlabeled data left to fill the queue, use all the
     unlabeled data available.
     '''
-    # TODO
-    # implement sampling described here:
-    # https://stackoverflow.com/questions/31801826/random-sample-on-django-querysets-how-will-sampling-on-querysets-affect-perform
     current_queue_len = queue.data.count()
 
     try:
