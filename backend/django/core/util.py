@@ -1,4 +1,32 @@
-from core.models import (Project, Data, Queue)
+import random
+from core.models import (Project, Data, Queue, DataQueue)
+
+def iter_sample(iterable, sample_len):
+    '''
+    Sample the given number of items from the given iterable without
+    loading all objects in the iterable into memory.
+    Based on this: https://stackoverflow.com/a/12583436/2612566
+    '''
+    results = []
+    iterator = iter(iterable)
+
+    # Fill in the first sample_len elements
+    try:
+        for _ in range(sample_len):
+            results.append(next(iterator))
+    except StopIteration:
+        raise ValueError("Sample larger than population.")
+
+    # Randomize their positions
+    random.shuffle(results)
+
+    # At a decreasing rate, replace random items
+    for i, v in enumerate(iterator, sample_len):
+        r = random.randint(0, i)
+        if r < sample_len:
+            results[r] = v
+
+    return results
 
 def create_project(project_attrs, data):
     '''
@@ -8,8 +36,7 @@ def create_project(project_attrs, data):
 
     Data should be an array of strings.
     '''
-    project = Project(**project_attrs)
-    project.save()
+    project = Project.objects.create(**project_attrs)
 
     bulk_data = (Data(text=d, project=project) for d in data)
     Data.objects.bulk_create(bulk_data)
@@ -23,7 +50,29 @@ def add_queue(project, length, user=None):
 
     Return the created queue.
     '''
-    queue = Queue(length=length, project=project, user=user)
-    queue.save()
+    return Queue.objects.create(length=length, project=project, user=user)
 
-    return queue
+def fill_queue(queue):
+    '''
+    Fill a queue with unlabeled data randomly selected from the queue's project.
+    The queue doesn't need to be empty.
+
+    If there isn't enough unlabeled data left to fill the queue, use all the
+    unlabeled data available.
+    '''
+    # TODO
+    # implement sampling described here:
+    # https://stackoverflow.com/questions/31801826/random-sample-on-django-querysets-how-will-sampling-on-querysets-affect-perform
+    current_queue_len = queue.data.count()
+
+    try:
+        queue_data = iter_sample(Data.objects
+                                 .filter(project=queue.project,
+                                         labelers=None)
+                                 .iterator(), queue.length - current_queue_len)
+    except ValueError:
+        # There isn't enough data left to fill the queue, so assign all of it
+        queue_data = Data.objects.filter(project=queue.project)
+
+    DataQueue.objects.bulk_create(
+        (DataQueue(queue=queue, data=d) for d in queue_data))

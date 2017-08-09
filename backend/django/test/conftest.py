@@ -5,9 +5,11 @@ from smart.celery import app as celery_app
 from core.management.commands.seed import (
     seed_database, SEED_USERNAME)
 from core.models import (User)
-from core.util import (create_project)
+from core.util import (create_project, add_queue)
 
 from test.util import read_test_data
+
+TEST_QUEUE_LEN = 10
 
 @pytest.fixture(autouse=True, scope='session')
 def setup_database(django_db_setup, django_db_blocker):
@@ -30,3 +32,7 @@ def test_project():
 def test_user():
     auth_user = get_user_model()(username=SEED_USERNAME)
     return User.objects.filter(auth_user=auth_user).first()
+
+@pytest.fixture
+def test_queue(test_project):
+    return add_queue(test_project, TEST_QUEUE_LEN)

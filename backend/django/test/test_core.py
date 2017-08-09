@@ -3,8 +3,8 @@ Test core logic for the SMART app, such as creating projects, managing
 queues, etc.
 '''
 
-from core.models import (Project, Queue, Data)
-from core.util import (add_queue)
+from core.models import (Project, Queue, Data, DataQueue)
+from core.util import (create_project, add_queue, fill_queue)
 
 from test.util import read_test_data
 
@@ -18,7 +18,11 @@ def assert_obj_exists(model, filter_):
         "does not exist. ".format(model.__name__, filter_)
 
 
-def test_create_project(db, test_project):
+def test_create_project(db):
+    project_attrs = { 'name': 'test_project' }
+    data = read_test_data()
+    project = create_project(project_attrs, data)
+
     assert_obj_exists(Project, { 'name': 'test_project' })
 
     test_data = read_test_data()
@@ -42,3 +46,24 @@ def test_add_queue_user(db, test_project, test_user):
         'user': test_user
     })
 
+def test_fill_empty_queue(db, test_queue):
+    fill_queue(test_queue)
+
+    assert test_queue.data.count() == test_queue.length
+
+def test_fill_nonempty_queue(db, test_queue):
+    # Manually add one observation so the queue is now nonempty
+    test_datum = Data.objects.create(text='test data', project=test_queue.project)
+    DataQueue.objects.create(data=test_datum, queue=test_queue)
+    assert test_queue.data.count() == 1
+
+    fill_queue(test_queue)
+    assert test_queue.data.count() == test_queue.length
+
+def test_fill_queue_all_remaining_data(db, test_queue):
+    # Raise the queue length so it's bigger than the amount of data available
+    all_data_count = Data.objects.filter(project=test_queue.project).count()
+    test_queue.length = all_data_count + 1
+
+    fill_queue(test_queue)
+    assert test_queue.data.count() == all_data_count
