@@ -3,7 +3,8 @@ Test core logic for the SMART app, such as creating projects, managing
 queues, etc.
 '''
 from core.models import (Project, Queue, Data, DataQueue)
-from core.util import (create_project, add_queue, fill_queue,
+from core.util import (create_project, add_data,
+                       add_queue, fill_queue,
                        init_redis_queues)
 
 from test.util import read_test_data
@@ -35,12 +36,16 @@ def assert_redis_matches_db(test_redis):
 
 def test_create_project(db):
     project_attrs = { 'name': 'test_project' }
-    data = read_test_data()
-    project = create_project(project_attrs, data)
+    project = create_project(project_attrs)
 
     assert_obj_exists(Project, { 'name': 'test_project' })
 
+
+def test_add_data(db, test_project):
     test_data = read_test_data()
+
+    add_data(test_project, test_data)
+
     for d in test_data:
         assert_obj_exists(Data, d)
 
@@ -101,17 +106,17 @@ def test_init_redis_queues_one_empty_queue(db, test_project, test_redis):
     assert_redis_matches_db(test_redis)
 
 
-def test_init_redis_queues_one_nonempty_queue(db, test_project, test_redis):
-    queue = add_queue(test_project, 10)
+def test_init_redis_queues_one_nonempty_queue(db, test_project_data, test_redis):
+    queue = add_queue(test_project_data, 10)
     fill_queue(queue)
     init_redis_queues()
 
     assert_redis_matches_db(test_redis)
 
 
-def test_init_redis_queues_multiple_queues(db, test_project, test_redis):
-    queue = add_queue(test_project, 10)
-    queue2 = add_queue(test_project, 10)
+def test_init_redis_queues_multiple_queues(db, test_project_data, test_redis):
+    queue = add_queue(test_project_data, 10)
+    queue2 = add_queue(test_project_data, 10)
     init_redis_queues()
 
     assert_redis_matches_db(test_redis)

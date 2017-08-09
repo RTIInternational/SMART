@@ -7,7 +7,8 @@ from smart.celery import app as celery_app
 from core.management.commands.seed import (
     seed_database, SEED_USERNAME)
 from core.models import (User)
-from core.util import (create_project, add_queue)
+from core.util import (create_project, add_queue,
+                       add_data)
 
 from test.util import read_test_data
 
@@ -35,9 +36,13 @@ def test_redis():
 @pytest.fixture
 def test_project(db):
     project_attrs = { 'name': 'test_project' }
-    data = read_test_data()
-    project = create_project(project_attrs, data)
-    return project
+    return create_project(project_attrs)
+
+@pytest.fixture
+def test_project_data(db, test_project):
+    test_data = read_test_data()
+    add_data(test_project, test_data)
+    return test_project
 
 @pytest.fixture
 def test_user(db):
@@ -45,5 +50,5 @@ def test_user(db):
     return User.objects.filter(auth_user=auth_user).first()
 
 @pytest.fixture
-def test_queue(db, test_project):
-    return add_queue(test_project, TEST_QUEUE_LEN)
+def test_queue(db, test_project_data):
+    return add_queue(test_project_data, TEST_QUEUE_LEN)

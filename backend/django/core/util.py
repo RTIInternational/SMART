@@ -31,6 +31,7 @@ def iter_sample(iterable, sample_len):
 
     return results
 
+
 def init_redis_queues():
     '''
     Create a redis queue for each queue in the database and fill it with
@@ -48,20 +49,21 @@ def init_redis_queues():
 
     pipeline.execute()
 
-def create_project(project_attrs, data):
-    '''
-    Create a project with the given attributes and data,
-    initializing a project queue and returning the created
-    project.
 
-    Data should be an array of strings.
+def create_project(project_attrs):
     '''
-    project = Project.objects.create(**project_attrs)
+    Create a project with the given attributes.
+    '''
+    return Project.objects.create(**project_attrs)
 
+
+def add_data(project, data):
+    '''
+    Add data to an existing project.  Data should be an array of strings.
+    '''
     bulk_data = (Data(text=d, project=project) for d in data)
     Data.objects.bulk_create(bulk_data)
 
-    return project
 
 def add_queue(project, length, user=None):
     '''
@@ -71,6 +73,7 @@ def add_queue(project, length, user=None):
     Return the created queue.
     '''
     return Queue.objects.create(length=length, project=project, user=user)
+
 
 def fill_queue(queue):
     '''
