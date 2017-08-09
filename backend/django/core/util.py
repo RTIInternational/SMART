@@ -1,4 +1,7 @@
 import random
+import redis
+
+from django.conf import settings
 from core.models import (Project, Data, Queue, DataQueue)
 
 def iter_sample(iterable, sample_len):
@@ -27,6 +30,23 @@ def iter_sample(iterable, sample_len):
             results[r] = v
 
     return results
+
+def init_redis_queues():
+    '''
+    Create a redis queue for each queue in the database and fill it with
+    the data linked to the queue.
+    '''
+    conn = redis.StrictRedis.from_url(settings.REDIS_URL)
+    # Use a pipeline to reduce back-and-forth with the server
+    pipeline = conn.pipeline(transaction=False)
+
+    for queue in Queue.objects.all():
+        data_ids = [d.pk for d in queue.data.all()]
+        if len(data_ids) > 0:
+            # We'll get an error if we try to lpush without any data
+            pipeline.lpush(queue.pk, *data_ids)
+
+    pipeline.execute()
 
 def create_project(project_attrs, data):
     '''

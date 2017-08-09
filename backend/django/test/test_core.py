@@ -2,9 +2,9 @@
 Test core logic for the SMART app, such as creating projects, managing
 queues, etc.
 '''
-
 from core.models import (Project, Queue, Data, DataQueue)
-from core.util import (create_project, add_queue, fill_queue)
+from core.util import (create_project, add_queue, fill_queue,
+                       init_redis_queues)
 
 from test.util import read_test_data
 
@@ -16,6 +16,21 @@ def assert_obj_exists(model, filter_):
     matching_count = model.objects.filter(**filter_).count()
     assert matching_count > 0, "{} matching filter {} " \
         "does not exist. ".format(model.__name__, filter_)
+
+def assert_redis_matches_db(test_redis):
+    '''
+    Make sure all nonempty queues are present in the redis DB and
+    have the correct amount of data, as determined by the DB.
+    '''
+    for q in Queue.objects.all():
+        data_count = q.data.count()
+
+        if data_count > 0:
+            assert test_redis.exists(q.pk)
+            assert test_redis.llen(q.pk) == data_count
+        else:
+            # Empty lists don't exist in redis
+            assert not test_redis.exists(q.pk)
 
 
 def test_create_project(db):
@@ -30,7 +45,7 @@ def test_create_project(db):
         assert_obj_exists(Data, d)
 
 
-def test_add_queue_no_user(db, test_project):
+def test_add_queue_no_user(test_project):
     QUEUE_LEN = 10
     add_queue(test_project, QUEUE_LEN)
     assert_obj_exists(Queue, {
@@ -38,7 +53,8 @@ def test_add_queue_no_user(db, test_project):
         'user': None
     })
 
-def test_add_queue_user(db, test_project, test_user):
+
+def test_add_queue_user(test_project, test_user):
     QUEUE_LEN = 10
     add_queue(test_project, QUEUE_LEN, user=test_user)
     assert_obj_exists(Queue, {
@@ -46,10 +62,12 @@ def test_add_queue_user(db, test_project, test_user):
         'user': test_user
     })
 
+
 def test_fill_empty_queue(db, test_queue):
     fill_queue(test_queue)
 
     assert test_queue.data.count() == test_queue.length
+
 
 def test_fill_nonempty_queue(db, test_queue):
     # Manually add one observation so the queue is now nonempty
@@ -60,6 +78,7 @@ def test_fill_nonempty_queue(db, test_queue):
     fill_queue(test_queue)
     assert test_queue.data.count() == test_queue.length
 
+
 def test_fill_queue_all_remaining_data(db, test_queue):
     # Raise the queue length so it's bigger than the amount of data available
     all_data_count = Data.objects.filter(project=test_queue.project).count()
@@ -67,3 +86,32 @@ def test_fill_queue_all_remaining_data(db, test_queue):
 
     fill_queue(test_queue)
     assert test_queue.data.count() == all_data_count
+
+
+def test_init_redis_queues_empty(db, test_redis):
+    init_redis_queues()
+
+    assert_redis_matches_db(test_redis)
+
+
+def test_init_redis_queues_one_empty_queue(db, test_project, test_redis):
+    queue = add_queue(test_project, 10)
+    init_redis_queues()
+
+    assert_redis_matches_db(test_redis)
+
+
+def test_init_redis_queues_one_nonempty_queue(db, test_project, test_redis):
+    queue = add_queue(test_project, 10)
+    fill_queue(queue)
+    init_redis_queues()
+
+    assert_redis_matches_db(test_redis)
+
+
+def test_init_redis_queues_multiple_queues(db, test_project, test_redis):
+    queue = add_queue(test_project, 10)
+    queue2 = add_queue(test_project, 10)
+    init_redis_queues()
+
+    assert_redis_matches_db(test_redis)
