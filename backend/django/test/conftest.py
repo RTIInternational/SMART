@@ -35,8 +35,7 @@ def test_redis():
 
 @pytest.fixture
 def test_project(db):
-    project_attrs = { 'name': 'test_project' }
-    return create_project(project_attrs)
+    return create_project('test_project')
 
 @pytest.fixture
 def test_project_data(db, test_project):

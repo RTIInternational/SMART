@@ -50,11 +50,11 @@ def init_redis_queues():
     pipeline.execute()
 
 
-def create_project(project_attrs):
+def create_project(name):
     '''
-    Create a project with the given attributes.
+    Create a project with the given name.
     '''
-    return Project.objects.create(**project_attrs)
+    return Project.objects.create(name=name)
 
 
 def add_data(project, data):

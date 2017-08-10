@@ -35,10 +35,10 @@ def assert_redis_matches_db(test_redis):
 
 
 def test_create_project(db):
-    project_attrs = { 'name': 'test_project' }
-    project = create_project(project_attrs)
+    name = 'test_project'
+    project = create_project(name)
 
-    assert_obj_exists(Project, { 'name': 'test_project' })
+    assert_obj_exists(Project, { 'name': name })
 
 
 def test_add_data(db, test_project):
