@@ -149,6 +149,8 @@ def test_init_redis_queues_one_nonempty_queue(db, test_project_data, test_redis)
 
 def test_init_redis_queues_multiple_queues(db, test_project_data, test_redis):
     queue = add_queue(test_project_data, 10)
+    fill_queue(queue)
+
     queue2 = add_queue(test_project_data, 10)
     init_redis_queues()
 
