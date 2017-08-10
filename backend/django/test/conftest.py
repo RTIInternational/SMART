@@ -14,11 +14,10 @@ from test.util import read_test_data
 
 TEST_QUEUE_LEN = 10
 
-@pytest.fixture(autouse=True, scope='session')
-def setup_database(django_db_setup, django_db_blocker):
-    # Set up the database only once per session
-    with django_db_blocker.unblock():
-        seed_database()
+@pytest.fixture()
+def seeded_database(db):
+    # Seed the database using the management command
+    seed_database()
 
 @pytest.fixture(autouse=True)
 def setup_celery():

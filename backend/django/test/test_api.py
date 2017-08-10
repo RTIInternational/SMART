@@ -66,15 +66,15 @@ def compare_get_response(response, expected, significant_keys):
     assert_collections_equal(significant_expected, significant_response)
 
 
-def test_get_projects(admin_client):
+def test_get_projects(seeded_database, admin_client):
     response = admin_client.get('/api/projects/')
     compare_get_response(response, [{ 'name': SEED_PROJECT }], ['name'])
 
-def test_get_users(admin_client):
+def test_get_users(seeded_database, admin_client):
     response = admin_client.get('/api/users/')
     compare_get_response(response, [{}], [])
 
-def test_get_auth_users(admin_client):
+def test_get_auth_users(seeded_database, admin_client):
     response = admin_client.get('/api/auth_users/')
     compare_get_response(response, [
         { 'username': SEED_USERNAME, 'email': SEED_EMAIL },
@@ -82,16 +82,16 @@ def test_get_auth_users(admin_client):
         { 'username': 'admin', 'email': 'admin@example.com' }
     ], ['username', 'email'])
 
-def test_login(client, db):
+def test_login(seeded_database, client, db):
     assert client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
 
-def test_get_labels(admin_client):
+def test_get_labels(seeded_database, admin_client):
     response = admin_client.get('/api/labels/')
     compare_get_response(response, [
         { 'name': label } for label in SEED_LABELS
     ], ['name'])
 
-def test_get_data(admin_client):
+def test_get_data(seeded_database, admin_client):
     expected = read_test_data()
 
     assert SmartPagination.max_page_size >= len(expected), \

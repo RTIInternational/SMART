@@ -44,10 +44,13 @@ def test_create_project(db):
 def test_add_data(db, test_project):
     test_data = read_test_data()
 
-    add_data(test_project, test_data)
+    add_data(test_project, [d['text'] for d in test_data])
 
     for d in test_data:
-        assert_obj_exists(Data, d)
+        assert_obj_exists(Data, {
+            'text': d['text'],
+            'project': test_project
+        })
 
 
 def test_add_queue_no_user(test_project):
