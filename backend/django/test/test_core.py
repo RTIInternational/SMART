@@ -110,6 +110,22 @@ def test_fill_multiple_queues(db, test_queue):
     assert test_queue2.data.count() == 0
 
 
+def test_fill_multiple_projects(db, test_queue):
+    project_data_count = test_queue.project.data_set.count()
+    test_queue.length = project_data_count + 1
+    test_project2 = create_project('test_project2')
+    project2_data = read_test_data()
+
+    add_data(test_project2, [d['text'] for d in project2_data])
+
+    fill_queue(test_queue)
+
+    # Ensure the queue didn't fill any data from the other project
+    assert test_queue.data.count() == project_data_count
+    assert all((d.project == test_queue.project
+                for d in test_queue.data.all()))
+
+
 def test_init_redis_queues_empty(db, test_redis):
     init_redis_queues()
 
