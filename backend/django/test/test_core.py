@@ -155,3 +155,21 @@ def test_init_redis_queues_multiple_queues(db, test_project_data, test_redis):
     init_redis_queues()
 
     assert_redis_matches_db(test_redis)
+
+def test_init_redis_queues_multiple_projects(db, test_project_data, test_redis):
+    # Try a mix of multiple queues in multiple projects with
+    # and without data to see if everything initializes as expected.
+    p1_queue1 = add_queue(test_project_data, 10)
+    fill_queue(p1_queue1)
+    p1_queue2 = add_queue(test_project_data, 10)
+
+    project2 = create_project('test_project2')
+    project2_data = read_test_data()
+    add_data(project2, [d['text'] for d in project2_data])
+    p2_queue1 = add_queue(project2, 10)
+    fill_queue(p2_queue1)
+    p2_queue2 = add_queue(project2, 10)
+
+    init_redis_queues()
+
+    assert_redis_matches_db(test_redis)
