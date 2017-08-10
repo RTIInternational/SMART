@@ -77,23 +77,37 @@ def add_queue(project, length, user=None):
 
 def fill_queue(queue):
     '''
-    Fill a queue with unlabeled data randomly selected from the queue's project.
-    The queue doesn't need to be empty.
+    Fill a queue with unlabeled, unassigned data randomly selected from
+    the queue's project. The queue doesn't need to be empty.
 
-    If there isn't enough unlabeled data left to fill the queue, use all the
-    unlabeled data available.
+    If there isn't enough data left to fill the queue, use all the
+    data available.
+
+    TODO: Extend to use a model to fill the queue, when one has been trained
+    for the queue's project.
     '''
     current_queue_len = queue.data.count()
 
+    data_filters = {
+        'project': queue.project,
+        'labelers': None,
+        'queues': None
+    }
+
     try:
+        # TODO: This has concurrency issues -- if multiple queues are filled
+        # at the same time, they'll both draw their sample from the same set
+        # of data and may assign some of the same data objects.
+        # Need to have the sampling and insert in the same query,
+        # (INSERT INTO ... SELECT ...)
+        # which apparently requires raw SQL.  May require SELECT FOR UPDATE
+        # SKIP LOCKED (Postgres 9.5+).
         queue_data = iter_sample(Data.objects
-                                 .filter(project=queue.project,
-                                         labelers=None,
-                                         queues=None)
+                                 .filter(**data_filters)
                                  .iterator(), queue.length - current_queue_len)
     except ValueError:
         # There isn't enough data left to fill the queue, so assign all of it
-        queue_data = Data.objects.filter(project=queue.project)
+        queue_data = Data.objects.filter(**data_filters)
 
     DataQueue.objects.bulk_create(
         (DataQueue(queue=queue, data=d) for d in queue_data))
