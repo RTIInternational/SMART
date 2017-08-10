@@ -88,7 +88,8 @@ def fill_queue(queue):
     try:
         queue_data = iter_sample(Data.objects
                                  .filter(project=queue.project,
-                                         labelers=None)
+                                         labelers=None,
+                                         queues=None)
                                  .iterator(), queue.length - current_queue_len)
     except ValueError:
         # There isn't enough data left to fill the queue, so assign all of it
