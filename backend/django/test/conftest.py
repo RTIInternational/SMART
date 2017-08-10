@@ -34,10 +34,16 @@ def test_redis():
 
 @pytest.fixture
 def test_project(db):
+    '''
+    This fixture only creates the test project without any data.
+    '''
     return create_project('test_project')
 
 @pytest.fixture
 def test_project_data(db, test_project):
+    '''
+    Creates the test project and adds test data to it.
+    '''
     test_data = read_test_data()
     add_data(test_project, test_data)
     return test_project
