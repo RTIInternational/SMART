@@ -116,11 +116,17 @@ def pop_queue(queue):
     '''
     Remove a datum from the given queue (in redis and the database)
     and return it.
+
+    Returns None and does nothing if the queue is empty.
     '''
     # Redis first, since this op is guaranteed to be atomic
     data_id = settings.REDIS.rpop(queue.pk)
+
+    if data_id is None:
+        return None
+
     data_obj = Data.objects.filter(pk=data_id).first()
-    DataQueue.objects.filter(data=data_obj, queue=queue).delete()
+    x = DataQueue.objects.filter(data=data_obj, queue=queue).delete()
 
     return data_obj
 

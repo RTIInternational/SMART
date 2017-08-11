@@ -174,7 +174,17 @@ def test_init_redis_queues_multiple_projects(db, test_project_data, test_redis):
 
     assert_redis_matches_db(test_redis)
 
-def test_pop_queue(db, test_project_data, test_redis):
+def test_pop_empty_queue(db, test_project, test_redis):
+    queue = add_queue(test_project, 10)
+    init_redis_queues()
+
+    datum = pop_queue(queue)
+
+    assert datum is None
+    assert not test_redis.exists(queue.pk)
+    assert queue.data.count() == 0
+
+def test_pop_nonempty_queue(db, test_project_data, test_redis):
     queue_len = 10
     queue = add_queue(test_project_data, queue_len)
     fill_queue(queue)
