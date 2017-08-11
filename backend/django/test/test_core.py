@@ -195,3 +195,20 @@ def test_pop_nonempty_queue(db, test_project_data, test_redis):
     assert isinstance(datum, Data)
     assert test_redis.llen(queue.pk) == (queue_len - 1)
     assert queue.data.count() == (queue_len - 1)
+
+def test_pop_only_affects_one_queue(db, test_project_data, test_redis):
+    queue_len = 10
+    queue = add_queue(test_project_data, queue_len)
+    queue2 = add_queue(test_project_data, queue_len)
+    fill_queue(queue)
+    fill_queue(queue2)
+    init_redis_queues()
+
+    datum = pop_queue(queue)
+
+    assert isinstance(datum, Data)
+    assert test_redis.llen(queue.pk) == (queue_len - 1)
+    assert queue.data.count() == (queue_len - 1)
+
+    assert test_redis.llen(queue2.pk) == queue_len
+    assert queue2.data.count() == queue_len
