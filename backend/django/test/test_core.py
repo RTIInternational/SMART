@@ -4,7 +4,7 @@ queues, etc.
 '''
 from core.models import (Project, Queue, Data, DataQueue)
 from core.util import (create_project, add_data,
-                       add_queue, fill_queue,
+                       add_queue, fill_queue, pop_queue,
                        init_redis_queues)
 
 from test.util import read_test_data
@@ -173,3 +173,15 @@ def test_init_redis_queues_multiple_projects(db, test_project_data, test_redis):
     init_redis_queues()
 
     assert_redis_matches_db(test_redis)
+
+def test_pop_queue(db, test_project_data, test_redis):
+    queue_len = 10
+    queue = add_queue(test_project_data, queue_len)
+    fill_queue(queue)
+    init_redis_queues()
+
+    datum = pop_queue(queue)
+
+    assert isinstance(datum, Data)
+    assert test_redis.llen(queue.pk) == (queue_len - 1)
+    assert queue.data.count() == (queue_len - 1)

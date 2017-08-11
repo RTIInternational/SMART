@@ -25,7 +25,7 @@ def setup_celery():
 
 @pytest.fixture
 def test_redis():
-    r = redis.StrictRedis.from_url(settings.REDIS_URL)
+    r = settings.REDIS
     yield r
 
     # Teardown by removing all keys when we're done with the fixture

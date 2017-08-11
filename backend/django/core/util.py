@@ -37,9 +37,8 @@ def init_redis_queues():
     Create a redis queue for each queue in the database and fill it with
     the data linked to the queue.
     '''
-    conn = redis.StrictRedis.from_url(settings.REDIS_URL)
     # Use a pipeline to reduce back-and-forth with the server
-    pipeline = conn.pipeline(transaction=False)
+    pipeline = settings.REDIS.pipeline(transaction=False)
 
     for queue in Queue.objects.all():
         data_ids = [d.pk for d in queue.data.all()]
@@ -111,3 +110,17 @@ def fill_queue(queue):
 
     DataQueue.objects.bulk_create(
         (DataQueue(queue=queue, data=d) for d in queue_data))
+
+
+def pop_queue(queue):
+    '''
+    Remove a datum from the given queue (in redis and the database)
+    and return it.
+    '''
+    # Redis first, since this op is guaranteed to be atomic
+    data_id = settings.REDIS.rpop(queue.pk)
+    data_obj = Data.objects.filter(pk=data_id).first()
+    DataQueue.objects.filter(data=data_obj, queue=queue).delete()
+
+    return data_obj
+
