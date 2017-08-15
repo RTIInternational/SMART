@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 from core.models import (Project, Queue, Data, DataQueue, User)
 from core.util import (create_project, add_data, assign_datum,
                        add_queue, fill_queue, pop_queue,
-                       init_redis_queues,
+                       init_redis_queues, get_nonempty_queue,
                        create_user)
 
 from test.util import read_test_data
@@ -181,6 +181,7 @@ def test_init_redis_queues_multiple_queues(db, test_project_data, test_redis):
 
     assert_redis_matches_db(test_redis)
 
+
 def test_init_redis_queues_multiple_projects(db, test_project_data, test_redis):
     # Try a mix of multiple queues in multiple projects with
     # and without data to see if everything initializes as expected.
@@ -199,6 +200,7 @@ def test_init_redis_queues_multiple_projects(db, test_project_data, test_redis):
 
     assert_redis_matches_db(test_redis)
 
+
 def test_pop_empty_queue(db, test_project, test_redis):
     queue = add_queue(test_project, 10)
     init_redis_queues()
@@ -208,6 +210,7 @@ def test_pop_empty_queue(db, test_project, test_redis):
     assert datum is None
     assert not test_redis.exists(queue.pk)
     assert queue.data.count() == 0
+
 
 def test_pop_nonempty_queue(db, test_project_data, test_redis):
     queue_len = 10
@@ -220,6 +223,7 @@ def test_pop_nonempty_queue(db, test_project_data, test_redis):
     assert isinstance(datum, Data)
     assert test_redis.llen(queue.pk) == (queue_len - 1)
     assert queue.data.count() == (queue_len - 1)
+
 
 def test_pop_only_affects_one_queue(db, test_project_data, test_redis):
     queue_len = 10
@@ -237,3 +241,58 @@ def test_pop_only_affects_one_queue(db, test_project_data, test_redis):
 
     assert test_redis.llen(queue2.pk) == queue_len
     assert queue2.data.count() == queue_len
+
+
+def test_get_nonempty_queue_nouser(db, test_project_data):
+    queue_len = 10
+    queue = add_queue(test_project_data, queue_len)
+    queue2 = add_queue(test_project_data, queue_len)
+
+    assert get_nonempty_queue(test_project_data) is None
+
+    fill_queue(queue2)
+    assert get_nonempty_queue(test_project_data) == queue2
+
+    fill_queue(queue)
+    assert get_nonempty_queue(test_project_data) == queue
+
+
+def test_get_nonempty_queue_user(db, test_project_data, test_user):
+    queue_len = 10
+    queue = add_queue(test_project_data, queue_len)
+    queue_user = add_queue(test_project_data, queue_len,
+                           user=test_user)
+    queue_user2 = add_queue(test_project_data, queue_len,
+                            user=test_user)
+
+    assert get_nonempty_queue(test_project_data, user=test_user) is None
+
+    fill_queue(queue_user2)
+    assert get_nonempty_queue(test_project_data, user=test_user) == queue_user2
+
+    fill_queue(queue_user)
+    assert get_nonempty_queue(test_project_data, user=test_user) == queue_user
+
+
+def test_get_nonempty_queue_multiple_users(db, test_project_data, test_user):
+    queue_len = 10
+    test_user2 = create_user('test_user2', 'password', 'test_user2@rti.org')
+    test_user3 = create_user('test_user3', 'password', 'test_user3@rti.org')
+
+    # Put the queue of interest in the middle in hopes of
+    # catching any incorrect code taking the first or last
+    # available queue
+    queue_user2 = add_queue(test_project_data,
+                            queue_len, user=test_user2)
+    queue_user = add_queue(test_project_data,
+                           queue_len, user=test_user)
+    queue_user3 = add_queue(test_project_data,
+                            queue_len, user=test_user3)
+
+    for queue in (queue_user2, queue_user, queue_user3):
+        fill_queue(queue)
+
+    assert get_nonempty_queue(test_project_data) is None
+
+    assert get_nonempty_queue(test_project_data, user=test_user) == queue_user
+

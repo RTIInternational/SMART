@@ -1,6 +1,7 @@
 import random
 import redis
 
+from django.db.models import Count
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from core.models import (Project, Data, Queue, DataQueue, User)
@@ -146,3 +147,34 @@ def pop_queue(queue):
 
     return data_obj
 
+
+def get_nonempty_queue(project, user=None):
+    '''
+    Return the first nonempty queue for the given project and
+    (optionally) user.
+    '''
+    first_nonempty_queue = None
+
+    # Only check for user queues if we were passed a user
+    if user is not None:
+        nonempty_user_queues = (project.queue_set
+                                .filter(user=user)
+                                .annotate(
+                                    data_count=Count('data'))
+                                .filter(data_count__gt=0))
+
+        if len(nonempty_user_queues) > 0:
+            first_nonempty_queue = nonempty_user_queues.first()
+
+    # If we didn't find a user queue, check project queues
+    if first_nonempty_queue is None:
+        nonempty_queues = (project.queue_set
+                           .filter(user=None)
+                           .annotate(
+                               data_count=Count('data'))
+                           .filter(data_count__gt=0))
+
+        if len(nonempty_queues) > 0:
+            first_nonempty_queue = nonempty_queues.first()
+
+    return first_nonempty_queue
