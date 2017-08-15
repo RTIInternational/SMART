@@ -50,8 +50,8 @@ def test_project_data(db, test_project):
 
 @pytest.fixture
 def test_user(db):
-    auth_user = get_user_model()(username=SEED_USERNAME)
-    return User.objects.filter(auth_user=auth_user).first()
+    auth_user = get_user_model().objects.create(username='test_user')
+    return User.objects.create(auth_user=auth_user)
 
 @pytest.fixture
 def test_queue(db, test_project_data):
