@@ -1,8 +1,24 @@
 import random
 import redis
 
+from django.contrib.auth import get_user_model
 from django.conf import settings
-from core.models import (Project, Data, Queue, DataQueue)
+from core.models import (Project, Data, Queue, DataQueue, User)
+
+
+def create_user(username, password, email):
+    '''
+    Create a user with the given attributes.
+    Create a user in Django's authentication model and
+    link it to our own project user model.
+    '''
+    auth_user = get_user_model().objects.create(
+        username=username,
+        password=password,
+        email=email)
+
+    return User.objects.create(auth_user=auth_user)
+
 
 def iter_sample(iterable, sample_len):
     '''

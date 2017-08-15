@@ -2,10 +2,13 @@
 Test core logic for the SMART app, such as creating projects, managing
 queues, etc.
 '''
-from core.models import (Project, Queue, Data, DataQueue)
-from core.util import (create_project, add_data,
+from django.contrib.auth import get_user_model
+
+from core.models import (Project, Queue, Data, DataQueue, User)
+from core.util import (create_project, add_data, assign_datum,
                        add_queue, fill_queue, pop_queue,
-                       init_redis_queues)
+                       init_redis_queues,
+                       create_user)
 
 from test.util import read_test_data
 
@@ -32,6 +35,28 @@ def assert_redis_matches_db(test_redis):
         else:
             # Empty lists don't exist in redis
             assert not test_redis.exists(q.pk)
+
+
+def test_create_user(db):
+    username = 'test_user'
+    password = 'password'
+    email = 'test_user@rti.org'
+
+    create_user(username, password, email)
+
+    auth_user_attrs = {
+        'username': username,
+        'password': password,
+        'email': email
+    }
+
+    assert_obj_exists(get_user_model(), auth_user_attrs)
+
+    auth_user = (get_user_model().objects
+                 .filter(**auth_user_attrs)
+                 .first())
+
+    assert_obj_exists(User, { 'auth_user': auth_user })
 
 
 def test_create_project(db):
