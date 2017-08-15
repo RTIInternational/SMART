@@ -4,7 +4,8 @@ import redis
 from django.db.models import Count
 from django.contrib.auth import get_user_model
 from django.conf import settings
-from core.models import (Project, Data, Queue, DataQueue, User)
+from core.models import (Project, Data, Queue, DataQueue, User,
+                         AssignedData)
 
 
 def create_user(username, password, email):
@@ -178,3 +179,19 @@ def get_nonempty_queue(project, user=None):
             first_nonempty_queue = nonempty_queues.first()
 
     return first_nonempty_queue
+
+
+def assign_datum(user, project):
+    '''
+    Given a user and project, figure out which queue to pull from;
+    then pop a datum off that queue and assign it to the user.
+    '''
+    first_nonempty_queue = get_nonempty_queue(project, user=user)
+
+    if first_nonempty_queue is None:
+        return None
+    else:
+        datum = pop_queue(first_nonempty_queue)
+        AssignedData.objects.create(data=datum, user=user,
+                                    queue=first_nonempty_queue)
+        return datum

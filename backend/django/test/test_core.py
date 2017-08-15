@@ -4,7 +4,8 @@ queues, etc.
 '''
 from django.contrib.auth import get_user_model
 
-from core.models import (Project, Queue, Data, DataQueue, User)
+from core.models import (Project, Queue, Data, DataQueue, User,
+                         AssignedData)
 from core.util import (create_project, add_data, assign_datum,
                        add_queue, fill_queue, pop_queue,
                        init_redis_queues, get_nonempty_queue,
@@ -296,3 +297,45 @@ def test_get_nonempty_queue_multiple_users(db, test_project_data, test_user):
 
     assert get_nonempty_queue(test_project_data, user=test_user) == queue_user
 
+
+def test_assign_datum_project_queue_returns_datum(db, test_queue, test_user, test_redis):
+    '''
+    Assign a datum from a project-wide queue (null user ID).
+    '''
+    fill_queue(test_queue)
+    init_redis_queues()
+
+    datum = assign_datum(test_user, test_queue.project)
+
+    # Make sure we got the datum
+    assert datum is not None
+
+def test_assign_datum_project_queue_correct_assignment(db, test_queue, test_user, test_redis):
+    '''
+    Assign a datum from a project-wide queue (null user ID).
+    '''
+    fill_queue(test_queue)
+    init_redis_queues()
+
+    datum = assign_datum(test_user, test_queue.project)
+
+    # Make sure the assignment is correct
+    assignment = AssignedData.objects.filter(data=datum)
+    assert len(assignment) == 1
+    assert assignment[0].user == test_user
+    assert assignment[0].queue == test_queue
+    assert assignment[0].assigned_timestamp is not None
+
+def test_assign_datum_project_queue_pops_queues(db, test_queue, test_user, test_redis):
+    '''
+    Assign a datum from a project-wide queue (null user ID).
+    '''
+    fill_queue(test_queue)
+    init_redis_queues()
+
+    datum = assign_datum(test_user, test_queue.project)
+
+    # Make sure the datum was removed from queues
+    assert test_queue.data.count() == test_queue.length - 1
+    assert test_redis.llen(test_queue.pk) == test_queue.length - 1
+    assert datum not in test_queue.data.all()
