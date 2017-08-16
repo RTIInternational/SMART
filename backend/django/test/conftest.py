@@ -8,7 +8,7 @@ from core.management.commands.seed import (
     seed_database, SEED_USERNAME)
 from core.models import (User)
 from core.util import (create_project, add_queue,
-                       add_data)
+                       create_user, add_data)
 
 from test.util import read_test_data
 
@@ -50,9 +50,37 @@ def test_project_data(db, test_project):
 
 @pytest.fixture
 def test_user(db):
-    auth_user = get_user_model().objects.create(username='test_user')
-    return User.objects.create(auth_user=auth_user)
+    '''
+    Creates a test user with associated auth_user.
+    '''
+    return create_user('test_user', 'password', 'test_user@rti.org')
+
+@pytest.fixture
+def test_user2(db):
+    '''
+    Additional user for tests requiring multiple users.
+    '''
+    return create_user('test_user2', 'password', 'test_user2@rti.org')
 
 @pytest.fixture
 def test_queue(db, test_project_data):
+    '''
+    A queue containing data from the test project, with length set to
+    the global len.
+    '''
     return add_queue(test_project_data, TEST_QUEUE_LEN)
+
+@pytest.fixture
+def test_user_queue(db, test_user, test_project_data):
+    '''
+    A queue with test data, associated with the first test user.
+    '''
+    return add_queue(test_project_data, TEST_QUEUE_LEN, user=test_user)
+
+@pytest.fixture
+def test_user_queue2(db, test_user2, test_project_data):
+    '''
+    A queue with test data, associated with an additional test user.
+    Useful for tests requiring multiple users/queues on the same project.
+    '''
+    return add_queue(test_project_data, TEST_QUEUE_LEN, user=test_user2)

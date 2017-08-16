@@ -258,47 +258,37 @@ def test_get_nonempty_queue_nouser(db, test_project_data):
     assert get_nonempty_queue(test_project_data) == queue
 
 
-def test_get_nonempty_queue_user(db, test_project_data, test_user):
+def test_get_nonempty_user_queue(db, test_project_data, test_user):
     queue_len = 10
     queue = add_queue(test_project_data, queue_len)
-    queue_user = add_queue(test_project_data, queue_len,
+    user_queue = add_queue(test_project_data, queue_len,
                            user=test_user)
-    queue_user2 = add_queue(test_project_data, queue_len,
+    user_queue2 = add_queue(test_project_data, queue_len,
                             user=test_user)
 
     assert get_nonempty_queue(test_project_data, user=test_user) is None
 
-    fill_queue(queue_user2)
-    assert get_nonempty_queue(test_project_data, user=test_user) == queue_user2
+    fill_queue(user_queue2)
+    assert get_nonempty_queue(test_project_data, user=test_user) == user_queue2
 
-    fill_queue(queue_user)
-    assert get_nonempty_queue(test_project_data, user=test_user) == queue_user
+    fill_queue(user_queue)
+    assert get_nonempty_queue(test_project_data, user=test_user) == user_queue
 
 
-def test_get_nonempty_queue_multiple_users(db, test_project_data, test_user):
-    queue_len = 10
-    test_user2 = create_user('test_user2', 'password', 'test_user2@rti.org')
-    test_user3 = create_user('test_user3', 'password', 'test_user3@rti.org')
-
-    # Put the queue of interest in the middle in hopes of
-    # catching any incorrect code taking the first or last
-    # available queue
-    queue_user2 = add_queue(test_project_data,
-                            queue_len, user=test_user2)
-    queue_user = add_queue(test_project_data,
-                           queue_len, user=test_user)
-    queue_user3 = add_queue(test_project_data,
-                            queue_len, user=test_user3)
-
-    for queue in (queue_user2, queue_user, queue_user3):
-        fill_queue(queue)
+def test_get_nonempty_queue_multiple_users(db, test_project_data, test_user,
+                                           test_user2, test_user_queue, test_user_queue2):
 
     assert get_nonempty_queue(test_project_data) is None
 
-    assert get_nonempty_queue(test_project_data, user=test_user) == queue_user
+    # Fill the correct one last, so we can test whether the first-filled queue is being
+    # selected
+    for queue in (test_user_queue2, test_user_queue):
+        fill_queue(queue)
+
+    assert get_nonempty_queue(test_project_data, user=test_user) == test_user_queue
 
 
-def test_assign_datum_project_queue_returns_datum(db, test_queue, test_user, test_redis):
+def test_assign_datum_project_queue_returns_datum(db, test_queue, test_user):
     '''
     Assign a datum from a project-wide queue (null user ID).
     '''
@@ -308,12 +298,10 @@ def test_assign_datum_project_queue_returns_datum(db, test_queue, test_user, tes
     datum = assign_datum(test_user, test_queue.project)
 
     # Make sure we got the datum
-    assert datum is not None
+    assert isinstance(datum, Data)
 
-def test_assign_datum_project_queue_correct_assignment(db, test_queue, test_user, test_redis):
-    '''
-    Assign a datum from a project-wide queue (null user ID).
-    '''
+
+def test_assign_datum_project_queue_correct_assignment(db, test_queue, test_user):
     fill_queue(test_queue)
     init_redis_queues()
 
@@ -326,10 +314,8 @@ def test_assign_datum_project_queue_correct_assignment(db, test_queue, test_user
     assert assignment[0].queue == test_queue
     assert assignment[0].assigned_timestamp is not None
 
+
 def test_assign_datum_project_queue_pops_queues(db, test_queue, test_user, test_redis):
-    '''
-    Assign a datum from a project-wide queue (null user ID).
-    '''
     fill_queue(test_queue)
     init_redis_queues()
 
@@ -339,3 +325,48 @@ def test_assign_datum_project_queue_pops_queues(db, test_queue, test_user, test_
     assert test_queue.data.count() == test_queue.length - 1
     assert test_redis.llen(test_queue.pk) == test_queue.length - 1
     assert datum not in test_queue.data.all()
+
+
+def test_assign_datum_user_queue_returns_correct_datum(db, test_user_queue, test_user,
+                                                       test_user_queue2, test_user2):
+    fill_queue(test_user_queue)
+    fill_queue(test_user_queue2)
+    init_redis_queues()
+
+    datum = assign_datum(test_user, test_user_queue.project)
+
+    assert isinstance(datum, Data)
+
+
+def test_assign_datum_user_queue_correct_assignment(db, test_user_queue, test_user,
+                                                    test_user_queue2, test_user2):
+    fill_queue(test_user_queue)
+    fill_queue(test_user_queue2)
+    init_redis_queues()
+
+    datum = assign_datum(test_user, test_user_queue.project)
+
+    assignment = AssignedData.objects.filter(data=datum)
+    assert len(assignment) == 1
+    assert assignment[0].user == test_user
+    assert assignment[0].queue == test_user_queue
+    assert assignment[0].assigned_timestamp is not None
+
+
+def test_assign_datum_user_queue_pops_queues(db, test_user_queue, test_user,
+                                             test_user_queue2, test_user2, test_redis):
+    fill_queue(test_user_queue)
+    fill_queue(test_user_queue2)
+    init_redis_queues()
+
+    datum = assign_datum(test_user, test_user_queue.project)
+
+    # Make sure the datum was removed from the correct queues
+    assert test_user_queue.data.count() == test_user_queue.length - 1
+    assert test_redis.llen(test_user_queue.pk) == test_user_queue.length - 1
+    assert datum not in test_user_queue.data.all()
+
+    # ...but not the other queues
+    assert test_user_queue2.data.count() == test_user_queue2.length
+    assert test_redis.llen(test_user_queue2.pk) == test_user_queue2.length
+
