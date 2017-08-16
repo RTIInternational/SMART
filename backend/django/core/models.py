@@ -5,7 +5,7 @@ from django.utils import timezone
 class User(models.Model):
     # Link to the auth user, since we're basically just extending it
     auth_user = models.OneToOneField(settings.AUTH_USER_MODEL)
-    labels = models.ManyToManyField(
+    labeled_data = models.ManyToManyField(
         'Data', related_name='labelers', through='DataLabel'
     )
 
