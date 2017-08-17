@@ -12,7 +12,7 @@ from core.util import (create_project, add_data, assign_datum,
                        add_queue, fill_queue, pop_queue,
                        init_redis_queues, clear_redis_queues,
                        sync_redis_queues, get_nonempty_queue,
-                       create_user, label_data)
+                       create_user, label_data, pop_first_nonempty_queue)
 
 from test.util import read_test_data
 
@@ -326,7 +326,90 @@ def test_get_nonempty_queue_multiple_users(db, test_project_data, test_user,
     assert get_nonempty_queue(test_project_data, user=test_user) == test_user_queue
 
 
-def test_assign_datum_project_queue_returns_datum(db, test_queue, test_user):
+def test_pop_first_nonempty_queue_noqueue(db, test_project_data, test_redis):
+    init_redis_queues()
+
+    queue, data = pop_first_nonempty_queue(test_project_data)
+
+    assert queue is None
+    assert data is None
+
+
+def test_pop_first_nonempty_queue_empty(db, test_project_data, test_queue, test_redis):
+    init_redis_queues()
+
+    queue, data = pop_first_nonempty_queue(test_project_data)
+
+    assert queue is None
+    assert data is None
+
+
+def test_pop_first_nonempty_queue_single_queue(db, test_project_data, test_queue, test_redis):
+    fill_queue(test_queue)
+    init_redis_queues()
+
+    queue, data = pop_first_nonempty_queue(test_project_data)
+
+    assert isinstance(queue, Queue)
+    assert queue == test_queue
+
+    assert isinstance(data, Data)
+
+
+def test_pop_first_nonempty_queue_user_queue(db, test_project_data, test_user,
+                                             test_user_queue, test_redis):
+    fill_queue(test_user_queue)
+    init_redis_queues()
+
+    queue, data = pop_first_nonempty_queue(test_project_data, user=test_user)
+
+    assert isinstance(queue, Queue)
+    assert queue == test_user_queue
+
+    assert isinstance(data, Data)
+
+
+def test_pop_first_nonempty_queue_multiple_queues(db, test_project_data, test_queue,
+                                                  test_redis):
+    test_queue2 = add_queue(test_project_data, 10)
+    fill_queue(test_queue2)
+    init_redis_queues()
+
+    queue, data = pop_first_nonempty_queue(test_project_data)
+
+    assert isinstance(queue, Queue)
+    assert queue == test_queue2
+
+    fill_queue(test_queue)
+    sync_redis_queues()
+
+    queue, data = pop_first_nonempty_queue(test_project_data)
+
+    assert isinstance(queue, Queue)
+    assert queue == test_queue
+
+
+def test_pop_first_nonempty_queue_multiple_user_queues(db, test_project_data, test_user,
+                                                       test_user_queue, test_user_queue2,
+                                                       test_redis):
+    fill_queue(test_user_queue2)
+    init_redis_queues()
+
+    queue, data = pop_first_nonempty_queue(test_project_data, user=test_user)
+
+    assert queue is None
+    assert data is None
+
+    fill_queue(test_user_queue)
+    sync_redis_queues()
+
+    queue, data = pop_first_nonempty_queue(test_project_data, user=test_user)
+
+    assert isinstance(queue, Queue)
+    assert queue == test_user_queue
+
+
+def test_assign_datum_project_queue_returns_datum(db, test_queue, test_user, test_redis):
     '''
     Assign a datum from a project-wide queue (null user ID).
     '''

@@ -1,7 +1,7 @@
 import random
 import redis
 
-from django.db.models import Count
+from django.db.models import Count, Value, IntegerField
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from core.models import (Project, Data, Queue, DataQueue, User,
@@ -153,6 +153,53 @@ def fill_queue(queue):
 
     DataQueue.objects.bulk_create(
         (DataQueue(queue=queue, data=d) for d in queue_data))
+
+
+def pop_first_nonempty_queue(project, user=None):
+    '''
+    Determine which queues are eligible to be popped (and in what order)
+    and pass them into redis to have the first nonempty one popped.
+    Return a (queue, data item) tuple if one was found; return a (None, None)
+    tuple if not.
+    '''
+    if user is not None:
+        # Use priority to ensure we set user queues above project queues
+        # in the resulting list; break ties by pk
+        user_queues = project.queue_set.filter(user=user)
+    else:
+        user_queues = Queue.objects.none()
+    user_queues = user_queues.annotate(priority=Value(1, IntegerField()))
+
+    project_queues = (project.queue_set.filter(user=None)
+                      .annotate(priority=Value(2, IntegerField())))
+
+    eligible_queue_ids = [queue.pk for queue in
+                          (user_queues.union(project_queues)
+                           .order_by('priority', 'pk'))]
+
+    if len(eligible_queue_ids) == 0:
+        return (None, None)
+
+    # Use a custom Lua script here to find the first nonempty queue atomically
+    # and pop its first item.  If all queues are empty, return nil.
+    script = settings.REDIS.register_script('''
+    for _, k in pairs(KEYS) do
+      local m = redis.call('LPOP', k)
+      if m then
+        return {tonumber(k), tonumber(m)}
+      end
+    end
+    return nil
+    ''')
+
+    result = script(keys=eligible_queue_ids)
+
+    if result is None:
+        return (None, None)
+    else:
+        queue_id, data_id = result
+        return (Queue.objects.filter(pk=queue_id).get(),
+                Data.objects.filter(pk=data_id).get())
 
 
 def pop_queue(queue):
