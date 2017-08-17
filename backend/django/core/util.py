@@ -208,6 +208,10 @@ def pop_queue(queue):
     and return it.
 
     Returns None and does nothing if the queue is empty.
+
+    Client code should prefer pop_first_nonempty_queue() if the
+    intent is to pop the first nonempty queue, as it avoids
+    concurrency issues.
     '''
     # Redis first, since this op is guaranteed to be atomic
     data_id = settings.REDIS.rpop(queue.pk)
@@ -224,6 +228,10 @@ def get_nonempty_queue(project, user=None):
     '''
     Return the first nonempty queue for the given project and
     (optionally) user.
+
+    Client code should prefer pop_first_nonempty_queue() if the
+    intent is to pop the first nonempty queue, as it avoids
+    concurrency issues.
     '''
     first_nonempty_queue = None
 
@@ -257,14 +265,13 @@ def assign_datum(user, project):
     Given a user and project, figure out which queue to pull from;
     then pop a datum off that queue and assign it to the user.
     '''
-    first_nonempty_queue = get_nonempty_queue(project, user=user)
+    queue, datum = pop_first_nonempty_queue(project, user=user)
 
-    if first_nonempty_queue is None:
+    if datum is None:
         return None
     else:
-        datum = pop_queue(first_nonempty_queue)
         AssignedData.objects.create(data=datum, user=user,
-                                    queue=first_nonempty_queue)
+                                    queue=queue)
         return datum
 
 
