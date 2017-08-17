@@ -12,7 +12,8 @@ from core.util import (create_project, add_data, assign_datum,
                        add_queue, fill_queue, pop_queue,
                        init_redis_queues, clear_redis_queues,
                        sync_redis_queues, get_nonempty_queue,
-                       create_user, label_data, pop_first_nonempty_queue)
+                       create_user, label_data, pop_first_nonempty_queue,
+                       get_assignment)
 
 from test.util import read_test_data
 
@@ -532,3 +533,32 @@ def test_label_data(db, test_user, test_queue, test_redis):
     assert not AssignedData.objects.filter(user=test_user,
                                            data=datum,
                                            queue=test_queue).exists()
+
+
+def test_get_assignment_no_existing_assignment(db, test_user, test_project_data, test_queue,
+                                               test_redis):
+    fill_queue(test_queue)
+    init_redis_queues()
+
+    assert AssignedData.objects.count() == 0
+
+    datum = get_assignment(test_user, test_project_data)
+
+    assert isinstance(datum, Data)
+    assert_obj_exists(AssignedData, {
+        'data': datum,
+        'user': test_user
+    })
+
+def test_get_assignment_existing_assignment(db, test_user, test_project_data, test_queue,
+                                            test_redis):
+    fill_queue(test_queue)
+    init_redis_queues()
+
+    assigned_datum = assign_datum(test_user, test_project_data)
+
+    datum = get_assignment(test_user, test_project_data)
+
+    assert isinstance(datum, Data)
+    # We should just get the datum that was already assigned
+    assert datum == assigned_datum

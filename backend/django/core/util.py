@@ -291,3 +291,16 @@ def label_data(label, datum, user):
     DataQueue.objects.filter(data=datum, queue=queue).delete()
 
 
+def get_assignment(user, project):
+    '''
+    Check if a datum is currently assigned to this user/project;
+    if so, return it.  If not, try to get a new assignment and return it.
+    '''
+    existing_assignments = AssignedData.objects.filter(
+        user=user,
+        queue__project=project)
+
+    if len(existing_assignments) > 0:
+        return existing_assignments.first().data
+    else:
+        return assign_datum(user, project)
