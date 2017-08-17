@@ -144,7 +144,6 @@ def pop_queue(queue):
         return None
 
     data_obj = Data.objects.filter(pk=data_id).first()
-    DataQueue.objects.filter(data=data_obj, queue=queue).delete()
 
     return data_obj
 
@@ -204,6 +203,12 @@ def label_data(label, datum, user):
     DataLabel.objects.create(data=datum,
                              label=label,
                              user=user)
-    AssignedData.objects.filter(data=datum,
-                                user=user).delete()
+    # There's a unique constraint on data/user, so this is
+    # guaranteed to return one object
+    assignment = AssignedData.objects.filter(data=datum,
+                                             user=user).first()
+    queue = assignment.queue
+    assignment.delete()
+    DataQueue.objects.filter(data=datum, queue=queue).delete()
+
 

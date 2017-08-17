@@ -223,7 +223,7 @@ def test_pop_nonempty_queue(db, test_project_data, test_redis):
 
     assert isinstance(datum, Data)
     assert test_redis.llen(queue.pk) == (queue_len - 1)
-    assert queue.data.count() == (queue_len - 1)
+    assert queue.data.count() == queue_len
 
 
 def test_pop_only_affects_one_queue(db, test_project_data, test_redis):
@@ -238,7 +238,7 @@ def test_pop_only_affects_one_queue(db, test_project_data, test_redis):
 
     assert isinstance(datum, Data)
     assert test_redis.llen(queue.pk) == (queue_len - 1)
-    assert queue.data.count() == (queue_len - 1)
+    assert queue.data.count() == queue_len
 
     assert test_redis.llen(queue2.pk) == queue_len
     assert queue2.data.count() == queue_len
@@ -322,9 +322,11 @@ def test_assign_datum_project_queue_pops_queues(db, test_queue, test_user, test_
     datum = assign_datum(test_user, test_queue.project)
 
     # Make sure the datum was removed from queues
-    assert test_queue.data.count() == test_queue.length - 1
     assert test_redis.llen(test_queue.pk) == test_queue.length - 1
-    assert datum not in test_queue.data.all()
+
+    # but not from the db queue
+    assert test_queue.data.count() == test_queue.length
+    assert datum in test_queue.data.all()
 
 
 def test_assign_datum_user_queue_returns_correct_datum(db, test_user_queue, test_user,
@@ -362,13 +364,13 @@ def test_assign_datum_user_queue_pops_queues(db, test_user_queue, test_user,
     datum = assign_datum(test_user, test_user_queue.project)
 
     # Make sure the datum was removed from the correct queues
-    assert test_user_queue.data.count() == test_user_queue.length - 1
     assert test_redis.llen(test_user_queue.pk) == test_user_queue.length - 1
-    assert datum not in test_user_queue.data.all()
 
     # ...but not the other queues
-    assert test_user_queue2.data.count() == test_user_queue2.length
+    assert test_user_queue.data.count() == test_user_queue.length
+    assert datum in test_user_queue.data.all()
     assert test_redis.llen(test_user_queue2.pk) == test_user_queue2.length
+    assert test_user_queue2.data.count() == test_user_queue2.length
 
 
 def test_label_data(db, test_user, test_queue):
