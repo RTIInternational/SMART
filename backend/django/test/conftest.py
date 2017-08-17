@@ -23,14 +23,16 @@ def seeded_database(db):
 def setup_celery():
     celery_app.conf.update(CELERY_ALWAYS_EAGER=True)
 
-@pytest.fixture
-def test_redis():
+@pytest.fixture(scope='function')
+def test_redis(request):
     r = settings.REDIS
-    yield r
 
     # Teardown by removing all keys when we're done with the fixture
-    r.flushdb()
+    def teardown():
+        r.flushdb()
+    request.addfinalizer(teardown)
 
+    return r
 
 @pytest.fixture
 def test_project(db):

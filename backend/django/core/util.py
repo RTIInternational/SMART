@@ -54,7 +54,14 @@ def init_redis_queues():
     '''
     Create a redis queue for each queue in the database and fill it with
     the data linked to the queue.
+
+    This assumes redis is empty; throw an error if it isn't, since we'll
+    add duplicate data without knowing any better.
     '''
+    for key in settings.REDIS.scan_iter():
+        raise ValueError('Redis database is not empty; it must be empty to initialize the '
+                         'redis queues.')
+
     # Use a pipeline to reduce back-and-forth with the server
     pipeline = settings.REDIS.pipeline(transaction=False)
 
@@ -65,6 +72,22 @@ def init_redis_queues():
             pipeline.lpush(queue.pk, *data_ids)
 
     pipeline.execute()
+
+
+def clear_redis_queues():
+    '''
+    Clear the queues currently present in redis.
+    '''
+    settings.REDIS.flushdb()
+
+
+def sync_redis_queues():
+    '''
+    Set the redis environment up to have the same state as the database, regardless
+    of its current state.
+    '''
+    clear_redis_queues()
+    init_redis_queues()
 
 
 def create_project(name):
@@ -143,7 +166,7 @@ def pop_queue(queue):
     if data_id is None:
         return None
 
-    data_obj = Data.objects.filter(pk=data_id).first()
+    data_obj = Data.objects.filter(pk=data_id).get()
 
     return data_obj
 
@@ -206,7 +229,7 @@ def label_data(label, datum, user):
     # There's a unique constraint on data/user, so this is
     # guaranteed to return one object
     assignment = AssignedData.objects.filter(data=datum,
-                                             user=user).first()
+                                             user=user).get()
     queue = assignment.queue
     assignment.delete()
     DataQueue.objects.filter(data=datum, queue=queue).delete()

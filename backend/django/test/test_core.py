@@ -2,13 +2,16 @@
 Test core logic for the SMART app, such as creating projects, managing
 queues, etc.
 '''
+import pytest
+
 from django.contrib.auth import get_user_model
 
 from core.models import (Project, Queue, Data, DataQueue, User,
                          AssignedData, Label, DataLabel)
 from core.util import (create_project, add_data, assign_datum,
                        add_queue, fill_queue, pop_queue,
-                       init_redis_queues, get_nonempty_queue,
+                       init_redis_queues, clear_redis_queues,
+                       sync_redis_queues, get_nonempty_queue,
                        create_user, label_data)
 
 from test.util import read_test_data
@@ -158,6 +161,15 @@ def test_init_redis_queues_empty(db, test_redis):
     assert_redis_matches_db(test_redis)
 
 
+def test_init_redis_queues_fails_on_nonempty_db(db, test_project, test_redis,
+                                                test_queue):
+    fill_queue(test_queue)
+    init_redis_queues()
+
+    with pytest.raises(ValueError):
+        init_redis_queues()
+
+
 def test_init_redis_queues_one_empty_queue(db, test_project, test_redis):
     queue = add_queue(test_project, 10)
     init_redis_queues()
@@ -200,6 +212,32 @@ def test_init_redis_queues_multiple_projects(db, test_project_data, test_redis):
     init_redis_queues()
 
     assert_redis_matches_db(test_redis)
+
+
+def test_clear_redis_queues(db, test_queue, test_redis):
+    fill_queue(test_queue)
+    init_redis_queues()
+
+    clear_redis_queues()
+
+    assert test_redis.llen(test_queue.pk) == 0
+    assert len(test_redis.keys()) == 0
+
+
+def test_sync_redis_queues(db, test_project_data, test_queue, test_redis):
+    queue_len = 10
+
+    fill_queue(test_queue)
+    init_redis_queues()
+
+    queue2 = add_queue(test_project_data, queue_len)
+    fill_queue(queue2)
+
+    # Make sure we added the new queue without an error
+    sync_redis_queues()
+
+    assert test_redis.llen(queue2.pk) == 10
+    assert len(test_redis.keys()) == 2
 
 
 def test_pop_empty_queue(db, test_project, test_redis):
@@ -301,7 +339,7 @@ def test_assign_datum_project_queue_returns_datum(db, test_queue, test_user):
     assert isinstance(datum, Data)
 
 
-def test_assign_datum_project_queue_correct_assignment(db, test_queue, test_user):
+def test_assign_datum_project_queue_correct_assignment(db, test_queue, test_user, test_redis):
     fill_queue(test_queue)
     init_redis_queues()
 
@@ -330,7 +368,8 @@ def test_assign_datum_project_queue_pops_queues(db, test_queue, test_user, test_
 
 
 def test_assign_datum_user_queue_returns_correct_datum(db, test_user_queue, test_user,
-                                                       test_user_queue2, test_user2):
+                                                       test_user_queue2, test_user2,
+                                                       test_redis):
     fill_queue(test_user_queue)
     fill_queue(test_user_queue2)
     init_redis_queues()
@@ -341,7 +380,8 @@ def test_assign_datum_user_queue_returns_correct_datum(db, test_user_queue, test
 
 
 def test_assign_datum_user_queue_correct_assignment(db, test_user_queue, test_user,
-                                                    test_user_queue2, test_user2):
+                                                    test_user_queue2, test_user2,
+                                                    test_redis):
     fill_queue(test_user_queue)
     fill_queue(test_user_queue2)
     init_redis_queues()
@@ -373,7 +413,7 @@ def test_assign_datum_user_queue_pops_queues(db, test_user_queue, test_user,
     assert test_user_queue2.data.count() == test_user_queue2.length
 
 
-def test_label_data(db, test_user, test_queue):
+def test_label_data(db, test_user, test_queue, test_redis):
     fill_queue(test_queue)
     init_redis_queues()
 
