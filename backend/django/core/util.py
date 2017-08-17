@@ -304,3 +304,18 @@ def get_assignment(user, project):
         return existing_assignments.first().data
     else:
         return assign_datum(user, project)
+
+
+def unassign_datum(datum, user):
+    '''
+    Remove a user's assignment to a datum.  Re-add the datum to its
+    respective queue in Redis.
+    '''
+    assignment = AssignedData.objects.filter(
+        user=user,
+        data=datum).get()
+
+    queue = assignment.queue
+    assignment.delete()
+
+    settings.REDIS.lpush(queue.pk, datum.pk)

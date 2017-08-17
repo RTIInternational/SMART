@@ -13,7 +13,7 @@ from core.util import (create_project, add_data, assign_datum,
                        init_redis_queues, clear_redis_queues,
                        sync_redis_queues, get_nonempty_queue,
                        create_user, label_data, pop_first_nonempty_queue,
-                       get_assignment)
+                       get_assignment, unassign_datum)
 
 from test.util import read_test_data
 
@@ -550,6 +550,7 @@ def test_get_assignment_no_existing_assignment(db, test_user, test_project_data,
         'user': test_user
     })
 
+
 def test_get_assignment_existing_assignment(db, test_user, test_project_data, test_queue,
                                             test_redis):
     fill_queue(test_queue)
@@ -562,3 +563,29 @@ def test_get_assignment_existing_assignment(db, test_user, test_project_data, te
     assert isinstance(datum, Data)
     # We should just get the datum that was already assigned
     assert datum == assigned_datum
+
+
+def test_unassign(db, test_user, test_project_data, test_queue, test_redis):
+    fill_queue(test_queue)
+    init_redis_queues()
+
+    assert test_redis.llen(test_queue.pk) == test_queue.length
+
+    datum = get_assignment(test_user, test_project_data)
+
+    assert test_redis.llen(test_queue.pk) == (test_queue.length - 1)
+    assert AssignedData.objects.filter(
+        data=datum,
+        user=test_user).exists()
+
+    unassign_datum(datum, test_user)
+
+    assert test_redis.llen(test_queue.pk) == test_queue.length
+    assert not AssignedData.objects.filter(
+        data=datum,
+        user=test_user).exists()
+
+    # The unassigned datum should be the next to be assigned
+    reassigned_datum = get_assignment(test_user, test_project_data)
+
+    assert reassigned_datum == datum
