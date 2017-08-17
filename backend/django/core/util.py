@@ -1,6 +1,7 @@
 import random
 import redis
 
+from django.db import transaction
 from django.db.models import Count, Value, IntegerField
 from django.contrib.auth import get_user_model
 from django.conf import settings
@@ -265,30 +266,32 @@ def assign_datum(user, project):
     Given a user and project, figure out which queue to pull from;
     then pop a datum off that queue and assign it to the user.
     '''
-    queue, datum = pop_first_nonempty_queue(project, user=user)
+    with transaction.atomic():
+        queue, datum = pop_first_nonempty_queue(project, user=user)
 
-    if datum is None:
-        return None
-    else:
-        AssignedData.objects.create(data=datum, user=user,
-                                    queue=queue)
-        return datum
+        if datum is None:
+            return None
+        else:
+            AssignedData.objects.create(data=datum, user=user,
+                                        queue=queue)
+            return datum
 
 
 def label_data(label, datum, user):
     '''
     Record that a given datum has been labeled; remove its assignment, if any.
     '''
-    DataLabel.objects.create(data=datum,
-                             label=label,
-                             user=user)
-    # There's a unique constraint on data/user, so this is
-    # guaranteed to return one object
-    assignment = AssignedData.objects.filter(data=datum,
-                                             user=user).get()
-    queue = assignment.queue
-    assignment.delete()
-    DataQueue.objects.filter(data=datum, queue=queue).delete()
+    with transaction.atomic():
+        DataLabel.objects.create(data=datum,
+                                label=label,
+                                user=user)
+        # There's a unique constraint on data/user, so this is
+        # guaranteed to return one object
+        assignment = AssignedData.objects.filter(data=datum,
+                                                user=user).get()
+        queue = assignment.queue
+        assignment.delete()
+        DataQueue.objects.filter(data=datum, queue=queue).delete()
 
 
 def get_assignment(user, project):
