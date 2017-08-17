@@ -413,6 +413,22 @@ def test_assign_datum_user_queue_pops_queues(db, test_user_queue, test_user,
     assert test_user_queue2.data.count() == test_user_queue2.length
 
 
+def test_init_redis_queues_ignores_assigned_data(db, test_user, test_queue, test_redis):
+    fill_queue(test_queue)
+
+    assigned_datum = test_queue.data.first()
+
+    AssignedData.objects.create(
+        user=test_user,
+        data=assigned_datum,
+        queue=test_queue)
+
+    init_redis_queues()
+
+    # Make sure the assigned datum didn't get into the redis queue
+    assert test_redis.llen(test_queue.pk) == test_queue.length - 1
+
+
 def test_label_data(db, test_user, test_queue, test_redis):
     fill_queue(test_queue)
     init_redis_queues()

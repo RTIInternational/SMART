@@ -65,8 +65,10 @@ def init_redis_queues():
     # Use a pipeline to reduce back-and-forth with the server
     pipeline = settings.REDIS.pipeline(transaction=False)
 
+    assigned_data_ids = set((d.data_id for d in AssignedData.objects.all()))
+
     for queue in Queue.objects.all():
-        data_ids = [d.pk for d in queue.data.all()]
+        data_ids = [d.pk for d in queue.data.all() if d.pk not in assigned_data_ids]
         if len(data_ids) > 0:
             # We'll get an error if we try to lpush without any data
             pipeline.lpush(queue.pk, *data_ids)
