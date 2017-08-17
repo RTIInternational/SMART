@@ -5,11 +5,11 @@ queues, etc.
 from django.contrib.auth import get_user_model
 
 from core.models import (Project, Queue, Data, DataQueue, User,
-                         AssignedData)
+                         AssignedData, Label, DataLabel)
 from core.util import (create_project, add_data, assign_datum,
                        add_queue, fill_queue, pop_queue,
                        init_redis_queues, get_nonempty_queue,
-                       create_user)
+                       create_user, label_data)
 
 from test.util import read_test_data
 
@@ -370,3 +370,24 @@ def test_assign_datum_user_queue_pops_queues(db, test_user_queue, test_user,
     assert test_user_queue2.data.count() == test_user_queue2.length
     assert test_redis.llen(test_user_queue2.pk) == test_user_queue2.length
 
+
+def test_label_data(db, test_user, test_queue):
+    fill_queue(test_queue)
+    init_redis_queues()
+
+    datum = assign_datum(test_user, test_queue.project)
+    test_label = Label.objects.create(name='test', project=test_queue.project)
+    label_data(test_label, datum, test_user)
+
+    # Make sure the label was properly recorded
+    assert datum in test_user.labeled_data.all()
+    assert_obj_exists(DataLabel, {
+        'data': datum,
+        'user': test_user,
+        'label': test_label
+    })
+
+    # Make sure the assignment was removed
+    assert not AssignedData.objects.filter(user=test_user,
+                                           data=datum,
+                                           queue=test_queue).exists()

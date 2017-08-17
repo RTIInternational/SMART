@@ -5,7 +5,7 @@ from django.db.models import Count
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from core.models import (Project, Data, Queue, DataQueue, User,
-                         AssignedData)
+                         AssignedData, DataLabel)
 
 
 def create_user(username, password, email):
@@ -144,7 +144,7 @@ def pop_queue(queue):
         return None
 
     data_obj = Data.objects.filter(pk=data_id).first()
-    x = DataQueue.objects.filter(data=data_obj, queue=queue).delete()
+    DataQueue.objects.filter(data=data_obj, queue=queue).delete()
 
     return data_obj
 
@@ -195,3 +195,15 @@ def assign_datum(user, project):
         AssignedData.objects.create(data=datum, user=user,
                                     queue=first_nonempty_queue)
         return datum
+
+
+def label_data(label, datum, user):
+    '''
+    Record that a given datum has been labeled; remove its assignment, if any.
+    '''
+    DataLabel.objects.create(data=datum,
+                             label=label,
+                             user=user)
+    AssignedData.objects.filter(data=datum,
+                                user=user).delete()
+
