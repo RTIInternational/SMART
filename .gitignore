@@ -7,3 +7,4 @@ frontend/webpack-stats.json
 frontend/node_modules/
 
 .env
+.cache
