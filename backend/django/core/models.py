@@ -43,7 +43,7 @@ class DataPrediction(models.Model):
     predicted_probability = models.FloatField()
 
 class Queue(models.Model):
-    user = models.ForeignKey('User', blank=True)
+    user = models.ForeignKey('User', blank=True, null=True)
     project = models.ForeignKey('Project')
     length = models.IntegerField()
     data = models.ManyToManyField(
