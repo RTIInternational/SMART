@@ -1,8 +1,8 @@
 import random
 import redis
 
-from django.db import transaction
-from django.db.models import Count, Value, IntegerField
+from django.db import transaction, connection
+from django.db.models import Count, Value, IntegerField, F
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from core.models import (Project, Data, Queue, DataQueue, User,
@@ -129,31 +129,45 @@ def fill_queue(queue):
     TODO: Extend to use a model to fill the queue, when one has been trained
     for the queue's project.
     '''
-    current_queue_len = queue.data.count()
-
     data_filters = {
         'project': queue.project,
         'labelers': None,
         'queues': None
     }
 
-    try:
-        # TODO: This has concurrency issues -- if multiple queues are filled
-        # at the same time, they'll both draw their sample from the same set
-        # of data and may assign some of the same data objects.
-        # Need to have the sampling and insert in the same query,
-        # (INSERT INTO ... SELECT ...)
-        # which apparently requires raw SQL.  May require SELECT FOR UPDATE
-        # SKIP LOCKED (Postgres 9.5+).
-        queue_data = iter_sample(Data.objects
-                                 .filter(**data_filters)
-                                 .iterator(), queue.length - current_queue_len)
-    except ValueError:
-        # There isn't enough data left to fill the queue, so assign all of it
-        queue_data = Data.objects.filter(**data_filters)
+    eligible_data = Data.objects.filter(**data_filters)
 
-    DataQueue.objects.bulk_create(
-        (DataQueue(queue=queue, data=d) for d in queue_data))
+    cte_sql, cte_params = eligible_data.query.sql_with_params()
+    sample_size_sql, sample_size_params = (Queue.objects.filter(pk=queue.pk)
+                                            .annotate(
+                                                sample_size=F('length') - Count('data'))
+                                            .values('sample_size')
+                                            .query.sql_with_params())
+
+    sql = """
+    WITH eligible_data AS (
+        {cte_sql}
+    )
+    INSERT INTO {dataqueue_table}
+      ({dataqueue_data_id_col}, {dataqueue_queue_id_col})
+    SELECT
+        eligible_data.{data_pk_col},
+        {queue_id}
+    FROM
+        eligible_data
+    ORDER BY random()
+    LIMIT ({sample_size_sql});
+    """.format(
+        cte_sql=cte_sql,
+        dataqueue_table=DataQueue._meta.db_table,
+        dataqueue_data_id_col=DataQueue._meta.get_field('data').column,
+        dataqueue_queue_id_col=DataQueue._meta.get_field('queue').column,
+        data_pk_col=Data._meta.pk.name,
+        queue_id=queue.pk,
+        sample_size_sql=sample_size_sql)
+
+    with connection.cursor() as c:
+        c.execute(sql, (*cte_params, *sample_size_params))
 
 
 def pop_first_nonempty_queue(project, user=None):

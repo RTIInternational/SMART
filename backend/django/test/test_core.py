@@ -121,6 +121,7 @@ def test_fill_queue_all_remaining_data(db, test_queue):
     # Raise the queue length so it's bigger than the amount of data available
     all_data_count = Data.objects.filter(project=test_queue.project).count()
     test_queue.length = all_data_count + 1
+    test_queue.save()
 
     fill_queue(test_queue)
     assert test_queue.data.count() == all_data_count
@@ -131,6 +132,7 @@ def test_fill_multiple_queues(db, test_queue):
     # so we can be sure they won't overlap each other when filled
     data_count = Data.objects.count()
     test_queue.length = data_count
+    test_queue.save()
     test_queue2 = add_queue(test_queue.project, data_count)
 
     fill_queue(test_queue)
@@ -143,6 +145,7 @@ def test_fill_multiple_queues(db, test_queue):
 def test_fill_multiple_projects(db, test_queue):
     project_data_count = test_queue.project.data_set.count()
     test_queue.length = project_data_count + 1
+    test_queue.save()
     test_project2 = create_project('test_project2')
     project2_data = read_test_data()
 
