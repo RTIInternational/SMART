@@ -8,6 +8,9 @@ from django.conf import settings
 from core.models import (Project, Data, Queue, DataQueue, User,
                          AssignedData, DataLabel)
 
+# TODO: Divide these functions into a public/private API when we determine
+#  what functionality is needed by the frontend.  This file is a little
+#  intimidating to sort through at the moment.
 
 def create_user(username, password, email):
     '''
