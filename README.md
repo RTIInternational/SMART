@@ -39,3 +39,4 @@ Use `py.test -h` to see all the options, but a few useful ones are highlighted b
  - `-x`: Stop running after the first failure
  - `-s`: Print stdout from the test run (allows you to see temporary print statements in your code)
  - `-k <expression>`: Only run tests with names containing "expression"; you can use Python expressions for more precise control.  See `py.test -h` for more info
+ - `--reuse-db`: Don't drop/recreate the database between test runs.  This is useful for for reducing test runtime.  You must not pass this flag if the schema has changed since the last test run.
