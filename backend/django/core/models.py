@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+from django.urls import reverse
 
 class User(models.Model):
     # Link to the auth user, since we're basically just extending it
@@ -11,6 +12,9 @@ class User(models.Model):
 
 class Project(models.Model):
     name = models.TextField()
+
+    def get_absolute_url(self):
+        return reverse('projects:project_detail', kwargs={'pk': self.pk})
 
 class Model(models.Model):
     pickle_path = models.TextField()
