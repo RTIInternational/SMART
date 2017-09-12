@@ -18,24 +18,24 @@ from django.conf import settings
 from django.contrib import admin
 from rest_framework import routers
 from rest_framework_swagger.views import get_swagger_view
-from core import views
+from core.views import api, frontend
 
 api_router = routers.DefaultRouter()
-api_router.register(r'users', views.UserViewSet)
-api_router.register(r'auth_users', views.AuthUserViewSet)
-api_router.register(r'auth_groups', views.AuthUserGroupViewSet)
-api_router.register(r'projects', views.ProjectViewSet)
-api_router.register(r'models', views.ModelViewSet)
-api_router.register(r'labels', views.LabelViewSet)
-api_router.register(r'data', views.DataViewSet)
-api_router.register(r'data_labels', views.DataLabelViewSet)
-api_router.register(r'data_predictions', views.DataPredictionViewSet)
-api_router.register(r'queue', views.QueueViewSet)
-api_router.register(r'data_queues', views.QueueViewSet)
-api_router.register(r'assigned_data', views.AssignedDataViewSet)
+api_router.register(r'users', api.UserViewSet)
+api_router.register(r'auth_users', api.AuthUserViewSet)
+api_router.register(r'auth_groups', api.AuthUserGroupViewSet)
+api_router.register(r'projects', api.ProjectViewSet)
+api_router.register(r'models', api.ModelViewSet)
+api_router.register(r'labels', api.LabelViewSet)
+api_router.register(r'data', api.DataViewSet)
+api_router.register(r'data_labels', api.DataLabelViewSet)
+api_router.register(r'data_predictions', api.DataPredictionViewSet)
+api_router.register(r'queue', api.QueueViewSet)
+api_router.register(r'data_queues', api.QueueViewSet)
+api_router.register(r'assigned_data', api.AssignedDataViewSet)
 
 urlpatterns = [
-    url(r'^$', views.index, name='index'),
+    url(r'^$', frontend.IndexView.as_view(), name='index'),
     url(r'^api/', include(api_router.urls)),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     url(r'^admin/', admin.site.urls),
