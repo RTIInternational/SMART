@@ -4,6 +4,9 @@
 <div class="row card">
     <div class="col-md-6 col-md-offset-3">
         <h2>Sign Up</h2>
+        <p>
+            Already have an account? Then please <a href="{{ login_url }}">sign in</a>.
+        </p>
         {% if form.non_field_errors %}
         <div class="bg-danger alert">
             {% for err in form.non_field_errors %}
