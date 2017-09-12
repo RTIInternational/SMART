@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Delete Project{% endblock %}
+{% block heading %}Delete - {{object}}{% endblock %}
+
+{% block content %}
+    <p>Are you sure you want to delete?</p>
+
+    <form id="project_delete_form" method="post" action=".">
+    {% csrf_token %}
+    <input type="submit" value="Yes" class="btn btn-primary" /> <a href="{{ object.get_absolute_url }}" class="btn btn-danger">No</a>
+    </form>
+{% endblock %}
+
