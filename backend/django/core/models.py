@@ -5,7 +5,7 @@ from django.utils import timezone
 class User(models.Model):
     # Link to the auth user, since we're basically just extending it
     auth_user = models.OneToOneField(settings.AUTH_USER_MODEL)
-    labels = models.ManyToManyField(
+    labeled_data = models.ManyToManyField(
         'Data', related_name='labelers', through='DataLabel'
     )
 
@@ -43,7 +43,7 @@ class DataPrediction(models.Model):
     predicted_probability = models.FloatField()
 
 class Queue(models.Model):
-    user = models.ForeignKey('User', blank=True)
+    user = models.ForeignKey('User', blank=True, null=True)
     project = models.ForeignKey('Project')
     length = models.IntegerField()
     data = models.ManyToManyField(
@@ -58,7 +58,7 @@ class DataQueue(models.Model):
 
 class AssignedData(models.Model):
     class Meta:
-        unique_together = (('user', 'queue'))
+        unique_together = (('user', 'queue'), ('user', 'data'))
     user = models.ForeignKey('User')
     data = models.ForeignKey('Data')
     queue = models.ForeignKey('Queue')
