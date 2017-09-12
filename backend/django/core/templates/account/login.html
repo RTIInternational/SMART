@@ -2,8 +2,12 @@
 
 {% block content %}
 <div class="row card">
-    <h1 class="text-center">Sign In</h1>
     <div class="col-md-6 col-md-offset-3">
+        <h2>Sign In</h2>
+        <p>
+            If you have not created an account yet, then please
+            <a href="{{ signup_url }}">sign up</a> first.
+        </p>
         {% if form.non_field_errors %}
         <div class="bg-danger alert">
             {% for err in form.non_field_errors %}
@@ -11,7 +15,7 @@
             {% endfor %}
         </div>
         {% endif %}
-        <form role="form" method="post" action="."> 
+        <form role="form" method="post" action="{% url 'account_login' %}">
             {% csrf_token %}
             <div class="form-group">
                 <label class="control-label" for="{{ form.login.id_for_label }}">{{ form.login.label }}</label>
@@ -33,7 +37,10 @@
             </div>  
             <div class="form-group">
                 <button class="btn btn-primary" type="submit">Sign In</button> 
-                <input type="hidden" name="next" value="{{ next }}" />
+                <a class="button secondaryAction" href="{% url 'account_reset_password' %}">Forgot Password?</a>
+                {% if redirect_field_value %}
+                    <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+                {% endif %}
             </div>
         </form>
     </div>

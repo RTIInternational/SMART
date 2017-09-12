@@ -12,6 +12,7 @@
         <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,700" rel="stylesheet">
         <title>{% block page_title %}{% endblock %}</title>
         {% render_bundle 'smart' 'css' %}
+        {% block scripts_head %} {% endblock %}
     </head>
     <body>
         <header>
@@ -22,7 +23,8 @@
                 {{ user }} <span class="caret"></span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-right">
-                    <li><a href="{% url 'account_change_password' %}">Update Password</a></li>
+                    <li><a href="{% url 'account_email' %}">Manage Emails</a></li>
+                    <li><a href="{% url 'account_change_password' %}">Manage Password</a></li>
                     <li><a href="{% url 'account_logout' %}">Logout</a></li>
                 </ul>
             </div>
@@ -33,5 +35,6 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.js"></script>
         </main>
+        {% block scripts_body %} {% endblock %}
     </body>
 </html>
