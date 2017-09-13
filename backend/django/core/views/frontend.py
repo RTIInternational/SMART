@@ -4,10 +4,12 @@ from django.views.generic import TemplateView, ListView, DetailView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from django.http import HttpResponseRedirect
+from django.db import transaction
+import pandas as pd
 
 from core.models import (User, Project, Model, Data, Label, DataLabel,
                          DataPrediction, Queue, DataQueue, AssignedData)
-from core.forms import ProjectForm
+from core.forms import ProjectForm, LabelFormSet
 
 
 # Index
@@ -29,48 +31,64 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
     form_class = ProjectForm
     template_name = 'projects/create.html'
 
-    def form_valid(self, form):
-        self.object = form.save()
+    def get_context_data(self, **kwargs):
+        data = super(ProjectCreate, self).get_context_data(**kwargs)
+        if self.request.POST:
+            data['labels'] = LabelFormSet(self.request.POST)
+        else:
+            data['labels'] = LabelFormSet()
+        return data
 
-        f_labels = form.cleaned_data.get('labels', False)
-        if f_labels:
-            labels = []
-            for l in form.cleaned_data['labels'].split(','):
-                labels.append(Label(name=l, project=self.object))
-            Label.objects.bulk_create(labels)
+    def form_valid(self, form):
+        context = self.get_context_data()
+        labels = context['labels']
+        with transaction.atomic():
+            self.object = form.save()
+
+            if labels.is_valid():
+                labels.instance = self.object
+                labels.save()
 
         f_data = form.cleaned_data.get('data', False)
-        if f_data:
+        if isinstance(f_data, pd.DataFrame):
             data = []
             for d in f_data[0]:
                 data.append(Data(text=d, project=self.object))
             Data.objects.bulk_create(data)
 
-        return HttpResponseRedirect(self.get_success_url())
+        return super(ProjectCreate, self).form_valid(form)
 
 class ProjectUpdate(LoginRequiredMixin, UpdateView):
     model = Project
     form_class = ProjectForm
     template_name = 'projects/create.html'
 
-    def form_valid(self, form):
-        self.object = form.save()
+    def get_context_data(self, **kwargs):
+        data = super(ProjectUpdate, self).get_context_data(**kwargs)
+        if self.request.POST:
+            data['labels'] = LabelFormSet(self.request.POST)
+        else:
+            data['labels'] = LabelFormSet(instance=data['project'])
+        return data
 
-        f_labels = form.cleaned_data.get('labels', False)
-        if f_labels:
-            labels = []
-            for l in form.cleaned_data['labels'].split(','):
-                labels.append(Label(name=l, project=self.object))
-            Label.objects.bulk_create(labels)
+    def form_valid(self, form):
+        context = self.get_context_data()
+        labels = context['labels']
+        with transaction.atomic():
+            self.object = form.save()
+
+            if labels.is_valid():
+                labels.instance = self.object
+                labels.save()
 
         f_data = form.cleaned_data.get('data', False)
-        if f_data:
+        if isinstance(f_data, pd.DataFrame):
             data = []
             for d in f_data[0]:
                 data.append(Data(text=d, project=self.object))
             Data.objects.bulk_create(data)
 
-        return HttpResponseRedirect(self.get_success_url())
+        return super(ProjectUpdate, self).form_valid(form)
 
 class ProjectDelete(LoginRequiredMixin, DeleteView):
     model = Project

@@ -1,6 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from .models import Project
+from .models import Project, Label
 import pandas as pd
 
 class ProjectForm(forms.ModelForm):
@@ -9,7 +9,6 @@ class ProjectForm(forms.ModelForm):
         fields = '__all__'
 
     name = forms.CharField()
-    labels = forms.CharField(required=False)
     data = forms.FileField(required=False)
 
     def clean_data(self):
@@ -38,3 +37,12 @@ class ProjectForm(forms.ModelForm):
                 raise ValidationError("File should contain some data")
 
         return data
+
+class LabelForm(forms.ModelForm):
+    class Meta:
+        model = Label
+        fields = '__all__'
+
+    name = forms.CharField()
+
+LabelFormSet = forms.inlineformset_factory(Project, Label, form=LabelForm, extra=1, can_delete=True)

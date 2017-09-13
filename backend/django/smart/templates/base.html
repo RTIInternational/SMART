@@ -12,6 +12,7 @@
         <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,700" rel="stylesheet">
         <title>{% block page_title %}{% endblock %}</title>
         {% render_bundle 'smart' 'css' %}
+        {% block extra_css %}{% endblock %}
     </head>
     <body>
         <header>
@@ -33,5 +34,6 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.js"></script>
         </main>
+        {% block extra_js %} {% endblock %}
     </body>
 </html>
