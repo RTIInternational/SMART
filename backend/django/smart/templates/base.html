@@ -30,11 +30,20 @@
             </div>
             {% endif %}
         </header>
-        <main class="container-fluid">
-        {% block content %} {% endblock %}
+        <div class="content-wrapper">
+            {% if messages %}
+            <div class="messages">
+            {% for message in messages %}
+            <div class="alert alert-warning">{{message}}</div>
+            {% endfor %}
+            </div>
+            {% endif %}
+            <main class="container-fluid">
+            {% block content %} {% endblock %}
+            </main>
+        </div>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.js"></script>
-        </main>
         {% block scripts_body %} {% endblock %}
     </body>
 </html>

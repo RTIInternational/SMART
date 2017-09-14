@@ -120,6 +120,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+ACCOUNT_LOGOUT_ON_GET=True
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.11/topics/i18n/
