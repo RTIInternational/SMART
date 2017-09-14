@@ -66,7 +66,7 @@ class ProjectUpdate(LoginRequiredMixin, UpdateView):
     def get_context_data(self, **kwargs):
         data = super(ProjectUpdate, self).get_context_data(**kwargs)
         if self.request.POST:
-            data['labels'] = LabelFormSet(self.request.POST)
+            data['labels'] = LabelFormSet(self.request.POST, instance=data['project'])
         else:
             data['labels'] = LabelFormSet(instance=data['project'])
         return data
