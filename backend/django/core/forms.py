@@ -28,7 +28,12 @@ class ProjectForm(forms.ModelForm):
             if data.content_type not in allowed_types:
                 raise ValidationError("File type is not supported")
 
-            data = pd.read_csv(data, header=None)
+            if data.content_type == 'text/tab-separated-values':
+                data = pd.read_csv(data, header=None, sep='\t')
+            elif data.content_type == 'text/csv':
+                data = pd.read_csv(data, header=None)
+            else:
+                raise ValidationError("File type is not supported")
 
             if len(data.columns) > 1:
                 raise ValidationError("File should only contain one column")
