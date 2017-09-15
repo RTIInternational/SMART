@@ -34,7 +34,12 @@
             {% if messages %}
             <div class="messages">
             {% for message in messages %}
-            <div class="alert alert-warning">{{message}}</div>
+            <div class="alert alert-warning alert-dismissible" role="alert">
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                {{message}}
+            </div>
             {% endfor %}
             </div>
             {% endif %}
