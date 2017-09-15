@@ -46,7 +46,6 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'allauth',
     'allauth.account',
-    'allauth.socialaccount',
     'rest_auth.registration',
     'rest_framework_swagger',
     'webpack_loader'
@@ -63,6 +62,8 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'smart.urls'
+
+LOGIN_REDIRECT_URL = 'index'
 
 TEMPLATES = [
     {
@@ -119,6 +120,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+ACCOUNT_LOGOUT_ON_GET=True
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.11/topics/i18n/
@@ -137,7 +139,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
-STATIC_URL = '/static/'
+STATIC_URL = '/dist/'
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSIONS_CLASSES': [

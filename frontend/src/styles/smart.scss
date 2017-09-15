@@ -68,18 +68,34 @@ header {
     }
 }
 
+.content-wrapper {
+    position: relative;
+    padding: 15px 0;
+
+    @include breakpoint(large) { 
+        padding: 24px 0;
+    }
+}
+
+.messages {
+    position: absolute;
+    top: 0;
+    right: 0;
+    box-shadow: $box-shadow;
+    z-index: 10;
+
+    .alert {
+        margin-bottom: 0;
+    }
+}
+
+
 main {
     width: 90%;
     max-width: $breakpoint-large;
     position: relative;
-
-    margin: 16px auto;
-
-    @include breakpoint(large) { 
-        margin: 24px auto;
-    }
-
-
+    z-index: 1;
+    margin: 0 auto;
 }
 
 .card {

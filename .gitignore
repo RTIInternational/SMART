@@ -6,5 +6,7 @@ frontend/dist/
 frontend/webpack-stats.json
 frontend/node_modules/
 
+# Mounted Docker volume
+backend/django/frontend/
 .env
 .cache
