@@ -26,6 +26,7 @@ class Model(models.Model):
 
 class Data(models.Model):
     text = models.TextField()
+    hash = models.CharField(max_length=128)
     project = models.ForeignKey('Project')
 
 class Label(models.Model):
