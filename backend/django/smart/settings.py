@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/1.11/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.11/ref/settings/
 """
-
+import redis
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -46,7 +46,6 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'allauth',
     'allauth.account',
-    'allauth.socialaccount',
     'rest_auth.registration',
     'rest_framework_swagger',
     'webpack_loader'
@@ -121,6 +120,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+ACCOUNT_LOGOUT_ON_GET=True
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.11/topics/i18n/
@@ -173,8 +173,14 @@ REST_USE_JWT = True
 # for registration emails
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
+REDIS_URL = 'redis://redis:6379/0'
+
+# Set up a global connection pool here so we don't have to make
+# a new one every time we need to access redis
+REDIS = redis.StrictRedis.from_url(REDIS_URL)
+
 # CELERY SETTINGS
-CELERY_BROKER_URL = 'redis://redis:6379/0'
+CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'

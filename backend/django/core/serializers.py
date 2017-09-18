@@ -8,7 +8,7 @@ from core.models import (User, Project, Model, Data, Label, DataLabel,
 class UserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = User
-        fields = ('labels', 'auth_user')
+        fields = ('labeled_data', 'auth_user')
 
 class AuthUserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:

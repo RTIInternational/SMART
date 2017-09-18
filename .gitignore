@@ -9,3 +9,4 @@ frontend/node_modules/
 # Mounted Docker volume
 backend/django/frontend/
 .env
+.cache
