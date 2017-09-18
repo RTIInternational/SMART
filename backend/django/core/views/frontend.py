@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.contrib.auth import get_user
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import TemplateView, ListView, DetailView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
@@ -9,9 +10,9 @@ from django.db import transaction
 import hashlib
 import pandas as pd
 
-from core.models import (User, Project, Model, Data, Label, DataLabel,
-                         DataPrediction, Queue, DataQueue, AssignedData)
-from core.forms import ProjectForm, LabelFormSet
+from core.models import (User, Project, ProjectPermissions, Model, Data, Label,
+                         DataLabel, DataPrediction, Queue, DataQueue, AssignedData)
+from core.forms import ProjectForm, PermissionsFormSet, LabelFormSet
 
 
 def md5_hash(obj):
@@ -43,20 +44,27 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         data = super(ProjectCreate, self).get_context_data(**kwargs)
         if self.request.POST:
-            data['labels'] = LabelFormSet(self.request.POST)
+            data['labels'] = LabelFormSet(self.request.POST, prefix='label_set')
+            data['permissions'] = PermissionsFormSet(self.request.POST, prefix='permissions_set')
         else:
-            data['labels'] = LabelFormSet()
+            data['labels'] = LabelFormSet(prefix='label_set')
+            data['permissions'] = PermissionsFormSet(prefix='permissions_set')
         return data
 
     def form_valid(self, form):
         context = self.get_context_data()
         labels = context['labels']
+        permissions = context['permissions']
         with transaction.atomic():
             self.object = form.save()
 
             if labels.is_valid():
                 labels.instance = self.object
                 labels.save()
+
+            if permissions.is_valid():
+                permissions.instance = self.object
+                permissions.save()
 
         f_data = form.cleaned_data.get('data', False)
         if isinstance(f_data, pd.DataFrame):
@@ -72,6 +80,8 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
                 f_data['objects'] = f_data.apply(lambda x: Data(text=x[0], project=self.object, hash=x['hash']), axis=1)
                 Data.objects.bulk_create(f_data['objects'].tolist())
 
+        ProjectPermissions.objects.create(user=get_user(self.request), project=self.object, permission='OWNER')
+
         return super(ProjectCreate, self).form_valid(form)
 
 class ProjectUpdate(LoginRequiredMixin, UpdateView):
@@ -82,20 +92,27 @@ class ProjectUpdate(LoginRequiredMixin, UpdateView):
     def get_context_data(self, **kwargs):
         data = super(ProjectUpdate, self).get_context_data(**kwargs)
         if self.request.POST:
-            data['labels'] = LabelFormSet(self.request.POST, instance=data['project'])
+            data['labels'] = LabelFormSet(self.request.POST, instance=data['project'], prefix='label_set')
+            data['permissions'] = PermissionsFormSet(self.request.POST, instance=data['project'], prefix='permissions_set')
         else:
-            data['labels'] = LabelFormSet(instance=data['project'])
+            data['labels'] = LabelFormSet(instance=data['project'], prefix='label_set')
+            data['permissions'] = PermissionsFormSet(instance=data['project'], prefix='permissions_set')
         return data
 
     def form_valid(self, form):
         context = self.get_context_data()
         labels = context['labels']
+        permissions = context['permissions']
         with transaction.atomic():
             self.object = form.save()
 
             if labels.is_valid():
                 labels.instance = self.object
                 labels.save()
+
+            if permissions.is_valid():
+                permissions.instance = self.object
+                permissions.save()
 
         f_data = form.cleaned_data.get('data', False)
         if isinstance(f_data, pd.DataFrame):

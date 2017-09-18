@@ -1,6 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from .models import Project, Label
+from .models import Project, ProjectPermissions, Label
 import pandas as pd
 
 class ProjectForm(forms.ModelForm):
@@ -50,4 +50,10 @@ class LabelForm(forms.ModelForm):
 
     name = forms.CharField()
 
+class ProjectPermissionsForm(forms.ModelForm):
+    class Meta:
+        model = ProjectPermissions
+        fields = '__all__'
+
 LabelFormSet = forms.inlineformset_factory(Project, Label, form=LabelForm, extra=1, can_delete=True)
+PermissionsFormSet = forms.inlineformset_factory(Project, ProjectPermissions, form=ProjectPermissionsForm, extra=1, can_delete=True)

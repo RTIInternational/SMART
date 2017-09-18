@@ -2,6 +2,22 @@
 
 {% block content %}
   <h2>{{ project.name }}</h2>
+  <h4>Owner(s)</h4>
+  <ul>
+  {% for perm in project.projectpermissions_set.all %}
+    {% if perm.permission == 'OWNER' %}
+    <li>{{ perm.user.username }}</li>
+    {% endif %}
+  {% endfor %}
+  </ul>
+  <h4>Coder(s)</h4>
+  <ul>
+  {% for perm in project.projectpermissions_set.all %}
+    {% if perm.permission == 'CODER' %}
+    <li>{{ perm.user.username }}</li>
+    {% endif %}
+  {% endfor %}
+  </ul>
   <h4>Description</h4>
   <p>{{ project.description }}</p>
   <h4>Labels</h4>

@@ -17,6 +17,17 @@ class Project(models.Model):
     def get_absolute_url(self):
         return reverse('projects:project_detail', kwargs={'pk': self.pk})
 
+class ProjectPermissions(models.Model):
+    class Meta:
+        unique_together = (('user', 'project'))
+    PERM_CHOICES = (
+        ('OWNER', 'Owner'),
+        ('CODER', 'Coder'),
+    )
+    user = models.ForeignKey(settings.AUTH_USER_MODEL)
+    project = models.ForeignKey('Project')
+    permission = models.CharField(max_length=5,choices=PERM_CHOICES)
+
 class Model(models.Model):
     pickle_path = models.TextField()
     project = models.ForeignKey('Project')
