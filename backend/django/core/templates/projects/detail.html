@@ -2,6 +2,8 @@
 
 {% block content %}
   <h2>{{ project.name }}</h2>
+  <h4>Description</h4>
+  <p>{{ project.description }}</p>
   <h4>Labels</h4>
   <ul>
   {% for label in project.label_set.all %}

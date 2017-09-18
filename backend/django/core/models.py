@@ -12,6 +12,7 @@ class User(models.Model):
 
 class Project(models.Model):
     name = models.TextField()
+    description = models.TextField()
 
     def get_absolute_url(self):
         return reverse('projects:project_detail', kwargs={'pk': self.pk})
