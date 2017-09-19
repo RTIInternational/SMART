@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h2>{{ project.name }}</h2>
+  <h4>Description</h4>
+  <p>{{ project.description }}</p>
+  <h4>Labels</h4>
+  <ul>
+  {% for label in project.label_set.all %}
+    <li>{{ label.name }}</li>
+  {% endfor %}
+  </ul>
+  <h4>Data</h4>
+  <ul>
+  {% for data in project.data_set.all|slice:"5" %}
+    <li>{{ data.text }}</li>
+  {% endfor %}
+  </ul>
+  <a class="btn btn-default" href="{% url 'projects:project_list' %}">Return to Projects</a>
+  <a class="btn btn-default" href="{% url 'projects:project_update' project.pk %}">Update Project</a>
+  <a class="btn btn-default" href="{% url 'projects:project_delete' project.pk %}">Delete Project</a>
+{% endblock %}
