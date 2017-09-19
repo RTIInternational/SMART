@@ -2,10 +2,11 @@
 
 {% block content %}
   <h2>{{ project.name }}</h2>
-  <h4>Owner(s)</h4>
+  <p>Created By: {{ project.creator }}</p>
+  <h4>Admin(s)</h4>
   <ul>
   {% for perm in project.projectpermissions_set.all %}
-    {% if perm.permission == 'OWNER' %}
+    {% if perm.permission == 'ADMIN' %}
     <li>{{ perm.user.username }}</li>
     {% endif %}
   {% endfor %}

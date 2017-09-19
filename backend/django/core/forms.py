@@ -6,7 +6,7 @@ import pandas as pd
 class ProjectForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = '__all__'
+        fields = ['name', 'description']
 
     name = forms.CharField()
     data = forms.FileField(required=False)
@@ -54,6 +54,17 @@ class ProjectPermissionsForm(forms.ModelForm):
     class Meta:
         model = ProjectPermissions
         fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super(ProjectPermissionsForm, self).__init__(*args, **kwargs)
+
+    def clean_user(self):
+        user = self.cleaned_data.get('user', False)
+        if user == self.user:
+            raise ValidationError("You are the creator by default, please do not assign yourself any permissions")
+
+        return user
 
 LabelFormSet = forms.inlineformset_factory(Project, Label, form=LabelForm, extra=1, can_delete=True)
 PermissionsFormSet = forms.inlineformset_factory(Project, ProjectPermissions, form=ProjectPermissionsForm, extra=1, can_delete=True)

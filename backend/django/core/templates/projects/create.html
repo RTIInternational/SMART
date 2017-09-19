@@ -9,6 +9,7 @@
   {{ form.as_p }}
   <table class="table">
     {{ labels.management_form }}
+    {{ labels.non_form_errors }}
 
     {% for form in labels.forms %}
         {% if forloop.first %}
@@ -38,6 +39,7 @@
   </table>
   <table class="table">
     {{ permissions.management_form }}
+    {{ permissions.non_form_errors }}
 
     {% for form in permissions.forms %}
         {% if forloop.first %}
@@ -80,7 +82,14 @@
     $('.formset_row_perm').formset({
         addText: 'add permissions',
         deleteText: 'remove permission',
-        prefix: '{{ permissions.prefix }}'
+        prefix: '{{ permissions.prefix }}',
+        added: function () {
+            // Reset drop down and errors from both columns when adding new rows
+            $('tr.formset_row_perm').last().children(':first').find('option:eq(0)').prop('selected', true);
+            $('tr.formset_row_perm').last().children().eq(1).find('option:eq(0)').prop('selected', true);
+            $('tr.formset_row_perm').last().children(':first').find('ul.errorlist li').empty();
+            $('tr.formset_row_perm').last().children().eq(1).find('ul.errorlist li').empty();
+        }
     });
 </script>
 {% endblock %}
