@@ -12,29 +12,45 @@
         <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,700" rel="stylesheet">
         <title>{% block page_title %}{% endblock %}</title>
         {% render_bundle 'smart' 'css' %}
-        {% block extra_css %}{% endblock %}
+        {% block scripts_head %}{% endblock %}
     </head>
     <body>
         <header>
             <a href="/"><h1>SMART</h1></a>
             {% if user.is_authenticated %}
             <div class="btn-group">
+                <a class="btn btn-primary" href="{% url 'projects:project_list' %}">Projects</a>
                 <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 {{ user }} <span class="caret"></span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-right">
-                    <li><a href="{% url 'account_change_password' %}">Update Password</a></li>
+                    <li><a href="{% url 'account_email' %}">Manage Emails</a></li>
+                    <li><a href="{% url 'account_change_password' %}">Manage Password</a></li>
                     <li><a href="{% url 'account_logout' %}">Logout</a></li>
                 </ul>
             </div>
             {% endif %}
         </header>
-        <main class="container-fluid">
-        {% block content %} {% endblock %}
-        </main>
+        <div class="content-wrapper">
+            {% if messages %}
+            <div class="messages">
+            {% for message in messages %}
+            <div class="alert alert-warning alert-dismissible" role="alert">
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                {{message}}
+            </div>
+            {% endfor %}
+            </div>
+            {% endif %}
+            <main class="container-fluid">
+            {% block content %} {% endblock %}
+            </main>
+        </div>
         {% render_bundle 'manifest' 'js' %}
         {% render_bundle 'vendor' 'js' %}
         {% render_bundle 'globals' 'js' %}
-        {% block extra_js %} {% endblock %}
+        {% block scripts_body %} {% endblock %}
     </body>
 </html>

@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="card full clearfix">
+<div class="card full">
   <div class="cardface">
     <h2>Projects</h2>
     <p>
-        <a class="btn btn-default" href="{% url 'projects:project_create' %}">New Project</a>
         <div class="list-group">
         {% for project in object_list %}
             <a href="{{ project.get_absolute_url }}" class="list-group-item">{{ project.name }}</a>
         {% endfor %}
         </div>
+        <a class="btn btn-primary" href="{% url 'projects:project_create' %}">New Project</a>
     </p>
 
     {% if is_paginated %}
