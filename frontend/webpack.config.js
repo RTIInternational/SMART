@@ -14,7 +14,8 @@ var config = {
     context: path.join(__dirname, "src"),
     devtool: 'source-map',
     entry: {
-        smart: './smart.jsx'
+        smart: './smart.jsx',
+        globals: './globals.js'
     },
     module: {
         rules: [
@@ -101,16 +102,19 @@ var config = {
         new StyleLintPlugin({
             context: './src/styles/'
         }),
-        new ExtractTextPlugin({ filename: '[name].[contenthash].css' })
+        new ExtractTextPlugin({ filename: '[name].[contenthash].css' }),
+        new webpack.ProvidePlugin({
+            $: 'jquery',
+            jQuery: 'jquery',
+            'window.jQuery': 'jquery',
+            Popper: ['popper.js', 'default'],
+        }),
+        new CleanWebpackPlugin(['dist'], {
+          root: path.resolve(),
+          verbose: true,
+          dry: false
+        })
     ],
-    performance: {
-        assetFilter: function(assetFilename) {
-            return assetFilename.endsWith('.js') || assetFilename.endsWith('.css');
-        },
-        hints: "warning",
-        maxEntrypointSize: 1000000
-    },
-    profile: true,
     resolve: {
         modules: [
             'node_modules',
@@ -126,11 +130,6 @@ if (release) {
             'DEBUG': false,
             'PRODUCTION': true,
             'process.env.NODE_ENV': JSON.stringify('production')
-        }),
-        new CleanWebpackPlugin(['dist'], {
-          root: path.resolve(),
-          verbose: true,
-          dry: false
         }),
         new OptimizeCssAssetsPlugin({
           cssProcessor: require('cssnano'),
@@ -160,35 +159,38 @@ if (release) {
         new webpack.LoaderOptionsPlugin({
             minimize: true,
             debug: false
-        }),
-        new webpack.optimize.CommonsChunkPlugin({
-            name: 'vendor',
-            minChunks: function (module) {
-               return module.context && module.context.indexOf('node_modules') !== -1;
-            }
-        }),
-        new webpack.optimize.CommonsChunkPlugin({
-            name: "manifest",
-            minChunks: Infinity
         })
     );
 } else {
+    config.performance = {
+        assetFilter: function(assetFilename) {
+            return assetFilename.endsWith('.js') || assetFilename.endsWith('.css');
+        },
+        hints: "warning",
+        maxEntrypointSize: 1000000
+    };
+
+    config.profile = true;
+
     config.plugins.push(
         new webpack.DefinePlugin({
             'DEBUG': true,
             'PRODUCTION': false
-        }),
-        new webpack.optimize.CommonsChunkPlugin({
-            name: 'vendor',
-            minChunks: function (module) {
-               return module.context && module.context.indexOf('node_modules') !== -1;
-            }
-        }),
-        new webpack.optimize.CommonsChunkPlugin({
-            name: "manifest",
-            minChunks: Infinity
         })
     );
 }
+
+config.plugins.push(
+    new webpack.optimize.CommonsChunkPlugin({
+        name: 'vendor',
+        minChunks: function (module) {
+           return module.context && module.context.indexOf('node_modules') !== -1;
+        }
+    }),
+    new webpack.optimize.CommonsChunkPlugin({
+        name: "manifest",
+        minChunks: Infinity
+    })
+);
 
 module.exports = config;

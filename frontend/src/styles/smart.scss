@@ -68,43 +68,31 @@ header {
     }
 }
 
-.content-wrapper {
-    position: relative;
-    padding: 15px 0;
-
-    @include breakpoint(large) { 
-        padding: 24px 0;
-    }
-}
-
-.messages {
-    position: absolute;
-    top: 0;
-    right: 0;
-    box-shadow: $box-shadow;
-    z-index: 10;
-
-    .alert {
-        margin-bottom: 0;
-    }
-}
-
-
 main {
     width: 90%;
     max-width: $breakpoint-large;
     position: relative;
-    z-index: 1;
-    margin: 0 auto;
+
+    margin: 16px auto;
+
+    @include breakpoint(large) { 
+        margin: 24px auto;
+    }
 }
 
 .card {
     @include card;
-
     margin: 0 auto;
-    padding: 12px 24px;
+}
 
-    @include breakpoint(large) { 
-        padding: 16px 32px;
+.cardface {
+    border: 1px solid #CCCCCC;
+
+    padding: 12px 16px;
+    margin: 16px 24px;
+    
+    @include breakpoint(large) {
+        padding: 16px 24px;
+        margin: 24px 32px;
     }
 }

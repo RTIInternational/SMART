@@ -1,8 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import { Button } from "react-bootstrap";
-
 import Deck from '../Deck';
 
 const Smart = ({fetchCards, passCard, popCard, cards }) => (
