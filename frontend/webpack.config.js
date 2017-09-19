@@ -62,6 +62,18 @@ var config = {
                     ]
                 }),
             },
+            {          
+                test: require.resolve('jquery'),
+                use: [
+                    {
+                        loader: 'expose-loader',
+                        options: 'jQuery'
+                    },{
+                        loader: 'expose-loader',
+                        options: '$'
+                    }
+                ]
+            },
             {
                 test: /\.(jpe?g|gif|html)$/,
                 use: [

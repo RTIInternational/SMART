@@ -10,6 +10,7 @@
  * See: http://www.opensource.org/licenses/bsd-license.php
  */
 import jQuery from 'jquery';
+
 ;(function($) {
     $.fn.formset = function(opts)
     {
