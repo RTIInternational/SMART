@@ -4,8 +4,8 @@
 
 {% block content %}
 <div id="mount"></main>
-{% render_bundle 'manifest' 'js' %}
-{% render_bundle 'vendor' 'js' %}
-{% render_bundle 'smart' 'js' %}
+{% endblock %}
 
+{% block scripts_body %}
+{% render_bundle 'smart' 'js' %}
 {% endblock %}

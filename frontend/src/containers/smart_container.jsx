@@ -5,6 +5,8 @@ import { fetchCards, passCard, popCard } from '../actions/classifier';
 
 import Smart from '../components/Smart';
 
+const SmartContainer = (props) => <Smart {...props} />;
+
 const mapStateToProps = (state) => {
     return {
         cards: state.classifier.cards
@@ -25,4 +27,4 @@ const mapDispatchToProps = (dispatch) => {
     };
 };
 
-export default connect(mapStateToProps, mapDispatchToProps)(Smart);
+export default connect(mapStateToProps, mapDispatchToProps)(SmartContainer);

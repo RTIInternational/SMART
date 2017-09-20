@@ -12,13 +12,14 @@
         <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,700" rel="stylesheet">
         <title>{% block page_title %}{% endblock %}</title>
         {% render_bundle 'smart' 'css' %}
-        {% block scripts_head %} {% endblock %}
+        {% block scripts_head %}{% endblock %}
     </head>
     <body>
         <header>
             <a href="/"><h1>SMART</h1></a>
             {% if user.is_authenticated %}
             <div class="btn-group">
+                <a class="btn btn-primary" href="{% url 'projects:project_list' %}">Projects</a>
                 <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 {{ user }} <span class="caret"></span>
                 </button>
@@ -47,8 +48,9 @@
             {% block content %} {% endblock %}
             </main>
         </div>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.js"></script>
+        {% render_bundle 'manifest' 'js' %}
+        {% render_bundle 'vendor' 'js' %}
+        {% render_bundle 'globals' 'js' %}
         {% block scripts_body %} {% endblock %}
     </body>
 </html>

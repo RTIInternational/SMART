@@ -1,22 +1,41 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <h2>{{ project.name }}</h2>
-  <h4>Description</h4>
-  <p>{{ project.description }}</p>
-  <h4>Labels</h4>
-  <ul>
-  {% for label in project.label_set.all %}
-    <li>{{ label.name }}</li>
-  {% endfor %}
-  </ul>
-  <h4>Data</h4>
-  <ul>
-  {% for data in project.data_set.all|slice:"5" %}
-    <li>{{ data.text }}</li>
-  {% endfor %}
-  </ul>
-  <a class="btn btn-default" href="{% url 'projects:project_list' %}">Return to Projects</a>
-  <a class="btn btn-default" href="{% url 'projects:project_update' project.pk %}">Update Project</a>
-  <a class="btn btn-default" href="{% url 'projects:project_delete' project.pk %}">Delete Project</a>
+<div class="card full">
+    <div class="cardface">
+        <h2>{{ project.name }}</h2>
+        <div class="row">
+            <div class="col-md-8">
+                <h4>Description</h4>
+                <p>{{ project.description }}</p>
+            </div>
+            <div class="col-md-4">
+                <h4>Labels</h4>
+                <ul class="list-group">
+                {% for label in project.label_set.all %}
+                    <li class="list-group-item">{{ label.name }}</li>
+                {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <br/>
+        <h4>Data</h4>
+        <ul class="list-group">
+        {% for data in project.data_set.all|slice:"5" %}
+            <li class="list-group-item">{{ data.text }}</li>
+        {% endfor %}
+        </ul>
+        <div class="btn-group" role="group" aria-label="Project Controls">
+            <a class="btn btn-primary" href="{% url 'projects:project_list' %}" role="button">
+                Return to Projects
+            </a>
+            <a class="btn btn-info" href="{% url 'projects:project_update' project.pk %}" role="button">
+                Update Project
+            </a>
+            <a class="btn btn-danger" href="{% url 'projects:project_delete' project.pk %}" role="button">
+                Delete Project
+            </a>
+        </div>
+    </div>
+</div>
 {% endblock %}

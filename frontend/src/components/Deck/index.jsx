@@ -34,28 +34,22 @@ class Deck extends React.Component {
 
                 return (
                     <Card className="full" style={style} key={card.id}>
-                        <div style={{
-                            padding: '16px 24px',
-                            margin: '16px 24px',
-                            border: '1px solid #ccc'
-                        }}>
-                            <h2>Card {card.id + 1}</h2>
-                            <p>
-                                Card content
-                            </p>
-                            <ButtonToolbar bsClass="btn-toolbar pull-right">
-                                {card.options.map( (opt) => (
-                                    <Button onClick={popCard} bsStyle="primary" key={`deck-button-${opt}`}>Classification {opt}</Button>
-                                ))}
-                                { cardCount > 1 && 
-                                    <Button onClick={passCard} bsStyle="info">Skip</Button>
-                                }
-                                { cardCount == 1 && 
-                                    <Button onClick={passCard} bsStyle="info" disabled={true}>Skip</Button>
-                                }
-                            </ButtonToolbar>
-                            <Clearfix />
-                        </div>
+                        <h2>Card {card.id + 1}</h2>
+                        <p>
+                            Card content
+                        </p>
+                        <ButtonToolbar bsClass="btn-toolbar pull-right">
+                            {card.options.map( (opt) => (
+                                <Button onClick={popCard} bsStyle="primary" key={`deck-button-${opt}`}>Classification {opt}</Button>
+                            ))}
+                            { cardCount > 1 && 
+                                <Button onClick={passCard} bsStyle="info">Skip</Button>
+                            }
+                            { cardCount == 1 && 
+                                <Button onClick={passCard} bsStyle="info" disabled={true}>Skip</Button>
+                            }
+                        </ButtonToolbar>
+                        <Clearfix />
                     </Card>
                 );
             });
