@@ -1,5 +1,4 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import get_user
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import TemplateView, ListView, DetailView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
@@ -31,6 +30,18 @@ class ProjectList(LoginRequiredMixin, ListView):
     model = Project
     template_name = 'projects/list.html'
     paginate_by = 10
+    ordering = 'name'
+
+    def get_queryset(self):
+        # Projects user created
+        qs1 = Project.objects.filter(creator=self.request.user)
+
+        # Projects user has permissions for
+        qs2 = Project.objects.filter(projectpermissions__user=self.request.user)
+
+        qs = qs1 | qs2
+
+        return qs.distinct().order_by(self.ordering)
 
 class ProjectDetail(LoginRequiredMixin, DetailView):
     model = Project
