@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load project_extras %}
 
 {% block content %}
 <div class="card full">
@@ -51,12 +52,14 @@
             <a class="btn btn-primary" href="{% url 'projects:project_list' %}" role="button">
                 Return to Projects
             </a>
+            {% if project|proj_permission_level:request.user > 1 %}
             <a class="btn btn-info" href="{% url 'projects:project_update' project.pk %}" role="button">
                 Update Project
             </a>
             <a class="btn btn-danger" href="{% url 'projects:project_delete' project.pk %}" role="button">
                 Delete Project
             </a>
+            {% endif %}
         </div>
     </div>
 </div>
