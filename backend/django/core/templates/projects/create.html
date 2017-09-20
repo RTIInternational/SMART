@@ -12,17 +12,17 @@
                     {% csrf_token %}
                     <div class="form-group">
                         <label class="control-label" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
-                        <input class="form-control" id="{{ form.name.id_for_label }}" maxlength="30" name="{{ form.name.html_name }}" type="text" placeholder="{{ form.name.label }}" /> 
+                        <input class="form-control" id="{{ form.name.id_for_label }}" maxlength="30" name="{{ form.name.html_name }}" type="text" placeholder="{{ form.name.label }}" value="{{ form.name.value|default_if_none:'' }}"/>
                         {{ form.name.errors }}
                     </div>
                     <div class="form-group">
                         <label class="control-label" for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
-                        <textarea class="form-control" id="{{ form.description.id_for_label }}" name="{{ form.description.html_name }}"></textarea> 
+                        <textarea class="form-control" id="{{ form.description.id_for_label }}" name="{{ form.description.html_name }}">{{ form.description.value|default_if_none:'' }}</textarea>
                         {{ form.description.errors }}
                     </div>
                     <div class="form-group">
                         <label class="control-label" for="{{ form.data.id_for_label }}">{{ form.data.label }}</label>
-                        <input class="form-control" id="{{ form.data.id_for_label }}" maxlength="30" name="{{ form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" /> 
+                        <input class="form-control" id="{{ form.data.id_for_label }}" maxlength="30" name="{{ form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" />
                         {{ form.data.errors }}
                     </div>
                     <br />
@@ -85,7 +85,7 @@
                         {% endfor %}
                     </table>
                     <div class="form-group">
-                        <button class="btn btn-primary" type="submit">Submit</button> 
+                        <button class="btn btn-primary" type="submit">Submit</button>
                     </div>
                 </form>
             </div>
