@@ -1,27 +1,33 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <h2>Projects</h2>
-  <a class="btn btn-default" href="{% url 'projects:project_create' %}">New Project</a>
-  <ul>
-    {% for project in object_list %}
-      <li><a href="{{ project.get_absolute_url }}">{{ project.name }}</a></li>
-    {% endfor %}
-  </ul>
+<div class="card full">
+  <div class="cardface">
+    <h2>Projects</h2>
+    <p>
+        <div class="list-group">
+        {% for project in object_list %}
+            <a href="{{ project.get_absolute_url }}" class="list-group-item">{{ project.name }}</a>
+        {% endfor %}
+        </div>
+        <a class="btn btn-primary" href="{% url 'projects:project_create' %}">New Project</a>
+    </p>
 
-  {% if is_paginated %}
-    <div class="pagination">
-      <span class="page-links">
-        {% if page_obj.has_previous %}
-          <a href="{{ request.path }}?page={{ page_obj.previous_page_number }}">previous</a>
-        {% endif %}
-        <span class="page-current">
-          Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+    {% if is_paginated %}
+      <div class="pagination">
+        <span class="page-links">
+          {% if page_obj.has_previous %}
+            <a href="{{ request.path }}?page={{ page_obj.previous_page_number }}">previous</a>
+          {% endif %}
+          <span class="page-current">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+          </span>
+          {% if page_obj.has_next %}
+            <a href="{{ request.path }}?page={{ page_obj.next_page_number }}">next</a>
+          {% endif %}
         </span>
-        {% if page_obj.has_next %}
-          <a href="{{ request.path }}?page={{ page_obj.next_page_number }}">next</a>
-        {% endif %}
-      </span>
-    </div>
-  {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</div>
 {% endblock %}

@@ -23,3 +23,9 @@ $box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 $breakpoint-small: 600px;
 $breakpoint-medium: 840px;
 $breakpoint-large: 1280px;
+
+$brand-primary:         darken(#1976D2, 6.5%) !default;
+$brand-success:         #689F38 !default;
+$brand-info:            #00BCD4 !default;
+$brand-warning:         #E64A19 !default;
+$brand-danger:          #D32F2F !default;

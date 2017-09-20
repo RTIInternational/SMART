@@ -4,7 +4,9 @@ import classnames from 'classnames';
 
 const Card = (props) => (
     <div className={classnames("card", props.className)} style={props.style}>
-        {props.children}
+        <div className="cardface">
+            {props.children}
+        </div>
     </div>
 );
 
