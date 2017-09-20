@@ -5,6 +5,7 @@ from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from django.http import HttpResponseRedirect
 from django.db import transaction
+from django.core.exceptions import PermissionDenied
 
 import hashlib
 import pandas as pd
@@ -12,6 +13,7 @@ import pandas as pd
 from core.models import (User, Project, ProjectPermissions, Model, Data, Label,
                          DataLabel, DataPrediction, Queue, DataQueue, AssignedData)
 from core.forms import ProjectForm, PermissionsFormSet, LabelFormSet
+from core.templatetags import project_extras
 
 
 def md5_hash(obj):
@@ -46,6 +48,15 @@ class ProjectList(LoginRequiredMixin, ListView):
 class ProjectDetail(LoginRequiredMixin, DetailView):
     model = Project
     template_name = 'projects/detail.html'
+
+    def get_object(self, *args, **kwargs):
+        obj = super(ProjectDetail, self).get_object(*args, **kwargs)
+
+        # Check user permissions before showing project detail page
+        if project_extras.proj_permission_level(obj, self.request.user) == 0:
+            raise PermissionDenied('You do not have permission to view this project')
+        return obj
+
 
 class ProjectCreate(LoginRequiredMixin, CreateView):
     model = Project
