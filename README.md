@@ -10,7 +10,9 @@ This project uses `docker` containers organized by `docker-compose` to ease depe
 
 First, install docker and docker-compose. Then navigate to `envs/[dev|prod]` and run `docker-compose build` to build all the images.
 
-Run `docker-compose up` to start all docker containers.  This will start up the containers in the foreground so you can see the logs.  If you prefer to run the containers in the background use `docker-compose up -d`.  If there is ever a dependency change than you will need to re-run `docker-compose build`.  When switching between branches there is no need to run any additional commands (except build if there is dependency change).
+Run `docker-compose up` to start all docker containers.  This will start up the containers in the foreground so you can see the logs.  If you prefer to run the containers in the background use `docker-compose up -d`. When switching between branches there is no need to run any additional commands (except build if there is dependency change).
+
+If there is ever a dependency change than you will need to re-run `docker-compose build <container with new dependency>` `docker-compose rm <container with new dependency>` `docker-compose up`.
 
 If your database is blank, you will need to run migrations to initialize all the required schema objects; you can start a blank backend container and run the migration django management command with the following command:
 
