@@ -57,11 +57,17 @@ class ProjectPermissionsForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
+        self.action = kwargs.pop('action', None)
+        self.creator = kwargs.pop('creator', None)
         super(ProjectPermissionsForm, self).__init__(*args, **kwargs)
 
     def clean_user(self):
         user = self.cleaned_data.get('user', False)
-        if user == self.user:
+        if self.action == 'create' and user == self.user:
+            raise ValidationError("You are the creator by default, please do not assign yourself any permissions")
+        if self.action == 'update' and user == self.creator and self.user != self.creator:
+            raise ValidationError("{0} is the creator, please do not assign them any permissions".format(self.creator))
+        if self.action == 'update' and user == self.creator and self.user == self.creator:
             raise ValidationError("You are the creator by default, please do not assign yourself any permissions")
 
         return user

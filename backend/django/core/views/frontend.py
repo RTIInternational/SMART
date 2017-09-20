@@ -45,10 +45,10 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
         data = super(ProjectCreate, self).get_context_data(**kwargs)
         if self.request.POST:
             data['labels'] = LabelFormSet(self.request.POST, prefix='label_set')
-            data['permissions'] = PermissionsFormSet(self.request.POST, prefix='permissions_set', form_kwargs={'user': self.request.user})
+            data['permissions'] = PermissionsFormSet(self.request.POST, prefix='permissions_set', form_kwargs={'action':'create', 'user': self.request.user})
         else:
             data['labels'] = LabelFormSet(prefix='label_set')
-            data['permissions'] = PermissionsFormSet(prefix='permissions_set', form_kwargs={'user': self.request.user})
+            data['permissions'] = PermissionsFormSet(prefix='permissions_set', form_kwargs={'action':'create', 'user': self.request.user})
         return data
 
     def form_valid(self, form):
@@ -81,8 +81,6 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
 
                 return redirect(self.get_success_url())
             else:
-                context['labels'] = labels
-                context['permissions'] = permissions
                 return self.render_to_response(context)
 
 class ProjectUpdate(LoginRequiredMixin, UpdateView):
@@ -94,10 +92,10 @@ class ProjectUpdate(LoginRequiredMixin, UpdateView):
         data = super(ProjectUpdate, self).get_context_data(**kwargs)
         if self.request.POST:
             data['labels'] = LabelFormSet(self.request.POST, instance=data['project'], prefix='label_set')
-            data['permissions'] = PermissionsFormSet(self.request.POST, instance=data['project'], prefix='permissions_set', form_kwargs={'user': self.request.user})
+            data['permissions'] = PermissionsFormSet(self.request.POST, instance=data['project'], prefix='permissions_set', form_kwargs={'action': 'update', 'creator':data['project'].creator, 'user': self.request.user})
         else:
             data['labels'] = LabelFormSet(instance=data['project'], prefix='label_set')
-            data['permissions'] = PermissionsFormSet(instance=data['project'], prefix='permissions_set', form_kwargs={'user': self.request.user})
+            data['permissions'] = PermissionsFormSet(instance=data['project'], prefix='permissions_set', form_kwargs={'action': 'update', 'creator':data['project'].creator, 'user': self.request.user})
         return data
 
     def form_valid(self, form):
@@ -132,8 +130,6 @@ class ProjectUpdate(LoginRequiredMixin, UpdateView):
 
                 return redirect(self.get_success_url())
             else:
-                context['labels'] = labels
-                context['permissions'] = permissions
                 return self.render_to_response(context)
 
 class ProjectDelete(LoginRequiredMixin, DeleteView):
