@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card full">
+  <div class="cardface">
+    <h1>Forbidden</h1>
+    {% if exception %}
+      <p>{{ exception }}</p>
+    {% else %}
+      <p>Permission Denied</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

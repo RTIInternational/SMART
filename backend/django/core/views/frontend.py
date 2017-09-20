@@ -110,6 +110,14 @@ class ProjectUpdate(LoginRequiredMixin, UpdateView):
     form_class = ProjectForm
     template_name = 'projects/create.html'
 
+    def get_object(self, *args, **kwargs):
+        obj = super(ProjectUpdate, self).get_object(*args, **kwargs)
+
+        # Check user permissions before showing project update page
+        if project_extras.proj_permission_level(obj, self.request.user) == 0:
+            raise PermissionDenied('You do not have permission to view this project')
+        return obj
+
     def get_context_data(self, **kwargs):
         data = super(ProjectUpdate, self).get_context_data(**kwargs)
         if self.request.POST:
@@ -158,3 +166,11 @@ class ProjectDelete(LoginRequiredMixin, DeleteView):
     model = Project
     template_name = 'projects/confirm_delete.html'
     success_url = reverse_lazy('projects:project_list')
+
+    def get_object(self, *args, **kwargs):
+        obj = super(ProjectDelete, self).get_object(*args, **kwargs)
+
+        # Check user permissions before showing project delete page
+        if project_extras.proj_permission_level(obj, self.request.user) == 0:
+            raise PermissionDenied('You do not have permission to view this project')
+        return obj
