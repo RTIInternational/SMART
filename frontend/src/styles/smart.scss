@@ -93,6 +93,7 @@ main {
     width: 90%;
     max-width: $breakpoint-large;
     position: relative;
+    z-index: 1;
 
     margin: 16px auto;
 
