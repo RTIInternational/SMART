@@ -13,9 +13,21 @@ class User(models.Model):
 class Project(models.Model):
     name = models.TextField()
     description = models.TextField()
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL)
 
     def get_absolute_url(self):
         return reverse('projects:project_detail', kwargs={'pk': self.pk})
+
+class ProjectPermissions(models.Model):
+    class Meta:
+        unique_together = (('user', 'project'))
+    PERM_CHOICES = (
+        ('ADMIN', 'Admin'),
+        ('CODER', 'Coder'),
+    )
+    user = models.ForeignKey(settings.AUTH_USER_MODEL)
+    project = models.ForeignKey('Project')
+    permission = models.CharField(max_length=5,choices=PERM_CHOICES)
 
 class Model(models.Model):
     pickle_path = models.TextField()
