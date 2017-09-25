@@ -23,11 +23,10 @@ def md5_hash(obj):
     else:
         return None
 
-# Index
-class IndexView(LoginRequiredMixin, TemplateView):
+# Projects
+class ProjectCode(LoginRequiredMixin, TemplateView):
     template_name = 'smart/smart.html'
 
-# Projects
 class ProjectList(LoginRequiredMixin, ListView):
     model = Project
     template_name = 'projects/list.html'

@@ -7,7 +7,12 @@
     <p>
         <div class="list-group">
         {% for project in object_list %}
+          <div class="col-md-8">
             <a href="{{ project.get_absolute_url }}" class="list-group-item">{{ project.name }}</a>
+          </div>
+          <div class="col-md-4">
+            <a href="{% url 'projects:project_code' project.pk %}" class="list-group-item">Code Project {{ project.name }}</a>
+          </div>
         {% endfor %}
         </div>
         <a class="btn btn-primary" href="{% url 'projects:project_create' %}">New Project</a>
