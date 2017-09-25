@@ -14,6 +14,7 @@ from core.models import (User, Project, ProjectPermissions, Model, Data, Label,
                          DataLabel, DataPrediction, Queue, DataQueue, AssignedData)
 from core.forms import ProjectForm, PermissionsFormSet, LabelFormSet
 from core.templatetags import project_extras
+import core.util as util
 
 
 def md5_hash(obj):
@@ -67,6 +68,8 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         data = super(ProjectCreate, self).get_context_data(**kwargs)
+
+        # Set the formsets for the create view
         if self.request.POST:
             data['labels'] = LabelFormSet(self.request.POST, prefix='label_set')
             data['permissions'] = PermissionsFormSet(self.request.POST, prefix='permissions_set', form_kwargs={'action': 'create', 'user': self.request.user})
@@ -81,6 +84,7 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
         permissions = context['permissions']
         with transaction.atomic():
             if labels.is_valid() and permissions.is_valid():
+                # Save the project, labels, and permissions
                 self.object = form.save(commit=False)
                 self.object.creator = self.request.user
                 self.object.save()
@@ -89,6 +93,10 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
                 permissions.instance = self.object
                 permissions.save()
 
+                # Create the project queue
+                queue = util.add_queue(project=self.object, length=10)
+
+                # If data exists save attempt to save it
                 f_data = form.cleaned_data.get('data', False)
                 if isinstance(f_data, pd.DataFrame):
                     # Create hash of text and drop duplicates
@@ -102,6 +110,9 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
                     if len(f_data) > 0:
                         f_data['objects'] = f_data.apply(lambda x: Data(text=x[0], project=self.object, hash=x['hash']), axis=1)
                         Data.objects.bulk_create(f_data['objects'].tolist())
+
+                        # If data was created then populate queue
+                        util.fill_queue(queue)
 
                 return redirect(self.get_success_url())
             else:
@@ -160,6 +171,11 @@ class ProjectUpdate(LoginRequiredMixin, UpdateView):
                     if len(f_data) > 0:
                         f_data['objects'] = f_data.apply(lambda x: Data(text=x[0], project=self.object, hash=x['hash']), axis=1)
                         Data.objects.bulk_create(f_data['objects'].tolist())
+
+                        # If there was no existing data then queue has always been empty so fill
+                        if len(existing_hashes) == 0:
+                            queue = self.object.queue_set.all()[:1].get()
+                            util.fill_queue(queue)
 
                 return redirect(self.get_success_url())
             else:
