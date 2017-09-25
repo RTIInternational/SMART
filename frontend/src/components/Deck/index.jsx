@@ -36,11 +36,11 @@ class Deck extends React.Component {
                     <Card className="full" style={style} key={card.id}>
                         <h2>Card {card.id + 1}</h2>
                         <p>
-                            Card content
+                            { card.text }
                         </p>
                         <ButtonToolbar bsClass="btn-toolbar pull-right">
                             {card.options.map( (opt) => (
-                                <Button onClick={popCard} bsStyle="primary" key={`deck-button-${opt}`}>Classification {opt}</Button>
+                                <Button onClick={popCard} bsStyle="primary" key={`deck-button-${opt}`}>{opt}</Button>
                             ))}
                             { cardCount > 1 && 
                                 <Button onClick={passCard} bsStyle="info">Skip</Button>
