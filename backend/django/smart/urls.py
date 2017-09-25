@@ -32,7 +32,6 @@ api_router.register(r'data', api.DataViewSet)
 api_router.register(r'data_labels', api.DataLabelViewSet)
 api_router.register(r'data_predictions', api.DataPredictionViewSet)
 api_router.register(r'queue', api.QueueViewSet)
-api_router.register(r'data_queues', api.QueueViewSet)
 api_router.register(r'assigned_data', api.AssignedDataViewSet)
 
 urlpatterns = [

@@ -41,9 +41,15 @@ class Data(models.Model):
     hash = models.CharField(max_length=128)
     project = models.ForeignKey('Project')
 
+    def __str__(self):
+        return self.text
+
 class Label(models.Model):
     name = models.TextField()
-    project = models.ForeignKey('Project')
+    project = models.ForeignKey('Project', related_name='labels', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
 
 class DataLabel(models.Model):
     class Meta:

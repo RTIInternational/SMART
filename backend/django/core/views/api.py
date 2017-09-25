@@ -8,8 +8,7 @@ from core.serializers import (UserSerializer, AuthUserGroupSerializer,
                               AuthUserSerializer, ProjectSerializer,
                               ModelSerializer, LabelSerializer, DataSerializer,
                               DataLabelSerializer, DataPredictionSerializer,
-                              QueueSerializer, DataQueueSerializer,
-                              AssignedDataSerializer)
+                              QueueSerializer, AssignedDataSerializer)
 from core.models import (User, Project, Model, Data, Label, DataLabel,
                          DataPrediction, Queue, DataQueue, AssignedData)
 
@@ -67,11 +66,6 @@ class DataPredictionViewSet(viewsets.ModelViewSet):
 class QueueViewSet(viewsets.ModelViewSet):
     queryset = Queue.objects.all().order_by('id')
     serializer_class = QueueSerializer
-    permission_classes = (permissions.IsAuthenticated,)
-
-class DataQueueViewSet(viewsets.ModelViewSet):
-    queryset = DataQueue.objects.all().order_by('id')
-    serializer_class = DataQueueSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
 class AssignedDataViewSet(viewsets.ModelViewSet):

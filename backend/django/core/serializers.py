@@ -20,10 +20,12 @@ class AuthUserGroupSerializer(serializers.HyperlinkedModelSerializer):
         model = Group
         fields = ('url', 'name')
 
-class ProjectSerializer(serializers.HyperlinkedModelSerializer):
+class ProjectSerializer(serializers.ModelSerializer):
+    labels = serializers.StringRelatedField(many=True)
+
     class Meta:
         model = Project
-        fields = ('name',)
+        fields = ('name','labels')
 
 class ModelSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
@@ -51,14 +53,10 @@ class DataPredictionSerializer(serializers.HyperlinkedModelSerializer):
         fields = ('data', 'model', 'predicted_class', 'predicted_probability')
 
 class QueueSerializer(serializers.HyperlinkedModelSerializer):
+    data = serializers.StringRelatedField(many=True)
     class Meta:
         model = Queue
         fields = ('user', 'project', 'length', 'data')
-
-class DataQueueSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = DataQueue
-        fields = ('queue', 'data')
 
 class AssignedDataSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
