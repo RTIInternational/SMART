@@ -23,9 +23,11 @@ def md5_hash(obj):
     else:
         return None
 
+
 # Projects
 class ProjectCode(LoginRequiredMixin, TemplateView):
     template_name = 'smart/smart.html'
+
 
 class ProjectList(LoginRequiredMixin, ListView):
     model = Project
@@ -43,6 +45,7 @@ class ProjectList(LoginRequiredMixin, ListView):
         qs = qs1 | qs2
 
         return qs.distinct().order_by(self.ordering)
+
 
 class ProjectDetail(LoginRequiredMixin, DetailView):
     model = Project
@@ -66,10 +69,10 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
         data = super(ProjectCreate, self).get_context_data(**kwargs)
         if self.request.POST:
             data['labels'] = LabelFormSet(self.request.POST, prefix='label_set')
-            data['permissions'] = PermissionsFormSet(self.request.POST, prefix='permissions_set', form_kwargs={'action':'create', 'user': self.request.user})
+            data['permissions'] = PermissionsFormSet(self.request.POST, prefix='permissions_set', form_kwargs={'action': 'create', 'user': self.request.user})
         else:
             data['labels'] = LabelFormSet(prefix='label_set')
-            data['permissions'] = PermissionsFormSet(prefix='permissions_set', form_kwargs={'action':'create', 'user': self.request.user})
+            data['permissions'] = PermissionsFormSet(prefix='permissions_set', form_kwargs={'action': 'create', 'user': self.request.user})
         return data
 
     def form_valid(self, form):
@@ -104,6 +107,7 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
             else:
                 return self.render_to_response(context)
 
+
 class ProjectUpdate(LoginRequiredMixin, UpdateView):
     model = Project
     form_class = ProjectForm
@@ -121,10 +125,10 @@ class ProjectUpdate(LoginRequiredMixin, UpdateView):
         data = super(ProjectUpdate, self).get_context_data(**kwargs)
         if self.request.POST:
             data['labels'] = LabelFormSet(self.request.POST, instance=data['project'], prefix='label_set')
-            data['permissions'] = PermissionsFormSet(self.request.POST, instance=data['project'], prefix='permissions_set', form_kwargs={'action': 'update', 'creator':data['project'].creator, 'user': self.request.user})
+            data['permissions'] = PermissionsFormSet(self.request.POST, instance=data['project'], prefix='permissions_set', form_kwargs={'action': 'update', 'creator': data['project'].creator, 'user': self.request.user})
         else:
             data['labels'] = LabelFormSet(instance=data['project'], prefix='label_set')
-            data['permissions'] = PermissionsFormSet(instance=data['project'], prefix='permissions_set', form_kwargs={'action': 'update', 'creator':data['project'].creator, 'user': self.request.user})
+            data['permissions'] = PermissionsFormSet(instance=data['project'], prefix='permissions_set', form_kwargs={'action': 'update', 'creator': data['project'].creator, 'user': self.request.user})
         return data
 
     def form_valid(self, form):
@@ -160,6 +164,7 @@ class ProjectUpdate(LoginRequiredMixin, UpdateView):
                 return redirect(self.get_success_url())
             else:
                 return self.render_to_response(context)
+
 
 class ProjectDelete(LoginRequiredMixin, DeleteView):
     model = Project
