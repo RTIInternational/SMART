@@ -178,7 +178,7 @@ class ProjectUpdate(LoginRequiredMixin, UpdateView):
 
                         # If there was no existing data then queue has always been empty so fill
                         if len(existing_hashes) == 0:
-                            queue = self.object.queue_set.all()[:1].get()
+                            queue = self.object.queue_set.get()
                             util.fill_queue(queue)
 
                 return redirect(self.get_success_url())
