@@ -18,6 +18,11 @@ services:
       file: ../docker-common.yml
       service: pgdata
 
+  dirdata:
+    extends:
+      file: ../docker-common.yml
+      service: dirdata
+
   smart_backend:
     extends:
       file: ../docker-common.yml
@@ -27,6 +32,8 @@ services:
     depends_on:
       - postgres
       - redis
+    volumes_from:
+      - dirdata
 
   smart_frontend:
     extends:

@@ -20,6 +20,13 @@ services:
     volumes:
       - /var/lib/postgresql/data
 
+  dirdata:
+    image: tianon/true
+    volumes:
+      - /data/data_files
+      - /data/tf_idf
+      - /data/model_pickles
+
   smart_backend:
     container_name: smart_backend
     volumes:
