@@ -7,5 +7,8 @@
 {% endblock %}
 
 {% block scripts_body %}
-{% render_bundle 'smart' 'js' %}
+  <script type="text/javascript">
+    window.QUEUE_ID = {{ view.queue.pk }};
+  </script>
+  {% render_bundle 'smart' 'js' %}
 {% endblock %}

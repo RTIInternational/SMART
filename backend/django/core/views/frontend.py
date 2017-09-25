@@ -29,6 +29,10 @@ def md5_hash(obj):
 class ProjectCode(LoginRequiredMixin, TemplateView):
     template_name = 'smart/smart.html'
 
+    def queue(self):
+        proj = Project.objects.filter(pk=self.kwargs['pk']).get()
+        return proj.queue_set.get()
+
 
 class ProjectList(LoginRequiredMixin, ListView):
     model = Project

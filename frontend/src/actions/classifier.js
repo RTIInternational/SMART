@@ -1,4 +1,7 @@
 import { createAction } from 'redux-actions';
+import 'whatwg-fetch';
+
+import { getConfig } from '../utils/fetch_configs';
 
 export const PASS_CARD = 'PASS_CARD';
 export const POP_CARD = 'POP_CARD';
