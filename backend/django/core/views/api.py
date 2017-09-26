@@ -2,7 +2,10 @@ from django.shortcuts import render
 from django.contrib.auth.models import Group, User as AuthUser
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import viewsets, permissions
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 from core.serializers import (UserSerializer, AuthUserGroupSerializer,
                               AuthUserSerializer, ProjectSerializer,
@@ -11,6 +14,39 @@ from core.serializers import (UserSerializer, AuthUserGroupSerializer,
                               QueueSerializer, AssignedDataSerializer)
 from core.models import (User, Project, Model, Data, Label, DataLabel,
                          DataPrediction, Queue, DataQueue, AssignedData)
+
+
+############################################
+#    REACT API ENDPOINTS FOR CODING VIEW   #
+############################################
+
+@api_view(['GET'])
+def grab_from_queue(request, pk, format=None):
+    """Grab x data from the queue and add the data to assigned data.
+
+    Handle project without labels, without data in the queue, and invalid queue
+    pk.
+    """
+    if request.method == 'GET':
+        try:
+            queue = Queue.objects.get(pk=pk)
+        except ObjectDoesNotExist:
+            return Response({'error': 'There is no queue matching that primary key.'})
+
+        labels = [label.name for label in Label.objects.all().filter(project=queue.project.pk)]
+        if len(labels) == 0:
+            return Response({'error': 'There are no labels for this project. Please have your administator create labels.'})
+
+        data = [data.text for data in queue.data.all()]
+        if len(data) == 0:
+            return Response({'error': 'There is nothing in the queue.  Please check again later.'})
+
+        return Response({'labels': labels, 'data': data})
+
+
+################################
+#    DRF VIEWSET API CLASSES   #
+################################
 
 # TODO establish more restrictive permissions
 # AuthUsers should be write-only for unauthenticated users
