@@ -32,31 +32,34 @@ export const getLabels = (projURL) => {
 }
 
 export const fetchCards = (queueID) => {
-    let apiURL = `/api/queue/${queueID}/`;
-    return dispatch => {
-        return fetch(apiURL, getConfig())
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                }
-                else {
-                    const error = new Error(response.statusText)
-                    error.response = response;
-                    throw error;
-                }
-            })
-            .then(data => {
-                let labels = dispatch(getLabels(data['project'])).then(labels => {
-                    for (let i = 0; i < data.length; i++) {
-                        const card = {
-                            id: i,
-                            options: labels,
-                            text: data.data[i]
-                        }
-                        dispatch(pushCard(card));
+    if (queueID == null) { return dispatch => {} }
+    else {
+        let apiURL = `/api/queue/${queueID}/`;
+        return dispatch => {
+            return fetch(apiURL, getConfig())
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    else {
+                        const error = new Error(response.statusText)
+                        error.response = response;
+                        throw error;
                     }
                 })
-            })
-            .catch(err => console.log("Error: ", err));
+                .then(data => {
+                    let labels = dispatch(getLabels(data['project'])).then(labels => {
+                        for (let i = 0; i < data.length; i++) {
+                            const card = {
+                                id: i,
+                                options: labels,
+                                text: data.data[i]
+                            }
+                            dispatch(pushCard(card));
+                        }
+                    })
+                })
+                .catch(err => console.log("Error: ", err));
+        }
     }
 };

@@ -5,7 +5,7 @@ from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from django.http import HttpResponseRedirect
 from django.db import transaction
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 
 import hashlib
 import pandas as pd
@@ -29,9 +29,15 @@ def md5_hash(obj):
 class ProjectCode(LoginRequiredMixin, TemplateView):
     template_name = 'smart/smart.html'
 
-    def queue(self):
-        proj = Project.objects.filter(pk=self.kwargs['pk']).get()
-        return proj.queue_set.get()
+    def get_context_data(self, **kwargs):
+        data = super(ProjectCode, self).get_context_data(**kwargs)
+
+        try:
+            data['pk'] = Queue.objects.filter(project=self.kwargs['pk']).get().pk
+        except ObjectDoesNotExist:
+            data['pk'] = None
+
+        return data
 
 
 class ProjectList(LoginRequiredMixin, ListView):
