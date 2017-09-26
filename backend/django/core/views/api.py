@@ -21,11 +21,18 @@ from core.models import (User, Project, Model, Data, Label, DataLabel,
 ############################################
 
 @api_view(['GET'])
-def grab_from_queue(request, pk, format=None):
+def grab_from_queue(request, pk):
     """Grab x data from the queue and add the data to assigned data.
 
     Handle project without labels, without data in the queue, and invalid queue
-    pk.
+    pk.  Return error in any of those happen.
+    Args:
+        request: The request to the endpoint
+        pk: Primary key of queue
+    Returns:
+        labels: The project labels
+        data: The data in the queue
+        <errors>: Only exists if there is an error, the error message.
     """
     if request.method == 'GET':
         try:
