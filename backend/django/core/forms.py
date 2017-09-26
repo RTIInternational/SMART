@@ -76,5 +76,5 @@ class ProjectPermissionsForm(forms.ModelForm):
 
         return user
 
-LabelFormSet = forms.inlineformset_factory(Project, Label, form=LabelForm, min_num=1, validate_min=True, extra=0, can_delete=True)
+LabelFormSet = forms.inlineformset_factory(Project, Label, form=LabelForm, min_num=2, validate_min=True, extra=0, can_delete=True)
 PermissionsFormSet = forms.inlineformset_factory(Project, ProjectPermissions, form=ProjectPermissionsForm, extra=1, can_delete=True)
