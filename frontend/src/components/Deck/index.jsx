@@ -12,7 +12,7 @@ class Deck extends React.Component {
     }
     
     render() {
-        const { cards, passCard, popCard } = this.props;
+        const { message, cards, passCard, popCard } = this.props;
         const cardCount = cards.length;
 
         let deck;
@@ -57,7 +57,7 @@ class Deck extends React.Component {
         else {
             deck = (
                 <Well bsSize="large">
-                    No more Cards! Please check again later.
+                    {message}
                 </Well>
             );
         }
@@ -75,6 +75,7 @@ Deck.propTypes = {
     passCard: PropTypes.func.isRequired,
     popCard: PropTypes.func.isRequired,
     cards: PropTypes.arrayOf(PropTypes.object),
+    message: PropTypes.string
 };
 
 export default Deck;

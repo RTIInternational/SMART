@@ -11,7 +11,8 @@ const SmartContainer = (props) => <Smart {...props} />;
 
 const mapStateToProps = (state) => {
     return {
-        cards: state.classifier.cards
+        cards: state.classifier.cards,
+        message: state.classifier.message
     };
 };
 
