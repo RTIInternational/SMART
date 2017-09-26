@@ -9,7 +9,8 @@ class ProjectForm(forms.ModelForm):
         fields = ['name', 'description']
 
     name = forms.CharField()
-    data = forms.FileField(required=False)
+    description = forms.CharField(required=False)
+    data = forms.FileField()
 
     def clean_data(self):
         allowed_types = [
@@ -72,5 +73,5 @@ class ProjectPermissionsForm(forms.ModelForm):
 
         return user
 
-LabelFormSet = forms.inlineformset_factory(Project, Label, form=LabelForm, extra=1, can_delete=True)
+LabelFormSet = forms.inlineformset_factory(Project, Label, form=LabelForm, min_num=1, validate_min=True, extra=0, can_delete=True)
 PermissionsFormSet = forms.inlineformset_factory(Project, ProjectPermissions, form=ProjectPermissionsForm, extra=1, can_delete=True)
