@@ -44,6 +44,9 @@ class ProjectForm(forms.ModelForm):
 
         return data
 
+class ProjectUpdateForm(ProjectForm):
+    data = forms.FileField(required=False)
+
 class LabelForm(forms.ModelForm):
     class Meta:
         model = Label
