@@ -12,7 +12,7 @@ class User(models.Model):
 
 class Project(models.Model):
     name = models.TextField()
-    description = models.TextField()
+    description = models.TextField(blank=True)
     creator = models.ForeignKey(settings.AUTH_USER_MODEL)
 
     def get_absolute_url(self):

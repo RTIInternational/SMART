@@ -12,7 +12,7 @@ import pandas as pd
 
 from core.models import (User, Project, ProjectPermissions, Model, Data, Label,
                          DataLabel, DataPrediction, Queue, DataQueue, AssignedData)
-from core.forms import ProjectForm, PermissionsFormSet, LabelFormSet
+from core.forms import ProjectForm, ProjectUpdateForm, PermissionsFormSet, LabelFormSet
 from core.templatetags import project_extras
 import core.util as util
 
@@ -131,7 +131,7 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
 
 class ProjectUpdate(LoginRequiredMixin, UpdateView):
     model = Project
-    form_class = ProjectForm
+    form_class = ProjectUpdateForm
     template_name = 'projects/create.html'
 
     def get_object(self, *args, **kwargs):
@@ -145,22 +145,17 @@ class ProjectUpdate(LoginRequiredMixin, UpdateView):
     def get_context_data(self, **kwargs):
         data = super(ProjectUpdate, self).get_context_data(**kwargs)
         if self.request.POST:
-            data['labels'] = LabelFormSet(self.request.POST, instance=data['project'], prefix='label_set')
-            data['permissions'] = PermissionsFormSet(self.request.POST, instance=data['project'], prefix='permissions_set', form_kwargs={'action': 'update', 'creator': data['project'].creator, 'user': self.request.user})
+            data['permissions'] = PermissionsFormSet(self.request.POST, instance=data['project'], prefix='permissions_set', form_kwargs={'action': 'update', 'creator':data['project'].creator, 'user': self.request.user})
         else:
-            data['labels'] = LabelFormSet(instance=data['project'], prefix='label_set')
-            data['permissions'] = PermissionsFormSet(instance=data['project'], prefix='permissions_set', form_kwargs={'action': 'update', 'creator': data['project'].creator, 'user': self.request.user})
+            data['permissions'] = PermissionsFormSet(instance=data['project'], prefix='permissions_set', form_kwargs={'action': 'update', 'creator':data['project'].creator, 'user': self.request.user})
         return data
 
     def form_valid(self, form):
         context = self.get_context_data()
-        labels = context['labels']
         permissions = context['permissions']
         with transaction.atomic():
-            if labels.is_valid() and permissions.is_valid():
+            if permissions.is_valid():
                 self.object = form.save()
-                labels.instance = self.object
-                labels.save()
                 permissions.instance = self.object
                 permissions.save()
 

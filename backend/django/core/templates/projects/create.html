@@ -99,7 +99,11 @@
     $('.formset_row_label').formset({
         addText: 'add label',
         deleteText: 'remove label',
-        prefix: '{{ labels.prefix }}'
+        prefix: '{{ labels.prefix }}',
+        added: function () {
+            // Reset drop down and errors from both columns when adding new rows
+            $('tr.formset_row_label').last().children(':first').find('ul.errorlist li').empty();
+        }
     });
     $('.formset_row_perm').formset({
         addText: 'add permissions',

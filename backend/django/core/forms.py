@@ -2,6 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from .models import Project, ProjectPermissions, Label
 import pandas as pd
+from pandas.errors import EmptyDataError
 
 class ProjectForm(forms.ModelForm):
     class Meta:
@@ -9,7 +10,8 @@ class ProjectForm(forms.ModelForm):
         fields = ['name', 'description']
 
     name = forms.CharField()
-    data = forms.FileField(required=False)
+    description = forms.CharField(required=False)
+    data = forms.FileField()
 
     def clean_data(self):
         allowed_types = [
@@ -28,20 +30,29 @@ class ProjectForm(forms.ModelForm):
             if data.content_type not in allowed_types:
                 raise ValidationError("File type is not supported")
 
-            if data.content_type == 'text/tab-separated-values':
-                data = pd.read_csv(data, header=None, sep='\t')
-            elif data.content_type == 'text/csv':
-                data = pd.read_csv(data, header=None)
-            else:
-                raise ValidationError("File type is not supported")
+            # For some reason when you upload data but leave other required form
+            # fields blank EmptyDataError is thrown.  I can not seem to figure
+            # out why it is thrown.
+            try:
+                if data.content_type == 'text/tab-separated-values':
+                    data = pd.read_csv(data, header=None, sep='\t')
+                elif data.content_type == 'text/csv':
+                    data = pd.read_csv(data, header=None)
+                else:
+                    raise ValidationError("File type is not supported")
 
-            if len(data.columns) > 1:
-                raise ValidationError("File should only contain one column")
+                if len(data.columns) > 1:
+                    raise ValidationError("File should only contain one column")
 
-            if len(data) < 1:
-                raise ValidationError("File should contain some data")
+                if len(data) < 1:
+                    raise ValidationError("File should contain some data")
+            except EmptyDataError:
+                pass
 
         return data
+
+class ProjectUpdateForm(ProjectForm):
+    data = forms.FileField(required=False)
 
 class LabelForm(forms.ModelForm):
     class Meta:
@@ -72,5 +83,5 @@ class ProjectPermissionsForm(forms.ModelForm):
 
         return user
 
-LabelFormSet = forms.inlineformset_factory(Project, Label, form=LabelForm, extra=1, can_delete=True)
+LabelFormSet = forms.inlineformset_factory(Project, Label, form=LabelForm, min_num=2, validate_min=True, extra=0, can_delete=True)
 PermissionsFormSet = forms.inlineformset_factory(Project, ProjectPermissions, form=ProjectPermissionsForm, extra=1, can_delete=True)
