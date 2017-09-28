@@ -1,11 +1,14 @@
 from django.shortcuts import render
 from django.contrib.auth.models import Group, User as AuthUser
+from django.contrib.auth import get_user
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+
+import math
 
 from core.serializers import (UserSerializer, AuthUserGroupSerializer,
                               AuthUserSerializer, ProjectSerializer,
@@ -14,7 +17,7 @@ from core.serializers import (UserSerializer, AuthUserGroupSerializer,
                               QueueSerializer, AssignedDataSerializer)
 from core.models import (User, Project, Model, Data, Label, DataLabel,
                          DataPrediction, Queue, DataQueue, AssignedData)
-
+import core.util as util
 
 ############################################
 #    REACT API ENDPOINTS FOR CODING VIEW   #
@@ -33,14 +36,30 @@ def grab_from_queue(request, pk):
         <errors>: Only exists if there is an error, the error message.
     """
     if request.method == 'GET':
+        q_pk = pk
         try:
-            queue = Queue.objects.get(pk=pk)
+            queue = Queue.objects.get(pk=q_pk)
         except ObjectDoesNotExist:
             return Response({'error': 'There is no queue matching that primary key.'})
 
-        labels = [label.name for label in Label.objects.all().filter(project=queue.project.pk)]
+        project = Project.objects.get(pk=queue.project.pk)
 
-        data = [data.text for data in queue.data.all()]
+        # Calculate queue parameters
+        batch_size = len(project.labels.all()) * 10
+        num_coders = len(project.projectpermissions_set.all()) + 1
+        coder_size = math.ceil(batch_size / num_coders)
+
+        # Find coding data, remove from queue, add to assigned data
+        data_qs = queue.data.all()[:coder_size]
+        data = []
+        temp = []
+        for d in data_qs:
+            data.append(d.text)
+            temp.append(AssignedData(queue=queue, data=d, user=get_user(request).user))
+        AssignedData.objects.bulk_create(temp)
+        DataQueue.objects.filter(data_id__in=[x.pk for x in data_qs]).filter(queue_id=q_pk).delete()
+
+        labels = [label.name for label in Label.objects.all().filter(project=queue.project.pk)]
 
         return Response({'labels': labels, 'data': data})
 

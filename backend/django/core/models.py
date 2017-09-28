@@ -93,7 +93,7 @@ class DataQueue(models.Model):
 
 class AssignedData(models.Model):
     class Meta:
-        unique_together = (('user', 'queue'), ('user', 'data'))
+        unique_together = (('user', 'queue', 'data'))
     user = models.ForeignKey('User')
     data = models.ForeignKey('Data')
     queue = models.ForeignKey('Queue')
