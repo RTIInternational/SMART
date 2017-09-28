@@ -39,27 +39,31 @@ def grab_from_queue(request, pk):
         q_pk = pk
         try:
             queue = Queue.objects.get(pk=q_pk)
+            project = Project.objects.get(pk=queue.project.pk)
         except ObjectDoesNotExist:
             return Response({'error': 'There is no queue matching that primary key.'})
 
-        project = Project.objects.get(pk=queue.project.pk)
+        # Check if data is already assigned to user
+        assigned_data = AssignedData.objects.filter(queue_id=q_pk).filter(user_id=get_user(request).user.pk)
+        if len(assigned_data) > 0:
+            data = [assigned.data.text for assigned in assigned_data]
+        else:
+            # Calculate queue parameters
+            batch_size = len(project.labels.all()) * 10
+            num_coders = len(project.projectpermissions_set.all()) + 1
+            coder_size = math.ceil(batch_size / num_coders)
 
-        # Calculate queue parameters
-        batch_size = len(project.labels.all()) * 10
-        num_coders = len(project.projectpermissions_set.all()) + 1
-        coder_size = math.ceil(batch_size / num_coders)
+            # Find coding data, remove from queue, add to assigned data
+            data_qs = queue.data.all()[:coder_size]
+            data = []
+            temp = []
+            for d in data_qs:
+                data.append(d.text)
+                temp.append(AssignedData(queue=queue, data=d, user=get_user(request).user))
+            AssignedData.objects.bulk_create(temp)
+            DataQueue.objects.filter(data_id__in=[x.pk for x in data_qs]).filter(queue_id=q_pk).delete()
 
-        # Find coding data, remove from queue, add to assigned data
-        data_qs = queue.data.all()[:coder_size]
-        data = []
-        temp = []
-        for d in data_qs:
-            data.append(d.text)
-            temp.append(AssignedData(queue=queue, data=d, user=get_user(request).user))
-        AssignedData.objects.bulk_create(temp)
-        DataQueue.objects.filter(data_id__in=[x.pk for x in data_qs]).filter(queue_id=q_pk).delete()
-
-        labels = [label.name for label in Label.objects.all().filter(project=queue.project.pk)]
+        labels = [label.name for label in Label.objects.all().filter(project=project.pk)]
 
         return Response({'labels': labels, 'data': data})
 
