@@ -16,14 +16,6 @@ export const setMessage = createAction(SET_MESSAGE);
 
 // Create cards by reading from a queue
 export const fetchCards = (queueID) => {
-    // Handle the case where the project has no queue
-    // NOTE: This shouldnt happen because queues are created when project is created
-    if (queueID == null) {
-        return dispatch => {
-            let message = 'There is no queue for this project.  Please have your administator add data to the project.';
-            dispatch(setMessage(message));
-        }
-    }
     let apiURL = `/api/grab_from_queue/${queueID}/`;
     return dispatch => {
         return fetch(apiURL, getConfig())

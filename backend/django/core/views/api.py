@@ -24,8 +24,6 @@ from core.models import (User, Project, Model, Data, Label, DataLabel,
 def grab_from_queue(request, pk):
     """Grab x data from the queue and add the data to assigned data.
 
-    Handle project without labels, without data in the queue, and invalid queue
-    pk.  Return error in any of those happen.
     Args:
         request: The request to the endpoint
         pk: Primary key of queue
@@ -41,12 +39,8 @@ def grab_from_queue(request, pk):
             return Response({'error': 'There is no queue matching that primary key.'})
 
         labels = [label.name for label in Label.objects.all().filter(project=queue.project.pk)]
-        if len(labels) == 0:
-            return Response({'error': 'There are no labels for this project. Please have your administator create labels.'})
 
         data = [data.text for data in queue.data.all()]
-        if len(data) == 0:
-            return Response({'error': 'There is nothing in the queue.  Please check again later.'})
 
         return Response({'labels': labels, 'data': data})
 
