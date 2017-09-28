@@ -1,5 +1,6 @@
 import random
 import redis
+import math
 
 from django.db import transaction, connection
 from django.db.models import Count, Value, IntegerField, F
@@ -7,6 +8,27 @@ from django.contrib.auth import get_user_model
 from django.conf import settings
 from core.models import (Project, Data, Queue, DataQueue, User,
                          AssignedData, DataLabel)
+
+
+def create_queue(project, label_form, permission_form):
+    """
+    Create a queue for a project.
+    batch_size = 10*labels
+    max_assigned = math.ceil(batch_size/#coders) [a]
+    queue length = math.ceil(a)*c + math.ceil(a) * (c-1)
+
+    labels and permissions are formset objects.
+    """
+    labels = [x.cleaned_data for x in label_form if x.cleaned_data != {}]
+    permissions = [x.cleaned_data for x in permission_form if x.cleaned_data != {}]
+
+    batch_size = 10 * len(labels)
+    num_coders = len(permissions) + 1
+
+    q_length = math.ceil(batch_size/num_coders) * num_coders + math.ceil(batch_size/num_coders) * (num_coders - 1)
+
+    return Queue.objects.create(project=project, length=q_length)
+
 
 # TODO: Divide these functions into a public/private API when we determine
 #  what functionality is needed by the frontend.  This file is a little

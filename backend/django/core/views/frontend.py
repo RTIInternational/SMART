@@ -104,7 +104,7 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
                 permissions.save()
 
                 # Create the project queue
-                queue = util.add_queue(project=self.object, length=10)
+                queue = util.create_queue(project=self.object, label_form=labels, permission_form=permissions)
 
                 # If data exists save attempt to save it
                 f_data = form.cleaned_data.get('data', False)
@@ -176,11 +176,6 @@ class ProjectUpdate(LoginRequiredMixin, UpdateView):
                     if len(f_data) > 0:
                         f_data['objects'] = f_data.apply(lambda x: Data(text=x[0], project=self.object, hash=x['hash']), axis=1)
                         Data.objects.bulk_create(f_data['objects'].tolist())
-
-                        # If there was no existing data then queue has always been empty so fill
-                        if len(existing_hashes) == 0:
-                            queue = self.object.queue_set.get()
-                            util.fill_queue(queue)
 
                 return redirect(self.get_success_url())
             else:
