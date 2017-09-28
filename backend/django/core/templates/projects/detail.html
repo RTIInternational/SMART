@@ -59,7 +59,7 @@
                     <a class="btn btn-primary" href="{% url 'projects:project_list' %}" role="button">
                         Return to Projects
                     </a>
-                    {% if project|proj_permission_level:request.user > 1 %}
+                    {% if project|proj_permission_level:request.user.user > 1 %}
                     <a class="btn btn-info" href="{% url 'projects:project_update' project.pk %}" role="button">
                         Update Project
                     </a>
