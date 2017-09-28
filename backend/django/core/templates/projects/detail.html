@@ -16,7 +16,7 @@
             <ul class="list-group">
             {% for perm in project.projectpermissions_set.all %}
               {% if perm.permission == 'ADMIN' %}
-              <li class="list-group-item">{{ perm.user.username }}</li>
+              <li class="list-group-item">{{ perm.user.auth_user.username }}</li>
               {% endif %}
             {% endfor %}
             </ul>
@@ -26,7 +26,7 @@
             <ul class="list-group">
             {% for perm in project.projectpermissions_set.all %}
               {% if perm.permission == 'CODER' %}
-              <li class="list-group-item">{{ perm.user.username }}</li>
+              <li class="list-group-item">{{ perm.user.auth_user.username }}</li>
               {% endif %}
             {% endfor %}
             </ul>

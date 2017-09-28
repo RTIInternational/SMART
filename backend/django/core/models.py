@@ -12,6 +12,9 @@ class User(models.Model):
         'Data', related_name='labelers', through='DataLabel'
     )
 
+    def __str__(self):
+        return self.auth_user.username
+
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_user(sender, instance, created, **kwargs):
     if created:
