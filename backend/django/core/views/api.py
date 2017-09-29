@@ -44,9 +44,9 @@ def grab_from_queue(request, pk):
             return Response({'error': 'There is no queue matching that primary key.'})
 
         # Check if data is already assigned to user
-        assigned_data = AssignedData.objects.filter(queue_id=q_pk).filter(user_id=get_user(request).user.pk)
+        assigned_data = AssignedData.objects.filter(queue_id=q_pk, user_id=get_user(request).user.pk)
         if len(assigned_data) > 0:
-            data = [assigned.data.text for assigned in assigned_data]
+            data = [[assigned.data.pk, assigned.data.text] for assigned in assigned_data]
         else:
             # Calculate queue parameters
             batch_size = len(project.labels.all()) * 10
@@ -58,14 +58,36 @@ def grab_from_queue(request, pk):
             data = []
             temp = []
             for d in data_qs:
-                data.append(d.text)
+                data.append([d.pk, d.text])
                 temp.append(AssignedData(queue=queue, data=d, user=get_user(request).user))
             AssignedData.objects.bulk_create(temp)
-            DataQueue.objects.filter(data_id__in=[x.pk for x in data_qs]).filter(queue_id=q_pk).delete()
+            DataQueue.objects.filter(data_id__in=[x.pk for x in data_qs], queue_id=q_pk).delete()
 
-        labels = [label.name for label in Label.objects.all().filter(project=project.pk)]
+        labels = [[label.pk, label.name] for label in Label.objects.all().filter(project=project.pk)]
 
-        return Response({'labels': labels, 'data': data})
+        return Response({'labels': labels, 'data': data, 'queue_id': q_pk})
+
+@api_view(['POST'])
+def annotate_data(request, pk):
+    """Annotate a single datum which is in the assigneddata queue given the user,
+       data_id, queue_id, and label_id.  This will remove it from assigneddata
+       and add it to labeleddata.
+    """
+    q_id = request.data['queueID']
+    l_id = request.data['labelID']
+    d_id = pk
+    u_id = get_user(request).user.pk
+
+    if request.method == 'POST':
+        assignedDatum = AssignedData.objects.get(data_id=d_id, queue_id=q_id, user_id=u_id)
+
+        DataLabel.objects.create(data=assignedDatum.data,
+                                 user=assignedDatum.user,
+                                 label=Label.objects.get(pk=l_id))
+
+        assignedDatum.delete()
+
+        return Response({})
 
 
 ################################

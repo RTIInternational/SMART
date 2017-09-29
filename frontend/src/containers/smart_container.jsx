@@ -1,7 +1,7 @@
 import React from 'react';
 import { connect } from 'react-redux';
 
-import { fetchCards, passCard, popCard } from '../actions/classifier';
+import { fetchCards, annotateCard, passCard, popCard } from '../actions/classifier';
 
 import Smart from '../components/Smart';
 
@@ -21,12 +21,15 @@ const mapDispatchToProps = (dispatch) => {
         fetchCards: () => {
             dispatch(fetchCards(QUEUE_ID))
         },
+        annotateCard: (dataID, labelID, queueID) => {
+            dispatch(annotateCard(dataID, labelID, queueID))
+        },
         passCard: () => {
             dispatch(passCard())
         },
         popCard: () => {
             dispatch(popCard())
-        }
+        },
     };
 };
 

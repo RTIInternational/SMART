@@ -1,7 +1,7 @@
 import { createAction } from 'redux-actions';
 import 'whatwg-fetch';
 
-import { getConfig } from '../utils/fetch_configs';
+import { getConfig, postConfig } from '../utils/fetch_configs';
 
 export const PASS_CARD = 'PASS_CARD';
 export const POP_CARD = 'POP_CARD';
@@ -37,7 +37,8 @@ export const fetchCards = (queueID) => {
                     const card = {
                         id: i,
                         options: response.labels,
-                        text: response.data[i]
+                        text: response.data[i],
+                        queue_id: response.queue_id,
                     }
                     dispatch(pushCard(card));
                 }
@@ -45,3 +46,27 @@ export const fetchCards = (queueID) => {
             .catch(err => console.log("Error: ", err));
     }
 };
+
+export const annotateCard = (dataID, labelID, queueID) => {
+    let payload = {
+        labelID: labelID,
+        queueID: queueID,
+    }
+    let apiURL = `/api/annotate_data/${dataID}/`;
+    return dispatch => {
+        return fetch(apiURL, postConfig(payload))
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                else {
+                    const error = new Error(response.statusText)
+                    error.response = response;
+                    throw error;
+                }
+            })
+            .then(response => {
+                dispatch(popCard())
+            })
+    }
+}
