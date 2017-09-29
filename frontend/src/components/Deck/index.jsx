@@ -55,9 +55,10 @@ class Deck extends React.Component {
             });
         }
         else {
+            let blankDeckMessage = (message) ? message : "No more data to label at this time. Please check back later";
             deck = (
                 <Well bsSize="large">
-                    {message}
+                    { blankDeckMessage }
                 </Well>
             );
         }
