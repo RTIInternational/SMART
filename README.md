@@ -20,13 +20,17 @@ Run `docker-compose up` to start all docker containers.  This will start up the 
 
 If there is ever a dependency change than you will need to re-build the containers using the following commands:
 
-  docker-compose build <container with new dependency>
-  docker-compose rm <container with new dependency>
-  docker-compose up
+```shell
+docker-compose build <container with new dependency>
+docker-compose rm <container with new dependency>
+docker-compose up
+```
 
 If your database is blank, you will need to run migrations to initialize all the required schema objects; you can start a blank backend container and run the migration django management command with the following command:
 
-    docker-compose run --rm smart_backend python manage.py migrate
+```shell
+docker-compose run --rm smart_backend python manage.py migrate
+```
 
 The various services will be available on your machine at their standard ports, but you can override the port numbers if they conflict with other running services. For example, you don't want to run SMART's instance of Postgres on port 5432 if you already have your own local instance of Postgres running on port 5432. To override a port, create a file named `.env` in the `envs/dev` directory that looks something like this:
 
