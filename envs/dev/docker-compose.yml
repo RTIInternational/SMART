@@ -5,18 +5,11 @@ services:
     extends:
       file: ../docker-common.yml
       service: postgres
-    volumes_from:
-      - pgdata
 
   redis:
     extends:
       file: ../docker-common.yml
       service: redis
-
-  pgdata:
-    extends:
-      file: ../docker-common.yml
-      service: pgdata
 
   smart_backend:
     extends:
@@ -46,3 +39,11 @@ services:
       - postgres
       - redis
       - smart_backend
+
+volumes:
+  smart_pgdata:
+    external:
+      name: vol_smart_pgdata
+  smart_data:
+    external:
+      name: vol_smart_data
