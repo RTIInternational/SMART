@@ -10,6 +10,8 @@ from core.models import (Project, Data, Queue, DataQueue, User,
                          AssignedData, DataLabel)
 
 
+# TODO: This create_queue should be refactored in favor of add_queue during issue
+# #50 - Integrate Redis
 def create_queue(project, label_form, permission_form):
     """
     Create a queue for a project.
