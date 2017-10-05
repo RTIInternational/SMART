@@ -2,7 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from .models import Project, ProjectPermissions, Label
 import pandas as pd
-from pandas.errors import EmptyDataError
+from pandas.errors import EmptyDataError, ParserError
 
 class ProjectForm(forms.ModelForm):
     class Meta:
@@ -30,9 +30,6 @@ class ProjectForm(forms.ModelForm):
             if data.content_type not in allowed_types:
                 raise ValidationError("File type is not supported")
 
-            # For some reason when you upload data but leave other required form
-            # fields blank EmptyDataError is thrown.  I can not seem to figure
-            # out why it is thrown.
             try:
                 if data.content_type == 'text/tab-separated-values':
                     data = pd.read_csv(data, header=None, sep='\t')
@@ -47,7 +44,13 @@ class ProjectForm(forms.ModelForm):
                 if len(data) < 1:
                     raise ValidationError("File should contain some data")
             except EmptyDataError:
+                # For some reason when you upload data but leave other required form
+                # fields blank EmptyDataError is thrown.  I can not seem to figure
+                # out why it is thrown.
                 pass
+            except ParserError:
+                # If there was an error while parsing then raise invalid file error
+                raise ValidationError("Invlaid file, unable to parse the file")
 
         return data
 
