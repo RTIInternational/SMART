@@ -16,7 +16,7 @@
             <ul class="list-group">
             {% for perm in project.projectpermissions_set.all %}
               {% if perm.permission == 'ADMIN' %}
-              <li class="list-group-item">{{ perm.user.username }}</li>
+              <li class="list-group-item">{{ perm.user.auth_user.username }}</li>
               {% endif %}
             {% endfor %}
             </ul>
@@ -26,7 +26,7 @@
             <ul class="list-group">
             {% for perm in project.projectpermissions_set.all %}
               {% if perm.permission == 'CODER' %}
-              <li class="list-group-item">{{ perm.user.username }}</li>
+              <li class="list-group-item">{{ perm.user.auth_user.username }}</li>
               {% endif %}
             {% endfor %}
             </ul>
@@ -40,7 +40,7 @@
             <div class="col-md-4">
                 <h4>Labels</h4>
                 <ul class="list-group">
-                {% for label in project.label_set.all %}
+                {% for label in project.labels.all %}
                     <li class="list-group-item">{{ label.name }}</li>
                 {% endfor %}
                 </ul>
@@ -59,7 +59,7 @@
                     <a class="btn btn-primary" href="{% url 'projects:project_list' %}" role="button">
                         Return to Projects
                     </a>
-                    {% if project|proj_permission_level:request.user > 1 %}
+                    {% if project|proj_permission_level:request.user.user > 1 %}
                     <a class="btn btn-info" href="{% url 'projects:project_update' project.pk %}" role="button">
                         Update Project
                     </a>

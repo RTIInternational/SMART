@@ -7,4 +7,5 @@ urlpatterns = [
     url(r'^projects/(?P<pk>\d+)/$', frontend.ProjectDetail.as_view(), name='project_detail'),
     url(r'^projects/(?P<pk>\d+)/update/$', frontend.ProjectUpdate.as_view(), name='project_update'),
     url(r'^projects/(?P<pk>\d+)/delete/$', frontend.ProjectDelete.as_view(), name='project_delete'),
+    url(r'^projects/(?P<pk>\d+)/code/$', frontend.ProjectCode.as_view(), name='project_code'),
 ]

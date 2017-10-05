@@ -2,6 +2,8 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 from django.urls import reverse
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 class User(models.Model):
     # Link to the auth user, since we're basically just extending it
@@ -10,10 +12,22 @@ class User(models.Model):
         'Data', related_name='labelers', through='DataLabel'
     )
 
+    def __str__(self):
+        return self.auth_user.username
+
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def create_user(sender, instance, created, **kwargs):
+    if created:
+        User.objects.create(auth_user=instance)
+
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def save_user(sender, instance, **kwargs):
+    instance.user.save()
+
 class Project(models.Model):
     name = models.TextField()
     description = models.TextField(blank=True)
-    creator = models.ForeignKey(settings.AUTH_USER_MODEL)
+    creator = models.ForeignKey('User')
 
     def get_absolute_url(self):
         return reverse('projects:project_detail', kwargs={'pk': self.pk})
@@ -25,7 +39,7 @@ class ProjectPermissions(models.Model):
         ('ADMIN', 'Admin'),
         ('CODER', 'Coder'),
     )
-    user = models.ForeignKey(settings.AUTH_USER_MODEL)
+    user = models.ForeignKey('User')
     project = models.ForeignKey('Project')
     permission = models.CharField(max_length=5,choices=PERM_CHOICES)
 
@@ -41,9 +55,15 @@ class Data(models.Model):
     hash = models.CharField(max_length=128)
     project = models.ForeignKey('Project')
 
+    def __str__(self):
+        return self.text
+
 class Label(models.Model):
     name = models.TextField()
-    project = models.ForeignKey('Project')
+    project = models.ForeignKey('Project', related_name='labels', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
 
 class DataLabel(models.Model):
     class Meta:
@@ -76,7 +96,7 @@ class DataQueue(models.Model):
 
 class AssignedData(models.Model):
     class Meta:
-        unique_together = (('user', 'queue'), ('user', 'data'))
+        unique_together = (('user', 'queue', 'data'))
     user = models.ForeignKey('User')
     data = models.ForeignKey('Data')
     queue = models.ForeignKey('Queue')

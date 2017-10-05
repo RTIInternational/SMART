@@ -7,5 +7,12 @@
 {% endblock %}
 
 {% block scripts_body %}
-{% render_bundle 'smart' 'js' %}
+  <script type="text/javascript">
+    {% if pk is none %}
+    window.QUEUE_ID = null;
+    {% else %}
+    window.QUEUE_ID = {{ pk }};
+    {% endif %}
+  </script>
+  {% render_bundle 'smart' 'js' %}
 {% endblock %}

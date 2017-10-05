@@ -1,10 +1,11 @@
 import { handleActions } from 'redux-actions';
 import update from 'immutability-helper';
 
-import { PASS_CARD, POP_CARD, PUSH_CARD } from '../actions/classifier'
+import { PASS_CARD, POP_CARD, PUSH_CARD, SET_MESSAGE } from '../actions/classifier'
 
 const initialState = {
-    cards: []
+    cards: [],
+    message: ''
 };
 
 const classifier = handleActions({
@@ -21,6 +22,9 @@ const classifier = handleActions({
     ),
     [PUSH_CARD]: (state, action) => (
         update(state, { cards: { $push: [action.payload] } } )
+    ),
+    [SET_MESSAGE]: (state, action) => (
+        update(state, { message: { $set: [action.payload] } } )
     )
 }, initialState);
 

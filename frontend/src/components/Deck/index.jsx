@@ -12,7 +12,7 @@ class Deck extends React.Component {
     }
     
     render() {
-        const { cards, passCard, popCard } = this.props;
+        const { message, cards, passCard, popCard, annotateCard } = this.props;
         const cardCount = cards.length;
 
         let deck;
@@ -36,11 +36,11 @@ class Deck extends React.Component {
                     <Card className="full" style={style} key={card.id}>
                         <h2>Card {card.id + 1}</h2>
                         <p>
-                            Card content
+                            { card.text[1] }
                         </p>
                         <ButtonToolbar bsClass="btn-toolbar pull-right">
                             {card.options.map( (opt) => (
-                                <Button onClick={popCard} bsStyle="primary" key={`deck-button-${opt}`}>Classification {opt}</Button>
+                                <Button onClick={() => annotateCard(card.text[0], opt[0], card.queue_id)} bsStyle="primary" key={`deck-button-${opt[1]}`}>{opt[1]}</Button>
                             ))}
                             { cardCount > 1 && 
                                 <Button onClick={passCard} bsStyle="info">Skip</Button>
@@ -55,9 +55,10 @@ class Deck extends React.Component {
             });
         }
         else {
+            let blankDeckMessage = (message) ? message : "No more data to label at this time. Please check back later";
             deck = (
                 <Well bsSize="large">
-                    No more Cards! Please check again later.
+                    { blankDeckMessage }
                 </Well>
             );
         }
@@ -72,9 +73,11 @@ class Deck extends React.Component {
 
 Deck.propTypes = {
     fetchCards: PropTypes.func.isRequired,
+    annotateCard: PropTypes.func.isRequired,
     passCard: PropTypes.func.isRequired,
     popCard: PropTypes.func.isRequired,
     cards: PropTypes.arrayOf(PropTypes.object),
+    message: PropTypes.string
 };
 
 export default Deck;

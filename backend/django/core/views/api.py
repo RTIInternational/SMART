@@ -1,17 +1,98 @@
 from django.shortcuts import render
 from django.contrib.auth.models import Group, User as AuthUser
+from django.contrib.auth import get_user
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import viewsets, permissions
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
+import math
 
 from core.serializers import (UserSerializer, AuthUserGroupSerializer,
                               AuthUserSerializer, ProjectSerializer,
                               ModelSerializer, LabelSerializer, DataSerializer,
                               DataLabelSerializer, DataPredictionSerializer,
-                              QueueSerializer, DataQueueSerializer,
-                              AssignedDataSerializer)
+                              QueueSerializer, AssignedDataSerializer)
 from core.models import (User, Project, Model, Data, Label, DataLabel,
                          DataPrediction, Queue, DataQueue, AssignedData)
+import core.util as util
+
+############################################
+#    REACT API ENDPOINTS FOR CODING VIEW   #
+############################################
+
+@api_view(['GET'])
+def grab_from_queue(request, pk):
+    """Grab x data from the queue and add the data to assigned data.
+
+    Args:
+        request: The request to the endpoint
+        pk: Primary key of queue
+    Returns:
+        labels: The project labels
+        data: The data in the queue
+        <errors>: Only exists if there is an error, the error message.
+    """
+    if request.method == 'GET':
+        q_pk = pk
+        try:
+            queue = Queue.objects.get(pk=q_pk)
+            project = Project.objects.get(pk=queue.project.pk)
+        except ObjectDoesNotExist:
+            return Response({'error': 'There is no queue matching that primary key.'})
+
+        # Check if data is already assigned to user
+        assigned_data = AssignedData.objects.filter(queue_id=q_pk, user_id=get_user(request).user.pk)
+        if len(assigned_data) > 0:
+            data = [[assigned.data.pk, assigned.data.text] for assigned in assigned_data]
+        else:
+            # Calculate queue parameters
+            batch_size = len(project.labels.all()) * 10
+            num_coders = len(project.projectpermissions_set.all()) + 1
+            coder_size = math.ceil(batch_size / num_coders)
+
+            # Find coding data, remove from queue, add to assigned data
+            data_qs = queue.data.all()[:coder_size]
+            data = []
+            temp = []
+            for d in data_qs:
+                data.append([d.pk, d.text])
+                temp.append(AssignedData(queue=queue, data=d, user=get_user(request).user))
+            AssignedData.objects.bulk_create(temp)
+            DataQueue.objects.filter(data_id__in=[x.pk for x in data_qs], queue_id=q_pk).delete()
+
+        labels = [[label.pk, label.name] for label in Label.objects.all().filter(project=project.pk)]
+
+        return Response({'labels': labels, 'data': data, 'queue_id': q_pk})
+
+@api_view(['POST'])
+def annotate_data(request, pk):
+    """Annotate a single datum which is in the assigneddata queue given the user,
+       data_id, queue_id, and label_id.  This will remove it from assigneddata
+       and add it to labeleddata.
+    """
+    q_id = request.data['queueID']
+    l_id = request.data['labelID']
+    d_id = pk
+    u_id = get_user(request).user.pk
+
+    if request.method == 'POST':
+        assignedDatum = AssignedData.objects.get(data_id=d_id, queue_id=q_id, user_id=u_id)
+
+        DataLabel.objects.create(data=assignedDatum.data,
+                                 user=assignedDatum.user,
+                                 label=Label.objects.get(pk=l_id))
+
+        assignedDatum.delete()
+
+        return Response({})
+
+
+################################
+#    DRF VIEWSET API CLASSES   #
+################################
 
 # TODO establish more restrictive permissions
 # AuthUsers should be write-only for unauthenticated users
@@ -67,11 +148,6 @@ class DataPredictionViewSet(viewsets.ModelViewSet):
 class QueueViewSet(viewsets.ModelViewSet):
     queryset = Queue.objects.all().order_by('id')
     serializer_class = QueueSerializer
-    permission_classes = (permissions.IsAuthenticated,)
-
-class DataQueueViewSet(viewsets.ModelViewSet):
-    queryset = DataQueue.objects.all().order_by('id')
-    serializer_class = DataQueueSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
 class AssignedDataViewSet(viewsets.ModelViewSet):
