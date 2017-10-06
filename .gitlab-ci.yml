@@ -1,7 +1,7 @@
 variables:
-  POSTGRES_PASSWORD=my-secret-password
-  POSTGRES_USER=smart
-  POSTGRES_DB=smart
+  POSTGRES_PASSWORD: my-secret-password
+  POSTGRES_USER: smart
+  POSTGRES_DB: smart
 
 services:
   - redis:3.0
