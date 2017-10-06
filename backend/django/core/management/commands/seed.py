@@ -22,7 +22,7 @@ def seed_database(nouser=False, nodata=False):
             print("SEED: test User Already Exists - user.pk: {}".format(user.pk))
         except User.DoesNotExist:
             auth_user = AuthUser.objects.create_user(username=SEED_USERNAME, password=SEED_PASSWORD, email=SEED_EMAIL)
-            user = User.objects.create(auth_user=auth_user)
+            user = User.objects.get(auth_user=auth_user)
             print("SEED: New test User Created - user.pk: {}".format(user.pk))
 
     if not nodata:
