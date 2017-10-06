@@ -165,8 +165,8 @@ def test_init_redis_queues_empty(db, test_redis):
     assert_redis_matches_db(test_redis)
 
 
-def test_init_redis_queues_fails_on_nonempty_db(db, test_project, test_redis,
-                                                test_queue):
+def test_init_redis_queues_fails_on_existing_queue_keys(db, test_project, test_redis,
+                                                        test_queue):
     fill_queue(test_queue)
     init_redis_queues()
 
