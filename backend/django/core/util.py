@@ -47,7 +47,7 @@ def create_user(username, password, email):
         password=password,
         email=email)
 
-    return User.objects.create(auth_user=auth_user)
+    return User.objects.get(auth_user=auth_user)
 
 
 def iter_sample(iterable, sample_len):
