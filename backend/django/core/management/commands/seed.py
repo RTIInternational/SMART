@@ -22,11 +22,11 @@ def seed_database(noprofile=False, nodata=False):
             print("SEED: test User Already Exists - user.pk: {}".format(profile.pk))
         except Profile.DoesNotExist:
             auth_user = AuthUser.objects.create_user(username=SEED_USERNAME, password=SEED_PASSWORD, email=SEED_EMAIL)
-            profile = Profile.objects.create(user=auth_user)
+            profile = Profile.objects.get(user=auth_user)
             print("SEED: New test User Created - profile.pk: {}".format(profile.pk))
 
     if not nodata:
-        project, created = Project.objects.get_or_create(name=SEED_PROJECT)
+        project, created = Project.objects.get_or_create(name=SEED_PROJECT, creator=profile)
         if not created:
             print('SEED: seed-data Project Already Exists - project.pk: {}'.format(project.pk))
         else:
