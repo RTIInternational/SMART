@@ -1,14 +1,14 @@
 from django.contrib.auth.models import Group, User as AuthUser
 from django.conf import settings
 from rest_framework import serializers
-from core.models import (User, Project, Model, Data, Label, DataLabel,
+from core.models import (Profile, Project, Model, Data, Label, DataLabel,
                          DataPrediction, Queue, DataQueue, AssignedData)
 
 
-class UserSerializer(serializers.HyperlinkedModelSerializer):
+class ProfileSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
-        model = User
-        fields = ('labeled_data', 'auth_user')
+        model = Profile
+        fields = ('labeled_data', 'user')
 
 class AuthUserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
@@ -45,7 +45,7 @@ class DataSerializer(serializers.HyperlinkedModelSerializer):
 class DataLabelSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = DataLabel
-        fields = ('data', 'user', 'label')
+        fields = ('data', 'profile', 'label')
 
 class DataPredictionSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
@@ -56,9 +56,9 @@ class QueueSerializer(serializers.HyperlinkedModelSerializer):
     data = serializers.StringRelatedField(many=True)
     class Meta:
         model = Queue
-        fields = ('user', 'project', 'length', 'data')
+        fields = ('profile', 'project', 'length', 'data')
 
 class AssignedDataSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = AssignedData
-        fields = ('user', 'data', 'queue', 'assigned_timestamp')
+        fields = ('profile', 'data', 'queue', 'assigned_timestamp')

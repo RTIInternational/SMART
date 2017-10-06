@@ -4,7 +4,7 @@ import csv
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth import get_user_model
 
-from core.models import User as User, Project, Label, Data
+from core.models import Profile, Project, Label, Data
 
 AuthUser = get_user_model()
 
@@ -15,15 +15,15 @@ SEED_PROJECT = 'seed-data'
 SEED_FILE_PATH = './core/data/SemEval-2016-Task6/train-feminism.csv'
 SEED_LABELS = ['AGAINST', 'FAVOR', 'NONE']
 
-def seed_database(nouser=False, nodata=False):
-    if not nouser:
+def seed_database(noprofile=False, nodata=False):
+    if not noprofile:
         try:
-            user = User.objects.get(auth_user__username=SEED_USERNAME)
-            print("SEED: test User Already Exists - user.pk: {}".format(user.pk))
-        except User.DoesNotExist:
+            profile = Profile.objects.get(user__username=SEED_USERNAME)
+            print("SEED: test User Already Exists - user.pk: {}".format(profile.pk))
+        except Profile.DoesNotExist:
             auth_user = AuthUser.objects.create_user(username=SEED_USERNAME, password=SEED_PASSWORD, email=SEED_EMAIL)
-            user = User.objects.create(auth_user=auth_user)
-            print("SEED: New test User Created - user.pk: {}".format(user.pk))
+            profile = Profile.objects.create(user=auth_user)
+            print("SEED: New test User Created - profile.pk: {}".format(profile.pk))
 
     if not nodata:
         project, created = Project.objects.get_or_create(name=SEED_PROJECT)
@@ -40,13 +40,13 @@ def seed_database(nouser=False, nodata=False):
 
 
 class Command(BaseCommand):
-    help = 'Seeds the database with a test user and sample data'
+    help = 'Seeds the database with a test profile and sample data'
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--nouser',
+            '--noprofile',
             action='store_true',
-            help="Will not create a new test user"
+            help="Will not create a new test profile"
         )
         parser.add_argument(
             '--nodata',
@@ -55,5 +55,5 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        seed_database(nouser=options['nouser'],
+        seed_database(noprofile=options['noprofile'],
                       nodata=options['nodata'])

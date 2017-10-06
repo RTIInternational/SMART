@@ -10,12 +10,12 @@ from rest_framework.response import Response
 
 import math
 
-from core.serializers import (UserSerializer, AuthUserGroupSerializer,
+from core.serializers import (ProfileSerializer, AuthUserGroupSerializer,
                               AuthUserSerializer, ProjectSerializer,
                               ModelSerializer, LabelSerializer, DataSerializer,
                               DataLabelSerializer, DataPredictionSerializer,
                               QueueSerializer, AssignedDataSerializer)
-from core.models import (User, Project, Model, Data, Label, DataLabel,
+from core.models import (Profile, Project, Model, Data, Label, DataLabel,
                          DataPrediction, Queue, DataQueue, AssignedData)
 import core.util as util
 
@@ -44,7 +44,7 @@ def grab_from_queue(request, pk):
             return Response({'error': 'There is no queue matching that primary key.'})
 
         # Check if data is already assigned to user
-        assigned_data = AssignedData.objects.filter(queue_id=q_pk, user_id=get_user(request).user.pk)
+        assigned_data = AssignedData.objects.filter(queue=queue, profile=request.user.profile)
         if len(assigned_data) > 0:
             data = [[assigned.data.pk, assigned.data.text] for assigned in assigned_data]
         else:
@@ -59,11 +59,11 @@ def grab_from_queue(request, pk):
             temp = []
             for d in data_qs:
                 data.append([d.pk, d.text])
-                temp.append(AssignedData(queue=queue, data=d, user=get_user(request).user))
+                temp.append(AssignedData(queue=queue, data=d, profile=request.user.profile))
             AssignedData.objects.bulk_create(temp)
-            DataQueue.objects.filter(data_id__in=[x.pk for x in data_qs], queue_id=q_pk).delete()
+            DataQueue.objects.filter(data_id__in=[x.pk for x in data_qs], queue=queue).delete()
 
-        labels = [[label.pk, label.name] for label in Label.objects.all().filter(project=project.pk)]
+        labels = [[label.pk, label.name] for label in Label.objects.all().filter(project=project)]
 
         return Response({'labels': labels, 'data': data, 'queue_id': q_pk})
 
@@ -73,17 +73,17 @@ def annotate_data(request, pk):
        data_id, queue_id, and label_id.  This will remove it from assigneddata
        and add it to labeleddata.
     """
-    q_id = request.data['queueID']
-    l_id = request.data['labelID']
-    d_id = pk
-    u_id = get_user(request).user.pk
+    queue_id = request.data['queueID']
+    label_id = request.data['labelID']
+    data_id = pk
+    profile = request.user.profile
 
     if request.method == 'POST':
-        assignedDatum = AssignedData.objects.get(data_id=d_id, queue_id=q_id, user_id=u_id)
+        assignedDatum = AssignedData.objects.get(data_id=data_id, queue_id=queue_id, profile=profile)
 
         DataLabel.objects.create(data=assignedDatum.data,
-                                 user=assignedDatum.user,
-                                 label=Label.objects.get(pk=l_id))
+                                 profile=assignedDatum.profile,
+                                 label=Label.objects.get(pk=label_id))
 
         assignedDatum.delete()
 
@@ -100,9 +100,9 @@ def annotate_data(request, pk):
 # managed by the server probably shouldn't be exposed via the API
 # (ex. Queues, Models, AssignedData, many-to-many join fields)
 
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all().order_by('id')
-    serializer_class = UserSerializer
+class ProfileViewSet(viewsets.ModelViewSet):
+    queryset = Profile.objects.all().order_by('id')
+    serializer_class = ProfileSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
 class AuthUserGroupViewSet(viewsets.ModelViewSet):
