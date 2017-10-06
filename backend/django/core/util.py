@@ -120,11 +120,11 @@ def sync_redis_queues():
     init_redis_queues()
 
 
-def create_project(name):
+def create_project(name, creator):
     '''
-    Create a project with the given name.
+    Create a project with the given name and creator.
     '''
-    return Project.objects.create(name=name)
+    return Project.objects.create(name=name, creator=creator)
 
 
 def add_data(project, data):
