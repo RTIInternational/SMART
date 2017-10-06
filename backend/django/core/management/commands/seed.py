@@ -26,7 +26,7 @@ def seed_database(nouser=False, nodata=False):
             print("SEED: New test User Created - user.pk: {}".format(user.pk))
 
     if not nodata:
-        project, created = Project.objects.get_or_create(name=SEED_PROJECT)
+        project, created = Project.objects.get_or_create(name=SEED_PROJECT, creator=user)
         if not created:
             print('SEED: seed-data Project Already Exists - project.pk: {}'.format(project.pk))
         else:
