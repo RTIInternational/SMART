@@ -199,6 +199,8 @@ def fill_queue(queue):
     with connection.cursor() as c:
         c.execute(sql, (*cte_params, *sample_size_params))
 
+    sync_redis_queues()
+
 
 def pop_first_nonempty_queue(project, profile=None):
     '''
