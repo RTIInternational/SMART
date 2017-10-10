@@ -202,7 +202,7 @@ def pop_first_nonempty_queue(project, profile=None):
     project_queues = (project.queue_set.filter(profile=None)
                       .annotate(priority=Value(2, IntegerField())))
 
-    eligible_queue_ids = [queue.pk for queue in
+    eligible_queue_ids = ['queue:'+str(queue.pk) for queue in
                           (profile_queues.union(project_queues)
                            .order_by('priority', 'pk'))]
 
@@ -215,7 +215,7 @@ def pop_first_nonempty_queue(project, profile=None):
     for _, k in pairs(KEYS) do
       local m = redis.call('LPOP', k)
       if m then
-        return {tonumber(k), tonumber(m)}
+        return {k, m}
       end
     end
     return nil
@@ -226,7 +226,8 @@ def pop_first_nonempty_queue(project, profile=None):
     if result is None:
         return (None, None)
     else:
-        queue_id, data_id = result
+        queue_id = result[0].decode().split(':')[1]
+        data_id = result[1].decode().split(':')[1]
         return (Queue.objects.filter(pk=queue_id).get(),
                 Data.objects.filter(pk=data_id).get())
 
@@ -243,10 +244,12 @@ def pop_queue(queue):
     concurrency issues.
     '''
     # Redis first, since this op is guaranteed to be atomic
-    data_id = settings.REDIS.rpop(queue.pk)
+    data_id = settings.REDIS.rpop('queue:'+str(queue.pk))
 
     if data_id is None:
         return None
+    else:
+        data_id = data_id.decode().split(':')[1]
 
     data_obj = Data.objects.filter(pk=data_id).get()
 
@@ -349,4 +352,4 @@ def unassign_datum(datum, profile):
     queue = assignment.queue
     assignment.delete()
 
-    settings.REDIS.lpush(queue.pk, datum.pk)
+    settings.REDIS.lpush('queue:'+str(queue.pk), 'data:'+str(datum.pk))
