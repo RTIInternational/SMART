@@ -38,7 +38,7 @@ def assert_redis_matches_db(test_redis):
             assert test_redis.llen('queue:'+str(q.pk)) == data_count
         else:
             # Empty lists don't exist in redis
-            assert not test_redis.exists(q.pk)
+            assert not test_redis.exists('queue:'+str(q.pk))
 
 
 def test_create_profile(db):
@@ -207,7 +207,7 @@ def test_pop_empty_queue(db, test_project, test_redis):
     datum = pop_queue(queue)
 
     assert datum is None
-    assert not test_redis.exists(queue.pk)
+    assert not test_redis.exists('queue:'+str(queue.pk))
     assert queue.data.count() == 0
 
 
@@ -220,7 +220,7 @@ def test_pop_nonempty_queue(db, test_project_data, test_redis):
     datum = pop_queue(queue)
 
     assert isinstance(datum, Data)
-    assert test_redis.llen(queue.pk) == (queue_len - 1)
+    assert test_redis.llen('queue:'+str(queue.pk)) == (queue_len - 1)
     assert queue.data.count() == queue_len
 
 
@@ -235,10 +235,10 @@ def test_pop_only_affects_one_queue(db, test_project_data, test_redis):
     datum = pop_queue(queue)
 
     assert isinstance(datum, Data)
-    assert test_redis.llen(queue.pk) == (queue_len - 1)
+    assert test_redis.llen('queue:'+str(queue.pk)) == (queue_len - 1)
     assert queue.data.count() == queue_len
 
-    assert test_redis.llen(queue2.pk) == queue_len
+    assert test_redis.llen('queue:'+str(queue2.pk)) == queue_len
     assert queue2.data.count() == queue_len
 
 
@@ -403,7 +403,7 @@ def test_assign_datum_project_queue_pops_queues(db, test_queue, test_profile, te
     datum = assign_datum(test_profile, test_queue.project)
 
     # Make sure the datum was removed from queues
-    assert test_redis.llen(test_queue.pk) == test_queue.length - 1
+    assert test_redis.llen('queue:'+str(test_queue.pk)) == test_queue.length - 1
 
     # but not from the db queue
     assert test_queue.data.count() == test_queue.length
@@ -447,12 +447,12 @@ def test_assign_datum_profile_queue_pops_queues(db, test_profile_queue, test_pro
     datum = assign_datum(test_profile, test_profile_queue.project)
 
     # Make sure the datum was removed from the correct queues
-    assert test_redis.llen(test_profile_queue.pk) == test_profile_queue.length - 1
+    assert test_redis.llen('queue:'+str(test_profile_queue.pk)) == test_profile_queue.length - 1
 
     # ...but not the other queues
     assert test_profile_queue.data.count() == test_profile_queue.length
     assert datum in test_profile_queue.data.all()
-    assert test_redis.llen(test_profile_queue2.pk) == test_profile_queue2.length
+    assert test_redis.llen('queue:'+str(test_profile_queue2.pk)) == test_profile_queue2.length
     assert test_profile_queue2.data.count() == test_profile_queue2.length
 
 
@@ -469,7 +469,7 @@ def test_init_redis_queues_ignores_assigned_data(db, test_profile, test_queue, t
     init_redis_queues()
 
     # Make sure the assigned datum didn't get into the redis queue
-    assert test_redis.llen(test_queue.pk) == test_queue.length - 1
+    assert test_redis.llen('queue:'+str(test_queue.pk)) == test_queue.length - 1
 
 
 def test_label_data(db, test_profile, test_queue, test_redis):
@@ -528,18 +528,18 @@ def test_unassign(db, test_profile, test_project_data, test_queue, test_redis):
     fill_queue(test_queue)
     init_redis_queues()
 
-    assert test_redis.llen(test_queue.pk) == test_queue.length
+    assert test_redis.llen('queue:'+str(test_queue.pk)) == test_queue.length
 
     datum = get_assignment(test_profile, test_project_data)
 
-    assert test_redis.llen(test_queue.pk) == (test_queue.length - 1)
+    assert test_redis.llen('queue:'+str(test_queue.pk)) == (test_queue.length - 1)
     assert AssignedData.objects.filter(
         data=datum,
         profile=test_profile).exists()
 
     unassign_datum(datum, test_profile)
 
-    assert test_redis.llen(test_queue.pk) == test_queue.length
+    assert test_redis.llen('queue:'+str(test_queue.pk)) == test_queue.length
     assert not AssignedData.objects.filter(
         data=datum,
         profile=test_profile).exists()
