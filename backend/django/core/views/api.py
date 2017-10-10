@@ -18,6 +18,7 @@ from core.serializers import (UserSerializer, AuthUserGroupSerializer,
 from core.models import (User, Project, Model, Data, Label, DataLabel,
                          DataPrediction, Queue, DataQueue, AssignedData)
 import core.util as util
+from core.pagination import SmartPagination
 
 ############################################
 #    REACT API ENDPOINTS FOR CODING VIEW   #
@@ -129,6 +130,7 @@ class DataViewSet(viewsets.ModelViewSet):
     queryset = Data.objects.all().order_by('id')
     serializer_class = DataSerializer
     permission_classes = (permissions.IsAuthenticated,)
+    pagination_class = SmartPagination
 
 class LabelViewSet(viewsets.ModelViewSet):
     queryset = Label.objects.all().order_by('id')

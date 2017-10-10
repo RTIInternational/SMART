@@ -64,9 +64,9 @@ def test_create_user(db):
     assert_obj_exists(User, { 'auth_user': auth_user })
 
 
-def test_create_project(db):
+def test_create_project(db, test_user):
     name = 'test_project'
-    project = create_project(name)
+    project = create_project(name, test_user)
 
     assert_obj_exists(Project, { 'name': name })
 
@@ -142,11 +142,11 @@ def test_fill_multiple_queues(db, test_queue):
     assert test_queue2.data.count() == 0
 
 
-def test_fill_multiple_projects(db, test_queue):
+def test_fill_multiple_projects(db, test_queue, test_user):
     project_data_count = test_queue.project.data_set.count()
     test_queue.length = project_data_count + 1
     test_queue.save()
-    test_project2 = create_project('test_project2')
+    test_project2 = create_project('test_project2', test_user)
     project2_data = read_test_data()
 
     add_data(test_project2, [d['text'] for d in project2_data])
@@ -165,8 +165,8 @@ def test_init_redis_queues_empty(db, test_redis):
     assert_redis_matches_db(test_redis)
 
 
-def test_init_redis_queues_fails_on_nonempty_db(db, test_project, test_redis,
-                                                test_queue):
+def test_init_redis_queues_fails_on_existing_queue_keys(db, test_project, test_redis,
+                                                        test_queue):
     fill_queue(test_queue)
     init_redis_queues()
 
@@ -199,14 +199,14 @@ def test_init_redis_queues_multiple_queues(db, test_project_data, test_redis):
     assert_redis_matches_db(test_redis)
 
 
-def test_init_redis_queues_multiple_projects(db, test_project_data, test_redis):
+def test_init_redis_queues_multiple_projects(db, test_project_data, test_redis, test_user):
     # Try a mix of multiple queues in multiple projects with
     # and without data to see if everything initializes as expected.
     p1_queue1 = add_queue(test_project_data, 10)
     fill_queue(p1_queue1)
     p1_queue2 = add_queue(test_project_data, 10)
 
-    project2 = create_project('test_project2')
+    project2 = create_project('test_project2', test_user)
     project2_data = read_test_data()
     add_data(project2, [d['text'] for d in project2_data])
     p2_queue1 = add_queue(project2, 10)

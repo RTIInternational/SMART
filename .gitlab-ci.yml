@@ -1,10 +1,19 @@
+variables:
+  POSTGRES_PASSWORD: my-secret-password
+  POSTGRES_USER: smart
+  POSTGRES_DB: smart
+
+services:
+  - redis:3.0
+  - postgres:9.6.2
+
 test-backend:
   image: python:3.5.3
   script:
-    cd backend
-    pip install -r requirements.txt
-    cd django
-    py.test
+    - cd backend
+    - pip install -r requirements.txt
+    - cd django
+    - py.test
 
 test-frontend:
   image: node:latest

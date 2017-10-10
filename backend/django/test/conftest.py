@@ -14,6 +14,13 @@ from test.util import read_test_data
 
 TEST_QUEUE_LEN = 10
 
+# Before starting any tests clear the redis cache
+def pytest_sessionstart(session):
+    r = settings.REDIS
+
+    for key in r.scan_iter():
+        r.delete(key)
+
 @pytest.fixture()
 def seeded_database(db):
     # Seed the database using the management command
@@ -35,11 +42,11 @@ def test_redis(request):
     return r
 
 @pytest.fixture
-def test_project(db):
+def test_project(db, test_user):
     '''
     This fixture only creates the test project without any data.
     '''
-    return create_project('test_project')
+    return create_project('test_project', test_user)
 
 @pytest.fixture
 def test_project_data(db, test_project):
