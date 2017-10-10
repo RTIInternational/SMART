@@ -302,19 +302,26 @@ def label_data(label, datum, profile):
         DataQueue.objects.filter(data=datum, queue=queue).delete()
 
 
-def get_assignment(profile, project):
+def get_assignments(profile, project, num_assignments):
     '''
-    Check if a datum is currently assigned to this profile/project;
-    if so, return it.  If not, try to get a new assignment and return it.
+    Check if a data is currently assigned to this profile/project;
+    If so, return max(num_assignments, len(assigned) of it.
+    If not, try to get a num_assigments of new assignments and return them.
     '''
     existing_assignments = AssignedData.objects.filter(
         profile=profile,
         queue__project=project)
 
     if len(existing_assignments) > 0:
-        return existing_assignments.first().data
+        return [assignment.data for assignment in existing_assignments[:num_assignments]]
     else:
-        return assign_datum(profile, project)
+        data = []
+        for i in range(num_assignments):
+            assigned_datum = assign_datum(profile, project)
+            if assigned_datum is None:
+                break
+            data.append(assigned_datum)
+        return data
 
 
 def unassign_datum(datum, profile):

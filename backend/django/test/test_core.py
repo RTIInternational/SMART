@@ -3,6 +3,7 @@ Test core logic for the SMART app, such as creating projects, managing
 queues, etc.
 '''
 import pytest
+import unittest
 
 from django.contrib.auth import get_user_model
 
@@ -12,7 +13,7 @@ from core.util import (create_project, add_data, assign_datum,
                        add_queue, fill_queue, pop_queue,
                        init_redis_queues, get_nonempty_queue,
                        create_profile, label_data, pop_first_nonempty_queue,
-                       get_assignment, unassign_datum)
+                       get_assignments, unassign_datum)
 
 from test.util import read_test_data
 
@@ -478,32 +479,103 @@ def test_label_data(db, test_profile, test_queue, test_redis):
                                            queue=test_queue).exists()
 
 
-def test_get_assignment_no_existing_assignment(db, test_profile, test_project_data, test_queue,
+def test_get_assignments_no_existing_assignment_one_assignment(db, test_profile, test_project_data, test_queue,
                                                test_redis):
     fill_queue(test_queue)
 
     assert AssignedData.objects.count() == 0
 
-    datum = get_assignment(test_profile, test_project_data)
+    data = get_assignments(test_profile, test_project_data, 1)
 
-    assert isinstance(datum, Data)
+    assert len(data) == 1
+    assert isinstance(data[0], Data)
     assert_obj_exists(AssignedData, {
-        'data': datum,
+        'data': data[0],
         'profile': test_profile
     })
 
 
-def test_get_assignment_existing_assignment(db, test_profile, test_project_data, test_queue,
+def test_get_assignments_no_existing_assignment_half_max_queue_length(db, test_profile, test_project_data, test_queue,
+                                               test_redis):
+    fill_queue(test_queue)
+
+    assert AssignedData.objects.count() == 0
+
+    data = get_assignments(test_profile, test_project_data, 5)
+
+    assert len(data) == 5
+    for datum in data:
+        assert isinstance(datum, Data)
+        assert_obj_exists(AssignedData, {
+            'data': datum,
+            'profile': test_profile
+        })
+
+
+def test_get_assignments_no_existing_assignment_max_queue_length(db, test_profile, test_project_data, test_queue,
+                                               test_redis):
+    fill_queue(test_queue)
+
+    assert AssignedData.objects.count() == 0
+
+    data = get_assignments(test_profile, test_project_data, 10)
+
+    assert len(data) == 10
+    for datum in data:
+        assert isinstance(datum, Data)
+        assert_obj_exists(AssignedData, {
+            'data': datum,
+            'profile': test_profile
+        })
+
+
+def test_get_assignments_no_existing_assignment_over_max_queue_length(db, test_profile, test_project_data, test_queue,
+                                               test_redis):
+    fill_queue(test_queue)
+
+    assert AssignedData.objects.count() == 0
+
+    data = get_assignments(test_profile, test_project_data, 15)
+
+    assert len(data) == 10
+    for datum in data:
+        assert isinstance(datum, Data)
+        assert_obj_exists(AssignedData, {
+            'data': datum,
+            'profile': test_profile
+        })
+
+
+def test_get_assignments_one_existing_assignment(db, test_profile, test_project_data, test_queue,
                                             test_redis):
     fill_queue(test_queue)
 
     assigned_datum = assign_datum(test_profile, test_project_data)
 
-    datum = get_assignment(test_profile, test_project_data)
+    data = get_assignments(test_profile, test_project_data, 1)
 
-    assert isinstance(datum, Data)
+    assert isinstance(data[0], Data)
     # We should just get the datum that was already assigned
-    assert datum == assigned_datum
+    assert data[0] == assigned_datum
+
+
+def test_get_assignments_multiple_existing_assignments(db, test_profile, test_project_data, test_queue,
+                                            test_redis):
+    fill_queue(test_queue)
+
+    assigned_data = []
+    for i in range(5):
+        assigned_data.append(assign_datum(test_profile, test_project_data))
+
+    data = get_assignments(test_profile, test_project_data, 5)
+
+    case = unittest.TestCase()
+    assert len(data) == 5
+    assert len(data) == len(assigned_data)
+    for datum, assigned_datum in zip(data, assigned_data):
+        assert isinstance(datum, Data)
+    # We should just get the data that was already assigned
+    case.assertCountEqual(data, assigned_data)
 
 
 def test_unassign(db, test_profile, test_project_data, test_queue, test_redis):
@@ -511,7 +583,7 @@ def test_unassign(db, test_profile, test_project_data, test_queue, test_redis):
 
     assert test_redis.llen('queue:'+str(test_queue.pk)) == test_queue.length
 
-    datum = get_assignment(test_profile, test_project_data)
+    datum = get_assignments(test_profile, test_project_data, 1)[0]
 
     assert test_redis.llen('queue:'+str(test_queue.pk)) == (test_queue.length - 1)
     assert AssignedData.objects.filter(
@@ -526,6 +598,6 @@ def test_unassign(db, test_profile, test_project_data, test_queue, test_redis):
         profile=test_profile).exists()
 
     # The unassigned datum should be the next to be assigned
-    reassigned_datum = get_assignment(test_profile, test_project_data)
+    reassigned_datum = get_assignments(test_profile, test_project_data, 1)[0]
 
     assert reassigned_datum == datum
