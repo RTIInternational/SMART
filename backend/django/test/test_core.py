@@ -10,8 +10,7 @@ from core.models import (Project, Queue, Data, DataQueue, Profile,
                          AssignedData, Label, DataLabel)
 from core.util import (create_project, add_data, assign_datum,
                        add_queue, fill_queue, pop_queue,
-                       init_redis_queues, clear_redis_queues,
-                       sync_redis_queues, get_nonempty_queue,
+                       init_redis_queues, get_nonempty_queue,
                        create_profile, label_data, pop_first_nonempty_queue,
                        get_assignment, unassign_datum)
 
@@ -218,32 +217,6 @@ def test_init_redis_queues_multiple_projects(db, test_project_data, test_redis, 
     assert_redis_matches_db(test_redis)
 
 
-def test_clear_redis_queues(db, test_queue, test_redis):
-    fill_queue(test_queue)
-    init_redis_queues()
-
-    clear_redis_queues()
-
-    assert test_redis.llen(test_queue.pk) == 0
-    assert len(test_redis.keys()) == 0
-
-
-def test_sync_redis_queues(db, test_project_data, test_queue, test_redis):
-    queue_len = 10
-
-    fill_queue(test_queue)
-    init_redis_queues()
-
-    queue2 = add_queue(test_project_data, queue_len)
-    fill_queue(queue2)
-
-    # Make sure we added the new queue without an error
-    sync_redis_queues()
-
-    assert test_redis.llen(queue2.pk) == 10
-    assert len(test_redis.keys()) == 2
-
-
 def test_pop_empty_queue(db, test_project, test_redis):
     queue = add_queue(test_project, 10)
     init_redis_queues()
@@ -385,7 +358,7 @@ def test_pop_first_nonempty_queue_multiple_queues(db, test_project_data, test_qu
     assert queue == test_queue2
 
     fill_queue(test_queue)
-    sync_redis_queues()
+    # sync_redis_queues()
 
     queue, data = pop_first_nonempty_queue(test_project_data)
 
@@ -405,7 +378,7 @@ def test_pop_first_nonempty_queue_multiple_profile_queues(db, test_project_data,
     assert data is None
 
     fill_queue(test_profile_queue)
-    sync_redis_queues()
+    # sync_redis_queues()
 
     queue, data = pop_first_nonempty_queue(test_project_data, profile=test_profile)
 

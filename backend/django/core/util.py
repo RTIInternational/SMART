@@ -107,22 +107,6 @@ def init_redis_queues():
     pipeline.execute()
 
 
-def clear_redis_queues():
-    '''
-    Clear the queues currently present in redis.
-    '''
-    settings.REDIS.flushdb()
-
-
-def sync_redis_queues():
-    '''
-    Set the redis environment up to have the same state as the database, regardless
-    of its current state.
-    '''
-    clear_redis_queues()
-    init_redis_queues()
-
-
 def create_project(name, creator):
     '''
     Create a project with the given name and creator.
