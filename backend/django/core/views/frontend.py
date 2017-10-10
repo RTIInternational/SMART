@@ -9,6 +9,7 @@ from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 
 import hashlib
 import pandas as pd
+import math
 
 from core.models import (Profile, Project, ProjectPermissions, Model, Data, Label,
                          DataLabel, DataPrediction, Queue, DataQueue, AssignedData)
@@ -103,8 +104,12 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
                 permissions.instance = self.object
                 permissions.save()
 
-                # Create the project queue
-                queue = util.create_queue(project=self.object, label_form=labels, permission_form=permissions)
+                # Create the queue
+                batch_size = 10 * len([x for x in labels if x.cleaned_data != {}])
+                num_coders = len([x for x in permissions if x.cleaned_data != {}]) + 1
+                q_length = math.ceil(batch_size/num_coders) * num_coders + math.ceil(batch_size/num_coders) * (num_coders - 1)
+
+                queue = util.add_queue(project=self.object, length=q_length)
 
                 # If data exists save attempt to save it
                 f_data = form.cleaned_data.get('data', False)
