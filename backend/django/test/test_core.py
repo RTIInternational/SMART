@@ -202,7 +202,6 @@ def test_init_redis_queues_multiple_projects(db, test_project_data, test_redis, 
 
 def test_pop_empty_queue(db, test_project, test_redis):
     queue = add_queue(test_project, 10)
-    init_redis_queues()
 
     datum = pop_queue(queue)
 
@@ -215,7 +214,6 @@ def test_pop_nonempty_queue(db, test_project_data, test_redis):
     queue_len = 10
     queue = add_queue(test_project_data, queue_len)
     fill_queue(queue)
-    init_redis_queues()
 
     datum = pop_queue(queue)
 
@@ -230,7 +228,6 @@ def test_pop_only_affects_one_queue(db, test_project_data, test_redis):
     queue2 = add_queue(test_project_data, queue_len)
     fill_queue(queue)
     fill_queue(queue2)
-    init_redis_queues()
 
     datum = pop_queue(queue)
 
@@ -306,7 +303,6 @@ def test_pop_first_nonempty_queue_empty(db, test_project_data, test_queue, test_
 
 def test_pop_first_nonempty_queue_single_queue(db, test_project_data, test_queue, test_redis):
     fill_queue(test_queue)
-    init_redis_queues()
 
     queue, data = pop_first_nonempty_queue(test_project_data)
 
@@ -319,7 +315,6 @@ def test_pop_first_nonempty_queue_single_queue(db, test_project_data, test_queue
 def test_pop_first_nonempty_queue_profile_queue(db, test_project_data, test_profile,
                                              test_profile_queue, test_redis):
     fill_queue(test_profile_queue)
-    init_redis_queues()
 
     queue, data = pop_first_nonempty_queue(test_project_data, profile=test_profile)
 
@@ -333,7 +328,6 @@ def test_pop_first_nonempty_queue_multiple_queues(db, test_project_data, test_qu
                                                   test_redis):
     test_queue2 = add_queue(test_project_data, 10)
     fill_queue(test_queue2)
-    init_redis_queues()
 
     queue, data = pop_first_nonempty_queue(test_project_data)
 
@@ -341,7 +335,6 @@ def test_pop_first_nonempty_queue_multiple_queues(db, test_project_data, test_qu
     assert queue == test_queue2
 
     fill_queue(test_queue)
-    # sync_redis_queues()
 
     queue, data = pop_first_nonempty_queue(test_project_data)
 
@@ -353,7 +346,6 @@ def test_pop_first_nonempty_queue_multiple_profile_queues(db, test_project_data,
                                                        test_profile_queue, test_profile_queue2,
                                                        test_redis):
     fill_queue(test_profile_queue2)
-    init_redis_queues()
 
     queue, data = pop_first_nonempty_queue(test_project_data, profile=test_profile)
 
@@ -361,7 +353,6 @@ def test_pop_first_nonempty_queue_multiple_profile_queues(db, test_project_data,
     assert data is None
 
     fill_queue(test_profile_queue)
-    # sync_redis_queues()
 
     queue, data = pop_first_nonempty_queue(test_project_data, profile=test_profile)
 
@@ -374,7 +365,6 @@ def test_assign_datum_project_queue_returns_datum(db, test_queue, test_profile, 
     Assign a datum from a project-wide queue (null profile ID).
     '''
     fill_queue(test_queue)
-    init_redis_queues()
 
     datum = assign_datum(test_profile, test_queue.project)
 
@@ -384,7 +374,6 @@ def test_assign_datum_project_queue_returns_datum(db, test_queue, test_profile, 
 
 def test_assign_datum_project_queue_correct_assignment(db, test_queue, test_profile, test_redis):
     fill_queue(test_queue)
-    init_redis_queues()
 
     datum = assign_datum(test_profile, test_queue.project)
 
@@ -398,7 +387,6 @@ def test_assign_datum_project_queue_correct_assignment(db, test_queue, test_prof
 
 def test_assign_datum_project_queue_pops_queues(db, test_queue, test_profile, test_redis):
     fill_queue(test_queue)
-    init_redis_queues()
 
     datum = assign_datum(test_profile, test_queue.project)
 
@@ -415,7 +403,6 @@ def test_assign_datum_profile_queue_returns_correct_datum(db, test_profile_queue
                                                        test_redis):
     fill_queue(test_profile_queue)
     fill_queue(test_profile_queue2)
-    init_redis_queues()
 
     datum = assign_datum(test_profile, test_profile_queue.project)
 
@@ -427,7 +414,6 @@ def test_assign_datum_profile_queue_correct_assignment(db, test_profile_queue, t
                                                     test_redis):
     fill_queue(test_profile_queue)
     fill_queue(test_profile_queue2)
-    init_redis_queues()
 
     datum = assign_datum(test_profile, test_profile_queue.project)
 
@@ -442,7 +428,6 @@ def test_assign_datum_profile_queue_pops_queues(db, test_profile_queue, test_pro
                                              test_profile_queue2, test_profile2, test_redis):
     fill_queue(test_profile_queue)
     fill_queue(test_profile_queue2)
-    init_redis_queues()
 
     datum = assign_datum(test_profile, test_profile_queue.project)
 
@@ -474,7 +459,6 @@ def test_init_redis_queues_ignores_assigned_data(db, test_profile, test_queue, t
 
 def test_label_data(db, test_profile, test_queue, test_redis):
     fill_queue(test_queue)
-    init_redis_queues()
 
     datum = assign_datum(test_profile, test_queue.project)
     test_label = Label.objects.create(name='test', project=test_queue.project)
@@ -497,7 +481,6 @@ def test_label_data(db, test_profile, test_queue, test_redis):
 def test_get_assignment_no_existing_assignment(db, test_profile, test_project_data, test_queue,
                                                test_redis):
     fill_queue(test_queue)
-    init_redis_queues()
 
     assert AssignedData.objects.count() == 0
 
@@ -513,7 +496,6 @@ def test_get_assignment_no_existing_assignment(db, test_profile, test_project_da
 def test_get_assignment_existing_assignment(db, test_profile, test_project_data, test_queue,
                                             test_redis):
     fill_queue(test_queue)
-    init_redis_queues()
 
     assigned_datum = assign_datum(test_profile, test_project_data)
 
@@ -526,7 +508,6 @@ def test_get_assignment_existing_assignment(db, test_profile, test_project_data,
 
 def test_unassign(db, test_profile, test_project_data, test_queue, test_redis):
     fill_queue(test_queue)
-    init_redis_queues()
 
     assert test_redis.llen('queue:'+str(test_queue.pk)) == test_queue.length
 
