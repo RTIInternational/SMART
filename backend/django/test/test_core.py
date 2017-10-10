@@ -34,8 +34,8 @@ def assert_redis_matches_db(test_redis):
         data_count = q.data.count()
 
         if data_count > 0:
-            assert test_redis.exists(q.pk)
-            assert test_redis.llen(q.pk) == data_count
+            assert test_redis.exists('queue:'+str(q.pk))
+            assert test_redis.llen('queue:'+str(q.pk)) == data_count
         else:
             # Empty lists don't exist in redis
             assert not test_redis.exists(q.pk)
