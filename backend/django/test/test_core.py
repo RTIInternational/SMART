@@ -126,21 +126,6 @@ def test_fill_queue_all_remaining_data(db, test_queue):
     assert test_queue.data.count() == all_data_count
 
 
-def test_fill_multiple_queues(db, test_queue):
-    # Set both queues to be as large as the amount of available data
-    # so we can be sure they won't overlap each other when filled
-    data_count = Data.objects.count()
-    test_queue.length = data_count
-    test_queue.save()
-    test_queue2 = add_queue(test_queue.project, data_count)
-
-    fill_queue(test_queue)
-    fill_queue(test_queue2)
-
-    assert test_queue.data.count() == data_count
-    assert test_queue2.data.count() == 0
-
-
 def test_fill_multiple_projects(db, test_queue, test_profile):
     project_data_count = test_queue.project.data_set.count()
     test_queue.length = project_data_count + 1
