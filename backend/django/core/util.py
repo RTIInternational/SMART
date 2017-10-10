@@ -90,7 +90,9 @@ def init_redis_queues():
     pipeline = settings.REDIS.pipeline(transaction=False)
 
     existing_keys = [key for key in settings.REDIS.scan_iter('queue:*')]
-    pipeline.delete(*existing_keys)
+    if len(existing_keys) > 0:
+        # We'll get an error if we try to del without any keys
+        pipeline.delete(*existing_keys)
 
     assigned_data_ids = set((d.data_id for d in AssignedData.objects.all()))
     for queue in Queue.objects.all():
