@@ -149,15 +149,6 @@ def test_init_redis_queues_empty(db, test_redis):
     assert_redis_matches_db(test_redis)
 
 
-def test_init_redis_queues_fails_on_existing_queue_keys(db, test_project, test_redis,
-                                                        test_queue):
-    fill_queue(test_queue)
-    init_redis_queues()
-
-    with pytest.raises(ValueError):
-        init_redis_queues()
-
-
 def test_init_redis_queues_one_empty_queue(db, test_project, test_redis):
     queue = add_queue(test_project, 10)
     init_redis_queues()
