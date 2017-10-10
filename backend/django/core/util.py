@@ -83,26 +83,21 @@ def init_redis_queues():
     Create a redis queue for each queue in the database and fill it with
     the data linked to the queue.
 
-    This assumes redis has no queue keys; throw an error if it does, since we'll
-    add duplicate data without knowing any better.
+    This will remove any existing queue keys from redis and re-populate the redis
+    db to be in sync with the postgres state
     '''
-    redis_keys = [key for key in settings.REDIS.scan_iter()]
-    queues = Queue.objects.all()
-
-    if not set([str.encode(str(q.id)) for q in queues]).isdisjoint(set(redis_keys)):
-        raise ValueError('Redis database already has a queue key; it must not have '
-                         'any queue keys to initialize the redis queues.')
-
     # Use a pipeline to reduce back-and-forth with the server
     pipeline = settings.REDIS.pipeline(transaction=False)
 
-    assigned_data_ids = set((d.data_id for d in AssignedData.objects.all()))
+    existing_keys = [key for key in settings.REDIS.scan_iter('queue:*')]
+    pipeline.delete(*existing_keys)
 
-    for queue in queues:
-        data_ids = [d.pk for d in queue.data.all() if d.pk not in assigned_data_ids]
+    assigned_data_ids = set((d.data_id for d in AssignedData.objects.all()))
+    for queue in Queue.objects.all():
+        data_ids = ['data:'+str(d.pk) for d in queue.data.all() if d.pk not in assigned_data_ids]
         if len(data_ids) > 0:
             # We'll get an error if we try to lpush without any data
-            pipeline.lpush(queue.pk, *data_ids)
+            pipeline.lpush('queue:'+str(queue.pk), *data_ids)
 
     pipeline.execute()
 
@@ -183,7 +178,8 @@ def fill_queue(queue):
     with connection.cursor() as c:
         c.execute(sql, (*cte_params, *sample_size_params))
 
-    sync_redis_queues()
+    data_ids = ['data:'+str(d.pk) for d in queue.data.all()]
+    settings.REDIS.lpush('queue:'+str(queue.pk), *data_ids)
 
 
 def pop_first_nonempty_queue(project, profile=None):
