@@ -151,6 +151,8 @@ def test_init_redis_queues_empty(db, test_redis):
 
 def test_init_redis_queues_one_empty_queue(db, test_project, test_redis):
     queue = add_queue(test_project, 10)
+
+    test_redis.flushdb()
     init_redis_queues()
 
     assert_redis_matches_db(test_redis)
@@ -159,6 +161,8 @@ def test_init_redis_queues_one_empty_queue(db, test_project, test_redis):
 def test_init_redis_queues_one_nonempty_queue(db, test_project_data, test_redis):
     queue = add_queue(test_project_data, 10)
     fill_queue(queue)
+
+    test_redis.flushdb()
     init_redis_queues()
 
     assert_redis_matches_db(test_redis)
@@ -169,6 +173,8 @@ def test_init_redis_queues_multiple_queues(db, test_project_data, test_redis):
     fill_queue(queue)
 
     queue2 = add_queue(test_project_data, 10)
+
+    test_redis.flushdb()
     init_redis_queues()
 
     assert_redis_matches_db(test_redis)
@@ -188,6 +194,7 @@ def test_init_redis_queues_multiple_projects(db, test_project_data, test_redis, 
     fill_queue(p2_queue1)
     p2_queue2 = add_queue(project2, 10)
 
+    test_redis.flushdb()
     init_redis_queues()
 
     assert_redis_matches_db(test_redis)
