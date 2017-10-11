@@ -5,7 +5,7 @@ from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from django.http import HttpResponseRedirect
 from django.db import transaction
-from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
+from django.core.exceptions import PermissionDenied
 
 import hashlib
 import pandas as pd
@@ -31,14 +31,11 @@ class ProjectCode(LoginRequiredMixin, TemplateView):
     template_name = 'smart/smart.html'
 
     def get_context_data(self, **kwargs):
-        data = super(ProjectCode, self).get_context_data(**kwargs)
+        ctx = super(ProjectCode, self).get_context_data(**kwargs)
 
-        try:
-            data['pk'] = Queue.objects.filter(project=self.kwargs['pk']).get().pk
-        except ObjectDoesNotExist:
-            data['pk'] = None
+        ctx['pk'] = self.kwargs['pk']
 
-        return data
+        return ctx
 
 
 class ProjectList(LoginRequiredMixin, ListView):

@@ -15,8 +15,8 @@ export const setMessage = createAction(SET_MESSAGE);
 
 
 // Create cards by reading from a queue
-export const fetchCards = (queueID) => {
-    let apiURL = `/api/grab_from_queue/${queueID}/`;
+export const fetchCards = (projectID) => {
+    let apiURL = `/api/get_card_deck/${projectID}/`;
     return dispatch => {
         return fetch(apiURL, getConfig())
             .then(response => {
@@ -38,7 +38,7 @@ export const fetchCards = (queueID) => {
                         id: i,
                         options: response.labels,
                         text: response.data[i],
-                        queue_id: response.queue_id,
+                        project_id: projectID,
                     }
                     dispatch(pushCard(card));
                 }

@@ -8,11 +8,7 @@
 
 {% block scripts_body %}
   <script type="text/javascript">
-    {% if pk is none %}
-    window.QUEUE_ID = null;
-    {% else %}
-    window.QUEUE_ID = {{ pk }};
-    {% endif %}
+    window.PROJECT_ID = {{ pk }};
   </script>
   {% render_bundle 'smart' 'js' %}
 {% endblock %}

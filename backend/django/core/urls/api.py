@@ -17,6 +17,6 @@ api_router.register(r'assigned_data', api.AssignedDataViewSet)
 
 urlpatterns = [
     url(r'^', include(api_router.urls)),
-    url(r'^grab_from_queue/(?P<pk>\d+)/$', api.grab_from_queue),
+    url(r'^get_card_deck/(?P<pk>\d+)/$', api.get_card_deck),
     url(r'^annotate_data/(?P<pk>\d+)/$', api.annotate_data),
 ]

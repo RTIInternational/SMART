@@ -32,15 +32,15 @@ class CoreModelSerializer(serializers.HyperlinkedModelSerializer):
         model = Model
         fields = ('pickle_path', 'project', 'predictions')
 
-class LabelSerializer(serializers.HyperlinkedModelSerializer):
+class LabelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Label
-        fields = ('name', 'project')
+        fields = ('pk', 'name', 'project')
 
-class DataSerializer(serializers.HyperlinkedModelSerializer):
+class DataSerializer(serializers.ModelSerializer):
     class Meta:
         model = Data
-        fields = ('text', 'project')
+        fields = ('pk', 'text', 'project')
 
 class DataLabelSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:

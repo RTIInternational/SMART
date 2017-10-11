@@ -36,11 +36,11 @@ class Deck extends React.Component {
                     <Card className="full" style={style} key={card.id}>
                         <h2>Card {card.id + 1}</h2>
                         <p>
-                            { card.text[1] }
+                            { card.text['text'] }
                         </p>
                         <ButtonToolbar bsClass="btn-toolbar pull-right">
                             {card.options.map( (opt) => (
-                                <Button onClick={() => annotateCard(card.text[0], opt[0], card.queue_id)} bsStyle="primary" key={`deck-button-${opt[1]}`}>{opt[1]}</Button>
+                                <Button onClick={() => annotateCard(card.text['pk'], opt['pk'], card.project_id)} bsStyle="primary" key={`deck-button-${opt['name']}`}>{opt['name']}</Button>
                             ))}
                             { cardCount > 1 && 
                                 <Button onClick={passCard} bsStyle="info">Skip</Button>

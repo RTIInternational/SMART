@@ -25,48 +25,29 @@ from core.pagination import SmartPagination
 ############################################
 
 @api_view(['GET'])
-def grab_from_queue(request, pk):
-    """Grab x data from the queue and add the data to assigned data.
+def get_card_deck(request, pk):
+    """Grab data using get_assignments and send it to the frontend react app.
 
     Args:
         request: The request to the endpoint
-        pk: Primary key of queue
+        pk: Primary key of project
     Returns:
         labels: The project labels
         data: The data in the queue
-        <errors>: Only exists if there is an error, the error message.
     """
-    if request.method == 'GET':
-        q_pk = pk
-        try:
-            queue = Queue.objects.get(pk=q_pk)
-            project = Project.objects.get(pk=queue.project.pk)
-        except ObjectDoesNotExist:
-            return Response({'error': 'There is no queue matching that primary key.'})
+    profile = request.user.profile
+    project = Project.objects.get(pk=pk)
 
-        # Check if data is already assigned to user
-        assigned_data = AssignedData.objects.filter(queue=queue, profile=request.user.profile)
-        if len(assigned_data) > 0:
-            data = [[assigned.data.pk, assigned.data.text] for assigned in assigned_data]
-        else:
-            # Calculate queue parameters
-            batch_size = len(project.labels.all()) * 10
-            num_coders = len(project.projectpermissions_set.all()) + 1
-            coder_size = math.ceil(batch_size / num_coders)
+    # Calculate queue parameters
+    batch_size = len(project.labels.all()) * 10
+    num_coders = len(project.projectpermissions_set.all()) + 1
+    coder_size = math.ceil(batch_size / num_coders)
 
-            # Find coding data, remove from queue, add to assigned data
-            data_qs = queue.data.all()[:coder_size]
-            data = []
-            temp = []
-            for d in data_qs:
-                data.append([d.pk, d.text])
-                temp.append(AssignedData(queue=queue, data=d, profile=request.user.profile))
-            AssignedData.objects.bulk_create(temp)
-            DataQueue.objects.filter(data_id__in=[x.pk for x in data_qs], queue=queue).delete()
+    data = util.get_assignments(profile, pk, coder_size)
+    labels = Label.objects.all().filter(project=project)
 
-        labels = [[label.pk, label.name] for label in Label.objects.all().filter(project=project)]
+    return Response({'labels': LabelSerializer(labels, many=True).data, 'data': DataSerializer(data, many=True).data})
 
-        return Response({'labels': labels, 'data': data, 'queue_id': q_pk})
 
 @api_view(['POST'])
 def annotate_data(request, pk):
