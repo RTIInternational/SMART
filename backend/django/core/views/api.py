@@ -52,24 +52,21 @@ def get_card_deck(request, pk):
 @api_view(['POST'])
 def annotate_data(request, pk):
     """Annotate a single datum which is in the assigneddata queue given the user,
-       data_id, queue_id, and label_id.  This will remove it from assigneddata
-       and add it to labeleddata.
+       data_id, and label_id.  This will remove it from assigneddata, remove it
+       from dataqueue and add it to labeleddata.
+
+    Args:
+        request: The POST request
+        pk: Primary key of the data
+    Returns:
+        {}
     """
-    queue_id = request.data['queueID']
-    label_id = request.data['labelID']
-    data_id = pk
+    data = Data.objects.get(pk=pk)
     profile = request.user.profile
+    label = Label.objects.get(pk=request.data['labelID'])
+    util.label_data(label, data, profile)
 
-    if request.method == 'POST':
-        assignedDatum = AssignedData.objects.get(data_id=data_id, queue_id=queue_id, profile=profile)
-
-        DataLabel.objects.create(data=assignedDatum.data,
-                                 profile=assignedDatum.profile,
-                                 label=Label.objects.get(pk=label_id))
-
-        assignedDatum.delete()
-
-        return Response({})
+    return Response({})
 
 
 ################################

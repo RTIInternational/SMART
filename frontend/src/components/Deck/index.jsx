@@ -40,7 +40,7 @@ class Deck extends React.Component {
                         </p>
                         <ButtonToolbar bsClass="btn-toolbar pull-right">
                             {card.options.map( (opt) => (
-                                <Button onClick={() => annotateCard(card.text['pk'], opt['pk'], card.project_id)} bsStyle="primary" key={`deck-button-${opt['name']}`}>{opt['name']}</Button>
+                                <Button onClick={() => annotateCard(card.text['pk'], opt['pk'])} bsStyle="primary" key={`deck-button-${opt['name']}`}>{opt['name']}</Button>
                             ))}
                             { cardCount > 1 && 
                                 <Button onClick={passCard} bsStyle="info">Skip</Button>

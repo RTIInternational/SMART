@@ -21,8 +21,8 @@ const mapDispatchToProps = (dispatch) => {
         fetchCards: () => {
             dispatch(fetchCards(PROJECT_ID))
         },
-        annotateCard: (dataID, labelID, queueID) => {
-            dispatch(annotateCard(dataID, labelID, queueID))
+        annotateCard: (dataID, labelID) => {
+            dispatch(annotateCard(dataID, labelID))
         },
         passCard: () => {
             dispatch(passCard())

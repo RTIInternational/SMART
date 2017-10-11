@@ -37,8 +37,7 @@ export const fetchCards = (projectID) => {
                     const card = {
                         id: i,
                         options: response.labels,
-                        text: response.data[i],
-                        project_id: projectID,
+                        text: response.data[i]
                     }
                     dispatch(pushCard(card));
                 }
@@ -47,10 +46,9 @@ export const fetchCards = (projectID) => {
     }
 };
 
-export const annotateCard = (dataID, labelID, queueID) => {
+export const annotateCard = (dataID, labelID) => {
     let payload = {
-        labelID: labelID,
-        queueID: queueID,
+        labelID: labelID
     }
     let apiURL = `/api/annotate_data/${dataID}/`;
     return dispatch => {
