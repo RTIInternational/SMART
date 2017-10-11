@@ -27,7 +27,7 @@ class ProjectSerializer(serializers.ModelSerializer):
         model = Project
         fields = ('name','labels')
 
-class ModelSerializer(serializers.HyperlinkedModelSerializer):
+class CoreModelSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Model
         fields = ('pickle_path', 'project', 'predictions')

@@ -12,7 +12,7 @@ import math
 
 from core.serializers import (ProfileSerializer, AuthUserGroupSerializer,
                               AuthUserSerializer, ProjectSerializer,
-                              ModelSerializer, LabelSerializer, DataSerializer,
+                              CoreModelSerializer, LabelSerializer, DataSerializer,
                               DataLabelSerializer, DataPredictionSerializer,
                               QueueSerializer, AssignedDataSerializer)
 from core.models import (Profile, Project, Model, Data, Label, DataLabel,
@@ -121,9 +121,9 @@ class ProjectViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
-class ModelViewSet(viewsets.ModelViewSet):
+class CoreModelViewSet(viewsets.ModelViewSet):
     queryset = Model.objects.all().order_by('id')
-    serializer_class = ModelSerializer
+    serializer_class = CoreModelSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
 class DataViewSet(viewsets.ModelViewSet):
