@@ -9,6 +9,13 @@
 {% block scripts_body %}
   <script type="text/javascript">
     window.PROJECT_ID = {{ pk }};
+    $(window).on('beforeunload', function () {
+       $.ajax({
+         type: 'GET',
+         async: false,
+         url: '/api/leave_coding_page/',
+       });
+    });
   </script>
   {% render_bundle 'smart' 'js' %}
 {% endblock %}

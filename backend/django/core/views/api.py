@@ -68,6 +68,25 @@ def annotate_data(request, pk):
 
     return Response({})
 
+@api_view(['GET'])
+def leave_coding_page(request):
+    """API request meant to be sent when a user navigates away from the coding page
+       captured with 'beforeunload' event.  This should use assign_data to remove
+       any data currently assigned to the user and re-add it to redis
+
+    Args:
+        request: The GET request
+    Returns:
+        {}
+    """
+    profile = request.user.profile
+    assigned_data = AssignedData.objects.filter(profile=profile)
+
+    for assignment in assigned_data:
+        util.unassign_datum(assignment.data, profile)
+
+    return Response({})
+
 
 ################################
 #    DRF VIEWSET API CLASSES   #
