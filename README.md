@@ -8,7 +8,29 @@ This application is for intelligently labeling data by utilizing active learning
 
 This project uses `docker` containers organized by `docker-compose` to ease dependency management in development.  All dependencies are controlled through docker.
 
-First, install docker and docker-compose. Then navigate to `envs/[dev|prod]` and run `docker-compose up -d` to start all docker images.
+#### Initial Startup
+
+First, install docker and docker-compose. Then navigate to `envs/[dev|prod]` and run `docker-compose build` to build all the images.
+
+Next, crate the docker volumes where persistent data will be stored.  `docker volume create --name=vol_smart_pgdata` and `docker volume create --name=vol_smart_data`.
+
+#### Workflow During Development
+
+Run `docker-compose up` to start all docker containers.  This will start up the containers in the foreground so you can see the logs.  If you prefer to run the containers in the background use `docker-compose up -d`. When switching between branches there is no need to run any additional commands (except build if there is dependency change).
+
+If there is ever a dependency change than you will need to re-build the containers using the following commands:
+
+```shell
+docker-compose build <container with new dependency>
+docker-compose rm <container with new dependency>
+docker-compose up
+```
+
+If your database is blank, you will need to run migrations to initialize all the required schema objects; you can start a blank backend container and run the migration django management command with the following command:
+
+```shell
+docker-compose run --rm smart_backend python manage.py migrate
+```
 
 The various services will be available on your machine at their standard ports, but you can override the port numbers if they conflict with other running services. For example, you don't want to run SMART's instance of Postgres on port 5432 if you already have your own local instance of Postgres running on port 5432. To override a port, create a file named `.env` in the `envs/dev` directory that looks something like this:
 
@@ -31,8 +53,6 @@ Backend tests use [py.test](https://docs.pytest.org/en/latest/).  To run them, u
 ```
 docker-compose run --rm smart_backend py.test
 ```
-
-()
 
 Use `py.test -h` to see all the options, but a few useful ones are highlighted below:
 
