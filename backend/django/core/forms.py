@@ -50,7 +50,7 @@ class ProjectForm(forms.ModelForm):
                 pass
             except ParserError:
                 # If there was an error while parsing then raise invalid file error
-                raise ValidationError("Invlaid file, unable to parse the file")
+                raise ValidationError("Invalid file, unable to parse the file")
 
         return data
 
