@@ -10,12 +10,12 @@ from rest_framework.response import Response
 
 import math
 
-from core.serializers import (UserSerializer, AuthUserGroupSerializer,
+from core.serializers import (ProfileSerializer, AuthUserGroupSerializer,
                               AuthUserSerializer, ProjectSerializer,
-                              ModelSerializer, LabelSerializer, DataSerializer,
+                              CoreModelSerializer, LabelSerializer, DataSerializer,
                               DataLabelSerializer, DataPredictionSerializer,
                               QueueSerializer, AssignedDataSerializer)
-from core.models import (User, Project, Model, Data, Label, DataLabel,
+from core.models import (Profile, Project, Model, Data, Label, DataLabel,
                          DataPrediction, Queue, DataQueue, AssignedData)
 import core.util as util
 from core.pagination import SmartPagination
@@ -25,70 +25,67 @@ from core.pagination import SmartPagination
 ############################################
 
 @api_view(['GET'])
-def grab_from_queue(request, pk):
-    """Grab x data from the queue and add the data to assigned data.
+def get_card_deck(request, pk):
+    """Grab data using get_assignments and send it to the frontend react app.
 
     Args:
         request: The request to the endpoint
-        pk: Primary key of queue
+        pk: Primary key of project
     Returns:
         labels: The project labels
         data: The data in the queue
-        <errors>: Only exists if there is an error, the error message.
     """
-    if request.method == 'GET':
-        q_pk = pk
-        try:
-            queue = Queue.objects.get(pk=q_pk)
-            project = Project.objects.get(pk=queue.project.pk)
-        except ObjectDoesNotExist:
-            return Response({'error': 'There is no queue matching that primary key.'})
+    profile = request.user.profile
+    project = Project.objects.get(pk=pk)
 
-        # Check if data is already assigned to user
-        assigned_data = AssignedData.objects.filter(queue_id=q_pk, user_id=get_user(request).user.pk)
-        if len(assigned_data) > 0:
-            data = [[assigned.data.pk, assigned.data.text] for assigned in assigned_data]
-        else:
-            # Calculate queue parameters
-            batch_size = len(project.labels.all()) * 10
-            num_coders = len(project.projectpermissions_set.all()) + 1
-            coder_size = math.ceil(batch_size / num_coders)
+    # Calculate queue parameters
+    batch_size = len(project.labels.all()) * 10
+    num_coders = len(project.projectpermissions_set.all()) + 1
+    coder_size = math.ceil(batch_size / num_coders)
 
-            # Find coding data, remove from queue, add to assigned data
-            data_qs = queue.data.all()[:coder_size]
-            data = []
-            temp = []
-            for d in data_qs:
-                data.append([d.pk, d.text])
-                temp.append(AssignedData(queue=queue, data=d, user=get_user(request).user))
-            AssignedData.objects.bulk_create(temp)
-            DataQueue.objects.filter(data_id__in=[x.pk for x in data_qs], queue_id=q_pk).delete()
+    data = util.get_assignments(profile, project, coder_size)
+    labels = Label.objects.all().filter(project=project)
 
-        labels = [[label.pk, label.name] for label in Label.objects.all().filter(project=project.pk)]
+    return Response({'labels': LabelSerializer(labels, many=True).data, 'data': DataSerializer(data, many=True).data})
 
-        return Response({'labels': labels, 'data': data, 'queue_id': q_pk})
 
 @api_view(['POST'])
 def annotate_data(request, pk):
     """Annotate a single datum which is in the assigneddata queue given the user,
-       data_id, queue_id, and label_id.  This will remove it from assigneddata
-       and add it to labeleddata.
+       data_id, and label_id.  This will remove it from assigneddata, remove it
+       from dataqueue and add it to labeleddata.
+
+    Args:
+        request: The POST request
+        pk: Primary key of the data
+    Returns:
+        {}
     """
-    q_id = request.data['queueID']
-    l_id = request.data['labelID']
-    d_id = pk
-    u_id = get_user(request).user.pk
+    data = Data.objects.get(pk=pk)
+    profile = request.user.profile
+    label = Label.objects.get(pk=request.data['labelID'])
+    util.label_data(label, data, profile)
 
-    if request.method == 'POST':
-        assignedDatum = AssignedData.objects.get(data_id=d_id, queue_id=q_id, user_id=u_id)
+    return Response({})
 
-        DataLabel.objects.create(data=assignedDatum.data,
-                                 user=assignedDatum.user,
-                                 label=Label.objects.get(pk=l_id))
+@api_view(['GET'])
+def leave_coding_page(request):
+    """API request meant to be sent when a user navigates away from the coding page
+       captured with 'beforeunload' event.  This should use assign_data to remove
+       any data currently assigned to the user and re-add it to redis
 
-        assignedDatum.delete()
+    Args:
+        request: The GET request
+    Returns:
+        {}
+    """
+    profile = request.user.profile
+    assigned_data = AssignedData.objects.filter(profile=profile)
 
-        return Response({})
+    for assignment in assigned_data:
+        util.unassign_datum(assignment.data, profile)
+
+    return Response({})
 
 
 ################################
@@ -101,9 +98,9 @@ def annotate_data(request, pk):
 # managed by the server probably shouldn't be exposed via the API
 # (ex. Queues, Models, AssignedData, many-to-many join fields)
 
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all().order_by('id')
-    serializer_class = UserSerializer
+class ProfileViewSet(viewsets.ModelViewSet):
+    queryset = Profile.objects.all().order_by('id')
+    serializer_class = ProfileSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
 class AuthUserGroupViewSet(viewsets.ModelViewSet):
@@ -121,9 +118,9 @@ class ProjectViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
-class ModelViewSet(viewsets.ModelViewSet):
+class CoreModelViewSet(viewsets.ModelViewSet):
     queryset = Model.objects.all().order_by('id')
-    serializer_class = ModelSerializer
+    serializer_class = CoreModelSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
 class DataViewSet(viewsets.ModelViewSet):

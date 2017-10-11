@@ -5,12 +5,13 @@ from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from django.http import HttpResponseRedirect
 from django.db import transaction
-from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
+from django.core.exceptions import PermissionDenied
 
 import hashlib
 import pandas as pd
+import math
 
-from core.models import (User, Project, ProjectPermissions, Model, Data, Label,
+from core.models import (Profile, Project, ProjectPermissions, Model, Data, Label,
                          DataLabel, DataPrediction, Queue, DataQueue, AssignedData)
 from core.forms import ProjectForm, ProjectUpdateForm, PermissionsFormSet, LabelFormSet
 from core.templatetags import project_extras
@@ -30,14 +31,11 @@ class ProjectCode(LoginRequiredMixin, TemplateView):
     template_name = 'smart/smart.html'
 
     def get_context_data(self, **kwargs):
-        data = super(ProjectCode, self).get_context_data(**kwargs)
+        ctx = super(ProjectCode, self).get_context_data(**kwargs)
 
-        try:
-            data['pk'] = Queue.objects.filter(project=self.kwargs['pk']).get().pk
-        except ObjectDoesNotExist:
-            data['pk'] = None
+        ctx['pk'] = self.kwargs['pk']
 
-        return data
+        return ctx
 
 
 class ProjectList(LoginRequiredMixin, ListView):
@@ -47,11 +45,11 @@ class ProjectList(LoginRequiredMixin, ListView):
     ordering = 'name'
 
     def get_queryset(self):
-        # Projects user created
-        qs1 = Project.objects.filter(creator=self.request.user.user)
+        # Projects profile created
+        qs1 = Project.objects.filter(creator=self.request.user.profile)
 
-        # Projects user has permissions for
-        qs2 = Project.objects.filter(projectpermissions__user=self.request.user.user)
+        # Projects profile has permissions for
+        qs2 = Project.objects.filter(projectpermissions__profile=self.request.user.profile)
 
         qs = qs1 | qs2
 
@@ -65,8 +63,8 @@ class ProjectDetail(LoginRequiredMixin, DetailView):
     def get_object(self, *args, **kwargs):
         obj = super(ProjectDetail, self).get_object(*args, **kwargs)
 
-        # Check user permissions before showing project detail page
-        if project_extras.proj_permission_level(obj, self.request.user.user) == 0:
+        # Check profile permissions before showing project detail page
+        if project_extras.proj_permission_level(obj, self.request.user.profile) == 0:
             raise PermissionDenied('You do not have permission to view this project')
         return obj
 
@@ -82,10 +80,10 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
         # Set the formsets for the create view
         if self.request.POST:
             data['labels'] = LabelFormSet(self.request.POST, prefix='label_set')
-            data['permissions'] = PermissionsFormSet(self.request.POST, prefix='permissions_set', form_kwargs={'action': 'create', 'user': self.request.user.user})
+            data['permissions'] = PermissionsFormSet(self.request.POST, prefix='permissions_set', form_kwargs={'action': 'create', 'profile': self.request.user.profile})
         else:
             data['labels'] = LabelFormSet(prefix='label_set')
-            data['permissions'] = PermissionsFormSet(prefix='permissions_set', form_kwargs={'action': 'create', 'user': self.request.user.user})
+            data['permissions'] = PermissionsFormSet(prefix='permissions_set', form_kwargs={'action': 'create', 'profile': self.request.user.profile})
         return data
 
     def form_valid(self, form):
@@ -96,15 +94,19 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
             if labels.is_valid() and permissions.is_valid():
                 # Save the project, labels, and permissions
                 self.object = form.save(commit=False)
-                self.object.creator = self.request.user.user
+                self.object.creator = self.request.user.profile
                 self.object.save()
                 labels.instance = self.object
                 labels.save()
                 permissions.instance = self.object
                 permissions.save()
 
-                # Create the project queue
-                queue = util.create_queue(project=self.object, label_form=labels, permission_form=permissions)
+                # Create the queue
+                batch_size = 10 * len([x for x in labels if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True])
+                num_coders = len([x for x in permissions if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True]) + 1
+                q_length = math.ceil(batch_size/num_coders) * num_coders + math.ceil(batch_size/num_coders) * (num_coders - 1)
+
+                queue = util.add_queue(project=self.object, length=q_length)
 
                 # If data exists save attempt to save it
                 f_data = form.cleaned_data.get('data', False)
@@ -137,17 +139,17 @@ class ProjectUpdate(LoginRequiredMixin, UpdateView):
     def get_object(self, *args, **kwargs):
         obj = super(ProjectUpdate, self).get_object(*args, **kwargs)
 
-        # Check user permissions before showing project update page
-        if project_extras.proj_permission_level(obj, self.request.user.user) == 0:
+        # Check profile permissions before showing project update page
+        if project_extras.proj_permission_level(obj, self.request.user.profile) == 0:
             raise PermissionDenied('You do not have permission to view this project')
         return obj
 
     def get_context_data(self, **kwargs):
         data = super(ProjectUpdate, self).get_context_data(**kwargs)
         if self.request.POST:
-            data['permissions'] = PermissionsFormSet(self.request.POST, instance=data['project'], prefix='permissions_set', form_kwargs={'action': 'update', 'creator':data['project'].creator, 'user': self.request.user.user})
+            data['permissions'] = PermissionsFormSet(self.request.POST, instance=data['project'], prefix='permissions_set', form_kwargs={'action': 'update', 'creator':data['project'].creator, 'profile': self.request.user.profile})
         else:
-            data['permissions'] = PermissionsFormSet(instance=data['project'], prefix='permissions_set', form_kwargs={'action': 'update', 'creator':data['project'].creator, 'user': self.request.user.user})
+            data['permissions'] = PermissionsFormSet(instance=data['project'], prefix='permissions_set', form_kwargs={'action': 'update', 'creator':data['project'].creator, 'profile': self.request.user.profile})
         return data
 
     def form_valid(self, form):
@@ -190,7 +192,7 @@ class ProjectDelete(LoginRequiredMixin, DeleteView):
     def get_object(self, *args, **kwargs):
         obj = super(ProjectDelete, self).get_object(*args, **kwargs)
 
-        # Check user permissions before showing project delete page
-        if project_extras.proj_permission_level(obj, self.request.user.user) == 0:
+        # Check profile permissions before showing project delete page
+        if project_extras.proj_permission_level(obj, self.request.user.profile) == 0:
             raise PermissionDenied('You do not have permission to view this project')
         return obj

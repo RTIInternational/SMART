@@ -5,7 +5,7 @@ import { fetchCards, annotateCard, passCard, popCard } from '../actions/classifi
 
 import Smart from '../components/Smart';
 
-const QUEUE_ID = window.QUEUE_ID
+const PROJECT_ID = window.PROJECT_ID
 
 const SmartContainer = (props) => <Smart {...props} />;
 
@@ -19,10 +19,10 @@ const mapStateToProps = (state) => {
 const mapDispatchToProps = (dispatch) => {
     return {
         fetchCards: () => {
-            dispatch(fetchCards(QUEUE_ID))
+            dispatch(fetchCards(PROJECT_ID))
         },
-        annotateCard: (dataID, labelID, queueID) => {
-            dispatch(annotateCard(dataID, labelID, queueID))
+        annotateCard: (dataID, labelID) => {
+            dispatch(annotateCard(dataID, labelID))
         },
         passCard: () => {
             dispatch(passCard())

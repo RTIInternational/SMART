@@ -1,53 +1,30 @@
 import random
 import redis
-import math
 
 from django.db import transaction, connection
 from django.db.models import Count, Value, IntegerField, F
 from django.contrib.auth import get_user_model
 from django.conf import settings
-from core.models import (Project, Data, Queue, DataQueue, User,
+from core.models import (Project, Data, Queue, DataQueue, Profile,
                          AssignedData, DataLabel)
-
-
-# TODO: This create_queue should be refactored in favor of add_queue during issue
-# #50 - Integrate Redis
-def create_queue(project, label_form, permission_form):
-    """
-    Create a queue for a project.
-    batch_size = 10*labels
-    max_assigned = math.ceil(batch_size/#coders) [a]
-    queue length = math.ceil(a)*c + math.ceil(a) * (c-1)
-
-    labels and permissions are formset objects.
-    """
-    labels = [x.cleaned_data for x in label_form if x.cleaned_data != {}]
-    permissions = [x.cleaned_data for x in permission_form if x.cleaned_data != {}]
-
-    batch_size = 10 * len(labels)
-    num_coders = len(permissions) + 1
-
-    q_length = math.ceil(batch_size/num_coders) * num_coders + math.ceil(batch_size/num_coders) * (num_coders - 1)
-
-    return Queue.objects.create(project=project, length=q_length)
 
 
 # TODO: Divide these functions into a public/private API when we determine
 #  what functionality is needed by the frontend.  This file is a little
 #  intimidating to sort through at the moment.
 
-def create_user(username, password, email):
+def create_profile(username, password, email):
     '''
     Create a user with the given attributes.
     Create a user in Django's authentication model and
     link it to our own project user model.
     '''
-    auth_user = get_user_model().objects.create(
+    user = get_user_model().objects.create(
         username=username,
         password=password,
         email=email)
 
-    return User.objects.get(auth_user=auth_user)
+    return Profile.objects.get(user=user)
 
 
 def iter_sample(iterable, sample_len):
@@ -83,44 +60,25 @@ def init_redis_queues():
     Create a redis queue for each queue in the database and fill it with
     the data linked to the queue.
 
-    This assumes redis has no queue keys; throw an error if it does, since we'll
-    add duplicate data without knowing any better.
+    This will remove any existing queue keys from redis and re-populate the redis
+    db to be in sync with the postgres state
     '''
-    redis_keys = [key for key in settings.REDIS.scan_iter()]
-    queues = Queue.objects.all()
-
-    if not set([str.encode(str(q.id)) for q in queues]).isdisjoint(set(redis_keys)):
-        raise ValueError('Redis database already has a queue key; it must not have '
-                         'any queue keys to initialize the redis queues.')
-
     # Use a pipeline to reduce back-and-forth with the server
     pipeline = settings.REDIS.pipeline(transaction=False)
 
-    assigned_data_ids = set((d.data_id for d in AssignedData.objects.all()))
+    existing_keys = [key for key in settings.REDIS.scan_iter('queue:*')]
+    if len(existing_keys) > 0:
+        # We'll get an error if we try to del without any keys
+        pipeline.delete(*existing_keys)
 
-    for queue in queues:
-        data_ids = [d.pk for d in queue.data.all() if d.pk not in assigned_data_ids]
+    assigned_data_ids = set((d.data_id for d in AssignedData.objects.all()))
+    for queue in Queue.objects.all():
+        data_ids = ['data:'+str(d.pk) for d in queue.data.all() if d.pk not in assigned_data_ids]
         if len(data_ids) > 0:
             # We'll get an error if we try to lpush without any data
-            pipeline.lpush(queue.pk, *data_ids)
+            pipeline.lpush('queue:'+str(queue.pk), *data_ids)
 
     pipeline.execute()
-
-
-def clear_redis_queues():
-    '''
-    Clear the queues currently present in redis.
-    '''
-    settings.REDIS.flushdb()
-
-
-def sync_redis_queues():
-    '''
-    Set the redis environment up to have the same state as the database, regardless
-    of its current state.
-    '''
-    clear_redis_queues()
-    init_redis_queues()
 
 
 def create_project(name, creator):
@@ -138,14 +96,14 @@ def add_data(project, data):
     Data.objects.bulk_create(bulk_data)
 
 
-def add_queue(project, length, user=None):
+def add_queue(project, length, profile=None):
     '''
-    Add a queue of the given length to the given project.  If a user is provided,
-    assign the queue to that user.
+    Add a queue of the given length to the given project.  If a profile is provided,
+    assign the queue to that profile.
 
     Return the created queue.
     '''
-    return Queue.objects.create(length=length, project=project, user=user)
+    return Queue.objects.create(length=length, project=project, profile=profile)
 
 
 def fill_queue(queue):
@@ -199,27 +157,30 @@ def fill_queue(queue):
     with connection.cursor() as c:
         c.execute(sql, (*cte_params, *sample_size_params))
 
+    data_ids = ['data:'+str(d.pk) for d in queue.data.all()]
+    settings.REDIS.lpush('queue:'+str(queue.pk), *data_ids)
 
-def pop_first_nonempty_queue(project, user=None):
+
+def pop_first_nonempty_queue(project, profile=None):
     '''
     Determine which queues are eligible to be popped (and in what order)
     and pass them into redis to have the first nonempty one popped.
     Return a (queue, data item) tuple if one was found; return a (None, None)
     tuple if not.
     '''
-    if user is not None:
-        # Use priority to ensure we set user queues above project queues
+    if profile is not None:
+        # Use priority to ensure we set profile queues above project queues
         # in the resulting list; break ties by pk
-        user_queues = project.queue_set.filter(user=user)
+        profile_queues = project.queue_set.filter(profile=profile)
     else:
-        user_queues = Queue.objects.none()
-    user_queues = user_queues.annotate(priority=Value(1, IntegerField()))
+        profile_queues = Queue.objects.none()
+    profile_queues = profile_queues.annotate(priority=Value(1, IntegerField()))
 
-    project_queues = (project.queue_set.filter(user=None)
+    project_queues = (project.queue_set.filter(profile=None)
                       .annotate(priority=Value(2, IntegerField())))
 
-    eligible_queue_ids = [queue.pk for queue in
-                          (user_queues.union(project_queues)
+    eligible_queue_ids = ['queue:'+str(queue.pk) for queue in
+                          (profile_queues.union(project_queues)
                            .order_by('priority', 'pk'))]
 
     if len(eligible_queue_ids) == 0:
@@ -231,7 +192,7 @@ def pop_first_nonempty_queue(project, user=None):
     for _, k in pairs(KEYS) do
       local m = redis.call('LPOP', k)
       if m then
-        return {tonumber(k), tonumber(m)}
+        return {k, m}
       end
     end
     return nil
@@ -242,7 +203,8 @@ def pop_first_nonempty_queue(project, user=None):
     if result is None:
         return (None, None)
     else:
-        queue_id, data_id = result
+        queue_id = result[0].decode().split(':')[1]
+        data_id = result[1].decode().split(':')[1]
         return (Queue.objects.filter(pk=queue_id).get(),
                 Data.objects.filter(pk=data_id).get())
 
@@ -259,20 +221,22 @@ def pop_queue(queue):
     concurrency issues.
     '''
     # Redis first, since this op is guaranteed to be atomic
-    data_id = settings.REDIS.rpop(queue.pk)
+    data_id = settings.REDIS.rpop('queue:'+str(queue.pk))
 
     if data_id is None:
         return None
+    else:
+        data_id = data_id.decode().split(':')[1]
 
     data_obj = Data.objects.filter(pk=data_id).get()
 
     return data_obj
 
 
-def get_nonempty_queue(project, user=None):
+def get_nonempty_queue(project, profile=None):
     '''
     Return the first nonempty queue for the given project and
-    (optionally) user.
+    (optionally) profile.
 
     Client code should prefer pop_first_nonempty_queue() if the
     intent is to pop the first nonempty queue, as it avoids
@@ -280,21 +244,21 @@ def get_nonempty_queue(project, user=None):
     '''
     first_nonempty_queue = None
 
-    # Only check for user queues if we were passed a user
-    if user is not None:
-        nonempty_user_queues = (project.queue_set
-                                .filter(user=user)
+    # Only check for profile queues if we were passed a profile
+    if profile is not None:
+        nonempty_profile_queues = (project.queue_set
+                                .filter(profile=profile)
                                 .annotate(
                                     data_count=Count('data'))
                                 .filter(data_count__gt=0))
 
-        if len(nonempty_user_queues) > 0:
-            first_nonempty_queue = nonempty_user_queues.first()
+        if len(nonempty_profile_queues) > 0:
+            first_nonempty_queue = nonempty_profile_queues.first()
 
-    # If we didn't find a user queue, check project queues
+    # If we didn't find a profile queue, check project queues
     if first_nonempty_queue is None:
         nonempty_queues = (project.queue_set
-                           .filter(user=None)
+                           .filter(profile=None)
                            .annotate(
                                data_count=Count('data'))
                            .filter(data_count__gt=0))
@@ -305,64 +269,71 @@ def get_nonempty_queue(project, user=None):
     return first_nonempty_queue
 
 
-def assign_datum(user, project):
+def assign_datum(profile, project):
     '''
-    Given a user and project, figure out which queue to pull from;
-    then pop a datum off that queue and assign it to the user.
+    Given a profile and project, figure out which queue to pull from;
+    then pop a datum off that queue and assign it to the profile.
     '''
     with transaction.atomic():
-        queue, datum = pop_first_nonempty_queue(project, user=user)
+        queue, datum = pop_first_nonempty_queue(project, profile=profile)
 
         if datum is None:
             return None
         else:
-            AssignedData.objects.create(data=datum, user=user,
+            AssignedData.objects.create(data=datum, profile=profile,
                                         queue=queue)
             return datum
 
 
-def label_data(label, datum, user):
+def label_data(label, datum, profile):
     '''
     Record that a given datum has been labeled; remove its assignment, if any.
     '''
     with transaction.atomic():
         DataLabel.objects.create(data=datum,
                                 label=label,
-                                user=user)
-        # There's a unique constraint on data/user, so this is
+                                profile=profile)
+        # There's a unique constraint on data/profile, so this is
         # guaranteed to return one object
         assignment = AssignedData.objects.filter(data=datum,
-                                                user=user).get()
+                                                profile=profile).get()
         queue = assignment.queue
         assignment.delete()
         DataQueue.objects.filter(data=datum, queue=queue).delete()
 
 
-def get_assignment(user, project):
+def get_assignments(profile, project, num_assignments):
     '''
-    Check if a datum is currently assigned to this user/project;
-    if so, return it.  If not, try to get a new assignment and return it.
+    Check if a data is currently assigned to this profile/project;
+    If so, return max(num_assignments, len(assigned) of it.
+    If not, try to get a num_assigments of new assignments and return them.
     '''
     existing_assignments = AssignedData.objects.filter(
-        user=user,
+        profile=profile,
         queue__project=project)
 
     if len(existing_assignments) > 0:
-        return existing_assignments.first().data
+        return [assignment.data for assignment in existing_assignments[:num_assignments]]
     else:
-        return assign_datum(user, project)
+        data = []
+        for i in range(num_assignments):
+            assigned_datum = assign_datum(profile, project)
+            if assigned_datum is None:
+                break
+            data.append(assigned_datum)
+        return data
 
 
-def unassign_datum(datum, user):
+def unassign_datum(datum, profile):
     '''
-    Remove a user's assignment to a datum.  Re-add the datum to its
+    Remove a profile's assignment to a datum.  Re-add the datum to its
     respective queue in Redis.
     '''
     assignment = AssignedData.objects.filter(
-        user=user,
+        profile=profile,
         data=datum).get()
 
     queue = assignment.queue
     assignment.delete()
 
-    settings.REDIS.lpush(queue.pk, datum.pk)
+    settings.REDIS.lpush('queue:'+str(queue.pk), 'data:'+str(datum.pk))

@@ -3,17 +3,17 @@ Test core logic for the SMART app, such as creating projects, managing
 queues, etc.
 '''
 import pytest
+import unittest
 
 from django.contrib.auth import get_user_model
 
-from core.models import (Project, Queue, Data, DataQueue, User,
+from core.models import (Project, Queue, Data, DataQueue, Profile,
                          AssignedData, Label, DataLabel)
 from core.util import (create_project, add_data, assign_datum,
                        add_queue, fill_queue, pop_queue,
-                       init_redis_queues, clear_redis_queues,
-                       sync_redis_queues, get_nonempty_queue,
-                       create_user, label_data, pop_first_nonempty_queue,
-                       get_assignment, unassign_datum)
+                       init_redis_queues, get_nonempty_queue,
+                       create_profile, label_data, pop_first_nonempty_queue,
+                       get_assignments, unassign_datum)
 
 from test.util import read_test_data
 
@@ -35,19 +35,19 @@ def assert_redis_matches_db(test_redis):
         data_count = q.data.count()
 
         if data_count > 0:
-            assert test_redis.exists(q.pk)
-            assert test_redis.llen(q.pk) == data_count
+            assert test_redis.exists('queue:'+str(q.pk))
+            assert test_redis.llen('queue:'+str(q.pk)) == data_count
         else:
             # Empty lists don't exist in redis
-            assert not test_redis.exists(q.pk)
+            assert not test_redis.exists('queue:'+str(q.pk))
 
 
-def test_create_user(db):
+def test_create_profile(db):
     username = 'test_user'
     password = 'password'
     email = 'test_user@rti.org'
 
-    create_user(username, password, email)
+    create_profile(username, password, email)
 
     auth_user_attrs = {
         'username': username,
@@ -61,12 +61,12 @@ def test_create_user(db):
                  .filter(**auth_user_attrs)
                  .first())
 
-    assert_obj_exists(User, { 'auth_user': auth_user })
+    assert_obj_exists(Profile, { 'user': auth_user })
 
 
-def test_create_project(db, test_user):
+def test_create_project(db, test_profile):
     name = 'test_project'
-    project = create_project(name, test_user)
+    project = create_project(name, test_profile)
 
     assert_obj_exists(Project, { 'name': name })
 
@@ -83,21 +83,21 @@ def test_add_data(db, test_project):
         })
 
 
-def test_add_queue_no_user(test_project):
+def test_add_queue_no_profile(test_project):
     QUEUE_LEN = 10
     add_queue(test_project, QUEUE_LEN)
     assert_obj_exists(Queue, {
         'project': test_project, 'length': QUEUE_LEN,
-        'user': None
+        'profile': None
     })
 
 
-def test_add_queue_user(test_project, test_user):
+def test_add_queue_profile(test_project, test_profile):
     QUEUE_LEN = 10
-    add_queue(test_project, QUEUE_LEN, user=test_user)
+    add_queue(test_project, QUEUE_LEN, profile=test_profile)
     assert_obj_exists(Queue, {
         'project': test_project, 'length': QUEUE_LEN,
-        'user': test_user
+        'profile': test_profile
     })
 
 
@@ -127,26 +127,11 @@ def test_fill_queue_all_remaining_data(db, test_queue):
     assert test_queue.data.count() == all_data_count
 
 
-def test_fill_multiple_queues(db, test_queue):
-    # Set both queues to be as large as the amount of available data
-    # so we can be sure they won't overlap each other when filled
-    data_count = Data.objects.count()
-    test_queue.length = data_count
-    test_queue.save()
-    test_queue2 = add_queue(test_queue.project, data_count)
-
-    fill_queue(test_queue)
-    fill_queue(test_queue2)
-
-    assert test_queue.data.count() == data_count
-    assert test_queue2.data.count() == 0
-
-
-def test_fill_multiple_projects(db, test_queue, test_user):
+def test_fill_multiple_projects(db, test_queue, test_profile):
     project_data_count = test_queue.project.data_set.count()
     test_queue.length = project_data_count + 1
     test_queue.save()
-    test_project2 = create_project('test_project2', test_user)
+    test_project2 = create_project('test_project2', test_profile)
     project2_data = read_test_data()
 
     add_data(test_project2, [d['text'] for d in project2_data])
@@ -165,17 +150,10 @@ def test_init_redis_queues_empty(db, test_redis):
     assert_redis_matches_db(test_redis)
 
 
-def test_init_redis_queues_fails_on_existing_queue_keys(db, test_project, test_redis,
-                                                        test_queue):
-    fill_queue(test_queue)
-    init_redis_queues()
-
-    with pytest.raises(ValueError):
-        init_redis_queues()
-
-
 def test_init_redis_queues_one_empty_queue(db, test_project, test_redis):
     queue = add_queue(test_project, 10)
+
+    test_redis.flushdb()
     init_redis_queues()
 
     assert_redis_matches_db(test_redis)
@@ -184,6 +162,8 @@ def test_init_redis_queues_one_empty_queue(db, test_project, test_redis):
 def test_init_redis_queues_one_nonempty_queue(db, test_project_data, test_redis):
     queue = add_queue(test_project_data, 10)
     fill_queue(queue)
+
+    test_redis.flushdb()
     init_redis_queues()
 
     assert_redis_matches_db(test_redis)
@@ -194,64 +174,40 @@ def test_init_redis_queues_multiple_queues(db, test_project_data, test_redis):
     fill_queue(queue)
 
     queue2 = add_queue(test_project_data, 10)
+
+    test_redis.flushdb()
     init_redis_queues()
 
     assert_redis_matches_db(test_redis)
 
 
-def test_init_redis_queues_multiple_projects(db, test_project_data, test_redis, test_user):
+def test_init_redis_queues_multiple_projects(db, test_project_data, test_redis, test_profile):
     # Try a mix of multiple queues in multiple projects with
     # and without data to see if everything initializes as expected.
     p1_queue1 = add_queue(test_project_data, 10)
     fill_queue(p1_queue1)
     p1_queue2 = add_queue(test_project_data, 10)
 
-    project2 = create_project('test_project2', test_user)
+    project2 = create_project('test_project2', test_profile)
     project2_data = read_test_data()
     add_data(project2, [d['text'] for d in project2_data])
     p2_queue1 = add_queue(project2, 10)
     fill_queue(p2_queue1)
     p2_queue2 = add_queue(project2, 10)
 
+    test_redis.flushdb()
     init_redis_queues()
 
     assert_redis_matches_db(test_redis)
 
 
-def test_clear_redis_queues(db, test_queue, test_redis):
-    fill_queue(test_queue)
-    init_redis_queues()
-
-    clear_redis_queues()
-
-    assert test_redis.llen(test_queue.pk) == 0
-    assert len(test_redis.keys()) == 0
-
-
-def test_sync_redis_queues(db, test_project_data, test_queue, test_redis):
-    queue_len = 10
-
-    fill_queue(test_queue)
-    init_redis_queues()
-
-    queue2 = add_queue(test_project_data, queue_len)
-    fill_queue(queue2)
-
-    # Make sure we added the new queue without an error
-    sync_redis_queues()
-
-    assert test_redis.llen(queue2.pk) == 10
-    assert len(test_redis.keys()) == 2
-
-
 def test_pop_empty_queue(db, test_project, test_redis):
     queue = add_queue(test_project, 10)
-    init_redis_queues()
 
     datum = pop_queue(queue)
 
     assert datum is None
-    assert not test_redis.exists(queue.pk)
+    assert not test_redis.exists('queue:'+str(queue.pk))
     assert queue.data.count() == 0
 
 
@@ -259,12 +215,11 @@ def test_pop_nonempty_queue(db, test_project_data, test_redis):
     queue_len = 10
     queue = add_queue(test_project_data, queue_len)
     fill_queue(queue)
-    init_redis_queues()
 
     datum = pop_queue(queue)
 
     assert isinstance(datum, Data)
-    assert test_redis.llen(queue.pk) == (queue_len - 1)
+    assert test_redis.llen('queue:'+str(queue.pk)) == (queue_len - 1)
     assert queue.data.count() == queue_len
 
 
@@ -274,19 +229,18 @@ def test_pop_only_affects_one_queue(db, test_project_data, test_redis):
     queue2 = add_queue(test_project_data, queue_len)
     fill_queue(queue)
     fill_queue(queue2)
-    init_redis_queues()
 
     datum = pop_queue(queue)
 
     assert isinstance(datum, Data)
-    assert test_redis.llen(queue.pk) == (queue_len - 1)
+    assert test_redis.llen('queue:'+str(queue.pk)) == (queue_len - 1)
     assert queue.data.count() == queue_len
 
-    assert test_redis.llen(queue2.pk) == queue_len
+    assert test_redis.llen('queue:'+str(queue2.pk)) == queue_len
     assert queue2.data.count() == queue_len
 
 
-def test_get_nonempty_queue_nouser(db, test_project_data):
+def test_get_nonempty_queue_noprofile(db, test_project_data):
     queue_len = 10
     queue = add_queue(test_project_data, queue_len)
     queue2 = add_queue(test_project_data, queue_len)
@@ -300,34 +254,34 @@ def test_get_nonempty_queue_nouser(db, test_project_data):
     assert get_nonempty_queue(test_project_data) == queue
 
 
-def test_get_nonempty_user_queue(db, test_project_data, test_user):
+def test_get_nonempty_profile_queue(db, test_project_data, test_profile):
     queue_len = 10
     queue = add_queue(test_project_data, queue_len)
-    user_queue = add_queue(test_project_data, queue_len,
-                           user=test_user)
-    user_queue2 = add_queue(test_project_data, queue_len,
-                            user=test_user)
+    profile_queue = add_queue(test_project_data, queue_len,
+                           profile=test_profile)
+    profile_queue2 = add_queue(test_project_data, queue_len,
+                            profile=test_profile)
 
-    assert get_nonempty_queue(test_project_data, user=test_user) is None
+    assert get_nonempty_queue(test_project_data, profile=test_profile) is None
 
-    fill_queue(user_queue2)
-    assert get_nonempty_queue(test_project_data, user=test_user) == user_queue2
+    fill_queue(profile_queue2)
+    assert get_nonempty_queue(test_project_data, profile=test_profile) == profile_queue2
 
-    fill_queue(user_queue)
-    assert get_nonempty_queue(test_project_data, user=test_user) == user_queue
+    fill_queue(profile_queue)
+    assert get_nonempty_queue(test_project_data, profile=test_profile) == profile_queue
 
 
-def test_get_nonempty_queue_multiple_users(db, test_project_data, test_user,
-                                           test_user2, test_user_queue, test_user_queue2):
+def test_get_nonempty_queue_multiple_profiles(db, test_project_data, test_profile,
+                                           test_profile2, test_profile_queue, test_profile_queue2):
 
     assert get_nonempty_queue(test_project_data) is None
 
     # Fill the correct one last, so we can test whether the first-filled queue is being
     # selected
-    for queue in (test_user_queue2, test_user_queue):
+    for queue in (test_profile_queue2, test_profile_queue):
         fill_queue(queue)
 
-    assert get_nonempty_queue(test_project_data, user=test_user) == test_user_queue
+    assert get_nonempty_queue(test_project_data, profile=test_profile) == test_profile_queue
 
 
 def test_pop_first_nonempty_queue_noqueue(db, test_project_data, test_redis):
@@ -350,7 +304,6 @@ def test_pop_first_nonempty_queue_empty(db, test_project_data, test_queue, test_
 
 def test_pop_first_nonempty_queue_single_queue(db, test_project_data, test_queue, test_redis):
     fill_queue(test_queue)
-    init_redis_queues()
 
     queue, data = pop_first_nonempty_queue(test_project_data)
 
@@ -360,15 +313,14 @@ def test_pop_first_nonempty_queue_single_queue(db, test_project_data, test_queue
     assert isinstance(data, Data)
 
 
-def test_pop_first_nonempty_queue_user_queue(db, test_project_data, test_user,
-                                             test_user_queue, test_redis):
-    fill_queue(test_user_queue)
-    init_redis_queues()
+def test_pop_first_nonempty_queue_profile_queue(db, test_project_data, test_profile,
+                                             test_profile_queue, test_redis):
+    fill_queue(test_profile_queue)
 
-    queue, data = pop_first_nonempty_queue(test_project_data, user=test_user)
+    queue, data = pop_first_nonempty_queue(test_project_data, profile=test_profile)
 
     assert isinstance(queue, Queue)
-    assert queue == test_user_queue
+    assert queue == test_profile_queue
 
     assert isinstance(data, Data)
 
@@ -377,7 +329,6 @@ def test_pop_first_nonempty_queue_multiple_queues(db, test_project_data, test_qu
                                                   test_redis):
     test_queue2 = add_queue(test_project_data, 10)
     fill_queue(test_queue2)
-    init_redis_queues()
 
     queue, data = pop_first_nonempty_queue(test_project_data)
 
@@ -385,7 +336,6 @@ def test_pop_first_nonempty_queue_multiple_queues(db, test_project_data, test_qu
     assert queue == test_queue2
 
     fill_queue(test_queue)
-    sync_redis_queues()
 
     queue, data = pop_first_nonempty_queue(test_project_data)
 
@@ -393,202 +343,261 @@ def test_pop_first_nonempty_queue_multiple_queues(db, test_project_data, test_qu
     assert queue == test_queue
 
 
-def test_pop_first_nonempty_queue_multiple_user_queues(db, test_project_data, test_user,
-                                                       test_user_queue, test_user_queue2,
+def test_pop_first_nonempty_queue_multiple_profile_queues(db, test_project_data, test_profile,
+                                                       test_profile_queue, test_profile_queue2,
                                                        test_redis):
-    fill_queue(test_user_queue2)
-    init_redis_queues()
+    fill_queue(test_profile_queue2)
 
-    queue, data = pop_first_nonempty_queue(test_project_data, user=test_user)
+    queue, data = pop_first_nonempty_queue(test_project_data, profile=test_profile)
 
     assert queue is None
     assert data is None
 
-    fill_queue(test_user_queue)
-    sync_redis_queues()
+    fill_queue(test_profile_queue)
 
-    queue, data = pop_first_nonempty_queue(test_project_data, user=test_user)
+    queue, data = pop_first_nonempty_queue(test_project_data, profile=test_profile)
 
     assert isinstance(queue, Queue)
-    assert queue == test_user_queue
+    assert queue == test_profile_queue
 
 
-def test_assign_datum_project_queue_returns_datum(db, test_queue, test_user, test_redis):
+def test_assign_datum_project_queue_returns_datum(db, test_queue, test_profile, test_redis):
     '''
-    Assign a datum from a project-wide queue (null user ID).
+    Assign a datum from a project-wide queue (null profile ID).
     '''
     fill_queue(test_queue)
-    init_redis_queues()
 
-    datum = assign_datum(test_user, test_queue.project)
+    datum = assign_datum(test_profile, test_queue.project)
 
     # Make sure we got the datum
     assert isinstance(datum, Data)
 
 
-def test_assign_datum_project_queue_correct_assignment(db, test_queue, test_user, test_redis):
+def test_assign_datum_project_queue_correct_assignment(db, test_queue, test_profile, test_redis):
     fill_queue(test_queue)
-    init_redis_queues()
 
-    datum = assign_datum(test_user, test_queue.project)
+    datum = assign_datum(test_profile, test_queue.project)
 
     # Make sure the assignment is correct
     assignment = AssignedData.objects.filter(data=datum)
     assert len(assignment) == 1
-    assert assignment[0].user == test_user
+    assert assignment[0].profile == test_profile
     assert assignment[0].queue == test_queue
     assert assignment[0].assigned_timestamp is not None
 
 
-def test_assign_datum_project_queue_pops_queues(db, test_queue, test_user, test_redis):
+def test_assign_datum_project_queue_pops_queues(db, test_queue, test_profile, test_redis):
     fill_queue(test_queue)
-    init_redis_queues()
 
-    datum = assign_datum(test_user, test_queue.project)
+    datum = assign_datum(test_profile, test_queue.project)
 
     # Make sure the datum was removed from queues
-    assert test_redis.llen(test_queue.pk) == test_queue.length - 1
+    assert test_redis.llen('queue:'+str(test_queue.pk)) == test_queue.length - 1
 
     # but not from the db queue
     assert test_queue.data.count() == test_queue.length
     assert datum in test_queue.data.all()
 
 
-def test_assign_datum_user_queue_returns_correct_datum(db, test_user_queue, test_user,
-                                                       test_user_queue2, test_user2,
+def test_assign_datum_profile_queue_returns_correct_datum(db, test_profile_queue, test_profile,
+                                                       test_profile_queue2, test_profile2,
                                                        test_redis):
-    fill_queue(test_user_queue)
-    fill_queue(test_user_queue2)
-    init_redis_queues()
+    fill_queue(test_profile_queue)
+    fill_queue(test_profile_queue2)
 
-    datum = assign_datum(test_user, test_user_queue.project)
+    datum = assign_datum(test_profile, test_profile_queue.project)
 
     assert isinstance(datum, Data)
 
 
-def test_assign_datum_user_queue_correct_assignment(db, test_user_queue, test_user,
-                                                    test_user_queue2, test_user2,
+def test_assign_datum_profile_queue_correct_assignment(db, test_profile_queue, test_profile,
+                                                    test_profile_queue2, test_profile2,
                                                     test_redis):
-    fill_queue(test_user_queue)
-    fill_queue(test_user_queue2)
-    init_redis_queues()
+    fill_queue(test_profile_queue)
+    fill_queue(test_profile_queue2)
 
-    datum = assign_datum(test_user, test_user_queue.project)
+    datum = assign_datum(test_profile, test_profile_queue.project)
 
     assignment = AssignedData.objects.filter(data=datum)
     assert len(assignment) == 1
-    assert assignment[0].user == test_user
-    assert assignment[0].queue == test_user_queue
+    assert assignment[0].profile == test_profile
+    assert assignment[0].queue == test_profile_queue
     assert assignment[0].assigned_timestamp is not None
 
 
-def test_assign_datum_user_queue_pops_queues(db, test_user_queue, test_user,
-                                             test_user_queue2, test_user2, test_redis):
-    fill_queue(test_user_queue)
-    fill_queue(test_user_queue2)
-    init_redis_queues()
+def test_assign_datum_profile_queue_pops_queues(db, test_profile_queue, test_profile,
+                                             test_profile_queue2, test_profile2, test_redis):
+    fill_queue(test_profile_queue)
+    fill_queue(test_profile_queue2)
 
-    datum = assign_datum(test_user, test_user_queue.project)
+    datum = assign_datum(test_profile, test_profile_queue.project)
 
     # Make sure the datum was removed from the correct queues
-    assert test_redis.llen(test_user_queue.pk) == test_user_queue.length - 1
+    assert test_redis.llen('queue:'+str(test_profile_queue.pk)) == test_profile_queue.length - 1
 
     # ...but not the other queues
-    assert test_user_queue.data.count() == test_user_queue.length
-    assert datum in test_user_queue.data.all()
-    assert test_redis.llen(test_user_queue2.pk) == test_user_queue2.length
-    assert test_user_queue2.data.count() == test_user_queue2.length
+    assert test_profile_queue.data.count() == test_profile_queue.length
+    assert datum in test_profile_queue.data.all()
+    assert test_redis.llen('queue:'+str(test_profile_queue2.pk)) == test_profile_queue2.length
+    assert test_profile_queue2.data.count() == test_profile_queue2.length
 
 
-def test_init_redis_queues_ignores_assigned_data(db, test_user, test_queue, test_redis):
+def test_init_redis_queues_ignores_assigned_data(db, test_profile, test_queue, test_redis):
     fill_queue(test_queue)
 
     assigned_datum = test_queue.data.first()
 
     AssignedData.objects.create(
-        user=test_user,
+        profile=test_profile,
         data=assigned_datum,
         queue=test_queue)
 
     init_redis_queues()
 
     # Make sure the assigned datum didn't get into the redis queue
-    assert test_redis.llen(test_queue.pk) == test_queue.length - 1
+    assert test_redis.llen('queue:'+str(test_queue.pk)) == test_queue.length - 1
 
 
-def test_label_data(db, test_user, test_queue, test_redis):
+def test_label_data(db, test_profile, test_queue, test_redis):
     fill_queue(test_queue)
-    init_redis_queues()
 
-    datum = assign_datum(test_user, test_queue.project)
+    datum = assign_datum(test_profile, test_queue.project)
     test_label = Label.objects.create(name='test', project=test_queue.project)
-    label_data(test_label, datum, test_user)
+    label_data(test_label, datum, test_profile)
 
     # Make sure the label was properly recorded
-    assert datum in test_user.labeled_data.all()
+    assert datum in test_profile.labeled_data.all()
     assert_obj_exists(DataLabel, {
         'data': datum,
-        'user': test_user,
+        'profile': test_profile,
         'label': test_label
     })
 
     # Make sure the assignment was removed
-    assert not AssignedData.objects.filter(user=test_user,
+    assert not AssignedData.objects.filter(profile=test_profile,
                                            data=datum,
                                            queue=test_queue).exists()
 
 
-def test_get_assignment_no_existing_assignment(db, test_user, test_project_data, test_queue,
+def test_get_assignments_no_existing_assignment_one_assignment(db, test_profile, test_project_data, test_queue,
                                                test_redis):
     fill_queue(test_queue)
-    init_redis_queues()
 
     assert AssignedData.objects.count() == 0
 
-    datum = get_assignment(test_user, test_project_data)
+    data = get_assignments(test_profile, test_project_data, 1)
 
-    assert isinstance(datum, Data)
+    assert len(data) == 1
+    assert isinstance(data[0], Data)
     assert_obj_exists(AssignedData, {
-        'data': datum,
-        'user': test_user
+        'data': data[0],
+        'profile': test_profile
     })
 
 
-def test_get_assignment_existing_assignment(db, test_user, test_project_data, test_queue,
+def test_get_assignments_no_existing_assignment_half_max_queue_length(db, test_profile, test_project_data, test_queue,
+                                               test_redis):
+    fill_queue(test_queue)
+
+    assert AssignedData.objects.count() == 0
+
+    data = get_assignments(test_profile, test_project_data, 5)
+
+    assert len(data) == 5
+    for datum in data:
+        assert isinstance(datum, Data)
+        assert_obj_exists(AssignedData, {
+            'data': datum,
+            'profile': test_profile
+        })
+
+
+def test_get_assignments_no_existing_assignment_max_queue_length(db, test_profile, test_project_data, test_queue,
+                                               test_redis):
+    fill_queue(test_queue)
+
+    assert AssignedData.objects.count() == 0
+
+    data = get_assignments(test_profile, test_project_data, 10)
+
+    assert len(data) == 10
+    for datum in data:
+        assert isinstance(datum, Data)
+        assert_obj_exists(AssignedData, {
+            'data': datum,
+            'profile': test_profile
+        })
+
+
+def test_get_assignments_no_existing_assignment_over_max_queue_length(db, test_profile, test_project_data, test_queue,
+                                               test_redis):
+    fill_queue(test_queue)
+
+    assert AssignedData.objects.count() == 0
+
+    data = get_assignments(test_profile, test_project_data, 15)
+
+    assert len(data) == 10
+    for datum in data:
+        assert isinstance(datum, Data)
+        assert_obj_exists(AssignedData, {
+            'data': datum,
+            'profile': test_profile
+        })
+
+
+def test_get_assignments_one_existing_assignment(db, test_profile, test_project_data, test_queue,
                                             test_redis):
     fill_queue(test_queue)
-    init_redis_queues()
 
-    assigned_datum = assign_datum(test_user, test_project_data)
+    assigned_datum = assign_datum(test_profile, test_project_data)
 
-    datum = get_assignment(test_user, test_project_data)
+    data = get_assignments(test_profile, test_project_data, 1)
 
-    assert isinstance(datum, Data)
+    assert isinstance(data[0], Data)
     # We should just get the datum that was already assigned
-    assert datum == assigned_datum
+    assert data[0] == assigned_datum
 
 
-def test_unassign(db, test_user, test_project_data, test_queue, test_redis):
+def test_get_assignments_multiple_existing_assignments(db, test_profile, test_project_data, test_queue,
+                                            test_redis):
     fill_queue(test_queue)
-    init_redis_queues()
 
-    assert test_redis.llen(test_queue.pk) == test_queue.length
+    assigned_data = []
+    for i in range(5):
+        assigned_data.append(assign_datum(test_profile, test_project_data))
 
-    datum = get_assignment(test_user, test_project_data)
+    data = get_assignments(test_profile, test_project_data, 5)
 
-    assert test_redis.llen(test_queue.pk) == (test_queue.length - 1)
+    case = unittest.TestCase()
+    assert len(data) == 5
+    assert len(data) == len(assigned_data)
+    for datum, assigned_datum in zip(data, assigned_data):
+        assert isinstance(datum, Data)
+    # We should just get the data that was already assigned
+    case.assertCountEqual(data, assigned_data)
+
+
+def test_unassign(db, test_profile, test_project_data, test_queue, test_redis):
+    fill_queue(test_queue)
+
+    assert test_redis.llen('queue:'+str(test_queue.pk)) == test_queue.length
+
+    datum = get_assignments(test_profile, test_project_data, 1)[0]
+
+    assert test_redis.llen('queue:'+str(test_queue.pk)) == (test_queue.length - 1)
     assert AssignedData.objects.filter(
         data=datum,
-        user=test_user).exists()
+        profile=test_profile).exists()
 
-    unassign_datum(datum, test_user)
+    unassign_datum(datum, test_profile)
 
-    assert test_redis.llen(test_queue.pk) == test_queue.length
+    assert test_redis.llen('queue:'+str(test_queue.pk)) == test_queue.length
     assert not AssignedData.objects.filter(
         data=datum,
-        user=test_user).exists()
+        profile=test_profile).exists()
 
     # The unassigned datum should be the next to be assigned
-    reassigned_datum = get_assignment(test_user, test_project_data)
+    reassigned_datum = get_assignments(test_profile, test_project_data, 1)[0]
 
     assert reassigned_datum == datum

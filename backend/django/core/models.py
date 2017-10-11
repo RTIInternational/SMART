@@ -5,41 +5,41 @@ from django.urls import reverse
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-class User(models.Model):
+class Profile(models.Model):
     # Link to the auth user, since we're basically just extending it
-    auth_user = models.OneToOneField(settings.AUTH_USER_MODEL)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     labeled_data = models.ManyToManyField(
         'Data', related_name='labelers', through='DataLabel'
     )
 
     def __str__(self):
-        return self.auth_user.username
+        return self.user.username
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_user(sender, instance, created, **kwargs):
     if created:
-        User.objects.create(auth_user=instance)
+        Profile.objects.create(user=instance)
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def save_user(sender, instance, **kwargs):
-    instance.user.save()
+    instance.profile.save()
 
 class Project(models.Model):
     name = models.TextField()
     description = models.TextField(blank=True)
-    creator = models.ForeignKey('User')
+    creator = models.ForeignKey('Profile')
 
     def get_absolute_url(self):
         return reverse('projects:project_detail', kwargs={'pk': self.pk})
 
 class ProjectPermissions(models.Model):
     class Meta:
-        unique_together = (('user', 'project'))
+        unique_together = (('profile', 'project'))
     PERM_CHOICES = (
         ('ADMIN', 'Admin'),
         ('CODER', 'Coder'),
     )
-    user = models.ForeignKey('User')
+    profile = models.ForeignKey('Profile')
     project = models.ForeignKey('Project')
     permission = models.CharField(max_length=5,choices=PERM_CHOICES)
 
@@ -67,9 +67,9 @@ class Label(models.Model):
 
 class DataLabel(models.Model):
     class Meta:
-        unique_together = (('data', 'user'))
+        unique_together = (('data', 'profile'))
     data = models.ForeignKey('Data')
-    user = models.ForeignKey('User')
+    profile = models.ForeignKey('Profile')
     label = models.ForeignKey('Label')
 
 class DataPrediction(models.Model):
@@ -81,7 +81,7 @@ class DataPrediction(models.Model):
     predicted_probability = models.FloatField()
 
 class Queue(models.Model):
-    user = models.ForeignKey('User', blank=True, null=True)
+    profile = models.ForeignKey('Profile', blank=True, null=True)
     project = models.ForeignKey('Project')
     length = models.IntegerField()
     data = models.ManyToManyField(
@@ -96,8 +96,8 @@ class DataQueue(models.Model):
 
 class AssignedData(models.Model):
     class Meta:
-        unique_together = (('user', 'queue', 'data'))
-    user = models.ForeignKey('User')
+        unique_together = (('profile', 'queue', 'data'))
+    profile = models.ForeignKey('Profile')
     data = models.ForeignKey('Data')
     queue = models.ForeignKey('Queue')
     assigned_timestamp = models.DateTimeField(default = timezone.now)
