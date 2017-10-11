@@ -43,7 +43,7 @@ def get_card_deck(request, pk):
     num_coders = len(project.projectpermissions_set.all()) + 1
     coder_size = math.ceil(batch_size / num_coders)
 
-    data = util.get_assignments(profile, pk, coder_size)
+    data = util.get_assignments(profile, project, coder_size)
     labels = Label.objects.all().filter(project=project)
 
     return Response({'labels': LabelSerializer(labels, many=True).data, 'data': DataSerializer(data, many=True).data})
