@@ -102,8 +102,8 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
                 permissions.save()
 
                 # Create the queue
-                batch_size = 10 * len([x for x in labels if x.cleaned_data != {}])
-                num_coders = len([x for x in permissions if x.cleaned_data != {}]) + 1
+                batch_size = 10 * len([x for x in labels if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True])
+                num_coders = len([x for x in permissions if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True]) + 1
                 q_length = math.ceil(batch_size/num_coders) * num_coders + math.ceil(batch_size/num_coders) * (num_coders - 1)
 
                 queue = util.add_queue(project=self.object, length=q_length)
