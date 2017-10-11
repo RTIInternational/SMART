@@ -4,6 +4,9 @@ queues, etc.
 '''
 import pytest
 import unittest
+import os
+import numpy as np
+import scipy
 
 from django.contrib.auth import get_user_model
 
@@ -13,7 +16,8 @@ from core.util import (create_project, add_data, assign_datum,
                        add_queue, fill_queue, pop_queue,
                        init_redis_queues, get_nonempty_queue,
                        create_profile, label_data, pop_first_nonempty_queue,
-                       get_assignments, unassign_datum)
+                       get_assignments, unassign_datum,
+                       save_tfidf_matrix, load_tfidf_matrix)
 
 from test.util import read_test_data
 
@@ -601,3 +605,20 @@ def test_unassign(db, test_profile, test_project_data, test_queue, test_redis):
     reassigned_datum = get_assignments(test_profile, test_project_data, 1)[0]
 
     assert reassigned_datum == datum
+
+
+def test_create_tfidf_matrix(test_tfidf_matrix):
+    assert type(test_tfidf_matrix) == scipy.sparse.csr.csr_matrix
+    assert test_tfidf_matrix.shape == (664, 48)
+    assert test_tfidf_matrix.dtype == np.float64
+
+
+def test_save_and_load_tfidf_matrix(test_tfidf_matrix, test_project_data, tmpdir):
+    pre_dir = tmpdir.mkdir('data').mkdir('tf_idf')
+    file = save_tfidf_matrix(test_tfidf_matrix, test_project_data, prefix_dir=str(tmpdir))
+
+    assert os.path.isfile(file)
+
+    matrix = load_tfidf_matrix(test_project_data, prefix_dir=str(tmpdir))
+
+    assert np.allclose(matrix.A, test_tfidf_matrix.A)

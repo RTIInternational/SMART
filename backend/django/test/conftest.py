@@ -1,5 +1,6 @@
 import pytest
 import redis
+import os
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -8,7 +9,8 @@ from core.management.commands.seed import (
     seed_database, SEED_USERNAME)
 from core.models import (Profile)
 from core.util import (create_project, add_queue,
-                       create_profile, add_data)
+                       create_profile, add_data,
+                       create_tfidf_matrix)
 
 from test.util import read_test_data
 
@@ -93,3 +95,10 @@ def test_profile_queue2(db, test_profile2, test_project_data):
     Useful for tests requiring multiple profiles/queues on the same project.
     '''
     return add_queue(test_project_data, TEST_QUEUE_LEN, profile=test_profile2)
+
+@pytest.fixture
+def test_tfidf_matrix(test_project_data):
+    '''
+    A CSR-format tf-idf matrix created from the data of test_project_data
+    '''
+    return create_tfidf_matrix(test_project_data.data_set.all())

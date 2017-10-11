@@ -1,5 +1,8 @@
 import random
 import redis
+from sklearn.feature_extraction.text import TfidfVectorizer
+from scipy import sparse
+import os
 
 from django.db import transaction, connection
 from django.db.models import Count, Value, IntegerField, F
@@ -337,3 +340,57 @@ def unassign_datum(datum, profile):
     assignment.delete()
 
     settings.REDIS.lpush('queue:'+str(queue.pk), 'data:'+str(datum.pk))
+
+
+def create_tfidf_matrix(data, max_df=0.95, min_df=0.05):
+    """Create a TF-IDF matrix
+
+    Args:
+        data: List/Queryset of Data objects
+    Returns:
+        tf_idf_matrix: CSR-format tf-idf matrix
+    """
+    vectorizer = TfidfVectorizer(max_df=max_df, min_df=min_df)
+    tf_idf_matrix = vectorizer.fit_transform([d.text for d in data])
+
+    return tf_idf_matrix
+
+
+def save_tfidf_matrix(matrix, project, prefix_dir=None):
+    """Save tf-idf matrix to persistent volume storage as /data/tf_idf/<pk>.npz
+
+    Args:
+        matrix: CSR-format tf-idf matrix
+        project: The project the data comes from
+        prefix_dir: Prefix to add to file path, needed for testing
+    Returns:
+        file: The filepath to the saved matrix
+    """
+    file = '/data/tf_idf/' + str(project.pk) + '.npz'
+    if prefix_dir is not None:
+        file = os.path.join(prefix_dir, file.lstrip(os.path.sep))
+
+    print(file)
+
+    sparse.save_npz(file, matrix)
+
+    return file
+
+
+def load_tfidf_matrix(project, prefix_dir=None):
+    """Load tf-idf matrix from persistent volume, otherwise None
+
+    Args:
+        project: Project object to retrieve tf-idf CSR from
+        prefix_dir: Prefix to add to file path, needed for testing
+    Returns:
+        matrix or None
+    """
+    file = '/data/tf_idf/' + str(project.pk) + '.npz'
+    if prefix_dir is not None:
+        file = os.path.join(prefix_dir, file.lstrip(os.path.sep))
+
+    if os.path.isfile(file):
+        return sparse.load_npz(file)
+    else:
+        return None
