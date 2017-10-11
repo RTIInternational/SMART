@@ -2,12 +2,12 @@ import os.path
 
 from django.core.management.base import BaseCommand, CommandError
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User as AuthUser
 
-from core.models import User as AppUser
+from core.models import Profile
 
 class Command(BaseCommand):
-    help = 'Seeds the database with a test user'
+    help = 'Seeds the database with a test profile'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -19,9 +19,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         try:
-            app_user = AppUser.objects.get(auth_user__username='test')
-            print("SEED: User Already Exists")
-        except AppUser.DoesNotExist:
-            user = User.objects.create_user(username='test', password='password', email='dummy@smart.org')
-            app_user = AppUser.objects.create(auth_user=user)
-            print("SEED: New User Created")
+            profile = profile.objects.get(user__username='test')
+            print("SEED: Profile Already Exists")
+        except Profile.DoesNotExist:
+            auth_user = AuthUser.objects.create_user(username='test', password='password', email='dummy@smart.org')
+            profile = Profile.objects.create(user=auth_user)
+            print("SEED: New Profile Created")

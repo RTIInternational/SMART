@@ -6,9 +6,9 @@ from django.contrib.auth import get_user_model
 from smart.celery import app as celery_app
 from core.management.commands.seed import (
     seed_database, SEED_USERNAME)
-from core.models import (User)
+from core.models import (Profile)
 from core.util import (create_project, add_queue,
-                       create_user, add_data)
+                       create_profile, add_data)
 
 from test.util import read_test_data
 
@@ -42,11 +42,11 @@ def test_redis(request):
     return r
 
 @pytest.fixture
-def test_project(db, test_user):
+def test_project(db, test_profile):
     '''
     This fixture only creates the test project without any data.
     '''
-    return create_project('test_project', test_user)
+    return create_project('test_project', test_profile)
 
 @pytest.fixture
 def test_project_data(db, test_project):
@@ -58,18 +58,18 @@ def test_project_data(db, test_project):
     return test_project
 
 @pytest.fixture
-def test_user(db):
+def test_profile(db):
     '''
-    Creates a test user with associated auth_user.
+    Creates a test profile with associated auth_user.
     '''
-    return create_user('test_user', 'password', 'test_user@rti.org')
+    return create_profile('test_profile', 'password', 'test_profile@rti.org')
 
 @pytest.fixture
-def test_user2(db):
+def test_profile2(db):
     '''
-    Additional user for tests requiring multiple users.
+    Additional profile for tests requiring multiple users.
     '''
-    return create_user('test_user2', 'password', 'test_user2@rti.org')
+    return create_profile('test_profile2', 'password', 'test_profile2@rti.org')
 
 @pytest.fixture
 def test_queue(db, test_project_data):
@@ -80,16 +80,16 @@ def test_queue(db, test_project_data):
     return add_queue(test_project_data, TEST_QUEUE_LEN)
 
 @pytest.fixture
-def test_user_queue(db, test_user, test_project_data):
+def test_profile_queue(db, test_profile, test_project_data):
     '''
-    A queue with test data, associated with the first test user.
+    A queue with test data, associated with the first test profile.
     '''
-    return add_queue(test_project_data, TEST_QUEUE_LEN, user=test_user)
+    return add_queue(test_project_data, TEST_QUEUE_LEN, profile=test_profile)
 
 @pytest.fixture
-def test_user_queue2(db, test_user2, test_project_data):
+def test_profile_queue2(db, test_profile2, test_project_data):
     '''
-    A queue with test data, associated with an additional test user.
-    Useful for tests requiring multiple users/queues on the same project.
+    A queue with test data, associated with an additional test profile.
+    Useful for tests requiring multiple profiles/queues on the same project.
     '''
-    return add_queue(test_project_data, TEST_QUEUE_LEN, user=test_user2)
+    return add_queue(test_project_data, TEST_QUEUE_LEN, profile=test_profile2)

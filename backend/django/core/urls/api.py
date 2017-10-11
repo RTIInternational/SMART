@@ -3,7 +3,7 @@ from rest_framework import routers
 from core.views import api
 
 api_router = routers.DefaultRouter()
-api_router.register(r'users', api.UserViewSet)
+api_router.register(r'users', api.ProfileViewSet)
 api_router.register(r'auth_users', api.AuthUserViewSet)
 api_router.register(r'auth_groups', api.AuthUserGroupViewSet)
 api_router.register(r'projects', api.ProjectViewSet)
