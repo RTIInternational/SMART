@@ -13,6 +13,29 @@ from core.models import (Project, Data, Queue, DataQueue, Profile,
 #  what functionality is needed by the frontend.  This file is a little
 #  intimidating to sort through at the moment.
 
+
+def redis_serialize_queue(queue):
+    """Serialize a queue object for redis.  The format is 'queue:<pk>'"""
+    return 'queue:' + str(queue.pk)
+
+
+def redis_serialize_data(datum):
+    """Serialize a data object for redis.  The format is 'data:<pk>'"""
+    return 'data:' + str(datum.pk)
+
+
+def redis_parse_queue(queue_key):
+    """Parse a queue key from redis and return the Queue object"""
+    queue_pk = queue_key.decode().split(':')[1]
+    return Queue.objects.get(pk=queue_pk)
+
+
+def redis_parse_data(datum_key):
+    """Parse a datum key from redis and return the Data object"""
+    datum_pk = datum_key.decode().split(':')[1]
+    return Data.objects.get(pk=datum_pk)
+
+
 def create_profile(username, password, email):
     '''
     Create a user with the given attributes.
@@ -73,10 +96,11 @@ def init_redis_queues():
 
     assigned_data_ids = set((d.data_id for d in AssignedData.objects.all()))
     for queue in Queue.objects.all():
-        data_ids = ['data:'+str(d.pk) for d in queue.data.all() if d.pk not in assigned_data_ids]
+        data_ids = [redis_serialize_data(d) for d in queue.data.all()
+                    if d.pk not in assigned_data_ids]
         if len(data_ids) > 0:
             # We'll get an error if we try to lpush without any data
-            pipeline.lpush('queue:'+str(queue.pk), *data_ids)
+            pipeline.lpush(redis_serialize_queue(queue), *data_ids)
 
     pipeline.execute()
 
@@ -157,8 +181,8 @@ def fill_queue(queue):
     with connection.cursor() as c:
         c.execute(sql, (*cte_params, *sample_size_params))
 
-    data_ids = ['data:'+str(d.pk) for d in queue.data.all()]
-    settings.REDIS.lpush('queue:'+str(queue.pk), *data_ids)
+    data_ids = [redis_serialize_data(d) for d in queue.data.all()]
+    settings.REDIS.lpush(redis_serialize_queue(queue), *data_ids)
 
 
 def pop_first_nonempty_queue(project, profile=None):
@@ -179,7 +203,7 @@ def pop_first_nonempty_queue(project, profile=None):
     project_queues = (project.queue_set.filter(profile=None)
                       .annotate(priority=Value(2, IntegerField())))
 
-    eligible_queue_ids = ['queue:'+str(queue.pk) for queue in
+    eligible_queue_ids = [redis_serialize_queue(queue) for queue in
                           (profile_queues.union(project_queues)
                            .order_by('priority', 'pk'))]
 
@@ -203,10 +227,9 @@ def pop_first_nonempty_queue(project, profile=None):
     if result is None:
         return (None, None)
     else:
-        queue_id = result[0].decode().split(':')[1]
-        data_id = result[1].decode().split(':')[1]
-        return (Queue.objects.filter(pk=queue_id).get(),
-                Data.objects.filter(pk=data_id).get())
+        queue_key, data_key = result
+        return (redis_parse_queue(queue_key),
+                redis_parse_data(data_key))
 
 
 def pop_queue(queue):
@@ -221,7 +244,7 @@ def pop_queue(queue):
     concurrency issues.
     '''
     # Redis first, since this op is guaranteed to be atomic
-    data_id = settings.REDIS.rpop('queue:'+str(queue.pk))
+    data_id = settings.REDIS.rpop(redis_serialize_queue(queue))
 
     if data_id is None:
         return None
@@ -336,4 +359,4 @@ def unassign_datum(datum, profile):
     queue = assignment.queue
     assignment.delete()
 
-    settings.REDIS.lpush('queue:'+str(queue.pk), 'data:'+str(datum.pk))
+    settings.REDIS.lpush(redis_serialize_queue(queue), redis_serialize_data(datum))
