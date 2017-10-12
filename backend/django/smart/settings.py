@@ -199,7 +199,7 @@ class Dev(Configuration):
     }
 
 class Prod(Dev):
-    DEBUF = False
+    DEBUG = False
     ALLOWED_HOSTS = []
 
 class Testing(Dev):
