@@ -9,7 +9,9 @@ from django.contrib.auth import get_user_model
 
 from core.models import (Project, Queue, Data, DataQueue, Profile,
                          AssignedData, Label, DataLabel)
-from core.util import (create_project, add_data, assign_datum,
+from core.util import (redis_serialize_queue, redis_serialize_data,
+                       redis_parse_queue, redis_parse_data,
+                       create_project, add_data, assign_datum,
                        add_queue, fill_queue, pop_queue,
                        init_redis_queues, get_nonempty_queue,
                        create_profile, label_data, pop_first_nonempty_queue,
@@ -40,6 +42,19 @@ def assert_redis_matches_db(test_redis):
         else:
             # Empty lists don't exist in redis
             assert not test_redis.exists('queue:'+str(q.pk))
+
+
+def test_redis_serialize_queue(test_queue):
+    queue_key = redis_serialize_queue(test_queue)
+
+    assert queue_key == 'queue:' + str(test_queue.pk)
+
+
+def test_redis_serialize_data(test_project_data):
+    datum = test_project_data.data_set.first()
+    data_key = redis_serialize_data(datum)
+
+    assert data_key == 'data:' + str(datum.pk)
 
 
 def test_create_profile(db):
