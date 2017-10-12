@@ -126,6 +126,10 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
                         # If data was created then populate queue
                         util.fill_queue(queue)
 
+                        # Create and save tf-idf
+                        tf_idf = util.create_tfidf_matrix(f_data['objects'].tolist())
+                        util.save_tfidf_matrix(tf_idf, self.object)
+
                 return redirect(self.get_success_url())
             else:
                 return self.render_to_response(context)
