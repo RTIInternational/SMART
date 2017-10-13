@@ -29,7 +29,7 @@ Before running tests locally, be sure your container is rebuilt to contain pytes
 Backend tests use [py.test](https://docs.pytest.org/en/latest/).  To run them, use the following `docker-compose` command:
 
 ```
-docker-compose run --rm smart_backend py.test
+docker-compose run --rm smart_backend ./run_tests.sh
 ```
 
 ()
