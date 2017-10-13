@@ -57,6 +57,27 @@ def test_redis_serialize_data(test_project_data):
     assert data_key == 'data:' + str(datum.pk)
 
 
+def test_redis_parse_queue(test_queue, test_redis):
+    fill_queue(test_queue)
+
+    last_data_in_queue = [d for d in test_queue.data.all()][-1]
+
+    queue_key = [key for key in test_redis.keys() if 'queue' in key.decode()][0]
+    parsed_queue = redis_parse_queue(queue_key)
+
+    assert parsed_queue.pk == test_queue.pk
+
+
+def test_redis_parse_data(test_queue, test_redis):
+    fill_queue(test_queue)
+
+    last_data_in_queue = [d for d in test_queue.data.all()][-1]
+    popped_data_key = test_redis.lpop(redis_serialize_queue(test_queue))
+    parsed_data = redis_parse_data(popped_data_key)
+
+    assert parsed_data.pk == last_data_in_queue.pk
+
+
 def test_create_profile(db):
     username = 'test_user'
     password = 'password'
