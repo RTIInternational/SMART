@@ -3,6 +3,7 @@ import redis
 
 from django.db import transaction, connection
 from django.db.models import Count, Value, IntegerField, F
+from django.db.utils import ProgrammingError
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from core.models import (Project, Data, Queue, DataQueue, Profile,
@@ -87,6 +88,13 @@ def init_redis_queues():
     db to be in sync with the postgres state
     '''
     # Use a pipeline to reduce back-and-forth with the server
+    try:
+        assigned_data_ids = set((d.data_id for d in AssignedData.objects.all()))
+    except ProgrammingError:
+        raise ValueError('There are unrun migrations.  Please migrate the database.'\
+                         ' Use `docker-compose run --rm smart_backend ./migrate.sh`'\
+                         ' Then restart the django server.')
+
     pipeline = settings.REDIS.pipeline(transaction=False)
 
     existing_keys = [key for key in settings.REDIS.scan_iter('queue:*')]
@@ -94,7 +102,6 @@ def init_redis_queues():
         # We'll get an error if we try to del without any keys
         pipeline.delete(*existing_keys)
 
-    assigned_data_ids = set((d.data_id for d in AssignedData.objects.all()))
     for queue in Queue.objects.all():
         data_ids = [redis_serialize_data(d) for d in queue.data.all()
                     if d.pk not in assigned_data_ids]
