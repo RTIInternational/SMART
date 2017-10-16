@@ -29,7 +29,7 @@ docker-compose up
 If your database is blank, you will need to run migrations to initialize all the required schema objects; you can start a blank backend container and run the migration django management command with the following command:
 
 ```shell
-docker-compose run --rm smart_backend python manage.py migrate
+docker-compose run --rm smart_backend ./migrate.sh
 ```
 
 The various services will be available on your machine at their standard ports, but you can override the port numbers if they conflict with other running services. For example, you don't want to run SMART's instance of Postgres on port 5432 if you already have your own local instance of Postgres running on port 5432. To override a port, create a file named `.env` in the `envs/dev` directory that looks something like this:
@@ -51,7 +51,7 @@ Before running tests locally, be sure your container is rebuilt to contain pytes
 Backend tests use [py.test](https://docs.pytest.org/en/latest/).  To run them, use the following `docker-compose` command:
 
 ```
-docker-compose run --rm smart_backend py.test
+docker-compose run --rm smart_backend ./run_tests.sh
 ```
 
 Use `py.test -h` to see all the options, but a few useful ones are highlighted below:

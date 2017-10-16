@@ -32,7 +32,7 @@ class Dev(Configuration):
     # Application definition
 
     INSTALLED_APPS = [
-        'core.apps.DefaultCoreConfig',
+        'core.apps.CoreConfig',
         'django.contrib.admin',
         'django.contrib.auth',
         'django.contrib.contenttypes',
@@ -199,27 +199,5 @@ class Dev(Configuration):
     }
 
 class Prod(Dev):
-    DEBUF = False
+    DEBUG = False
     ALLOWED_HOSTS = []
-
-class Testing(Dev):
-    INSTALLED_APPS = [
-        'core.apps.TestCoreConfig',
-        'django.contrib.admin',
-        'django.contrib.auth',
-        'django.contrib.contenttypes',
-        'django.contrib.sessions',
-        'django.contrib.messages',
-        'django.contrib.staticfiles',
-        'django_extensions',
-        'django_celery_results',
-        'rest_framework',
-        'rest_framework.authtoken',
-        'rest_auth',
-        'django.contrib.sites',
-        'allauth',
-        'allauth.account',
-        'rest_auth.registration',
-        'rest_framework_swagger',
-        'webpack_loader'
-    ]
