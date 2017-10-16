@@ -27,6 +27,7 @@ def save_user(sender, instance, **kwargs):
 class Project(models.Model):
     name = models.TextField()
     description = models.TextField(blank=True)
+    current_training_set = models.IntegerField(default=0)
     creator = models.ForeignKey('Profile')
 
     def get_absolute_url(self):
@@ -71,13 +72,14 @@ class DataLabel(models.Model):
     data = models.ForeignKey('Data')
     profile = models.ForeignKey('Profile')
     label = models.ForeignKey('Label')
+    training_set = models.IntegerField(blank=True, null=True)
 
 class DataPrediction(models.Model):
     class Meta:
         unique_together = (('data', 'model'))
     data = models.ForeignKey('Data')
     model = models.ForeignKey('Model')
-    predicted_class = models.TextField()
+    predicted_label = models.ForeignKey('Label')
     predicted_probability = models.FloatField()
 
 class Queue(models.Model):

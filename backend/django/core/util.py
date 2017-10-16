@@ -8,6 +8,7 @@ from django.db import transaction, connection
 from django.db.models import Count, Value, IntegerField, F
 from django.contrib.auth import get_user_model
 from django.conf import settings
+
 from core.models import (Project, Data, Queue, DataQueue, Profile,
                          AssignedData, DataLabel)
 
@@ -292,10 +293,14 @@ def label_data(label, datum, profile):
     '''
     Record that a given datum has been labeled; remove its assignment, if any.
     '''
+    current_training_set = datum.project.current_training_set
+
     with transaction.atomic():
         DataLabel.objects.create(data=datum,
                                 label=label,
-                                profile=profile)
+                                profile=profile,
+                                training_set=current_training_set
+                                )
         # There's a unique constraint on data/profile, so this is
         # guaranteed to return one object
         assignment = AssignedData.objects.filter(data=datum,
@@ -369,8 +374,6 @@ def save_tfidf_matrix(matrix, project, prefix_dir=None):
     file = '/data/tf_idf/' + str(project.pk) + '.npz'
     if prefix_dir is not None:
         file = os.path.join(prefix_dir, file.lstrip(os.path.sep))
-
-    print(file)
 
     sparse.save_npz(file, matrix)
 
