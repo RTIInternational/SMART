@@ -469,7 +469,7 @@ def train_and_save_model(project, prefix_dir=None):
 
     clf.fit(x, y)
 
-    file = '/data/model_pickles/project:' + str(project.pk) + ':training:' \
+    file = '/data/model_pickles/project_' + str(project.pk) + '_training_' \
          + str(project.current_training_set) + '.pkl'
     if prefix_dir is not None:
         file = os.path.join(prefix_dir, file.lstrip(os.path.sep))
