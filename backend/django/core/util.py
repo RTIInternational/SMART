@@ -11,8 +11,8 @@ from django.db.models import Count, Value, IntegerField, F
 from django.contrib.auth import get_user_model
 from django.conf import settings
 
-from core.models import (Project, Data, Queue, DataQueue, Profile,
-                         AssignedData, DataLabel)
+from core.models import (Project, Data, Queue, DataQueue, Profile, Label,
+                         AssignedData, DataLabel, Model, DataPrediction)
 
 
 # TODO: Divide these functions into a public/private API when we determine
@@ -415,7 +415,8 @@ def check_and_trigger_model(datum):
                                             training_set=project.current_training_set)
 
     if len(labeled_data) >= batch_size:
-        project.update(F('current_training_set') + 1)
+        project.current_training_set += 1
+        project.save()
         model = train_and_save_model(project)
         predictions = predict_data(project, model)
         fill_queue(project.queue_set.get()) ### TODO: UPDATE FILL QUEUE FOR MODEL
@@ -423,18 +424,20 @@ def check_and_trigger_model(datum):
 
 def train_and_save_model(project, prefix_dir=None):
     """Given a project start training the model"""
-    min_data_pk = project.data_set.all().order_by('pk')[0]
+    clf = LogisticRegression()
+
+    min_data_pk = project.data_set.all().order_by('pk')[0].pk
     labeled_data = DataLabel.objects.filter(data__project=project)
     labeled_indices_adjusted = [d.data.pk - min_data_pk for d in labeled_data]
 
-    tf_idf = load_tfidf_matrix(project).A
+    tf_idf = load_tfidf_matrix(project, prefix_dir).A
 
     x, y = [], []
     for idx in labeled_indices_adjusted:
         x.append(tf_idf[idx,:])
-        y.append(labaled_data.get(pk=idx+min_data_pk).label.pk)
+        y.append(labeled_data.get(data__pk=idx+min_data_pk).label.pk)
 
-    clf = LogisticRegression.fit(x, y)
+    clf.fit(x, y)
 
     file = '/data/model_pickles/project:' + str(project.pk) + ':training:' \
          + str(project.current_training_set) + '.pkl'
@@ -448,24 +451,28 @@ def train_and_save_model(project, prefix_dir=None):
     return model
 
 
-def predict_data(project, model):
+def predict_data(project, model, prefix_dir=None):
     """Given a project and its model, predict any unlabeled data"""
-    min_data_pk = project.data_set.all().order_by('pk')[0]
-    unlabeled_data = project.data_set.filter(data_label__isnull=True)
+    min_data_pk = project.data_set.all().order_by('pk')[0].pk
+    unlabeled_data = project.data_set.filter(datalabel__isnull=True)
     unlabeled_indices_adjusted = [d.pk - min_data_pk for d in unlabeled_data]
 
     clf = joblib.load(model.pickle_path)
-    load_tfidf_matrix(project).A
+    tf_idf = load_tfidf_matrix(project, prefix_dir).A
 
     x = []
     for idx in unlabeled_indices_adjusted:
         x.append(tf_idf[idx,:])
 
-    predictions = clf.predict(x)
+    predictions = clf.predict_proba(x)
 
     bulk_predictions = []
     for datum, prediction in zip(unlabeled_data, predictions):
-        bulk_predictions.append(DataPrediction(data=datum, model=model, label=prediction))
-    prediction_objs = DataPrediction.bulk_create(bulk_predictions)
+        max_index, max_prediction = max(enumerate(prediction), key=lambda p: p[1])
+        predicted_label = Label.objects.get(pk=clf.classes_[max_index])
+        bulk_predictions.append(DataPrediction(data=datum, model=model,
+                                               predicted_label=predicted_label,
+                                               predicted_probability=max_prediction))
+    prediction_objs = DataPrediction.objects.bulk_create(bulk_predictions)
 
     return prediction_objs
