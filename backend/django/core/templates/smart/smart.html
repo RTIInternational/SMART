@@ -8,11 +8,14 @@
 
 {% block scripts_body %}
   <script type="text/javascript">
-    {% if pk is none %}
-    window.QUEUE_ID = null;
-    {% else %}
-    window.QUEUE_ID = {{ pk }};
-    {% endif %}
+    window.PROJECT_ID = {{ pk }};
+    window.onbeforeunload = function (e) {
+       $.ajax({
+         type: 'GET',
+         async: false,
+         url: '/api/leave_coding_page/',
+       });
+    };
   </script>
   {% render_bundle 'smart' 'js' %}
 {% endblock %}

@@ -1,40 +1,41 @@
 import random
 import redis
-import math
 
 from django.db import transaction, connection
 from django.db.models import Count, Value, IntegerField, F
+from django.db.utils import ProgrammingError
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from core.models import (Project, Data, Queue, DataQueue, Profile,
                          AssignedData, DataLabel)
 
 
-# TODO: This create_queue should be refactored in favor of add_queue during issue
-# #50 - Integrate Redis
-def create_queue(project, label_form, permission_form):
-    """
-    Create a queue for a project.
-    batch_size = 10*labels
-    max_assigned = math.ceil(batch_size/#coders) [a]
-    queue length = math.ceil(a)*c + math.ceil(a) * (c-1)
-
-    labels and permissions are formset objects.
-    """
-    labels = [x.cleaned_data for x in label_form if x.cleaned_data != {}]
-    permissions = [x.cleaned_data for x in permission_form if x.cleaned_data != {}]
-
-    batch_size = 10 * len(labels)
-    num_coders = len(permissions) + 1
-
-    q_length = math.ceil(batch_size/num_coders) * num_coders + math.ceil(batch_size/num_coders) * (num_coders - 1)
-
-    return Queue.objects.create(project=project, length=q_length)
-
-
 # TODO: Divide these functions into a public/private API when we determine
 #  what functionality is needed by the frontend.  This file is a little
 #  intimidating to sort through at the moment.
+
+
+def redis_serialize_queue(queue):
+    """Serialize a queue object for redis.  The format is 'queue:<pk>'"""
+    return 'queue:' + str(queue.pk)
+
+
+def redis_serialize_data(datum):
+    """Serialize a data object for redis.  The format is 'data:<pk>'"""
+    return 'data:' + str(datum.pk)
+
+
+def redis_parse_queue(queue_key):
+    """Parse a queue key from redis and return the Queue object"""
+    queue_pk = queue_key.decode().split(':')[1]
+    return Queue.objects.get(pk=queue_pk)
+
+
+def redis_parse_data(datum_key):
+    """Parse a datum key from redis and return the Data object"""
+    datum_pk = datum_key.decode().split(':')[1]
+    return Data.objects.get(pk=datum_pk)
+
 
 def create_profile(username, password, email):
     '''
@@ -83,44 +84,32 @@ def init_redis_queues():
     Create a redis queue for each queue in the database and fill it with
     the data linked to the queue.
 
-    This assumes redis has no queue keys; throw an error if it does, since we'll
-    add duplicate data without knowing any better.
+    This will remove any existing queue keys from redis and re-populate the redis
+    db to be in sync with the postgres state
     '''
-    redis_keys = [key for key in settings.REDIS.scan_iter()]
-    queues = Queue.objects.all()
-
-    if not set([str.encode(str(q.id)) for q in queues]).isdisjoint(set(redis_keys)):
-        raise ValueError('Redis database already has a queue key; it must not have '
-                         'any queue keys to initialize the redis queues.')
-
     # Use a pipeline to reduce back-and-forth with the server
+    try:
+        assigned_data_ids = set((d.data_id for d in AssignedData.objects.all()))
+    except ProgrammingError:
+        raise ValueError('There are unrun migrations.  Please migrate the database.'\
+                         ' Use `docker-compose run --rm smart_backend ./migrate.sh`'\
+                         ' Then restart the django server.')
+
     pipeline = settings.REDIS.pipeline(transaction=False)
 
-    assigned_data_ids = set((d.data_id for d in AssignedData.objects.all()))
+    existing_keys = [key for key in settings.REDIS.scan_iter('queue:*')]
+    if len(existing_keys) > 0:
+        # We'll get an error if we try to del without any keys
+        pipeline.delete(*existing_keys)
 
-    for queue in queues:
-        data_ids = [d.pk for d in queue.data.all() if d.pk not in assigned_data_ids]
+    for queue in Queue.objects.all():
+        data_ids = [redis_serialize_data(d) for d in queue.data.all()
+                    if d.pk not in assigned_data_ids]
         if len(data_ids) > 0:
             # We'll get an error if we try to lpush without any data
-            pipeline.lpush(queue.pk, *data_ids)
+            pipeline.lpush(redis_serialize_queue(queue), *data_ids)
 
     pipeline.execute()
-
-
-def clear_redis_queues():
-    '''
-    Clear the queues currently present in redis.
-    '''
-    settings.REDIS.flushdb()
-
-
-def sync_redis_queues():
-    '''
-    Set the redis environment up to have the same state as the database, regardless
-    of its current state.
-    '''
-    clear_redis_queues()
-    init_redis_queues()
 
 
 def create_project(name, creator):
@@ -199,6 +188,9 @@ def fill_queue(queue):
     with connection.cursor() as c:
         c.execute(sql, (*cte_params, *sample_size_params))
 
+    data_ids = [redis_serialize_data(d) for d in queue.data.all()]
+    settings.REDIS.lpush(redis_serialize_queue(queue), *data_ids)
+
 
 def pop_first_nonempty_queue(project, profile=None):
     '''
@@ -218,7 +210,7 @@ def pop_first_nonempty_queue(project, profile=None):
     project_queues = (project.queue_set.filter(profile=None)
                       .annotate(priority=Value(2, IntegerField())))
 
-    eligible_queue_ids = [queue.pk for queue in
+    eligible_queue_ids = [redis_serialize_queue(queue) for queue in
                           (profile_queues.union(project_queues)
                            .order_by('priority', 'pk'))]
 
@@ -231,7 +223,7 @@ def pop_first_nonempty_queue(project, profile=None):
     for _, k in pairs(KEYS) do
       local m = redis.call('LPOP', k)
       if m then
-        return {tonumber(k), tonumber(m)}
+        return {k, m}
       end
     end
     return nil
@@ -242,9 +234,9 @@ def pop_first_nonempty_queue(project, profile=None):
     if result is None:
         return (None, None)
     else:
-        queue_id, data_id = result
-        return (Queue.objects.filter(pk=queue_id).get(),
-                Data.objects.filter(pk=data_id).get())
+        queue_key, data_key = result
+        return (redis_parse_queue(queue_key),
+                redis_parse_data(data_key))
 
 
 def pop_queue(queue):
@@ -259,10 +251,12 @@ def pop_queue(queue):
     concurrency issues.
     '''
     # Redis first, since this op is guaranteed to be atomic
-    data_id = settings.REDIS.rpop(queue.pk)
+    data_id = settings.REDIS.rpop(redis_serialize_queue(queue))
 
     if data_id is None:
         return None
+    else:
+        data_id = data_id.decode().split(':')[1]
 
     data_obj = Data.objects.filter(pk=data_id).get()
 
@@ -338,19 +332,26 @@ def label_data(label, datum, profile):
         DataQueue.objects.filter(data=datum, queue=queue).delete()
 
 
-def get_assignment(profile, project):
+def get_assignments(profile, project, num_assignments):
     '''
-    Check if a datum is currently assigned to this profile/project;
-    if so, return it.  If not, try to get a new assignment and return it.
+    Check if a data is currently assigned to this profile/project;
+    If so, return max(num_assignments, len(assigned) of it.
+    If not, try to get a num_assigments of new assignments and return them.
     '''
     existing_assignments = AssignedData.objects.filter(
         profile=profile,
         queue__project=project)
 
     if len(existing_assignments) > 0:
-        return existing_assignments.first().data
+        return [assignment.data for assignment in existing_assignments[:num_assignments]]
     else:
-        return assign_datum(profile, project)
+        data = []
+        for i in range(num_assignments):
+            assigned_datum = assign_datum(profile, project)
+            if assigned_datum is None:
+                break
+            data.append(assigned_datum)
+        return data
 
 
 def unassign_datum(datum, profile):
@@ -365,4 +366,4 @@ def unassign_datum(datum, profile):
     queue = assignment.queue
     assignment.delete()
 
-    settings.REDIS.lpush(queue.pk, datum.pk)
+    settings.REDIS.lpush(redis_serialize_queue(queue), redis_serialize_data(datum))

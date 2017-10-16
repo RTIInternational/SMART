@@ -12,7 +12,7 @@ import math
 
 from core.serializers import (ProfileSerializer, AuthUserGroupSerializer,
                               AuthUserSerializer, ProjectSerializer,
-                              ModelSerializer, LabelSerializer, DataSerializer,
+                              CoreModelSerializer, LabelSerializer, DataSerializer,
                               DataLabelSerializer, DataPredictionSerializer,
                               QueueSerializer, AssignedDataSerializer)
 from core.models import (Profile, Project, Model, Data, Label, DataLabel,
@@ -25,70 +25,67 @@ from core.pagination import SmartPagination
 ############################################
 
 @api_view(['GET'])
-def grab_from_queue(request, pk):
-    """Grab x data from the queue and add the data to assigned data.
+def get_card_deck(request, pk):
+    """Grab data using get_assignments and send it to the frontend react app.
 
     Args:
         request: The request to the endpoint
-        pk: Primary key of queue
+        pk: Primary key of project
     Returns:
         labels: The project labels
         data: The data in the queue
-        <errors>: Only exists if there is an error, the error message.
     """
-    if request.method == 'GET':
-        q_pk = pk
-        try:
-            queue = Queue.objects.get(pk=q_pk)
-            project = Project.objects.get(pk=queue.project.pk)
-        except ObjectDoesNotExist:
-            return Response({'error': 'There is no queue matching that primary key.'})
+    profile = request.user.profile
+    project = Project.objects.get(pk=pk)
 
-        # Check if data is already assigned to user
-        assigned_data = AssignedData.objects.filter(queue=queue, profile=request.user.profile)
-        if len(assigned_data) > 0:
-            data = [[assigned.data.pk, assigned.data.text] for assigned in assigned_data]
-        else:
-            # Calculate queue parameters
-            batch_size = len(project.labels.all()) * 10
-            num_coders = len(project.projectpermissions_set.all()) + 1
-            coder_size = math.ceil(batch_size / num_coders)
+    # Calculate queue parameters
+    batch_size = len(project.labels.all()) * 10
+    num_coders = len(project.projectpermissions_set.all()) + 1
+    coder_size = math.ceil(batch_size / num_coders)
 
-            # Find coding data, remove from queue, add to assigned data
-            data_qs = queue.data.all()[:coder_size]
-            data = []
-            temp = []
-            for d in data_qs:
-                data.append([d.pk, d.text])
-                temp.append(AssignedData(queue=queue, data=d, profile=request.user.profile))
-            AssignedData.objects.bulk_create(temp)
-            DataQueue.objects.filter(data_id__in=[x.pk for x in data_qs], queue=queue).delete()
+    data = util.get_assignments(profile, project, coder_size)
+    labels = Label.objects.all().filter(project=project)
 
-        labels = [[label.pk, label.name] for label in Label.objects.all().filter(project=project)]
+    return Response({'labels': LabelSerializer(labels, many=True).data, 'data': DataSerializer(data, many=True).data})
 
-        return Response({'labels': labels, 'data': data, 'queue_id': q_pk})
 
 @api_view(['POST'])
 def annotate_data(request, pk):
     """Annotate a single datum which is in the assigneddata queue given the user,
-       data_id, queue_id, and label_id.  This will remove it from assigneddata
-       and add it to labeleddata.
+       data_id, and label_id.  This will remove it from assigneddata, remove it
+       from dataqueue and add it to labeleddata.
+
+    Args:
+        request: The POST request
+        pk: Primary key of the data
+    Returns:
+        {}
     """
-    queue_id = request.data['queueID']
-    label_id = request.data['labelID']
-    data_id = pk
+    data = Data.objects.get(pk=pk)
     profile = request.user.profile
+    label = Label.objects.get(pk=request.data['labelID'])
+    util.label_data(label, data, profile)
 
-    if request.method == 'POST':
-        assignedDatum = AssignedData.objects.get(data_id=data_id, queue_id=queue_id, profile=profile)
+    return Response({})
 
-        DataLabel.objects.create(data=assignedDatum.data,
-                                 profile=assignedDatum.profile,
-                                 label=Label.objects.get(pk=label_id))
+@api_view(['GET'])
+def leave_coding_page(request):
+    """API request meant to be sent when a user navigates away from the coding page
+       captured with 'beforeunload' event.  This should use assign_data to remove
+       any data currently assigned to the user and re-add it to redis
 
-        assignedDatum.delete()
+    Args:
+        request: The GET request
+    Returns:
+        {}
+    """
+    profile = request.user.profile
+    assigned_data = AssignedData.objects.filter(profile=profile)
 
-        return Response({})
+    for assignment in assigned_data:
+        util.unassign_datum(assignment.data, profile)
+
+    return Response({})
 
 
 ################################
@@ -121,9 +118,9 @@ class ProjectViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
-class ModelViewSet(viewsets.ModelViewSet):
+class CoreModelViewSet(viewsets.ModelViewSet):
     queryset = Model.objects.all().order_by('id')
-    serializer_class = ModelSerializer
+    serializer_class = CoreModelSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
 class DataViewSet(viewsets.ModelViewSet):

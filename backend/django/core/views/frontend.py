@@ -5,10 +5,11 @@ from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from django.http import HttpResponseRedirect
 from django.db import transaction
-from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
+from django.core.exceptions import PermissionDenied
 
 import hashlib
 import pandas as pd
+import math
 
 from core.models import (Profile, Project, ProjectPermissions, Model, Data, Label,
                          DataLabel, DataPrediction, Queue, DataQueue, AssignedData)
@@ -30,14 +31,11 @@ class ProjectCode(LoginRequiredMixin, TemplateView):
     template_name = 'smart/smart.html'
 
     def get_context_data(self, **kwargs):
-        data = super(ProjectCode, self).get_context_data(**kwargs)
+        ctx = super(ProjectCode, self).get_context_data(**kwargs)
 
-        try:
-            data['pk'] = Queue.objects.filter(project=self.kwargs['pk']).get().pk
-        except ObjectDoesNotExist:
-            data['pk'] = None
+        ctx['pk'] = self.kwargs['pk']
 
-        return data
+        return ctx
 
 
 class ProjectList(LoginRequiredMixin, ListView):
@@ -103,8 +101,12 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
                 permissions.instance = self.object
                 permissions.save()
 
-                # Create the project queue
-                queue = util.create_queue(project=self.object, label_form=labels, permission_form=permissions)
+                # Create the queue
+                batch_size = 10 * len([x for x in labels if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True])
+                num_coders = len([x for x in permissions if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True]) + 1
+                q_length = math.ceil(batch_size/num_coders) * num_coders + math.ceil(batch_size/num_coders) * (num_coders - 1)
+
+                queue = util.add_queue(project=self.object, length=q_length)
 
                 # If data exists save attempt to save it
                 f_data = form.cleaned_data.get('data', False)
