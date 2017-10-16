@@ -1,6 +1,8 @@
 import random
 import redis
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.externals import joblib
 from scipy import sparse
 import os
 
@@ -397,3 +399,73 @@ def load_tfidf_matrix(project, prefix_dir=None):
         return sparse.load_npz(file)
     else:
         return None
+
+
+def check_and_trigger_model(datum):
+    """Given a recently assigned datum check if the project it belong to needs
+       its model ran.  It the model needs to be run, start the model run and
+       increment the project's current_training_set
+
+    Args:
+        datum: Recently assigne Data object
+    """
+    project = datum.project
+    batch_size = project.labels.count() * 10
+    labeled_data = DataLabel.objects.filter(data__project=project,
+                                            training_set=project.current_training_set)
+
+    if len(labeled_data) >= batch_size:
+        project.update(F('current_training_set') + 1)
+        model = train_and_save_model(project)
+        predictions = predict_data(project, model)
+        fill_queue(project.queue_set.get()) ### TODO: UPDATE FILL QUEUE FOR MODEL
+
+
+def train_and_save_model(project, prefix_dir=None):
+    """Given a project start training the model"""
+    min_data_pk = project.data_set.all().order_by('pk')[0]
+    labeled_data = DataLabel.objects.filter(data__project=project)
+    labeled_indices_adjusted = [d.data.pk - min_data_pk for d in labeled_data]
+
+    tf_idf = load_tfidf_matrix(project).A
+
+    x, y = [], []
+    for idx in labeled_indices_adjusted:
+        x.append(tf_idf[idx,:])
+        y.append(labaled_data.get(pk=idx+min_data_pk).label.pk)
+
+    clf = LogisticRegression.fit(x, y)
+
+    file = '/data/model_pickles/project:' + str(project.pk) + ':training:' \
+         + str(project.current_training_set) + '.pkl'
+    if prefix_dir is not None:
+        file = os.path.join(prefix_dir, file.lstrip(os.path.sep))
+
+    joblib.dump(clf, file)
+
+    model = Model.objects.create(pickle_path=file, project=project)
+
+    return model
+
+
+def predict_data(project, model):
+    """Given a project and its model, predict any unlabeled data"""
+    min_data_pk = project.data_set.all().order_by('pk')[0]
+    unlabeled_data = project.data_set.filter(data_label__isnull=True)
+    unlabeled_indices_adjusted = [d.pk - min_data_pk for d in unlabeled_data]
+
+    clf = joblib.load(model.pickle_path)
+    load_tfidf_matrix(project).A
+
+    x = []
+    for idx in unlabeled_indices_adjusted:
+        x.append(tf_idf[idx,:])
+
+    predictions = clf.predict(x)
+
+    bulk_predictions = []
+    for datum, prediction in zip(unlabeled_data, predictions):
+        bulk_predictions.append(DataPrediction(data=datum, model=model, label=prediction))
+    prediction_objs = DataPrediction.bulk_create(bulk_predictions)
+
+    return prediction_objs
