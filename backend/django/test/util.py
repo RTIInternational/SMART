@@ -13,5 +13,4 @@ def read_test_data():
     it in the database.
     '''
     with open(SEED_FILE_PATH) as f:
-        return [{'text': d['Tweet']} for d in csv.DictReader(f)]
-
+        return [{'text': d['Tweet'], 'label': d['Stance']} for d in csv.DictReader(f)]

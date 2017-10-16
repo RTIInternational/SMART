@@ -12,7 +12,7 @@ SEED_USERNAME = 'test'
 SEED_PASSWORD = 'password'
 SEED_EMAIL = 'dummy@smart.org'
 SEED_PROJECT = 'seed-data'
-SEED_FILE_PATH = './core/data/SemEval-2016-Task6/train-feminism.csv'
+SEED_FILE_PATH = './core/data/SemEval-2016-Task6/test-feminism.csv'
 SEED_LABELS = ['AGAINST', 'FAVOR', 'NONE']
 
 def seed_database(noprofile=False, nodata=False):

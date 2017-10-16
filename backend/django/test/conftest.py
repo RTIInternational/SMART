@@ -6,8 +6,8 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from smart.celery import app as celery_app
 from core.management.commands.seed import (
-    seed_database, SEED_USERNAME)
-from core.models import (Profile)
+    seed_database, SEED_USERNAME, SEED_LABELS)
+from core.models import (Profile, Label, Model)
 from core.util import (create_project, add_queue,
                        create_profile, add_data,
                        create_tfidf_matrix)
@@ -56,7 +56,7 @@ def test_project_data(db, test_project):
     Creates the test project and adds test data to it.
     '''
     test_data = read_test_data()
-    add_data(test_project, test_data)
+    add_data(test_project, [d['text'] for d in test_data])
     return test_project
 
 @pytest.fixture
@@ -102,3 +102,15 @@ def test_tfidf_matrix(test_project_data):
     A CSR-format tf-idf matrix created from the data of test_project_data
     '''
     return create_tfidf_matrix(test_project_data.data_set.all())
+
+@pytest.fixture
+def test_labels(test_project_data):
+    '''
+    A list of labels that correspond to SEED_LABELS
+    '''
+    labels = []
+
+    for l in SEED_LABELS:
+        labels.append(Label.objects.create(name=l, project=test_project_data))
+
+    return labels

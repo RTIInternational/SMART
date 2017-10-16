@@ -17,7 +17,8 @@ from core.util import (create_project, add_data, assign_datum,
                        init_redis_queues, get_nonempty_queue,
                        create_profile, label_data, pop_first_nonempty_queue,
                        get_assignments, unassign_datum,
-                       save_tfidf_matrix, load_tfidf_matrix)
+                       save_tfidf_matrix, load_tfidf_matrix,
+                       train_and_save_model, predict_data)
 
 from test.util import read_test_data
 
@@ -622,3 +623,51 @@ def test_save_and_load_tfidf_matrix(test_tfidf_matrix, test_project_data, tmpdir
     matrix = load_tfidf_matrix(test_project_data, prefix_dir=str(tmpdir))
 
     assert np.allclose(matrix.A, test_tfidf_matrix.A)
+
+
+def test_train_and_save_model(test_project_data, test_labels, test_profile, test_tfidf_matrix, tmpdir):
+    # Label some data
+    data = test_project_data.data_set.all()[:10]
+    random_labels = [0, 1, 2, 0, 1, 2, 0, 1, 2, 0]
+    for i, d in enumerate(data):
+        DataLabel.objects.create(data=d,
+                                label=test_labels[random_labels[i]],
+                                profile=test_profile,
+                                training_set=test_project_data.current_training_set
+                                )
+
+    # Create and save tfidf matrix for the data
+    intermediate_dir = tmpdir.mkdir('data')
+    intermediate_dir.mkdir('tf_idf')
+    save_tfidf_matrix(test_tfidf_matrix, test_project_data, prefix_dir=str(tmpdir))
+
+    # Train and save model
+    intermediate_dir.mkdir('model_pickles')
+    model = train_and_save_model(test_project_data, prefix_dir=str(tmpdir))
+
+    assert True
+
+
+def test_predict_data(test_project_data, test_labels, test_profile, test_tfidf_matrix, tmpdir):
+    # Label some data
+    data = test_project_data.data_set.all()[:10]
+    random_labels = [0, 1, 2, 0, 1, 2, 0, 1, 2, 0]
+    for i, d in enumerate(data):
+        DataLabel.objects.create(data=d,
+                                label=test_labels[random_labels[i]],
+                                profile=test_profile,
+                                training_set=test_project_data.current_training_set
+                                )
+
+    # Create and save tfidf matrix for the data
+    intermediate_dir = tmpdir.mkdir('data')
+    intermediate_dir.mkdir('tf_idf')
+    save_tfidf_matrix(test_tfidf_matrix, test_project_data, prefix_dir=str(tmpdir))
+
+    # Train and save model
+    intermediate_dir.mkdir('model_pickles')
+    model = train_and_save_model(test_project_data, prefix_dir=str(tmpdir))
+
+    predictions = predict_data(test_project_data, model, prefix_dir=str(tmpdir))
+
+    assert True
