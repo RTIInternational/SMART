@@ -685,6 +685,7 @@ def test_train_and_save_model(test_project_data, test_labels, test_profile, test
         'pickle_path': model.pickle_path,
         'project': test_project_data
     })
+    assert os.path.isfile(model.pickle_path)
 
 
 def test_predict_data(test_model):
