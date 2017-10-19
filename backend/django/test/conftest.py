@@ -7,10 +7,10 @@ from django.contrib.auth import get_user_model
 from smart.celery import app as celery_app
 from core.management.commands.seed import (
     seed_database, SEED_USERNAME, SEED_LABELS)
-from core.models import (Profile, Label, Model)
+from core.models import (Profile, Label, Model, DataLabel)
 from core.util import (create_project, add_queue,
                        create_profile, add_data,
-                       create_tfidf_matrix)
+                       create_tfidf_matrix, save_tfidf_matrix)
 
 from test.util import read_test_data
 
@@ -114,3 +114,34 @@ def test_labels(test_project_data):
         labels.append(Label.objects.create(name=l, project=test_project_data))
 
     return labels
+
+
+@pytest.fixture()
+def test_model(test_project_data, test_labels, test_profile, test_tfidf_matrix, tmpdir):
+    '''
+    A project that has labeled data and tf-idf file and its assocaited tempdir factory
+    '''
+
+    # Save tfidf file
+    data_temp = tmpdir.mkdir('data')
+    data_temp.mkdir('tf_idf')
+
+    test = save_tfidf_matrix(test_tfidf_matrix, test_project_data, prefix_dir=str(tmpdir))
+
+    # Label some data
+    data = test_project_data.data_set.all()[:10]
+    random_labels = [0, 1, 2, 0, 1, 2, 0, 1, 2, 0]
+    for i, d in enumerate(data):
+        DataLabel.objects.create(data=d,
+                                label=test_labels[random_labels[i]],
+                                profile=test_profile,
+                                training_set=test_project_data.current_training_set
+                                )
+
+    # Create pickel dir
+    pkl_path = os.path.join(data_temp.mkdir('model_pickles').strpath, 'project_' + str(test_project_data.pk)
+                            + '_training_' + str(test_project_data.current_training_set) + '.pkl')
+
+    model = Model.objects.create(pickle_path=pkl_path, project=test_project_data)
+
+    return model

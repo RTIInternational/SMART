@@ -10,8 +10,8 @@ import scipy
 
 from django.contrib.auth import get_user_model
 
-from core.models import (Project, Queue, Data, DataQueue, Profile,
-                         AssignedData, Label, DataLabel)
+from core.models import (Project, Queue, Data, DataQueue, Profile, Model,
+                         AssignedData, Label, DataLabel, DataPrediction)
 from core.util import (redis_serialize_queue, redis_serialize_data,
                        redis_parse_queue, redis_parse_data,
                        create_project, add_data, assign_datum,
@@ -662,6 +662,11 @@ def test_save_and_load_tfidf_matrix(test_tfidf_matrix, test_project_data, tmpdir
 
 
 def test_train_and_save_model(test_project_data, test_labels, test_profile, test_tfidf_matrix, tmpdir):
+    # Save tfidf file
+    data_temp = tmpdir.mkdir('data')
+    data_temp.mkdir('tf_idf')
+    test = save_tfidf_matrix(test_tfidf_matrix, test_project_data, prefix_dir=str(tmpdir))
+
     # Label some data
     data = test_project_data.data_set.all()[:10]
     random_labels = [0, 1, 2, 0, 1, 2, 0, 1, 2, 0]
@@ -672,38 +677,30 @@ def test_train_and_save_model(test_project_data, test_labels, test_profile, test
                                 training_set=test_project_data.current_training_set
                                 )
 
-    # Create and save tfidf matrix for the data
-    intermediate_dir = tmpdir.mkdir('data')
-    intermediate_dir.mkdir('tf_idf')
-    save_tfidf_matrix(test_tfidf_matrix, test_project_data, prefix_dir=str(tmpdir))
-
-    # Train and save model
-    intermediate_dir.mkdir('model_pickles')
+    data_temp.mkdir('model_pickles')
     model = train_and_save_model(test_project_data, prefix_dir=str(tmpdir))
 
-    assert True
+    assert isinstance(model, Model)
+    assert_obj_exists(Model, {
+        'pickle_path': model.pickle_path,
+        'project': test_project_data
+    })
 
 
-def test_predict_data(test_project_data, test_labels, test_profile, test_tfidf_matrix, tmpdir):
-    # Label some data
-    data = test_project_data.data_set.all()[:10]
-    random_labels = [0, 1, 2, 0, 1, 2, 0, 1, 2, 0]
-    for i, d in enumerate(data):
-        DataLabel.objects.create(data=d,
-                                label=test_labels[random_labels[i]],
-                                profile=test_profile,
-                                training_set=test_project_data.current_training_set
-                                )
+def test_predict_data(test_model):
+    project = test_model.project
+    tmpdir = test_model.pickle_path.split('/data')[0]
 
-    # Create and save tfidf matrix for the data
-    intermediate_dir = tmpdir.mkdir('data')
-    intermediate_dir.mkdir('tf_idf')
-    save_tfidf_matrix(test_tfidf_matrix, test_project_data, prefix_dir=str(tmpdir))
+    model = train_and_save_model(project, prefix_dir=str(tmpdir))
+    predictions = predict_data(project, model, prefix_dir=str(tmpdir))
 
-    # Train and save model
-    intermediate_dir.mkdir('model_pickles')
-    model = train_and_save_model(test_project_data, prefix_dir=str(tmpdir))
+    assert len(predictions) == project.data_set.filter(datalabel__isnull=True).count()
 
-    predictions = predict_data(test_project_data, model, prefix_dir=str(tmpdir))
-
-    assert True
+    for prediction in predictions:
+        assert isinstance(prediction, DataPrediction)
+        assert_obj_exists(DataPrediction, {
+            'data': prediction.data,
+            'model': prediction.model,
+            'predicted_label': prediction.predicted_label,
+            'predicted_probability': prediction.predicted_probability
+        })
