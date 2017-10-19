@@ -495,14 +495,17 @@ def predict_data(project, model, prefix_dir=None):
         x.append(tf_idf[idx,:])
 
     predictions = clf.predict_proba(x)
+    label_obj = [Label.objects.get(pk=label) for label in clf.classes_]
 
     bulk_predictions = []
     for datum, prediction in zip(unlabeled_data, predictions):
-        max_index, max_prediction = max(enumerate(prediction), key=lambda p: p[1])
-        predicted_label = Label.objects.get(pk=clf.classes_[max_index])
-        bulk_predictions.append(DataPrediction(data=datum, model=model,
-                                               predicted_label=predicted_label,
-                                               predicted_probability=max_prediction))
+        # each prediction is an array of probabilities.  Each index in that array
+        # corresponds to the label of the same index in clf.classes_
+        for p, label in zip(prediction, label_obj):
+            bulk_predictions.append(DataPrediction(data=datum, model=model,
+                                       label=label,
+                                       predicted_probability=p))
+
     prediction_objs = DataPrediction.objects.bulk_create(bulk_predictions)
 
     return prediction_objs

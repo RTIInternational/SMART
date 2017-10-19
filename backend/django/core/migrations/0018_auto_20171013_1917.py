@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='dataprediction',
-            name='predicted_label',
+            name='label',
             field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.CASCADE, to='core.Label'),
             preserve_default=False,
         ),

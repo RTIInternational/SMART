@@ -76,10 +76,10 @@ class DataLabel(models.Model):
 
 class DataPrediction(models.Model):
     class Meta:
-        unique_together = (('data', 'model'))
+        unique_together = (('data', 'model', 'label'))
     data = models.ForeignKey('Data')
     model = models.ForeignKey('Model')
-    predicted_label = models.ForeignKey('Label')
+    label = models.ForeignKey('Label')
     predicted_probability = models.FloatField()
 
 class Queue(models.Model):

@@ -672,10 +672,10 @@ def test_train_and_save_model(test_project_data, test_labels, test_profile, test
     random_labels = [0, 1, 2, 0, 1, 2, 0, 1, 2, 0]
     for i, d in enumerate(data):
         DataLabel.objects.create(data=d,
-                                label=test_labels[random_labels[i]],
-                                profile=test_profile,
-                                training_set=test_project_data.current_training_set
-                                )
+            label=test_labels[random_labels[i]],
+            profile=test_profile,
+            training_set=test_project_data.current_training_set
+        )
 
     data_temp.mkdir('model_pickles')
     model = train_and_save_model(test_project_data, prefix_dir=str(tmpdir))
@@ -695,13 +695,15 @@ def test_predict_data(test_model):
     model = train_and_save_model(project, prefix_dir=str(tmpdir))
     predictions = predict_data(project, model, prefix_dir=str(tmpdir))
 
-    assert len(predictions) == project.data_set.filter(datalabel__isnull=True).count()
+    # Number of unlabeled data * number of labels.  Each data gets a prediction for each label.
+    expected_predction_count = project.data_set.filter(datalabel__isnull=True).count() * project.labels.count()
+    assert len(predictions) ==  expected_predction_count
 
     for prediction in predictions:
         assert isinstance(prediction, DataPrediction)
         assert_obj_exists(DataPrediction, {
             'data': prediction.data,
             'model': prediction.model,
-            'predicted_label': prediction.predicted_label,
+            'label': prediction.label,
             'predicted_probability': prediction.predicted_probability
         })
