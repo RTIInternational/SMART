@@ -453,9 +453,19 @@ def check_and_trigger_model(datum):
 
 
 def train_and_save_model(project, prefix_dir=None):
-    """Given a project start training the model"""
+    """Given a project create a model, train it, and save the model pickle
+
+    Args:
+        project: The project to start training
+        prefix_dir: Prefix to add to file path, needed for testing
+    Returns:
+        model: A model object
+    """
     clf = LogisticRegression()
 
+    # Find the "smallest" primary key for the project, use it to adjust all other
+    # primary keys to an index range of [0, len(data)) as this is the index range
+    # of the tf-idf matrix
     min_data_pk = project.data_set.all().order_by('pk')[0].pk
     labeled_data = DataLabel.objects.filter(data__project=project)
     labeled_indices_adjusted = [d.data.pk - min_data_pk for d in labeled_data]
@@ -482,13 +492,26 @@ def train_and_save_model(project, prefix_dir=None):
 
 
 def predict_data(project, model, prefix_dir=None):
-    """Given a project and its model, predict any unlabeled data"""
+    """Given a project and its model, predict any unlabeled data and create
+        Prediction objects for each.  There will be #label * #unlabeled_data
+        predictions.  This is because we are saving the probability of each label
+        for every data.
+
+    Args:
+        project: Project object
+        model: Model object
+    Returns:
+        predictions: List of DataPrediction objects
+    """
+    clf = joblib.load(model.pickle_path)
+    tf_idf = load_tfidf_matrix(project, prefix_dir).A
+
+    # Find the "smallest" primary key for the project, use it to adjust all other
+    # primary keys to an index range of [0, len(data)) as this is the index range
+    # of the tf-idf matrix
     min_data_pk = project.data_set.all().order_by('pk')[0].pk
     unlabeled_data = project.data_set.filter(datalabel__isnull=True)
     unlabeled_indices_adjusted = [d.pk - min_data_pk for d in unlabeled_data]
-
-    clf = joblib.load(model.pickle_path)
-    tf_idf = load_tfidf_matrix(project, prefix_dir).A
 
     x = []
     for idx in unlabeled_indices_adjusted:
