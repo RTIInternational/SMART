@@ -651,13 +651,16 @@ def test_create_tfidf_matrix(test_tfidf_matrix):
     assert test_tfidf_matrix.dtype == np.float64
 
 
-def test_save_and_load_tfidf_matrix(test_tfidf_matrix, test_project_data, tmpdir):
+def test_save_tfidf_matrix(test_project_data, test_tfidf_matrix, tmpdir):
     pre_dir = tmpdir.mkdir('data').mkdir('tf_idf')
     file = save_tfidf_matrix(test_tfidf_matrix, test_project_data, prefix_dir=str(tmpdir))
 
     assert os.path.isfile(file)
+    assert file == os.path.join(str(tmpdir), 'data/tf_idf/'+ str(test_project_data.pk) + '.npz')
 
-    matrix = load_tfidf_matrix(test_project_data, prefix_dir=str(tmpdir))
+
+def test_load_tfidf_matrix(test_project_labeled_and_tfidf, test_tfidf_matrix, tmpdir):
+    matrix = load_tfidf_matrix(test_project_labeled_and_tfidf, prefix_dir=str(tmpdir))
 
     assert np.allclose(matrix.A, test_tfidf_matrix.A)
 
@@ -761,39 +764,23 @@ def test_entropy_fourclass():
     np.testing.assert_almost_equal(e, 0.4084313719900203)
 
 
-def test_train_and_save_model(test_project_data, test_labels, test_profile, test_tfidf_matrix, tmpdir):
-    # Save tfidf file
-    data_temp = tmpdir.mkdir('data')
-    data_temp.mkdir('tf_idf')
-    test = save_tfidf_matrix(test_tfidf_matrix, test_project_data, prefix_dir=str(tmpdir))
-
-    # Label some data
-    data = test_project_data.data_set.all()[:10]
-    random_labels = [0, 1, 2, 0, 1, 2, 0, 1, 2, 0]
-    for i, d in enumerate(data):
-        DataLabel.objects.create(data=d,
-            label=test_labels[random_labels[i]],
-            profile=test_profile,
-            training_set=test_project_data.current_training_set
-        )
-
+def test_train_and_save_model(test_project_labeled_and_tfidf, tmpdir):
+    data_temp = tmpdir.listdir()[0]  # tmpdir already has data directory from test_project_labeled_and_tfidf
     data_temp.mkdir('model_pickles')
-    model = train_and_save_model(test_project_data, prefix_dir=str(tmpdir))
+    model = train_and_save_model(test_project_labeled_and_tfidf, prefix_dir=str(tmpdir))
 
     assert isinstance(model, Model)
     assert_obj_exists(Model, {
         'pickle_path': model.pickle_path,
-        'project': test_project_data
+        'project': test_project_labeled_and_tfidf
     })
     assert os.path.isfile(model.pickle_path)
 
 
-def test_predict_data(test_model):
-    project = test_model.project
-    tmpdir = test_model.pickle_path.split('/data')[0]
+def test_predict_data(test_project_with_trained_model, tmpdir):
+    project = test_project_with_trained_model
 
-    model = train_and_save_model(project, prefix_dir=str(tmpdir))
-    predictions = predict_data(project, model, prefix_dir=str(tmpdir))
+    predictions = predict_data(project, project.model_set.get(), prefix_dir=str(tmpdir))
 
     # Number of unlabeled data * number of labels.  Each data gets a prediction for each label.
     expected_predction_count = project.data_set.filter(datalabel__isnull=True).count() * project.labels.count()

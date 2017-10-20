@@ -10,7 +10,8 @@ from core.management.commands.seed import (
 from core.models import (Profile, Label, Model, DataLabel)
 from core.util import (create_project, add_queue,
                        create_profile, add_data,
-                       create_tfidf_matrix, save_tfidf_matrix)
+                       create_tfidf_matrix, save_tfidf_matrix,
+                       train_and_save_model)
 
 from test.util import read_test_data
 
@@ -115,33 +116,40 @@ def test_labels(test_project_data):
 
     return labels
 
-
-@pytest.fixture()
-def test_model(test_project_data, test_labels, test_profile, test_tfidf_matrix, tmpdir):
+@pytest.fixture
+def test_project_labeled(test_project_data, test_labels):
     '''
-    A project that has labeled data and tf-idf file and its assocaited tempdir factory
+    A project that has labeled data
     '''
-
-    # Save tfidf file
-    data_temp = tmpdir.mkdir('data')
-    data_temp.mkdir('tf_idf')
-
-    test = save_tfidf_matrix(test_tfidf_matrix, test_project_data, prefix_dir=str(tmpdir))
-
-    # Label some data
     data = test_project_data.data_set.all()[:10]
     random_labels = [0, 1, 2, 0, 1, 2, 0, 1, 2, 0]
     for i, d in enumerate(data):
         DataLabel.objects.create(data=d,
                                 label=test_labels[random_labels[i]],
-                                profile=test_profile,
+                                profile=test_project_data.creator,
                                 training_set=test_project_data.current_training_set
                                 )
 
-    # Create pickel dir
-    pkl_path = os.path.join(data_temp.mkdir('model_pickles').strpath, 'project_' + str(test_project_data.pk)
-                            + '_training_' + str(test_project_data.current_training_set) + '.pkl')
+    return test_project_data
 
-    model = Model.objects.create(pickle_path=pkl_path, project=test_project_data)
+@pytest.fixture
+def test_project_labeled_and_tfidf(test_project_labeled, test_tfidf_matrix, tmpdir):
+    data_temp = tmpdir.mkdir('data')
+    data_temp.mkdir('tf_idf')
 
-    return model
+    save_tfidf_matrix(test_tfidf_matrix, test_project_labeled, prefix_dir=str(tmpdir))
+
+    return test_project_labeled
+
+@pytest.fixture
+def test_project_with_trained_model(test_project_labeled_and_tfidf, tmpdir):
+    '''
+    A project which has labeled data, a tfidf matrix saved, and
+    a model with pickle file
+    '''
+    data_temp = tmpdir.listdir()[0]  # tmpdir already has data directory from test_project_labeled_and_tfidf
+    data_temp.mkdir('model_pickles')
+
+    trained_model = train_and_save_model(test_project_labeled_and_tfidf, prefix_dir=str(tmpdir))
+
+    return test_project_labeled_and_tfidf
