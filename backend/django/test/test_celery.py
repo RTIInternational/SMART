@@ -1,5 +1,6 @@
-import util
+from core import tasks
 
 def test_celery():
-    result = util.dummy_task.delay().get()
-    assert result == 'Test task complete'
+    result = tasks.send_test_task.delay().get()
+    assert result == 'Test Task Complete'
+

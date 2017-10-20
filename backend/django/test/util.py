@@ -1,4 +1,3 @@
-import celery
 import csv
 
 from core.management.commands.seed import (SEED_FILE_PATH)
@@ -29,9 +28,6 @@ def assert_redis_matches_db(test_redis):
             # Empty lists don't exist in redis
             assert not test_redis.exists('queue:'+str(q.pk))
 
-@celery.shared_task
-def dummy_task():
-    return 'Test task complete'
 
 def read_test_data():
     '''
