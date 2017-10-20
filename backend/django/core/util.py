@@ -395,27 +395,27 @@ def create_tfidf_matrix(data, max_df=0.95, min_df=0.05):
     """Create a TF-IDF matrix
 
     Args:
-        data: List/Queryset of Data objects
+        data: List of text from data
     Returns:
         tf_idf_matrix: CSR-format tf-idf matrix
     """
     vectorizer = TfidfVectorizer(max_df=max_df, min_df=min_df)
-    tf_idf_matrix = vectorizer.fit_transform([d.text for d in data])
+    tf_idf_matrix = vectorizer.fit_transform(data)
 
     return tf_idf_matrix
 
 
-def save_tfidf_matrix(matrix, project, prefix_dir=None):
+def save_tfidf_matrix(matrix, project_pk, prefix_dir=None):
     """Save tf-idf matrix to persistent volume storage as /data/tf_idf/<pk>.npz
 
     Args:
         matrix: CSR-format tf-idf matrix
-        project: The project the data comes from
+        project_pk: The project pk the data comes from
         prefix_dir: Prefix to add to file path, needed for testing
     Returns:
         file: The filepath to the saved matrix
     """
-    file = '/data/tf_idf/' + str(project.pk) + '.npz'
+    file = '/data/tf_idf/' + str(project_pk) + '.npz'
     if prefix_dir is not None:
         file = os.path.join(prefix_dir, file.lstrip(os.path.sep))
 

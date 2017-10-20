@@ -16,6 +16,7 @@ from core.models import (Profile, Project, ProjectPermissions, Model, Data, Labe
 from core.forms import ProjectForm, ProjectUpdateForm, PermissionsFormSet, LabelFormSet
 from core.templatetags import project_extras
 import core.util as util
+from core import tasks
 
 
 def md5_hash(obj):
@@ -127,8 +128,7 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
                         util.fill_queue(queue, orderby='random')
 
                         # Create and save tf-idf
-                        tf_idf = util.create_tfidf_matrix(f_data['objects'].tolist())
-                        util.save_tfidf_matrix(tf_idf, self.object)
+                        tasks.send_tfidf_creation_task.delay(f_data[0].tolist(), self.object.pk)
 
                 return redirect(self.get_success_url())
             else:

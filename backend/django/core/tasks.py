@@ -17,3 +17,13 @@ def send_model_task(project_pk, prefix_dir=None):
     model = train_and_save_model(project, prefix_dir)
     predictions = predict_data(project, model, prefix_dir)
     fill_queue(project.queue_set.get(), 'least confident')
+
+@shared_task
+def send_tfidf_creation_task(data_list, project_pk, prefix_dir=None):
+    """Create and Save tfidf"""
+    from core.util import create_tfidf_matrix, save_tfidf_matrix
+
+    tf_idf = create_tfidf_matrix(data_list)
+    file = save_tfidf_matrix(tf_idf, project_pk, prefix_dir=prefix_dir)
+
+    return file

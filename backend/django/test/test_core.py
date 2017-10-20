@@ -630,7 +630,7 @@ def test_create_tfidf_matrix(test_tfidf_matrix):
 
 def test_save_tfidf_matrix(test_project_data, test_tfidf_matrix, tmpdir):
     pre_dir = tmpdir.mkdir('data').mkdir('tf_idf')
-    file = save_tfidf_matrix(test_tfidf_matrix, test_project_data, prefix_dir=str(tmpdir))
+    file = save_tfidf_matrix(test_tfidf_matrix, test_project_data.pk, prefix_dir=str(tmpdir))
 
     assert os.path.isfile(file)
     assert file == os.path.join(str(tmpdir), 'data/tf_idf/'+ str(test_project_data.pk) + '.npz')

@@ -102,7 +102,8 @@ def test_tfidf_matrix(test_project_data):
     '''
     A CSR-format tf-idf matrix created from the data of test_project_data
     '''
-    return create_tfidf_matrix(test_project_data.data_set.all())
+    data_list = [d.text for d in test_project_data.data_set.all()]
+    return create_tfidf_matrix(data_list)
 
 @pytest.fixture
 def test_labels(test_project_data):
@@ -137,7 +138,7 @@ def test_project_labeled_and_tfidf(test_project_labeled, test_tfidf_matrix, tmpd
     data_temp = tmpdir.mkdir('data')
     data_temp.mkdir('tf_idf')
 
-    save_tfidf_matrix(test_tfidf_matrix, test_project_labeled, prefix_dir=str(tmpdir))
+    save_tfidf_matrix(test_tfidf_matrix, test_project_labeled.pk, prefix_dir=str(tmpdir))
 
     return test_project_labeled
 
