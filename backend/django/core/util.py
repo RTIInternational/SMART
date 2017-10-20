@@ -17,6 +17,7 @@ from django.conf import settings
 from core.models import (Project, Data, Queue, DataQueue, Profile, Label,
                          AssignedData, DataLabel, Model, DataPrediction,
                          DataUncertainty)
+from core import tasks
 
 
 # TODO: Divide these functions into a public/private API when we determine
@@ -458,9 +459,7 @@ def check_and_trigger_model(datum):
     if len(labeled_data) >= batch_size:
         project.current_training_set += 1
         project.save()
-        model = train_and_save_model(project)
-        predictions = predict_data(project, model)
-        fill_queue(project.queue_set.get(), orderby='least confident')
+        tasks.send_model_task.delay(project.pk)
 
 
 def train_and_save_model(project, prefix_dir=None):

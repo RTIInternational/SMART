@@ -36,4 +36,5 @@ services:
   celery_worker:
     volumes:
       - ../backend/django:/code
+      - smart_data:/data/
     command: ./runcelery.sh
