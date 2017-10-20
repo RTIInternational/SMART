@@ -11,7 +11,8 @@ import scipy
 from django.contrib.auth import get_user_model
 
 from core.models import (Project, Queue, Data, DataQueue, Profile, Model,
-                         AssignedData, Label, DataLabel, DataPrediction)
+                         AssignedData, Label, DataLabel, DataPrediction,
+                         DataUncertainty)
 from core.util import (redis_serialize_queue, redis_serialize_data,
                        redis_parse_queue, redis_parse_data,
                        create_project, add_data, assign_datum,
@@ -794,3 +795,59 @@ def test_predict_data(test_project_with_trained_model, tmpdir):
             'label': prediction.label,
             'predicted_probability': prediction.predicted_probability
         })
+
+
+def test_fill_queue_random_predicted_data(test_project_predicted_data, test_queue):
+    fill_queue(test_queue, 'random')
+
+    assert test_queue.data.count() == test_queue.length
+    for datum in test_queue.data.all():
+        assert len(datum.datalabel_set.all()) == 0
+        assert_obj_exists(DataUncertainty, {
+            'data': datum
+        })
+
+
+def test_fill_queue_least_confident_predicted_data(test_project_predicted_data, test_queue):
+    fill_queue(test_queue, 'least confident')
+
+    assert test_queue.data.count() == test_queue.length
+    data_list = test_queue.data.all()
+    previous_lc = data_list[0].datauncertainty_set.get().least_confident
+    for datum in test_queue.data.all():
+        assert len(datum.datalabel_set.all()) == 0
+        assert_obj_exists(DataUncertainty, {
+            'data': datum
+        })
+        assert datum.datauncertainty_set.get().least_confident <= previous_lc
+        previous_lc = datum.datauncertainty_set.get().least_confident
+
+
+def test_fill_queue_margin_sampling_predicted_data(test_project_predicted_data, test_queue):
+    fill_queue(test_queue, 'margin sampling')
+
+    assert test_queue.data.count() == test_queue.length
+    data_list = test_queue.data.all()
+    previous_ms = data_list[0].datauncertainty_set.get().margin_sampling
+    for datum in test_queue.data.all():
+        assert len(datum.datalabel_set.all()) == 0
+        assert_obj_exists(DataUncertainty, {
+            'data': datum
+        })
+        assert datum.datauncertainty_set.get().margin_sampling >= previous_ms
+        previous_ms = datum.datauncertainty_set.get().margin_sampling
+
+
+def test_fill_queue_entropy_predicted_data(test_project_predicted_data, test_queue):
+    fill_queue(test_queue, 'entropy')
+
+    assert test_queue.data.count() == test_queue.length
+    data_list = test_queue.data.all()
+    previous_e = data_list[0].datauncertainty_set.get().entropy
+    for datum in test_queue.data.all():
+        assert len(datum.datalabel_set.all()) == 0
+        assert_obj_exists(DataUncertainty, {
+            'data': datum
+        })
+        assert datum.datauncertainty_set.get().entropy <= previous_e
+        previous_e = datum.datauncertainty_set.get().entropy

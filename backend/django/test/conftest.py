@@ -11,7 +11,7 @@ from core.models import (Profile, Label, Model, DataLabel)
 from core.util import (create_project, add_queue,
                        create_profile, add_data,
                        create_tfidf_matrix, save_tfidf_matrix,
-                       train_and_save_model)
+                       train_and_save_model, predict_data)
 
 from test.util import read_test_data
 
@@ -153,3 +153,11 @@ def test_project_with_trained_model(test_project_labeled_and_tfidf, tmpdir):
     trained_model = train_and_save_model(test_project_labeled_and_tfidf, prefix_dir=str(tmpdir))
 
     return test_project_labeled_and_tfidf
+
+@pytest.fixture
+def test_project_predicted_data(test_project_with_trained_model, tmpdir):
+    project = test_project_with_trained_model
+
+    predictions = predict_data(project, project.model_set.get(), prefix_dir=str(tmpdir))
+
+    return test_project_with_trained_model

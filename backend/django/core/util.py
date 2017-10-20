@@ -154,14 +154,14 @@ def fill_queue(queue, orderby):
     If there isn't enough data left to fill the queue, use all the
     data available.
 
-    TODO: Extend to use a model to fill the queue, when one has been trained
-    for the queue's project.
+    Takes an orderby arguement to fill the qeuue based on uncertainty sampling if
+    the project has a trained model
     '''
     ORDERBY_CHOICES = {
         'random': '?',
-        'least confident': 'datauncertainty__least_confident',
+        'least confident': '-datauncertainty__least_confident',
         'margin sampling': 'datauncertainty__margin_sampling',
-        'entropy': 'datauncertainty__entropy'
+        'entropy': '-datauncertainty__entropy'
     }
     if orderby not in ORDERBY_CHOICES.keys():
         raise ValueError('orderby parameter must be one of the following: ' +
