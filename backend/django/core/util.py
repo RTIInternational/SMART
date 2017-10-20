@@ -460,7 +460,7 @@ def check_and_trigger_model(datum):
         project.save()
         model = train_and_save_model(project)
         predictions = predict_data(project, model)
-        fill_queue(project.queue_set.get(), orderby='least_confident')
+        fill_queue(project.queue_set.get(), orderby='least confident')
 
 
 def train_and_save_model(project, prefix_dir=None):
