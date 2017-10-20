@@ -20,7 +20,8 @@ from core.util import (redis_serialize_queue, redis_serialize_data,
                        create_profile, label_data, pop_first_nonempty_queue,
                        get_assignments, unassign_datum,
                        save_tfidf_matrix, load_tfidf_matrix,
-                       train_and_save_model, predict_data)
+                       train_and_save_model, predict_data,
+                       least_confident, margin_sampling, entropy)
 
 from test.util import read_test_data
 
@@ -63,7 +64,7 @@ def test_redis_serialize_data(test_project_data):
 
 
 def test_redis_parse_queue(test_queue, test_redis):
-    fill_queue(test_queue)
+    fill_queue(test_queue, orderby='random')
 
     last_data_in_queue = [d for d in test_queue.data.all()][-1]
 
@@ -74,7 +75,7 @@ def test_redis_parse_queue(test_queue, test_redis):
 
 
 def test_redis_parse_data(test_queue, test_redis):
-    fill_queue(test_queue)
+    fill_queue(test_queue, orderby='random')
 
     last_data_in_queue = [d for d in test_queue.data.all()][-1]
     popped_data_key = test_redis.lpop(redis_serialize_queue(test_queue))
@@ -143,7 +144,7 @@ def test_add_queue_profile(test_project, test_profile):
 
 
 def test_fill_empty_queue(db, test_queue):
-    fill_queue(test_queue)
+    fill_queue(test_queue, orderby='random')
 
     assert test_queue.data.count() == test_queue.length
 
@@ -154,7 +155,7 @@ def test_fill_nonempty_queue(db, test_queue):
     DataQueue.objects.create(data=test_datum, queue=test_queue)
     assert test_queue.data.count() == 1
 
-    fill_queue(test_queue)
+    fill_queue(test_queue, orderby='random')
     assert test_queue.data.count() == test_queue.length
 
 
@@ -164,7 +165,7 @@ def test_fill_queue_all_remaining_data(db, test_queue):
     test_queue.length = all_data_count + 1
     test_queue.save()
 
-    fill_queue(test_queue)
+    fill_queue(test_queue, orderby='random')
     assert test_queue.data.count() == all_data_count
 
 
@@ -177,7 +178,7 @@ def test_fill_multiple_projects(db, test_queue, test_profile):
 
     add_data(test_project2, [d['text'] for d in project2_data])
 
-    fill_queue(test_queue)
+    fill_queue(test_queue, orderby='random')
 
     # Ensure the queue didn't fill any data from the other project
     assert test_queue.data.count() == project_data_count
@@ -202,7 +203,7 @@ def test_init_redis_queues_one_empty_queue(db, test_project, test_redis):
 
 def test_init_redis_queues_one_nonempty_queue(db, test_project_data, test_redis):
     queue = add_queue(test_project_data, 10)
-    fill_queue(queue)
+    fill_queue(queue, orderby='random')
 
     test_redis.flushdb()
     init_redis_queues()
@@ -212,7 +213,7 @@ def test_init_redis_queues_one_nonempty_queue(db, test_project_data, test_redis)
 
 def test_init_redis_queues_multiple_queues(db, test_project_data, test_redis):
     queue = add_queue(test_project_data, 10)
-    fill_queue(queue)
+    fill_queue(queue, orderby='random')
 
     queue2 = add_queue(test_project_data, 10)
 
@@ -226,14 +227,14 @@ def test_init_redis_queues_multiple_projects(db, test_project_data, test_redis, 
     # Try a mix of multiple queues in multiple projects with
     # and without data to see if everything initializes as expected.
     p1_queue1 = add_queue(test_project_data, 10)
-    fill_queue(p1_queue1)
+    fill_queue(p1_queue1, orderby='random')
     p1_queue2 = add_queue(test_project_data, 10)
 
     project2 = create_project('test_project2', test_profile)
     project2_data = read_test_data()
     add_data(project2, [d['text'] for d in project2_data])
     p2_queue1 = add_queue(project2, 10)
-    fill_queue(p2_queue1)
+    fill_queue(p2_queue1, orderby='random')
     p2_queue2 = add_queue(project2, 10)
 
     test_redis.flushdb()
@@ -255,7 +256,7 @@ def test_pop_empty_queue(db, test_project, test_redis):
 def test_pop_nonempty_queue(db, test_project_data, test_redis):
     queue_len = 10
     queue = add_queue(test_project_data, queue_len)
-    fill_queue(queue)
+    fill_queue(queue, orderby='random')
 
     datum = pop_queue(queue)
 
@@ -268,8 +269,8 @@ def test_pop_only_affects_one_queue(db, test_project_data, test_redis):
     queue_len = 10
     queue = add_queue(test_project_data, queue_len)
     queue2 = add_queue(test_project_data, queue_len)
-    fill_queue(queue)
-    fill_queue(queue2)
+    fill_queue(queue, orderby='random')
+    fill_queue(queue2, orderby='random')
 
     datum = pop_queue(queue)
 
@@ -288,10 +289,10 @@ def test_get_nonempty_queue_noprofile(db, test_project_data):
 
     assert get_nonempty_queue(test_project_data) is None
 
-    fill_queue(queue2)
+    fill_queue(queue2, orderby='random')
     assert get_nonempty_queue(test_project_data) == queue2
 
-    fill_queue(queue)
+    fill_queue(queue, orderby='random')
     assert get_nonempty_queue(test_project_data) == queue
 
 
@@ -305,10 +306,10 @@ def test_get_nonempty_profile_queue(db, test_project_data, test_profile):
 
     assert get_nonempty_queue(test_project_data, profile=test_profile) is None
 
-    fill_queue(profile_queue2)
+    fill_queue(profile_queue2, orderby='random')
     assert get_nonempty_queue(test_project_data, profile=test_profile) == profile_queue2
 
-    fill_queue(profile_queue)
+    fill_queue(profile_queue, orderby='random')
     assert get_nonempty_queue(test_project_data, profile=test_profile) == profile_queue
 
 
@@ -320,7 +321,7 @@ def test_get_nonempty_queue_multiple_profiles(db, test_project_data, test_profil
     # Fill the correct one last, so we can test whether the first-filled queue is being
     # selected
     for queue in (test_profile_queue2, test_profile_queue):
-        fill_queue(queue)
+        fill_queue(queue, orderby='random')
 
     assert get_nonempty_queue(test_project_data, profile=test_profile) == test_profile_queue
 
@@ -344,7 +345,7 @@ def test_pop_first_nonempty_queue_empty(db, test_project_data, test_queue, test_
 
 
 def test_pop_first_nonempty_queue_single_queue(db, test_project_data, test_queue, test_redis):
-    fill_queue(test_queue)
+    fill_queue(test_queue, orderby='random')
 
     queue, data = pop_first_nonempty_queue(test_project_data)
 
@@ -356,7 +357,7 @@ def test_pop_first_nonempty_queue_single_queue(db, test_project_data, test_queue
 
 def test_pop_first_nonempty_queue_profile_queue(db, test_project_data, test_profile,
                                              test_profile_queue, test_redis):
-    fill_queue(test_profile_queue)
+    fill_queue(test_profile_queue, orderby='random')
 
     queue, data = pop_first_nonempty_queue(test_project_data, profile=test_profile)
 
@@ -369,14 +370,14 @@ def test_pop_first_nonempty_queue_profile_queue(db, test_project_data, test_prof
 def test_pop_first_nonempty_queue_multiple_queues(db, test_project_data, test_queue,
                                                   test_redis):
     test_queue2 = add_queue(test_project_data, 10)
-    fill_queue(test_queue2)
+    fill_queue(test_queue2, orderby='random')
 
     queue, data = pop_first_nonempty_queue(test_project_data)
 
     assert isinstance(queue, Queue)
     assert queue == test_queue2
 
-    fill_queue(test_queue)
+    fill_queue(test_queue, orderby='random')
 
     queue, data = pop_first_nonempty_queue(test_project_data)
 
@@ -387,14 +388,14 @@ def test_pop_first_nonempty_queue_multiple_queues(db, test_project_data, test_qu
 def test_pop_first_nonempty_queue_multiple_profile_queues(db, test_project_data, test_profile,
                                                        test_profile_queue, test_profile_queue2,
                                                        test_redis):
-    fill_queue(test_profile_queue2)
+    fill_queue(test_profile_queue2, orderby='random')
 
     queue, data = pop_first_nonempty_queue(test_project_data, profile=test_profile)
 
     assert queue is None
     assert data is None
 
-    fill_queue(test_profile_queue)
+    fill_queue(test_profile_queue, orderby='random')
 
     queue, data = pop_first_nonempty_queue(test_project_data, profile=test_profile)
 
@@ -406,7 +407,7 @@ def test_assign_datum_project_queue_returns_datum(db, test_queue, test_profile, 
     '''
     Assign a datum from a project-wide queue (null profile ID).
     '''
-    fill_queue(test_queue)
+    fill_queue(test_queue, orderby='random')
 
     datum = assign_datum(test_profile, test_queue.project)
 
@@ -415,7 +416,7 @@ def test_assign_datum_project_queue_returns_datum(db, test_queue, test_profile, 
 
 
 def test_assign_datum_project_queue_correct_assignment(db, test_queue, test_profile, test_redis):
-    fill_queue(test_queue)
+    fill_queue(test_queue, orderby='random')
 
     datum = assign_datum(test_profile, test_queue.project)
 
@@ -428,7 +429,7 @@ def test_assign_datum_project_queue_correct_assignment(db, test_queue, test_prof
 
 
 def test_assign_datum_project_queue_pops_queues(db, test_queue, test_profile, test_redis):
-    fill_queue(test_queue)
+    fill_queue(test_queue, orderby='random')
 
     datum = assign_datum(test_profile, test_queue.project)
 
@@ -443,8 +444,8 @@ def test_assign_datum_project_queue_pops_queues(db, test_queue, test_profile, te
 def test_assign_datum_profile_queue_returns_correct_datum(db, test_profile_queue, test_profile,
                                                        test_profile_queue2, test_profile2,
                                                        test_redis):
-    fill_queue(test_profile_queue)
-    fill_queue(test_profile_queue2)
+    fill_queue(test_profile_queue, orderby='random')
+    fill_queue(test_profile_queue2, orderby='random')
 
     datum = assign_datum(test_profile, test_profile_queue.project)
 
@@ -454,8 +455,8 @@ def test_assign_datum_profile_queue_returns_correct_datum(db, test_profile_queue
 def test_assign_datum_profile_queue_correct_assignment(db, test_profile_queue, test_profile,
                                                     test_profile_queue2, test_profile2,
                                                     test_redis):
-    fill_queue(test_profile_queue)
-    fill_queue(test_profile_queue2)
+    fill_queue(test_profile_queue, orderby='random')
+    fill_queue(test_profile_queue2, orderby='random')
 
     datum = assign_datum(test_profile, test_profile_queue.project)
 
@@ -468,8 +469,8 @@ def test_assign_datum_profile_queue_correct_assignment(db, test_profile_queue, t
 
 def test_assign_datum_profile_queue_pops_queues(db, test_profile_queue, test_profile,
                                              test_profile_queue2, test_profile2, test_redis):
-    fill_queue(test_profile_queue)
-    fill_queue(test_profile_queue2)
+    fill_queue(test_profile_queue, orderby='random')
+    fill_queue(test_profile_queue2, orderby='random')
 
     datum = assign_datum(test_profile, test_profile_queue.project)
 
@@ -484,7 +485,7 @@ def test_assign_datum_profile_queue_pops_queues(db, test_profile_queue, test_pro
 
 
 def test_init_redis_queues_ignores_assigned_data(db, test_profile, test_queue, test_redis):
-    fill_queue(test_queue)
+    fill_queue(test_queue, orderby='random')
 
     assigned_datum = test_queue.data.first()
 
@@ -500,7 +501,7 @@ def test_init_redis_queues_ignores_assigned_data(db, test_profile, test_queue, t
 
 
 def test_label_data(db, test_profile, test_queue, test_redis):
-    fill_queue(test_queue)
+    fill_queue(test_queue, orderby='random')
 
     datum = assign_datum(test_profile, test_queue.project)
     test_label = Label.objects.create(name='test', project=test_queue.project)
@@ -522,7 +523,7 @@ def test_label_data(db, test_profile, test_queue, test_redis):
 
 def test_get_assignments_no_existing_assignment_one_assignment(db, test_profile, test_project_data, test_queue,
                                                test_redis):
-    fill_queue(test_queue)
+    fill_queue(test_queue, orderby='random')
 
     assert AssignedData.objects.count() == 0
 
@@ -538,7 +539,7 @@ def test_get_assignments_no_existing_assignment_one_assignment(db, test_profile,
 
 def test_get_assignments_no_existing_assignment_half_max_queue_length(db, test_profile, test_project_data, test_queue,
                                                test_redis):
-    fill_queue(test_queue)
+    fill_queue(test_queue, orderby='random')
 
     assert AssignedData.objects.count() == 0
 
@@ -555,7 +556,7 @@ def test_get_assignments_no_existing_assignment_half_max_queue_length(db, test_p
 
 def test_get_assignments_no_existing_assignment_max_queue_length(db, test_profile, test_project_data, test_queue,
                                                test_redis):
-    fill_queue(test_queue)
+    fill_queue(test_queue, orderby='random')
 
     assert AssignedData.objects.count() == 0
 
@@ -572,7 +573,7 @@ def test_get_assignments_no_existing_assignment_max_queue_length(db, test_profil
 
 def test_get_assignments_no_existing_assignment_over_max_queue_length(db, test_profile, test_project_data, test_queue,
                                                test_redis):
-    fill_queue(test_queue)
+    fill_queue(test_queue, orderby='random')
 
     assert AssignedData.objects.count() == 0
 
@@ -589,7 +590,7 @@ def test_get_assignments_no_existing_assignment_over_max_queue_length(db, test_p
 
 def test_get_assignments_one_existing_assignment(db, test_profile, test_project_data, test_queue,
                                             test_redis):
-    fill_queue(test_queue)
+    fill_queue(test_queue, orderby='random')
 
     assigned_datum = assign_datum(test_profile, test_project_data)
 
@@ -602,7 +603,7 @@ def test_get_assignments_one_existing_assignment(db, test_profile, test_project_
 
 def test_get_assignments_multiple_existing_assignments(db, test_profile, test_project_data, test_queue,
                                             test_redis):
-    fill_queue(test_queue)
+    fill_queue(test_queue, orderby='random')
 
     assigned_data = []
     for i in range(5):
@@ -620,7 +621,7 @@ def test_get_assignments_multiple_existing_assignments(db, test_profile, test_pr
 
 
 def test_unassign(db, test_profile, test_project_data, test_queue, test_redis):
-    fill_queue(test_queue)
+    fill_queue(test_queue, orderby='random')
 
     assert test_redis.llen('queue:'+str(test_queue.pk)) == test_queue.length
 
@@ -659,6 +660,105 @@ def test_save_and_load_tfidf_matrix(test_tfidf_matrix, test_project_data, tmpdir
     matrix = load_tfidf_matrix(test_project_data, prefix_dir=str(tmpdir))
 
     assert np.allclose(matrix.A, test_tfidf_matrix.A)
+
+
+def test_least_confident_notarray():
+    probs = [0.5, 0.5]
+
+    with pytest.raises(ValueError) as excinfo:
+        ls = least_confident(probs)
+
+    assert 'Probs should be a numpy array' in str(excinfo.value)
+
+
+def test_least_confident_threeclass():
+    probs = np.array([0.1, 0.3, 0.6])
+
+    lc = least_confident(probs)
+
+    np.testing.assert_almost_equal(lc, 0.4)
+
+
+def test_least_confident_binary():
+    probs = np.array([0.2, 0.8])
+
+    lc = least_confident(probs)
+
+    np.testing.assert_almost_equal(lc, 0.2)
+
+
+def test_least_confident_fourclass():
+    probs = np.array([0.1, 0.1, 0.1, 0.7])
+
+    lc = least_confident(probs)
+
+    np.testing.assert_almost_equal(lc, 0.3)
+
+
+def test_margin_sampling_notarray():
+    probs = [0.5, 0.5]
+
+    with pytest.raises(ValueError) as excinfo:
+        ms = margin_sampling(probs)
+
+    assert 'Probs should be a numpy array' in str(excinfo.value)
+
+
+def test_margin_sampling_threeclass():
+    probs = np.array([0.1, 0.3, 0.6])
+
+    ms = margin_sampling(probs)
+
+    np.testing.assert_almost_equal(ms, 0.3)
+
+
+def test_margin_sampling_binary():
+    probs = np.array([0.2, 0.8])
+
+    ms = margin_sampling(probs)
+
+    np.testing.assert_almost_equal(ms, 0.6)
+
+
+def test_margin_sampling_fourclass():
+    probs = np.array([0.1, 0.1, 0.1, 0.7])
+
+    ms = margin_sampling(probs)
+
+    np.testing.assert_almost_equal(ms, 0.6)
+
+
+def test_entropy_notarray():
+    probs = [0.5, 0.5]
+
+    with pytest.raises(ValueError) as excinfo:
+        e = entropy(probs)
+
+    assert 'Probs should be a numpy array' in str(excinfo.value)
+
+
+def test_entropy_threeclass():
+    probs = np.array([0.1, 0.3, 0.6])
+
+    e = entropy(probs)
+
+    np.testing.assert_almost_equal(e, 0.3899728733539152)
+
+
+def test_entropy_binary():
+    probs = np.array([0.2, 0.8])
+
+    e = entropy(probs)
+
+    np.testing.assert_almost_equal(e, 0.21732201127364886)
+
+
+def test_entropy_fourclass():
+    probs = np.array([0.1, 0.1, 0.1, 0.7])
+
+    e = entropy(probs)
+
+    np.testing.assert_almost_equal(e, 0.4084313719900203)
 
 
 def test_train_and_save_model(test_project_data, test_labels, test_profile, test_tfidf_matrix, tmpdir):

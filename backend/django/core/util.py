@@ -5,6 +5,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.externals import joblib
 from scipy import sparse
 import os
+import math
+import numpy as np
 
 from django.db import transaction, connection
 from django.db.models import Count, Value, IntegerField, F
@@ -13,7 +15,8 @@ from django.contrib.auth import get_user_model
 from django.conf import settings
 
 from core.models import (Project, Data, Queue, DataQueue, Profile, Label,
-                         AssignedData, DataLabel, Model, DataPrediction)
+                         AssignedData, DataLabel, Model, DataPrediction,
+                         DataUncertainty)
 
 
 # TODO: Divide these functions into a public/private API when we determine
@@ -143,7 +146,7 @@ def add_queue(project, length, profile=None):
     return Queue.objects.create(length=length, project=project, profile=profile)
 
 
-def fill_queue(queue):
+def fill_queue(queue, orderby):
     '''
     Fill a queue with unlabeled, unassigned data randomly selected from
     the queue's project. The queue doesn't need to be empty.
@@ -154,18 +157,27 @@ def fill_queue(queue):
     TODO: Extend to use a model to fill the queue, when one has been trained
     for the queue's project.
     '''
+    ORDERBY_CHOICES = {
+        'random': '?',
+        'least confident': 'datauncertainty__least_confident',
+        'margin sampling': 'datauncertainty__margin_sampling',
+        'entropy': 'datauncertainty__entropy'
+    }
+    if orderby not in ORDERBY_CHOICES.keys():
+        raise ValueError('orderby parameter must be one of the following: ' +
+                         ' '.join(ORDERBY_CHOICES))
+
     data_filters = {
         'project': queue.project,
         'labelers': None,
         'queues': None
     }
 
-    eligible_data = Data.objects.filter(**data_filters)
+    eligible_data = Data.objects.filter(**data_filters).order_by(ORDERBY_CHOICES[orderby])
 
     cte_sql, cte_params = eligible_data.query.sql_with_params()
     sample_size_sql, sample_size_params = (Queue.objects.filter(pk=queue.pk)
-                                            .annotate(
-                                                sample_size=F('length') - Count('data'))
+                                            .annotate(sample_size=F('length') - Count('data'))
                                             .values('sample_size')
                                             .query.sql_with_params())
 
@@ -180,7 +192,6 @@ def fill_queue(queue):
         {queue_id}
     FROM
         eligible_data
-    ORDER BY random()
     LIMIT ({sample_size_sql});
     """.format(
         cte_sql=cte_sql,
@@ -449,7 +460,7 @@ def check_and_trigger_model(datum):
         project.save()
         model = train_and_save_model(project)
         predictions = predict_data(project, model)
-        fill_queue(project.queue_set.get()) ### TODO: UPDATE FILL QUEUE FOR MODEL
+        fill_queue(project.queue_set.get(), orderby='least_confident')
 
 
 def train_and_save_model(project, prefix_dir=None):
@@ -461,7 +472,7 @@ def train_and_save_model(project, prefix_dir=None):
     Returns:
         model: A model object
     """
-    clf = LogisticRegression()
+    clf = LogisticRegression(class_weight='balanced', solver='lbfgs', multi_class='multinomial')
 
     # Find the "smallest" primary key for the project, use it to adjust all other
     # primary keys to an index range of [0, len(data)) as this is the index range
@@ -489,6 +500,59 @@ def train_and_save_model(project, prefix_dir=None):
     model = Model.objects.create(pickle_path=file, project=project)
 
     return model
+
+
+def least_confident(probs):
+    """Least Confident
+        x = 1 - p
+        p is probability of highest probability class
+
+    Args:
+        probs: List of predicted probabilites
+    Returns:
+        x
+    """
+    if not isinstance(probs, np.ndarray):
+        raise ValueError('Probs should be a numpy array')
+
+    max_prob = max(probs)
+    return 1 - max_prob
+
+
+def margin_sampling(probs):
+    """Margin Sampling
+        x = p1 - p2
+        p1 is probabiiity of highest probability class
+        p2 is probability of lowest probability class
+    Args:
+        probs: List of predicted probabilities
+    Returns:
+        x
+    """
+    if not isinstance(probs, np.ndarray):
+        raise ValueError('Probs should be a numpy array')
+
+    probs[::-1].sort()  # https://stackoverflow.com/questions/26984414/efficiently-sorting-a-numpy-array-in-descending-order#answer-26984520
+    return probs[0] - probs[1]
+
+
+def entropy(probs):
+    """Entropy - Uncertainty Sampling
+        x = -sum(p * log(p))
+        the sum is sumation across p's
+    Args:
+        probs: List of predicted probabilities
+    Returns:
+        x
+    """
+    if not isinstance(probs, np.ndarray):
+        raise ValueError('Probs should be a numpy array')
+
+    total = 0
+    for p in probs:
+        total += p * math.log10(p)
+
+    return -total
 
 
 def predict_data(project, model, prefix_dir=None):
@@ -528,6 +592,17 @@ def predict_data(project, model, prefix_dir=None):
             bulk_predictions.append(DataPrediction(data=datum, model=model,
                                        label=label,
                                        predicted_probability=p))
+
+        # Need to crate uncertainty object so fill_queue can sort by one of the metrics
+        lc = least_confident(prediction)
+        ms = margin_sampling(prediction)
+        e = entropy(prediction)
+
+        DataUncertainty.objects.create(data=datum,
+                                       model=model,
+                                       least_confident=lc,
+                                       margin_sampling=ms,
+                                       entropy=e)
 
     prediction_objs = DataPrediction.objects.bulk_create(bulk_predictions)
 

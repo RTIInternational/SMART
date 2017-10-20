@@ -124,7 +124,7 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
                         Data.objects.bulk_create(f_data['objects'].tolist())
 
                         # If data was created then populate queue
-                        util.fill_queue(queue)
+                        util.fill_queue(queue, orderby='random')
 
                         # Create and save tf-idf
                         tf_idf = util.create_tfidf_matrix(f_data['objects'].tolist())

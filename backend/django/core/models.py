@@ -82,6 +82,15 @@ class DataPrediction(models.Model):
     label = models.ForeignKey('Label')
     predicted_probability = models.FloatField()
 
+class DataUncertainty(models.Model):
+    class Meta:
+        unique_together = (('data', 'model'))
+    data = models.ForeignKey('Data')
+    model = models.ForeignKey('Model')
+    least_confident = models.FloatField()
+    margin_sampling = models.FloatField()
+    entropy = models.FloatField()
+
 class Queue(models.Model):
     profile = models.ForeignKey('Profile', blank=True, null=True)
     project = models.ForeignKey('Project')
