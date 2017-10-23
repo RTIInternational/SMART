@@ -4,6 +4,9 @@ queues, etc.
 '''
 import pytest
 import unittest
+import os
+import pandas as pd
+import filecmp
 
 from django.contrib.auth import get_user_model
 
@@ -15,7 +18,7 @@ from core.util import (redis_serialize_queue, redis_serialize_data,
                        add_queue, fill_queue, pop_queue,
                        init_redis_queues, get_nonempty_queue,
                        create_profile, label_data, pop_first_nonempty_queue,
-                       get_assignments, unassign_datum)
+                       get_assignments, unassign_datum, save_data_file)
 
 from test.util import read_test_data
 
@@ -637,3 +640,18 @@ def test_unassign(db, test_profile, test_project_data, test_queue, test_redis):
     reassigned_datum = get_assignments(test_profile, test_project_data, 1)[0]
 
     assert reassigned_datum == datum
+
+
+def test_save_data_file(test_project, tmpdir):
+    test_file = './core/data/test_files/test.csv'
+    pre_dir = tmpdir.mkdir('data').mkdir('data_files')
+
+    data = pd.read_csv(test_file, header=None)
+
+    fname = save_data_file(data, test_project.pk, prefix_dir=str(tmpdir))
+
+    saved_data = pd.read_csv(fname, header=None)
+
+    assert fname == os.path.join(str(tmpdir), 'data/data_files/project_' + str(test_project.pk) + '_data.csv')
+    assert os.path.isfile(fname)
+    assert saved_data.equals(data)

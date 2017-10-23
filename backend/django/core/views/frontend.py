@@ -126,6 +126,8 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
                         # If data was created then populate queue
                         util.fill_queue(queue)
 
+                        util.save_data_file(f_data, self.object.pk)
+
                 return redirect(self.get_success_url())
             else:
                 return self.render_to_response(context)

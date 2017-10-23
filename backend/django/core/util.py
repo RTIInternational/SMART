@@ -1,5 +1,6 @@
 import random
 import redis
+import os
 
 from django.db import transaction, connection
 from django.db.models import Count, Value, IntegerField, F
@@ -367,3 +368,24 @@ def unassign_datum(datum, profile):
     assignment.delete()
 
     settings.REDIS.lpush(redis_serialize_queue(queue), redis_serialize_data(datum))
+
+
+def save_data_file(df, project_pk, prefix_dir=None):
+    """Given the df used to create and save objects save just the data to a file
+
+    Args:
+        df: dataframe used to create and save data objects, contains `0` column
+            which has the text data
+        project_pk: Primary key of the project
+        prefix_dir: Prefix to add to file path, needed for testing
+    Returns:
+        file: The filepath to the saved datafile
+    """
+    file = '/data/data_files/project_' + str(project_pk) + '_data.csv'
+    if prefix_dir is not None:
+        file = os.path.join(prefix_dir, file.lstrip(os.path.sep))
+
+    df = df[0]
+    df.to_csv(file, header=False, index=False)
+
+    return file
