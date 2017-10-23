@@ -22,9 +22,11 @@ from core.util import (redis_serialize_queue, redis_serialize_data,
                        get_assignments, unassign_datum,
                        save_tfidf_matrix, load_tfidf_matrix,
                        train_and_save_model, predict_data,
-                       least_confident, margin_sampling, entropy)
+                       least_confident, margin_sampling, entropy,
+                       check_and_trigger_model)
 
 from test.util import read_test_data, assert_obj_exists, assert_redis_matches_db
+from test.conftest import TEST_QUEUE_LEN
 
 
 def test_redis_serialize_queue(test_queue):
@@ -520,9 +522,9 @@ def test_get_assignments_no_existing_assignment_half_max_queue_length(db, test_p
 
     assert AssignedData.objects.count() == 0
 
-    data = get_assignments(test_profile, test_project_data, 5)
+    data = get_assignments(test_profile, test_project_data, TEST_QUEUE_LEN // 2)
 
-    assert len(data) == 5
+    assert len(data) == TEST_QUEUE_LEN // 2
     for datum in data:
         assert isinstance(datum, Data)
         assert_obj_exists(AssignedData, {
@@ -537,9 +539,9 @@ def test_get_assignments_no_existing_assignment_max_queue_length(db, test_profil
 
     assert AssignedData.objects.count() == 0
 
-    data = get_assignments(test_profile, test_project_data, 10)
+    data = get_assignments(test_profile, test_project_data, TEST_QUEUE_LEN)
 
-    assert len(data) == 10
+    assert len(data) == TEST_QUEUE_LEN
     for datum in data:
         assert isinstance(datum, Data)
         assert_obj_exists(AssignedData, {
@@ -554,9 +556,9 @@ def test_get_assignments_no_existing_assignment_over_max_queue_length(db, test_p
 
     assert AssignedData.objects.count() == 0
 
-    data = get_assignments(test_profile, test_project_data, 15)
+    data = get_assignments(test_profile, test_project_data, TEST_QUEUE_LEN + 10)
 
-    assert len(data) == 10
+    assert len(data) == TEST_QUEUE_LEN
     for datum in data:
         assert isinstance(datum, Data)
         assert_obj_exists(AssignedData, {
@@ -831,3 +833,94 @@ def test_fill_queue_entropy_predicted_data(test_project_predicted_data, test_que
         })
         assert datum.datauncertainty_set.get().entropy <= previous_e
         previous_e = datum.datauncertainty_set.get().entropy
+
+
+def test_check_and_trigger_model_first_labeled(setup_celery, test_project_data, test_labels, test_queue, test_profile):
+    fill_queue(test_queue, orderby='random')
+
+    datum = assign_datum(test_profile, test_queue.project)
+    test_label = test_labels[0]
+    label_data(test_label, datum, test_profile)
+
+    check = check_and_trigger_model(datum)
+    assert check == 'no trigger'
+
+    assert test_project_data.current_training_set == 0
+    assert test_project_data.model_set.count() == 0
+    assert DataPrediction.objects.filter(data__project=test_project_data).count() == 0
+    assert DataUncertainty.objects.filter(data__project=test_project_data).count() == 0
+    assert DataQueue.objects.filter(queue=test_queue).count() == TEST_QUEUE_LEN - 1
+
+
+def test_check_and_trigger_lt_batch_labeled(setup_celery, test_project_data, test_labels, test_queue, test_profile):
+    fill_queue(test_queue, orderby='random')
+
+    for i in range(TEST_QUEUE_LEN // 2):
+        datum = assign_datum(test_profile, test_queue.project)
+        test_label = test_labels[0]
+        label_data(test_label, datum, test_profile)
+
+    check = check_and_trigger_model(datum)
+    assert check == 'no trigger'
+
+    assert test_project_data.current_training_set == 0
+    assert test_project_data.model_set.count() == 0
+    assert DataPrediction.objects.filter(data__project=test_project_data).count() == 0
+    assert DataUncertainty.objects.filter(data__project=test_project_data).count() == 0
+    assert DataQueue.objects.filter(queue=test_queue).count() == TEST_QUEUE_LEN - (TEST_QUEUE_LEN // 2)
+
+
+def test_check_and_trigger_batched_success(setup_celery, test_project_labeled_and_tfidf, test_queue, test_redis, tmpdir):
+    project = test_project_labeled_and_tfidf
+    data_temp = tmpdir.listdir()[0]  # tmpdir already has data directory from test_project_labeled_and_tfidf
+    data_temp.mkdir('model_pickles')
+
+    datum = DataLabel.objects.filter(data__project=project).first().data
+    check = check_and_trigger_model(datum, str(tmpdir))
+    assert check == 'model ran'
+
+    # Assert model created and saved
+    assert_obj_exists(Model, {
+        'project': project
+    })
+    model = Model.objects.get(project=project)
+    assert os.path.isfile(model.pickle_path)
+
+    # Assert predictions created
+    predictions = DataPrediction.objects.filter(data__project=project)
+    assert len(predictions) == Data.objects.filter(project=project,
+                                                   labelers=None).count() * project.labels.count()
+
+    # Assert queue filled and redis sycned
+    assert test_queue.data.count() == test_queue.length
+    assert_redis_matches_db(test_redis)
+
+    # Assert least confident in queue
+    data_list = test_queue.data.all()
+    previous_lc = data_list[0].datauncertainty_set.get().least_confident
+    for datum in data_list:
+        assert len(datum.datalabel_set.all()) == 0
+        assert_obj_exists(DataUncertainty, {
+            'data': datum
+        })
+        assert datum.datauncertainty_set.get().least_confident <= previous_lc
+        previous_lc = datum.datauncertainty_set.get().least_confident
+    assert DataQueue.objects.filter(queue=test_queue).count() == TEST_QUEUE_LEN
+
+
+def test_check_and_trigger_batched_onlyone_label(setup_celery, test_project_data, test_labels, test_queue, test_profile):
+    fill_queue(test_queue, orderby='random')
+
+    for i in range(TEST_QUEUE_LEN):
+        datum = assign_datum(test_profile, test_queue.project)
+        test_label = test_labels[0]
+        label_data(test_label, datum, test_profile)
+
+    check = check_and_trigger_model(datum)
+    assert check == 'random'
+
+    assert test_project_data.current_training_set == 0
+    assert test_project_data.model_set.count() == 0
+    assert DataPrediction.objects.filter(data__project=test_project_data).count() == 0
+    assert DataUncertainty.objects.filter(data__project=test_project_data).count() == 0
+    assert DataQueue.objects.filter(queue=test_queue).count() == TEST_QUEUE_LEN

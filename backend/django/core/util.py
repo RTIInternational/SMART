@@ -443,23 +443,37 @@ def load_tfidf_matrix(project, prefix_dir=None):
         return None
 
 
-def check_and_trigger_model(datum):
+def check_and_trigger_model(datum, prefix_dir=None):
     """Given a recently assigned datum check if the project it belong to needs
        its model ran.  It the model needs to be run, start the model run and
        increment the project's current_training_set
 
     Args:
         datum: Recently assigne Data object
+        prefix_dir: Prefix to add to file path, needed for testing
+    Returns:
+        return_str: String to represent which path the function took
     """
     project = datum.project
     batch_size = project.labels.count() * 10
     labeled_data = DataLabel.objects.filter(data__project=project,
                                             training_set=project.current_training_set)
 
+    labels_in_labeled_data = set([dl.label for dl in labeled_data])
+
     if len(labeled_data) >= batch_size:
-        project.current_training_set += 1
-        project.save()
-        tasks.send_model_task.delay(project.pk)
+        if len(labels_in_labeled_data) < project.labels.count():
+            fill_queue(project.queue_set.get(), 'random')
+            return_str = 'random'
+        else:
+            project.current_training_set += 1
+            project.save()
+            tasks.send_model_task.delay(project.pk, prefix_dir)
+            return_str = 'model ran'
+    else:
+        return_str = 'no trigger'
+
+    return return_str
 
 
 def train_and_save_model(project, prefix_dir=None):

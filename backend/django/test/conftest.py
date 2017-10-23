@@ -15,7 +15,7 @@ from core.util import (create_project, add_queue,
 
 from test.util import read_test_data
 
-TEST_QUEUE_LEN = 10
+TEST_QUEUE_LEN = 30
 
 # Before starting any tests clear the redis cache
 def pytest_sessionstart(session):
@@ -31,7 +31,8 @@ def seeded_database(db):
 
 @pytest.fixture(autouse=True)
 def setup_celery():
-    celery_app.conf.update(CELERY_ALWAYS_EAGER=True)
+    celery_app.conf.update(CELERY_TASK_ALWAYS_EAGER=True,
+                           CELERY_TASK_EAGER_PROPAGATES=True)
 
 @pytest.fixture(scope='function')
 def test_redis(request):
@@ -122,8 +123,10 @@ def test_project_labeled(test_project_data, test_labels):
     '''
     A project that has labeled data
     '''
-    data = test_project_data.data_set.all()[:10]
-    random_labels = [0, 1, 2, 0, 1, 2, 0, 1, 2, 0]
+    data = test_project_data.data_set.all()[:TEST_QUEUE_LEN]
+    random_labels = [0, 1, 2, 0, 1, 2, 0, 1, 2, 0,
+                     0, 1, 2, 0, 1, 2, 0, 1, 2, 0,
+                     0, 1, 2, 0, 1, 2, 0, 1, 2, 0]
     for i, d in enumerate(data):
         DataLabel.objects.create(data=d,
                                 label=test_labels[random_labels[i]],
