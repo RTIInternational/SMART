@@ -113,7 +113,7 @@ def init_redis_queues():
         pipeline.delete(*existing_keys)
 
     for queue in Queue.objects.all():
-        data_ids = [redis_serialize_data(d) for d in queue.data.all()
+        data_ids = [redis_serialize_data(d) for d in get_ordered_queue_data(queue, 'least confident')
                     if d.pk not in assigned_data_ids]
         if len(data_ids) > 0:
             # We'll get an error if we try to lpush without any data
