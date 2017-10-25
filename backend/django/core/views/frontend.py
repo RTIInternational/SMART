@@ -38,6 +38,10 @@ class ProjectCode(LoginRequiredMixin, TemplateView):
         return ctx
 
 
+class ProjectAdmin(LoginRequiredMixin, TemplateView):
+    template_name = 'projects/admin.html'
+
+
 class ProjectList(LoginRequiredMixin, ListView):
     model = Project
     template_name = 'projects/list.html'

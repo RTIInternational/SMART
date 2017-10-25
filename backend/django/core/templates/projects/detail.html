@@ -55,6 +55,9 @@
                     <li class="list-group-item">{{ data.text }}</li>
                 {% endfor %}
                 </ul>
+            </div>
+        <div class="row">
+            <div class="col-md-12">
                 <div class="btn-group" role="group" aria-label="Project Controls">
                     <a class="btn btn-primary" href="{% url 'projects:project_list' %}" role="button">
                         Return to Projects
@@ -68,6 +71,13 @@
                     </a>
                     {% endif %}
                 </div>
+                {% if project|proj_permission_level:request.user.profile > 1 %}
+                <div class="btn-group pull-right" role="group" aria-label="Admin Controls">
+                    <a class="btn btn-primary" href="{% url 'projects:project_admin' project.pk %}" role="button">
+                        Admin Page
+                    </a>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
