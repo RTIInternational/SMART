@@ -4,11 +4,15 @@ from django.contrib.auth import get_user
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from django.http import HttpResponse
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+import csv
+import io
 import math
+import pandas as pd
 
 from core.serializers import (ProfileSerializer, AuthUserGroupSerializer,
                               AuthUserSerializer, ProjectSerializer,
@@ -19,6 +23,42 @@ from core.models import (Profile, Project, Model, Data, Label, DataLabel,
                          DataPrediction, Queue, DataQueue, AssignedData)
 import core.util as util
 from core.pagination import SmartPagination
+
+
+############################################
+#        FRONTEND USER API ENDPOINTS       #
+############################################
+@api_view(['GET'])
+def download_data(request, pk):
+    data_objs = Data.objects.filter(project=pk)
+
+    data = []
+    for d in data_objs:
+        temp = {}
+        temp['text'] = d.text
+
+        if d.datalabel_set.count() >= 1:
+            label = d.datalabel_set.first().label.name
+        elif d.dataprediction_set.count() >= 1:
+            newest_model = Model.objects.filter(project=pk).order_by('-pk')[0]
+            label = d.dataprediction_set.filter(model=newest_model).order_by('-predicted_probability')[0].predicted_class
+        else:
+            label = None
+
+        temp['label'] = label
+
+        data.append(temp)
+
+    buffer = io.StringIO()
+    wr = csv.DictWriter(buffer, fieldnames=['text', 'label'], quoting=csv.QUOTE_ALL)
+    wr.writerows(data)
+
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='text/csv')
+    response['Content-Disposition'] = 'attachment;'
+
+    return response
+
 
 ############################################
 #    REACT API ENDPOINTS FOR CODING VIEW   #

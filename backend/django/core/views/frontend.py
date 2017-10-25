@@ -41,6 +41,13 @@ class ProjectCode(LoginRequiredMixin, TemplateView):
 class ProjectAdmin(LoginRequiredMixin, TemplateView):
     template_name = 'projects/admin.html'
 
+    def get_context_data(self, **kwargs):
+        ctx = super(ProjectAdmin, self).get_context_data(**kwargs)
+
+        ctx['project_pk'] = self.kwargs['pk']
+
+        return ctx
+
 
 class ProjectList(LoginRequiredMixin, ListView):
     model = Project

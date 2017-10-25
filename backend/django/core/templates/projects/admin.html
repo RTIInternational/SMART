@@ -11,5 +11,34 @@
         </p>
     </div>
 </div>
+<div class="row">
+    <div class="col-md-12">
+        <p>
+            Click the button below to download your data with their labels
+        </p>
+        <a class="btn btn-primary" id="download_btn">Download Data</a>
 {% endblock %}
 
+{% block scripts_body %}
+<script>
+    $("#download_btn").on("click", function() {
+        xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            var a, today;
+            if (xhttp.readyState === 4 && xhttp.status === 200) {
+                a = document.createElement('a');
+                a.href = window.URL.createObjectURL(xhttp.response);
+                today = new Date();
+                a.download = "project_" + {{ project_pk }} + '_labels_' + today.toDateString().split(" ").join("_") + ".csv";
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                return a.click();
+            }
+        };
+        xhttp.open("GET", "/api/download_data/" + {{ project_pk }} + "/", true);
+        xhttp.setRequestHeader("Content-Type", "application/json");
+        xhttp.responseType = 'blob';
+        xhttp.send();
+    });
+</script>
+{% endblock %}

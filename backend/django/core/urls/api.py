@@ -20,4 +20,5 @@ urlpatterns = [
     url(r'^get_card_deck/(?P<pk>\d+)/$', api.get_card_deck),
     url(r'^annotate_data/(?P<pk>\d+)/$', api.annotate_data),
     url(r'^leave_coding_page/$', api.leave_coding_page),
+    url(r'^download_data/(?P<pk>\d+)/$', api.download_data),
 ]
