@@ -147,6 +147,35 @@ def add_queue(project, length, profile=None):
     return Queue.objects.create(length=length, project=project, profile=profile)
 
 
+def get_ordered_queue_data(queue, orderby):
+    """Return a queryset of data that belongs to the given queue ordered by
+        the orderby option.
+
+        least confident returns in descending order
+        margin sampling returns in ascending order
+        entropy returns in descending order
+        random returns in random order (different each time function called)
+
+    Args:
+        queue: The queue to order
+        orderby: String of order by options. ["random", "least confident",
+            "margin sampling", "entropy"]
+    Returns:
+        Query set of ordered data objects
+    """
+    ORDERBY_VALUE = {
+        'random': '?',
+        'least confident': '-datauncertainty__least_confident',
+        'margin sampling': 'datauncertainty__margin_sampling',
+        'entropy': '-datauncertainty__entropy',
+    }
+    if orderby not in ORDERBY_VALUE.keys():
+        raise ValueError('orderby parameter must be one of the following: ' +
+                         ' '.join(ORDERBY_VALUE))
+
+    return queue.data.all().order_by(ORDERBY_VALUE[orderby])
+
+
 def fill_queue(queue, orderby):
     '''
     Fill a queue with unlabeled, unassigned data randomly selected from
@@ -158,15 +187,15 @@ def fill_queue(queue, orderby):
     Takes an orderby arguement to fill the qeuue based on uncertainty sampling if
     the project has a trained model
     '''
-    ORDERBY_CHOICES = {
-        'random': '?',
-        'least confident': '-datauncertainty__least_confident',
-        'margin sampling': 'datauncertainty__margin_sampling',
-        'entropy': '-datauncertainty__entropy'
+    ORDERBY_VALUE = {
+        'random': 'random()',
+        'least confident': 'uncertainty.least_confident DESC',
+        'margin sampling': 'uncertainty.margin_sampling ASC',
+        'entropy': 'uncertainty.entropy DESC',
     }
-    if orderby not in ORDERBY_CHOICES.keys():
+    if orderby not in ORDERBY_VALUE.keys():
         raise ValueError('orderby parameter must be one of the following: ' +
-                         ' '.join(ORDERBY_CHOICES))
+                         ' '.join(ORDERBY_VALUE))
 
     data_filters = {
         'project': queue.project,
@@ -174,7 +203,7 @@ def fill_queue(queue, orderby):
         'queues': None
     }
 
-    eligible_data = Data.objects.filter(**data_filters).order_by(ORDERBY_CHOICES[orderby])
+    eligible_data = Data.objects.filter(**data_filters)
 
     cte_sql, cte_params = eligible_data.query.sql_with_params()
     sample_size_sql, sample_size_params = (Queue.objects.filter(pk=queue.pk)
@@ -182,17 +211,44 @@ def fill_queue(queue, orderby):
                                             .values('sample_size')
                                             .query.sql_with_params())
 
+    if orderby == 'random':
+        join_clause = ''
+    else:
+        join_clause = """
+        LEFT JOIN
+            {datauncertainty_table} AS uncertainty
+          ON
+            eligible_data.{data_pk_col} = uncertainty.{datauncertainty_data_id_col}
+        WHERE
+            uncertainty.{datauncertainty_model_id_col} = (
+                SELECT max(c_model.{model_pk_col})
+                FROM {model_table} AS c_model
+                WHERE c_model.{model_project_id_col} = {project_id}
+            )
+        """.format(
+            datauncertainty_table=DataUncertainty._meta.db_table,
+            data_pk_col=Data._meta.pk.name,
+            datauncertainty_data_id_col=DataUncertainty._meta.get_field('data').column,
+            datauncertainty_model_id_col=DataUncertainty._meta.get_field('model').column,
+            model_pk_col=Model._meta.pk.name,
+            model_table=Model._meta.db_table,
+            model_project_id_col=Model._meta.get_field('project').column,
+            project_id=queue.project.pk)
+
     sql = """
     WITH eligible_data AS (
         {cte_sql}
     )
     INSERT INTO {dataqueue_table}
-      ({dataqueue_data_id_col}, {dataqueue_queue_id_col})
+       ({dataqueue_data_id_col}, {dataqueue_queue_id_col})
     SELECT
         eligible_data.{data_pk_col},
         {queue_id}
     FROM
         eligible_data
+    {join_clause}
+    ORDER BY
+        {orderby_value}
     LIMIT ({sample_size_sql});
     """.format(
         cte_sql=cte_sql,
@@ -201,13 +257,15 @@ def fill_queue(queue, orderby):
         dataqueue_queue_id_col=DataQueue._meta.get_field('queue').column,
         data_pk_col=Data._meta.pk.name,
         queue_id=queue.pk,
+        join_clause=join_clause,
+        orderby_value=ORDERBY_VALUE[orderby],
         sample_size_sql=sample_size_sql)
 
     with connection.cursor() as c:
         c.execute(sql, (*cte_params, *sample_size_params))
 
-    data_ids = [redis_serialize_data(d) for d in queue.data.all()]
-    settings.REDIS.lpush(redis_serialize_queue(queue), *data_ids)
+    data_ids = [redis_serialize_data(d) for d in get_ordered_queue_data(queue, orderby)]
+    settings.REDIS.rpush(redis_serialize_queue(queue), *data_ids)
 
 
 def pop_first_nonempty_queue(project, profile=None):

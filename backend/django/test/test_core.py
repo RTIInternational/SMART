@@ -23,7 +23,7 @@ from core.util import (redis_serialize_queue, redis_serialize_data,
                        save_tfidf_matrix, load_tfidf_matrix,
                        train_and_save_model, predict_data,
                        least_confident, margin_sampling, entropy,
-                       check_and_trigger_model)
+                       check_and_trigger_model, get_ordered_queue_data)
 
 from test.util import read_test_data, assert_obj_exists, assert_redis_matches_db
 from test.conftest import TEST_QUEUE_LEN
@@ -45,22 +45,22 @@ def test_redis_serialize_data(test_project_data):
 def test_redis_parse_queue(test_queue, test_redis):
     fill_queue(test_queue, orderby='random')
 
-    last_data_in_queue = [d for d in test_queue.data.all()][-1]
-
     queue_key = [key for key in test_redis.keys() if 'queue' in key.decode()][0]
     parsed_queue = redis_parse_queue(queue_key)
 
     assert parsed_queue.pk == test_queue.pk
+    assert_obj_exists(DataQueue, { 'queue_id': parsed_queue.pk })
+    assert_obj_exists(Queue, { 'pk': parsed_queue.pk })
 
 
 def test_redis_parse_data(test_queue, test_redis):
     fill_queue(test_queue, orderby='random')
 
-    last_data_in_queue = [d for d in test_queue.data.all()][-1]
     popped_data_key = test_redis.lpop(redis_serialize_queue(test_queue))
     parsed_data = redis_parse_data(popped_data_key)
 
-    assert parsed_data.pk == last_data_in_queue.pk
+    assert_obj_exists(Data, { 'pk': parsed_data.pk })
+    assert_obj_exists(DataQueue, { 'data_id': parsed_data.pk })
 
 
 def test_create_profile(db):
@@ -792,9 +792,10 @@ def test_fill_queue_least_confident_predicted_data(test_project_predicted_data, 
 
     assert_redis_matches_db(test_redis)
     assert test_queue.data.count() == test_queue.length
-    data_list = test_queue.data.all()
+
+    data_list = get_ordered_queue_data(test_queue, 'least confident')
     previous_lc = data_list[0].datauncertainty_set.get().least_confident
-    for datum in test_queue.data.all():
+    for datum in data_list:
         assert len(datum.datalabel_set.all()) == 0
         assert_obj_exists(DataUncertainty, {
             'data': datum
@@ -808,9 +809,9 @@ def test_fill_queue_margin_sampling_predicted_data(test_project_predicted_data, 
 
     assert_redis_matches_db(test_redis)
     assert test_queue.data.count() == test_queue.length
-    data_list = test_queue.data.all()
+    data_list = get_ordered_queue_data(test_queue, 'margin sampling')
     previous_ms = data_list[0].datauncertainty_set.get().margin_sampling
-    for datum in test_queue.data.all():
+    for datum in data_list:
         assert len(datum.datalabel_set.all()) == 0
         assert_obj_exists(DataUncertainty, {
             'data': datum
@@ -824,9 +825,9 @@ def test_fill_queue_entropy_predicted_data(test_project_predicted_data, test_que
 
     assert_redis_matches_db(test_redis)
     assert test_queue.data.count() == test_queue.length
-    data_list = test_queue.data.all()
+    data_list = get_ordered_queue_data(test_queue, 'entropy')
     previous_e = data_list[0].datauncertainty_set.get().entropy
-    for datum in test_queue.data.all():
+    for datum in data_list:
         assert len(datum.datalabel_set.all()) == 0
         assert_obj_exists(DataUncertainty, {
             'data': datum
@@ -896,7 +897,7 @@ def test_check_and_trigger_batched_success(setup_celery, test_project_labeled_an
     assert_redis_matches_db(test_redis)
 
     # Assert least confident in queue
-    data_list = test_queue.data.all()
+    data_list = get_ordered_queue_data(test_queue, 'least confident')
     previous_lc = data_list[0].datauncertainty_set.get().least_confident
     for datum in data_list:
         assert len(datum.datalabel_set.all()) == 0

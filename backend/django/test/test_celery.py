@@ -2,6 +2,7 @@ import os
 
 from core import tasks
 from core.models import Model, DataPrediction, Data, DataUncertainty
+from core.util import get_ordered_queue_data
 
 from test.util import assert_obj_exists, assert_redis_matches_db
 
@@ -34,30 +35,16 @@ def test_model_task(test_project_labeled_and_tfidf, test_queue, test_redis, tmpd
     assert test_queue.data.count() == test_queue.length
     assert_redis_matches_db(test_redis)
 
-    """ this is literally the exact same code as a test in test_core.py
-    test_fill_queue_least_confident_predicted_data
-
-    fill_queue with "least confident" after training the model.  I have already
-    asserted that the model is created, predictions are made, the queue is filled
-    I do not understand why this queue is unordered but the queue in that other
-    function is ordered.
-
-    The only difference is that this is called from celery? Is it possible that
-    celery inserts in a different order than normaL?
-
-    I don think that either.  I just tested it live on the server.  The data that
-    was in the queue was indeed the least confident data.
-    """
     # Assert least confident in queue
-    # data_list = test_queue.data.all()
-    # previous_lc = data_list[0].datauncertainty_set.get().least_confident
-    # for datum in data_list:
-    #     assert len(datum.datalabel_set.all()) == 0
-    #     assert_obj_exists(DataUncertainty, {
-    #         'data': datum
-    #     })
-    #     assert datum.datauncertainty_set.get().least_confident <= previous_lc
-    #     previous_lc = datum.datauncertainty_set.get().least_confident
+    data_list = get_ordered_queue_data(test_queue, 'least confident')
+    previous_lc = data_list[0].datauncertainty_set.get().least_confident
+    for datum in data_list:
+        assert len(datum.datalabel_set.all()) == 0
+        assert_obj_exists(DataUncertainty, {
+            'data': datum
+        })
+        assert datum.datauncertainty_set.get().least_confident <= previous_lc
+        previous_lc = datum.datauncertainty_set.get().least_confident
 
 
 def test_tfidf_creation_task(test_project_data, tmpdir):
