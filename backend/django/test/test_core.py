@@ -626,7 +626,7 @@ def test_unassign(db, test_profile, test_project_data, test_queue, test_redis):
 
 def test_create_tfidf_matrix(test_tfidf_matrix):
     assert type(test_tfidf_matrix) == scipy.sparse.csr.csr_matrix
-    assert test_tfidf_matrix.shape == (285, 47)
+    assert test_tfidf_matrix.shape == (285, 11)
     assert test_tfidf_matrix.dtype == np.float64
 
 

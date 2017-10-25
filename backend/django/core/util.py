@@ -457,7 +457,7 @@ def create_tfidf_matrix(data, max_df=0.95, min_df=0.05):
     Returns:
         tf_idf_matrix: CSR-format tf-idf matrix
     """
-    vectorizer = TfidfVectorizer(max_df=max_df, min_df=min_df)
+    vectorizer = TfidfVectorizer(max_df=max_df, min_df=min_df, stop_words='english')
     tf_idf_matrix = vectorizer.fit_transform(data)
 
     return tf_idf_matrix
