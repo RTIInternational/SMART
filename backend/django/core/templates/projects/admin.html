@@ -19,28 +19,59 @@
         <a class="btn btn-primary" id="download_btn">Download Data</a>
     </div>
 </div>
+<div class="row">
+    <div class="col-md-12">
+        <p>
+            This is where label distribution per coder goes
+        </p>
+        <canvas id="label-distribution-chart" width="400" height="200"></canvas>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts_body %}
 <script>
-    $("#download_btn").on("click", function() {
-        xhttp = new XMLHttpRequest();
-        xhttp.onreadystatechange = function() {
-            var a, today;
-            if (xhttp.readyState === 4 && xhttp.status === 200) {
-                a = document.createElement('a');
-                a.href = window.URL.createObjectURL(xhttp.response);
-                today = new Date();
-                a.download = "project_" + {{ project_pk }} + '_labels_' + today.toDateString().split(" ").join("_") + ".csv";
-                a.style.display = 'none';
-                document.body.appendChild(a);
-                return a.click();
-            }
-        };
-        xhttp.open("GET", "/api/download_data/" + {{ project_pk }} + "/", true);
-        xhttp.setRequestHeader("Content-Type", "application/json");
-        xhttp.responseType = 'blob';
-        xhttp.send();
-    });
+$("#download_btn").on("click", function() {
+    xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+        var a, today;
+        if (xhttp.readyState === 4 && xhttp.status === 200) {
+            a = document.createElement('a');
+            a.href = window.URL.createObjectURL(xhttp.response);
+            today = new Date();
+            a.download = "project_" + {{ project_pk }} + '_labels_' + today.toDateString().split(" ").join("_") + ".csv";
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            return a.click();
+        }
+    };
+    xhttp.open("GET", "/api/download_data/" + {{ project_pk }} + "/", true);
+    xhttp.setRequestHeader("Content-Type", "application/json");
+    xhttp.responseType = 'blob';
+    xhttp.send();
+});
+
+$.ajax({
+    method: "GET",
+    url: '/api/label_distribution/' + {{ project_pk }} + '/',
+    success: function (chart_data) {
+        var ctx = document.getElementById('label-distribution-chart').getContext("2d");
+        var label_dist_chart = new Chart(ctx, {
+            type: 'bar',
+            data: chart_data
+        })
+    },
+    error: function (error) {
+        console.log(error);
+    }
+});
+
+console.log(pattern.generate([
+  '#1f77b4',
+  '#ff7f0e',
+  '#2ca02c',
+  '#d62728'
+]))
+
 </script>
 {% endblock %}

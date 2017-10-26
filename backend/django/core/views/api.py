@@ -60,6 +60,31 @@ def download_data(request, pk):
     return response
 
 
+@api_view(['GET'])
+def label_distribution(request, pk):
+    project = Project.objects.get(pk=pk)
+
+    labels = [l for l in project.labels.all()]
+
+    users = []
+    users.append(project.creator)
+    users.extend([perm.profile for perm in project.projectpermissions_set.all()])
+
+    datasets = []
+    for u in users:
+        temp_data = []
+        for l in labels:
+            temp_data.append(DataLabel.objects.filter(profile=u, label=l).count())
+        datasets.append({'label':u.__str__(), 'data':temp_data})
+
+    chart_data = {
+        'labels': [l.name for l in labels],
+        'datasets': [ds for ds in datasets]
+    }
+
+    return Response(chart_data)
+
+
 ############################################
 #    REACT API ENDPOINTS FOR CODING VIEW   #
 ############################################
