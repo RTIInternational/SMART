@@ -28,6 +28,35 @@
         <canvas id="label-distribution-chart" width="400" height="200"></canvas>
     </div>
 </div>
+<div class="row">
+    <div class="col-md-12">
+        <p>
+            This is where the view labeled data table goes
+        </p>
+        <table id="example" class="table table-hover" cellspacing="0" width="100%">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Text</th>
+                    <th>Label</th>
+                    <th>OG Prob</th>
+                    <th>Current Prob</th>
+                    <th>Coder</th>
+                </tr>
+            </thead>
+            <tfoot>
+                <tr>
+                    <th>ID</th>
+                    <th>Text</th>
+                    <th>Label</th>
+                    <th>OG Prob</th>
+                    <th>Current Prob</th>
+                    <th>Coder</th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts_body %}
@@ -71,6 +100,20 @@ $.ajax({
         console.log(error);
     }
 });
+
+$(document).ready(function() {
+    $('#example').DataTable({
+        "ajax": '/api/data_table/' + {{ project_pk }} + '/',
+        "columns": [
+            { "data": "ID" },
+            { "data": "Text" },
+            { "data": "Label" },
+            { "data": "OG Prob" },
+            { "data": "Current Prob" },
+            { "data": "Coder" }
+        ]
+    });
+} );
 
 </script>
 {% endblock %}

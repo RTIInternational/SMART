@@ -12,6 +12,7 @@ from rest_framework.response import Response
 import csv
 import io
 import math
+import random
 import pandas as pd
 
 from core.serializers import (ProfileSerializer, AuthUserGroupSerializer,
@@ -83,6 +84,32 @@ def label_distribution(request, pk):
     }
 
     return Response(chart_data)
+
+
+@api_view(['GET'])
+def data_table(request, pk):
+    project = Project.objects.get(pk=pk)
+
+    data_objs = Data.objects.filter(project=project)
+    labels = [l.name for l in project.labels.all()]
+    users = []
+    users.append(project.creator)
+    users.extend([perm.profile for perm in project.projectpermissions_set.all()])
+    users = [u.__str__() for u in users]
+
+    data = []
+    for d in data_objs:
+        temp = {
+            'ID': d.pk,
+            'Text': d.text,
+            'Label': random.choice(labels),
+            'OG Prob': random.randint(0,100),
+            'Current Prob': random.randint(0,100),
+            'Coder': random.choice(users)
+        }
+        data.append(temp)
+
+    return Response({'data': data})
 
 
 ############################################

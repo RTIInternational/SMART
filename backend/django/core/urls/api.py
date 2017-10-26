@@ -22,4 +22,5 @@ urlpatterns = [
     url(r'^leave_coding_page/$', api.leave_coding_page),
     url(r'^download_data/(?P<pk>\d+)/$', api.download_data),
     url(r'^label_distribution/(?P<pk>\d+)/$', api.label_distribution),
+    url(r'^data_table/(?P<pk>\d+)/$', api.data_table),
 ]

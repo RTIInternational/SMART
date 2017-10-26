@@ -35,6 +35,8 @@
     "classnames": "2.2.5",
     "clean-webpack-plugin": "0.1.16",
     "css-loader": "^0.28.4",
+    "datatables.net": "^1.10.16",
+    "datatables.net-bs": "^1.10.16",
     "enzyme": "^2.9.1",
     "es6-promise": "^4.1.1",
     "eslint": "^4.2.0",
