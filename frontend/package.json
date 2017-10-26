@@ -31,7 +31,7 @@
     "bootstrap": "^3.3.7",
     "bootstrap-sass": "^3.3.7",
     "chai": "^4.1.0",
-    "chartjs": "^0.3.24",
+    "chart.js": "^2.7.0",
     "classnames": "2.2.5",
     "clean-webpack-plugin": "0.1.16",
     "css-loader": "^0.28.4",
