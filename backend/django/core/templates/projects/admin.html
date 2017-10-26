@@ -56,6 +56,11 @@ $.ajax({
     method: "GET",
     url: '/api/label_distribution/' + {{ project_pk }} + '/',
     success: function (chart_data) {
+        var generated_patterns = pattern.generate(['#b3e2cd','#fdcdac','#cbd5e8','#f4cae4','#e6f5c9']);
+
+        for(var i = 0; i < chart_data.datasets.length; i++) {
+            chart_data.datasets[i]['backgroundColor'] = generated_patterns[i % generated_patterns.length];
+        }
         var ctx = document.getElementById('label-distribution-chart').getContext("2d");
         var label_dist_chart = new Chart(ctx, {
             type: 'bar',
