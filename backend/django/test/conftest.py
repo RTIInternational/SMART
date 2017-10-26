@@ -131,7 +131,7 @@ def test_project_labeled(test_project_data, test_labels):
         DataLabel.objects.create(data=d,
                                 label=test_labels[random_labels[i]],
                                 profile=test_project_data.creator,
-                                training_set=test_project_data.current_training_set
+                                training_set=test_project_data.get_current_training_set()
                                 )
 
     return test_project_data

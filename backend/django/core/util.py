@@ -16,7 +16,7 @@ from django.conf import settings
 
 from core.models import (Project, Data, Queue, DataQueue, Profile, Label,
                          AssignedData, DataLabel, Model, DataPrediction,
-                         DataUncertainty)
+                         DataUncertainty, TrainingSet)
 from core import tasks
 
 
@@ -126,7 +126,10 @@ def create_project(name, creator):
     '''
     Create a project with the given name and creator.
     '''
-    return Project.objects.create(name=name, creator=creator)
+    proj = Project.objects.create(name=name, creator=creator)
+    training_set = TrainingSet.objects.create(project=proj, set_number=0)
+
+    return proj
 
 
 def add_data(project, data):
@@ -395,7 +398,7 @@ def label_data(label, datum, profile):
     '''
     Record that a given datum has been labeled; remove its assignment, if any.
     '''
-    current_training_set = datum.project.current_training_set
+    current_training_set = datum.project.get_current_training_set()
 
     with transaction.atomic():
         DataLabel.objects.create(data=datum,
@@ -504,7 +507,7 @@ def load_tfidf_matrix(project, prefix_dir=None):
 def check_and_trigger_model(datum, prefix_dir=None):
     """Given a recently assigned datum check if the project it belong to needs
        its model ran.  It the model needs to be run, start the model run and
-       increment the project's current_training_set
+       create a new project current_training_set
 
     Args:
         datum: Recently assigne Data object
@@ -513,9 +516,10 @@ def check_and_trigger_model(datum, prefix_dir=None):
         return_str: String to represent which path the function took
     """
     project = datum.project
+    current_training_set = project.get_current_training_set()
     batch_size = project.labels.count() * 10
     labeled_data = DataLabel.objects.filter(data__project=project,
-                                            training_set=project.current_training_set)
+                                            training_set=current_training_set)
 
     labels_in_labeled_data = set([dl.label for dl in labeled_data])
 
@@ -524,9 +528,9 @@ def check_and_trigger_model(datum, prefix_dir=None):
             fill_queue(project.queue_set.get(), 'random')
             return_str = 'random'
         else:
-            project.current_training_set += 1
-            project.save()
             tasks.send_model_task.delay(project.pk, prefix_dir)
+            new_training_set = TrainingSet.objects.create(project=project,
+                                       set_number=current_training_set.set_number+1)
             return_str = 'model ran'
     else:
         return_str = 'no trigger'
@@ -544,6 +548,7 @@ def train_and_save_model(project, prefix_dir=None):
         model: A model object
     """
     clf = LogisticRegression(class_weight='balanced', solver='lbfgs', multi_class='multinomial')
+    current_training_set = project.get_current_training_set()
 
     # Find the "smallest" primary key for the project, use it to adjust all other
     # primary keys to an index range of [0, len(data)) as this is the index range
@@ -562,13 +567,14 @@ def train_and_save_model(project, prefix_dir=None):
     clf.fit(x, y)
 
     file = '/data/model_pickles/project_' + str(project.pk) + '_training_' \
-         + str(project.current_training_set-1) + '.pkl'
+         + str(current_training_set.set_number) + '.pkl'
     if prefix_dir is not None:
         file = os.path.join(prefix_dir, file.lstrip(os.path.sep))
 
     joblib.dump(clf, file)
 
-    model = Model.objects.create(pickle_path=file, project=project)
+    model = Model.objects.create(pickle_path=file, project=project,
+                                 training_set=current_training_set)
 
     return model
 

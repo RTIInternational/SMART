@@ -12,7 +12,8 @@ import pandas as pd
 import math
 
 from core.models import (Profile, Project, ProjectPermissions, Model, Data, Label,
-                         DataLabel, DataPrediction, Queue, DataQueue, AssignedData)
+                         DataLabel, DataPrediction, Queue, DataQueue, AssignedData,
+                         TrainingSet)
 from core.forms import ProjectForm, ProjectUpdateForm, PermissionsFormSet, LabelFormSet
 from core.templatetags import project_extras
 import core.util as util
@@ -93,16 +94,23 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
         permissions = context['permissions']
         with transaction.atomic():
             if labels.is_valid() and permissions.is_valid():
-                # Save the project, labels, and permissions
+                # Save the project with creator
                 self.object = form.save(commit=False)
                 self.object.creator = self.request.user.profile
                 self.object.save()
+
+                # Training Set
+                training_set = TrainingSet.objects.create(project=self.object, set_number=0)
+
+                # Labels
                 labels.instance = self.object
                 labels.save()
+
+                # Permissions
                 permissions.instance = self.object
                 permissions.save()
 
-                # Create the queue
+                # Queue
                 batch_size = 10 * len([x for x in labels if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True])
                 num_coders = len([x for x in permissions if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True]) + 1
                 q_length = math.ceil(batch_size/num_coders) * num_coders + math.ceil(batch_size/num_coders) * (num_coders - 1)

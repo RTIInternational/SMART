@@ -27,11 +27,16 @@ def save_user(sender, instance, **kwargs):
 class Project(models.Model):
     name = models.TextField()
     description = models.TextField(blank=True)
-    current_training_set = models.IntegerField(default=0)
     creator = models.ForeignKey('Profile')
 
     def get_absolute_url(self):
         return reverse('projects:project_detail', kwargs={'pk': self.pk})
+
+    def get_current_training_set(self):
+        try:
+            return self.trainingset_set.all().order_by('-set_number')[0]
+        except IndexError:
+            return None
 
 class ProjectPermissions(models.Model):
     class Meta:
@@ -47,6 +52,7 @@ class ProjectPermissions(models.Model):
 class Model(models.Model):
     pickle_path = models.TextField()
     project = models.ForeignKey('Project')
+    training_set = models.ForeignKey('TrainingSet')
     predictions = models.ManyToManyField(
         'Data', related_name='models', through='DataPrediction'
     )
@@ -68,11 +74,11 @@ class Label(models.Model):
 
 class DataLabel(models.Model):
     class Meta:
-        unique_together = (('data', 'profile'))
+        unique_together = (('data', 'profile', 'training_set'))
     data = models.ForeignKey('Data')
     profile = models.ForeignKey('Profile')
     label = models.ForeignKey('Label')
-    training_set = models.IntegerField(blank=True, null=True)
+    training_set = models.ForeignKey('TrainingSet')
 
 class DataPrediction(models.Model):
     class Meta:
@@ -112,3 +118,7 @@ class AssignedData(models.Model):
     data = models.ForeignKey('Data')
     queue = models.ForeignKey('Queue')
     assigned_timestamp = models.DateTimeField(default = timezone.now)
+
+class TrainingSet(models.Model):
+    project = models.ForeignKey('Project')
+    set_number = models.IntegerField()

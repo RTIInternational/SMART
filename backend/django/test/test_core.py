@@ -12,7 +12,7 @@ from django.contrib.auth import get_user_model
 
 from core.models import (Project, Queue, Data, DataQueue, Profile, Model,
                          AssignedData, Label, DataLabel, DataPrediction,
-                         DataUncertainty)
+                         DataUncertainty, TrainingSet)
 from core.util import (redis_serialize_queue, redis_serialize_data,
                        redis_parse_queue, redis_parse_data,
                        create_project, add_data, assign_datum,
@@ -90,6 +90,31 @@ def test_create_project(db, test_profile):
     project = create_project(name, test_profile)
 
     assert_obj_exists(Project, { 'name': name })
+
+
+def test_get_current_training_set_no_training_set(test_profile):
+    project = Project.objects.create(name='test', creator=test_profile)
+
+    training_set = project.get_current_training_set()
+
+    assert training_set == None
+
+
+def test_get_current_training_set_one_training_set(test_project):
+    training_set = test_project.get_current_training_set()
+    assertTrainingSet = TrainingSet.objects.filter(project=test_project).order_by('-set_number')[0]
+
+    assert_obj_exists(TrainingSet, { 'project': test_project, 'set_number': 0 })
+    assert training_set == assertTrainingSet
+
+
+def test_get_current_training_set_multiple_training_set(test_project):
+    # Test Project already has training set with set number 0, create set number 1,2,3
+    set_num_one = TrainingSet.objects.create(project=test_project, set_number=1)
+    set_num_two = TrainingSet.objects.create(project=test_project, set_number=2)
+    set_num_three = TrainingSet.objects.create(project=test_project, set_number=3)
+
+    assert test_project.get_current_training_set() == set_num_three
 
 
 def test_add_data(db, test_project):
@@ -837,6 +862,8 @@ def test_fill_queue_entropy_predicted_data(test_project_predicted_data, test_que
 
 
 def test_check_and_trigger_model_first_labeled(setup_celery, test_project_data, test_labels, test_queue, test_profile):
+    initial_training_set = test_project_data.get_current_training_set()
+
     fill_queue(test_queue, orderby='random')
 
     datum = assign_datum(test_profile, test_queue.project)
@@ -846,7 +873,7 @@ def test_check_and_trigger_model_first_labeled(setup_celery, test_project_data, 
     check = check_and_trigger_model(datum)
     assert check == 'no trigger'
 
-    assert test_project_data.current_training_set == 0
+    assert test_project_data.get_current_training_set() == initial_training_set
     assert test_project_data.model_set.count() == 0
     assert DataPrediction.objects.filter(data__project=test_project_data).count() == 0
     assert DataUncertainty.objects.filter(data__project=test_project_data).count() == 0
@@ -854,6 +881,8 @@ def test_check_and_trigger_model_first_labeled(setup_celery, test_project_data, 
 
 
 def test_check_and_trigger_lt_batch_labeled(setup_celery, test_project_data, test_labels, test_queue, test_profile):
+    initial_training_set = test_project_data.get_current_training_set()
+
     fill_queue(test_queue, orderby='random')
 
     for i in range(TEST_QUEUE_LEN // 2):
@@ -864,7 +893,7 @@ def test_check_and_trigger_lt_batch_labeled(setup_celery, test_project_data, tes
     check = check_and_trigger_model(datum)
     assert check == 'no trigger'
 
-    assert test_project_data.current_training_set == 0
+    assert test_project_data.get_current_training_set() == initial_training_set
     assert test_project_data.model_set.count() == 0
     assert DataPrediction.objects.filter(data__project=test_project_data).count() == 0
     assert DataUncertainty.objects.filter(data__project=test_project_data).count() == 0
@@ -873,6 +902,7 @@ def test_check_and_trigger_lt_batch_labeled(setup_celery, test_project_data, tes
 
 def test_check_and_trigger_batched_success(setup_celery, test_project_labeled_and_tfidf, test_queue, test_redis, tmpdir):
     project = test_project_labeled_and_tfidf
+    initial_training_set = project.get_current_training_set()
     data_temp = tmpdir.listdir()[0]  # tmpdir already has data directory from test_project_labeled_and_tfidf
     data_temp.mkdir('model_pickles')
 
@@ -908,8 +938,14 @@ def test_check_and_trigger_batched_success(setup_celery, test_project_labeled_an
         previous_lc = datum.datauncertainty_set.get().least_confident
     assert DataQueue.objects.filter(queue=test_queue).count() == TEST_QUEUE_LEN
 
+    # Assert new training set
+    assert project.get_current_training_set() != initial_training_set
+    assert project.get_current_training_set().set_number == initial_training_set.set_number + 1
+
 
 def test_check_and_trigger_batched_onlyone_label(setup_celery, test_project_data, test_labels, test_queue, test_profile):
+    initial_training_set = test_project_data.get_current_training_set()
+
     fill_queue(test_queue, orderby='random')
 
     for i in range(TEST_QUEUE_LEN):
@@ -920,7 +956,7 @@ def test_check_and_trigger_batched_onlyone_label(setup_celery, test_project_data
     check = check_and_trigger_model(datum)
     assert check == 'random'
 
-    assert test_project_data.current_training_set == 0
+    assert test_project_data.get_current_training_set() == initial_training_set
     assert test_project_data.model_set.count() == 0
     assert DataPrediction.objects.filter(data__project=test_project_data).count() == 0
     assert DataUncertainty.objects.filter(data__project=test_project_data).count() == 0
