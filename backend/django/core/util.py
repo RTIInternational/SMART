@@ -466,52 +466,46 @@ def create_tfidf_matrix(data, max_df=0.95, min_df=0.05):
     return tf_idf_matrix
 
 
-def save_tfidf_matrix(matrix, project_pk, prefix_dir=None):
-    """Save tf-idf matrix to persistent volume storage as /data/tf_idf/<pk>.npz
+def save_tfidf_matrix(matrix, project_pk):
+    """Save tf-idf matrix to persistent volume storage defined in settings as
+        TF_IDF_PATH
 
     Args:
         matrix: CSR-format tf-idf matrix
         project_pk: The project pk the data comes from
-        prefix_dir: Prefix to add to file path, needed for testing
     Returns:
         file: The filepath to the saved matrix
     """
-    file = '/data/tf_idf/' + str(project_pk) + '.npz'
-    if prefix_dir is not None:
-        file = os.path.join(prefix_dir, file.lstrip(os.path.sep))
+    fpath = os.path.join(settings.TF_IDF_PATH, str(project_pk) + '.npz')
 
-    sparse.save_npz(file, matrix)
+    sparse.save_npz(fpath, matrix)
 
-    return file
+    return fpath
 
 
-def load_tfidf_matrix(project, prefix_dir=None):
+def load_tfidf_matrix(project_pk):
     """Load tf-idf matrix from persistent volume, otherwise None
 
     Args:
-        project: Project object to retrieve tf-idf CSR from
-        prefix_dir: Prefix to add to file path, needed for testing
+        project_pk: The project pk the data comes from
     Returns:
         matrix or None
     """
-    file = '/data/tf_idf/' + str(project.pk) + '.npz'
-    if prefix_dir is not None:
-        file = os.path.join(prefix_dir, file.lstrip(os.path.sep))
+    fpath = os.path.join(settings.TF_IDF_PATH, str(project_pk) + '.npz')
 
-    if os.path.isfile(file):
-        return sparse.load_npz(file)
+    if os.path.isfile(fpath):
+        return sparse.load_npz(fpath)
     else:
-        return None
+        raise ValueError('There was no tfidf matrix found for project: ' + str(project_pk))
 
 
-def check_and_trigger_model(datum, prefix_dir=None):
+def check_and_trigger_model(datum):
     """Given a recently assigned datum check if the project it belong to needs
        its model ran.  It the model needs to be run, start the model run and
        create a new project current_training_set
 
     Args:
         datum: Recently assigne Data object
-        prefix_dir: Prefix to add to file path, needed for testing
     Returns:
         return_str: String to represent which path the function took
     """
@@ -528,7 +522,7 @@ def check_and_trigger_model(datum, prefix_dir=None):
             fill_queue(project.queue_set.get(), 'random')
             return_str = 'random'
         else:
-            tasks.send_model_task.delay(project.pk, prefix_dir)
+            tasks.send_model_task.delay(project.pk)
             new_training_set = TrainingSet.objects.create(project=project,
                                        set_number=current_training_set.set_number+1)
             return_str = 'model ran'
@@ -538,12 +532,11 @@ def check_and_trigger_model(datum, prefix_dir=None):
     return return_str
 
 
-def train_and_save_model(project, prefix_dir=None):
+def train_and_save_model(project):
     """Given a project create a model, train it, and save the model pickle
 
     Args:
         project: The project to start training
-        prefix_dir: Prefix to add to file path, needed for testing
     Returns:
         model: A model object
     """
@@ -557,7 +550,7 @@ def train_and_save_model(project, prefix_dir=None):
     labeled_data = DataLabel.objects.filter(data__project=project)
     labeled_indices_adjusted = [d.data.pk - min_data_pk for d in labeled_data]
 
-    tf_idf = load_tfidf_matrix(project, prefix_dir).A
+    tf_idf = load_tfidf_matrix(project.pk).A
 
     x, y = [], []
     for idx in labeled_indices_adjusted:
@@ -566,14 +559,12 @@ def train_and_save_model(project, prefix_dir=None):
 
     clf.fit(x, y)
 
-    file = '/data/model_pickles/project_' + str(project.pk) + '_training_' \
-         + str(current_training_set.set_number) + '.pkl'
-    if prefix_dir is not None:
-        file = os.path.join(prefix_dir, file.lstrip(os.path.sep))
+    fpath = os.path.join(settings.MODEL_PICKLE_PATH, 'project_' + str(project.pk) + '_training_' \
+         + str(current_training_set.set_number) + '.pkl')
 
-    joblib.dump(clf, file)
+    joblib.dump(clf, fpath)
 
-    model = Model.objects.create(pickle_path=file, project=project,
+    model = Model.objects.create(pickle_path=fpath, project=project,
                                  training_set=current_training_set)
 
     return model
@@ -632,7 +623,7 @@ def entropy(probs):
     return -total
 
 
-def predict_data(project, model, prefix_dir=None):
+def predict_data(project, model):
     """Given a project and its model, predict any unlabeled data and create
         Prediction objects for each.  There will be #label * #unlabeled_data
         predictions.  This is because we are saving the probability of each label
@@ -645,7 +636,7 @@ def predict_data(project, model, prefix_dir=None):
         predictions: List of DataPrediction objects
     """
     clf = joblib.load(model.pickle_path)
-    tf_idf = load_tfidf_matrix(project, prefix_dir).A
+    tf_idf = load_tfidf_matrix(project.pk).A
 
     # Find the "smallest" primary key for the project, use it to adjust all other
     # primary keys to an index range of [0, len(data)) as this is the index range

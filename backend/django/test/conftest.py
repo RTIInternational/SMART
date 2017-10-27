@@ -137,11 +137,11 @@ def test_project_labeled(test_project_data, test_labels):
     return test_project_data
 
 @pytest.fixture
-def test_project_labeled_and_tfidf(test_project_labeled, test_tfidf_matrix, tmpdir):
-    data_temp = tmpdir.mkdir('data')
-    data_temp.mkdir('tf_idf')
+def test_project_labeled_and_tfidf(test_project_labeled, test_tfidf_matrix, tmpdir, settings):
+    data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
+    settings.TF_IDF_PATH = str(data_temp)
 
-    save_tfidf_matrix(test_tfidf_matrix, test_project_labeled.pk, prefix_dir=str(tmpdir))
+    fpath = save_tfidf_matrix(test_tfidf_matrix, test_project_labeled.pk)
 
     return test_project_labeled
 
@@ -154,7 +154,7 @@ def test_project_with_trained_model(test_project_labeled_and_tfidf, tmpdir):
     data_temp = tmpdir.listdir()[0]  # tmpdir already has data directory from test_project_labeled_and_tfidf
     data_temp.mkdir('model_pickles')
 
-    trained_model = train_and_save_model(test_project_labeled_and_tfidf, prefix_dir=str(tmpdir))
+    trained_model = train_and_save_model(test_project_labeled_and_tfidf)
 
     return test_project_labeled_and_tfidf
 
@@ -162,6 +162,6 @@ def test_project_with_trained_model(test_project_labeled_and_tfidf, tmpdir):
 def test_project_predicted_data(test_project_with_trained_model, tmpdir):
     project = test_project_with_trained_model
 
-    predictions = predict_data(project, project.model_set.get(), prefix_dir=str(tmpdir))
+    predictions = predict_data(project, project.model_set.get())
 
     return test_project_with_trained_model

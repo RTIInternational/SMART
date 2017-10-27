@@ -655,16 +655,18 @@ def test_create_tfidf_matrix(test_tfidf_matrix):
     assert test_tfidf_matrix.dtype == np.float64
 
 
-def test_save_tfidf_matrix(test_project_data, test_tfidf_matrix, tmpdir):
-    pre_dir = tmpdir.mkdir('data').mkdir('tf_idf')
-    file = save_tfidf_matrix(test_tfidf_matrix, test_project_data.pk, prefix_dir=str(tmpdir))
+def test_save_tfidf_matrix(test_project_data, test_tfidf_matrix, tmpdir, settings):
+    data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
+    settings.TF_IDF_PATH = str(data_temp)
+
+    file = save_tfidf_matrix(test_tfidf_matrix, test_project_data.pk)
 
     assert os.path.isfile(file)
-    assert file == os.path.join(str(tmpdir), 'data/tf_idf/'+ str(test_project_data.pk) + '.npz')
+    assert file == os.path.join(settings.TF_IDF_PATH, str(test_project_data.pk) + '.npz')
 
 
-def test_load_tfidf_matrix(test_project_labeled_and_tfidf, test_tfidf_matrix, tmpdir):
-    matrix = load_tfidf_matrix(test_project_labeled_and_tfidf, prefix_dir=str(tmpdir))
+def test_load_tfidf_matrix(test_project_labeled_and_tfidf, test_tfidf_matrix, tmpdir, settings):
+    matrix = load_tfidf_matrix(test_project_labeled_and_tfidf.pk)
 
     assert np.allclose(matrix.A, test_tfidf_matrix.A)
 
@@ -768,23 +770,29 @@ def test_entropy_fourclass():
     np.testing.assert_almost_equal(e, 0.4084313719900203)
 
 
-def test_train_and_save_model(test_project_labeled_and_tfidf, tmpdir):
-    data_temp = tmpdir.listdir()[0]  # tmpdir already has data directory from test_project_labeled_and_tfidf
-    data_temp.mkdir('model_pickles')
-    model = train_and_save_model(test_project_labeled_and_tfidf, prefix_dir=str(tmpdir))
+def test_train_and_save_model(test_project_labeled_and_tfidf, tmpdir, settings):
+    project = test_project_labeled_and_tfidf
+
+    model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
+    settings.MODEL_PICKLE_PATH = str(model_path_temp)
+
+    model = train_and_save_model(project)
 
     assert isinstance(model, Model)
     assert_obj_exists(Model, {
         'pickle_path': model.pickle_path,
-        'project': test_project_labeled_and_tfidf
+        'project': project
     })
     assert os.path.isfile(model.pickle_path)
+    assert model.pickle_path == os.path.join(str(model_path_temp), 'project_' + str(project.pk) 
+                                             + '_training_' + str(project.get_current_training_set().set_number)
+                                             + '.pkl')
 
 
 def test_predict_data(test_project_with_trained_model, tmpdir):
     project = test_project_with_trained_model
 
-    predictions = predict_data(project, project.model_set.get(), prefix_dir=str(tmpdir))
+    predictions = predict_data(project, project.model_set.get())
 
     # Number of unlabeled data * number of labels.  Each data gets a prediction for each label.
     expected_predction_count = project.data_set.filter(datalabel__isnull=True).count() * project.labels.count()
@@ -900,14 +908,15 @@ def test_check_and_trigger_lt_batch_labeled(setup_celery, test_project_data, tes
     assert DataQueue.objects.filter(queue=test_queue).count() == TEST_QUEUE_LEN - (TEST_QUEUE_LEN // 2)
 
 
-def test_check_and_trigger_batched_success(setup_celery, test_project_labeled_and_tfidf, test_queue, test_redis, tmpdir):
+def test_check_and_trigger_batched_success(setup_celery, test_project_labeled_and_tfidf,
+                                           test_queue, test_redis, tmpdir, settings):
     project = test_project_labeled_and_tfidf
     initial_training_set = project.get_current_training_set()
-    data_temp = tmpdir.listdir()[0]  # tmpdir already has data directory from test_project_labeled_and_tfidf
-    data_temp.mkdir('model_pickles')
+    model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
+    settings.MODEL_PICKLE_PATH = str(model_path_temp)
 
     datum = DataLabel.objects.filter(data__project=project).first().data
-    check = check_and_trigger_model(datum, str(tmpdir))
+    check = check_and_trigger_model(datum)
     assert check == 'model ran'
 
     # Assert model created and saved
@@ -916,6 +925,9 @@ def test_check_and_trigger_batched_success(setup_celery, test_project_labeled_an
     })
     model = Model.objects.get(project=project)
     assert os.path.isfile(model.pickle_path)
+    assert model.pickle_path == os.path.join(str(model_path_temp), 'project_' + str(project.pk)
+                                             + '_training_' + str(initial_training_set.set_number)
+                                             + '.pkl')
 
     # Assert predictions created
     predictions = DataPrediction.objects.filter(data__project=project)

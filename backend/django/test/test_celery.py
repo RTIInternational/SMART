@@ -12,12 +12,14 @@ def test_celery():
     assert result == 'Test Task Complete'
 
 
-def test_model_task(test_project_labeled_and_tfidf, test_queue, test_redis, tmpdir):
+def test_model_task(test_project_labeled_and_tfidf, test_queue, test_redis, tmpdir, settings):
     project = test_project_labeled_and_tfidf
-    data_temp = tmpdir.listdir()[0]  # tmpdir already has data directory from test_project_labeled_and_tfidf
-    data_temp.mkdir('model_pickles')
+    initial_training_set = project.get_current_training_set()
 
-    tasks.send_model_task.delay(project.pk, str(tmpdir)).get()
+    model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
+    settings.MODEL_PICKLE_PATH = str(model_path_temp)
+
+    tasks.send_model_task.delay(project.pk).get()
 
     # Assert model created and saved
     assert_obj_exists(Model, {
@@ -25,6 +27,9 @@ def test_model_task(test_project_labeled_and_tfidf, test_queue, test_redis, tmpd
     })
     model = Model.objects.get(project=project)
     assert os.path.isfile(model.pickle_path)
+    assert model.pickle_path == os.path.join(str(model_path_temp), 'project_' + str(project.pk)
+                                             + '_training_' + str(initial_training_set.set_number)
+                                             + '.pkl')
 
     # Assert predictions created
     predictions = DataPrediction.objects.filter(data__project=project)
@@ -47,11 +52,14 @@ def test_model_task(test_project_labeled_and_tfidf, test_queue, test_redis, tmpd
         previous_lc = datum.datauncertainty_set.get().least_confident
 
 
-def test_tfidf_creation_task(test_project_data, tmpdir):
-    pre_dir = tmpdir.mkdir('data').mkdir('tf_idf')
+def test_tfidf_creation_task(test_project_data, tmpdir, settings):
+    data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
+    settings.TF_IDF_PATH = str(data_temp)
+
     project = test_project_data
     data_list = [d.text for d in project.data_set.all()]
 
-    file = tasks.send_tfidf_creation_task.delay(data_list, project.pk, str(tmpdir)).get()
+    file = tasks.send_tfidf_creation_task.delay(data_list, project.pk).get()
 
     assert os.path.isfile(file)
+    assert file == os.path.join(str(data_temp), str(test_project_data.pk) + '.npz')
