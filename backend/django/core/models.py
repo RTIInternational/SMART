@@ -61,6 +61,7 @@ class Data(models.Model):
     text = models.TextField()
     hash = models.CharField(max_length=128)
     project = models.ForeignKey('Project')
+    df_idx = models.IntegerField()
 
     def __str__(self):
         return self.text

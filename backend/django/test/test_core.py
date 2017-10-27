@@ -7,6 +7,7 @@ import unittest
 import os
 import numpy as np
 import scipy
+import pandas as pd
 
 from django.contrib.auth import get_user_model
 
@@ -120,7 +121,7 @@ def test_get_current_training_set_multiple_training_set(test_project):
 def test_add_data(db, test_project):
     test_data = read_test_data()
 
-    add_data(test_project, [d['text'] for d in test_data])
+    add_data(test_project, pd.DataFrame([d['text'] for d in test_data], columns=None))
 
     for d in test_data:
         assert_obj_exists(Data, {
@@ -155,7 +156,7 @@ def test_fill_empty_queue(db, test_queue):
 
 def test_fill_nonempty_queue(db, test_queue):
     # Manually add one observation so the queue is now nonempty
-    test_datum = Data.objects.create(text='test data', project=test_queue.project)
+    test_datum = Data.objects.create(text='test data', project=test_queue.project, df_idx=0)
     DataQueue.objects.create(data=test_datum, queue=test_queue)
     assert test_queue.data.count() == 1
 
@@ -180,7 +181,7 @@ def test_fill_multiple_projects(db, test_queue, test_profile):
     test_project2 = create_project('test_project2', test_profile)
     project2_data = read_test_data()
 
-    add_data(test_project2, [d['text'] for d in project2_data])
+    add_data(test_project2, pd.DataFrame([d['text'] for d in project2_data], columns=None))
 
     fill_queue(test_queue, orderby='random')
 
@@ -236,7 +237,7 @@ def test_init_redis_queues_multiple_projects(db, test_project_data, test_redis, 
 
     project2 = create_project('test_project2', test_profile)
     project2_data = read_test_data()
-    add_data(project2, [d['text'] for d in project2_data])
+    add_data(project2, pd.DataFrame([d['text'] for d in project2_data], columns=None))
     p2_queue1 = add_queue(project2, 10)
     fill_queue(p2_queue1, orderby='random')
     p2_queue2 = add_queue(project2, 10)

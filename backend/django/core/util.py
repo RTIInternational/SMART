@@ -7,6 +7,11 @@ from scipy import sparse
 import os
 import math
 import numpy as np
+import hashlib
+import pandas as pd
+# https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
+# Disable warning for false positive warning that should only trigger on chained assignment
+pd.options.mode.chained_assignment = None  # default='warn'
 
 from django.db import transaction, connection
 from django.db.models import Count, Value, IntegerField, F
@@ -45,6 +50,14 @@ def redis_parse_data(datum_key):
     """Parse a datum key from redis and return the Data object"""
     datum_pk = datum_key.decode().split(':')[1]
     return Data.objects.get(pk=datum_pk)
+
+
+def md5_hash(obj):
+    """Return MD5 hash hexdigest of obj; returns None if obj is None"""
+    if obj is not None:
+        return hashlib.md5(obj.encode('utf-8', errors='ignore')).hexdigest()
+    else:
+        return None
 
 
 def create_profile(username, password, email):
@@ -132,12 +145,27 @@ def create_project(name, creator):
     return proj
 
 
-def add_data(project, data):
+def add_data(project, df):
     '''
-    Add data to an existing project.  Data should be an array of strings.
+    Add data to an existing project.  df should be single column dataframe with
+    column 0 (int).
     '''
-    bulk_data = (Data(text=d, project=project) for d in data)
-    Data.objects.bulk_create(bulk_data)
+    # Set the index column
+    df['idx'] = df.index
+
+    # Create hash of text and drop duplicates
+    df['hash'] = df[0].apply(md5_hash)
+    df.drop_duplicates(subset='hash', keep='first', inplace=True)
+
+    # Limit the number of rows to 2mil
+    df = df[:2000000]
+
+    df['objects'] = df.apply(lambda x: Data(text=x[0], project=project,
+                                            hash=x['hash'], df_idx=x['idx']), axis=1)
+
+    data = Data.objects.bulk_create(df['objects'].tolist())
+
+    return data
 
 
 def add_queue(project, length, profile=None):
@@ -453,15 +481,17 @@ def unassign_datum(datum, profile):
 
 
 def create_tfidf_matrix(data, max_df=0.95, min_df=0.05):
-    """Create a TF-IDF matrix
+    """Create a TF-IDF matrix. Make sure to order the data by df_idx so that we
+        can sync the data up again when training the model
 
     Args:
-        data: List of text from data
+        data: List of data objs
     Returns:
         tf_idf_matrix: CSR-format tf-idf matrix
     """
+    data_list = [d.text for d in data.order_by('df_idx')]
     vectorizer = TfidfVectorizer(max_df=max_df, min_df=min_df, stop_words='english')
-    tf_idf_matrix = vectorizer.fit_transform(data)
+    tf_idf_matrix = vectorizer.fit_transform(data_list)
 
     return tf_idf_matrix
 
@@ -541,23 +571,19 @@ def train_and_save_model(project):
         model: A model object
     """
     clf = LogisticRegression(class_weight='balanced', solver='lbfgs', multi_class='multinomial')
+    tf_idf = load_tfidf_matrix(project.pk).A
     current_training_set = project.get_current_training_set()
 
-    # Find the "smallest" primary key for the project, use it to adjust all other
-    # primary keys to an index range of [0, len(data)) as this is the index range
-    # of the tf-idf matrix
-    min_data_pk = project.data_set.all().order_by('pk')[0].pk
+    # In order to train need X (tf-idf vector) and Y (label) for every labeled datum
+    # Order both X and Y by df_idx to ensure the tf-idf vector corresponds to the correct
+    # label
     labeled_data = DataLabel.objects.filter(data__project=project)
-    labeled_indices_adjusted = [d.data.pk - min_data_pk for d in labeled_data]
+    labeled_values = list(labeled_data.values_list('label', flat=True).order_by('data__df_idx'))
+    labeled_indices = list(labeled_data.values_list('data__df_idx', flat=True).order_by('data__df_idx'))
 
-    tf_idf = load_tfidf_matrix(project.pk).A
-
-    x, y = [], []
-    for idx in labeled_indices_adjusted:
-        x.append(tf_idf[idx,:])
-        y.append(labeled_data.get(data__pk=idx+min_data_pk).label.pk)
-
-    clf.fit(x, y)
+    X = tf_idf[labeled_indices]
+    Y = labeled_values
+    clf.fit(X, Y)
 
     fpath = os.path.join(settings.MODEL_PICKLE_PATH, 'project_' + str(project.pk) + '_training_' \
          + str(current_training_set.set_number) + '.pkl')
@@ -638,18 +664,14 @@ def predict_data(project, model):
     clf = joblib.load(model.pickle_path)
     tf_idf = load_tfidf_matrix(project.pk).A
 
-    # Find the "smallest" primary key for the project, use it to adjust all other
-    # primary keys to an index range of [0, len(data)) as this is the index range
-    # of the tf-idf matrix
-    min_data_pk = project.data_set.all().order_by('pk')[0].pk
-    unlabeled_data = project.data_set.filter(datalabel__isnull=True)
-    unlabeled_indices_adjusted = [d.pk - min_data_pk for d in unlabeled_data]
+    # In order to predict need X (tf-idf vector) for every unlabeled datum. Order
+    # X by df_idx to ensure the tf-idf vector corresponds to the correct datum
+    unlabeled_data = project.data_set.filter(datalabel__isnull=True).order_by('df_idx')
+    unlabeled_indices = unlabeled_data.values_list('df_idx', flat=True).order_by('df_idx')
 
-    x = []
-    for idx in unlabeled_indices_adjusted:
-        x.append(tf_idf[idx,:])
+    X = tf_idf[unlabeled_indices]
+    predictions = clf.predict_proba(X)
 
-    predictions = clf.predict_proba(x)
     label_obj = [Label.objects.get(pk=label) for label in clf.classes_]
 
     bulk_predictions = []

@@ -57,9 +57,9 @@ def test_tfidf_creation_task(test_project_data, tmpdir, settings):
     settings.TF_IDF_PATH = str(data_temp)
 
     project = test_project_data
-    data_list = [d.text for d in project.data_set.all()]
+    data = Data.objects.filter(project=project)
 
-    file = tasks.send_tfidf_creation_task.delay(data_list, project.pk).get()
+    file = tasks.send_tfidf_creation_task.delay(data, project.pk).get()
 
     assert os.path.isfile(file)
     assert file == os.path.join(str(data_temp), str(test_project_data.pk) + '.npz')
