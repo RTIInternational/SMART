@@ -93,6 +93,7 @@ def test_get_labels(seeded_database, admin_client):
 
 def test_get_data(seeded_database, admin_client):
     expected = read_test_data()
+    expected = [{'text': x['text']} for x in expected]
 
     assert SmartPagination.max_page_size >= len(expected), \
             "SmartPagination's max_page_size setting must be larger than the " \

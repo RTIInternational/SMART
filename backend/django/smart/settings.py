@@ -157,10 +157,10 @@ class Dev(Configuration):
     # SMART app config
 
     # Base directory in which to store model pickles
-    MODEL_PICKLE_PATH = os.path.join(BASE_DIR, 'models')
-
-    if not os.path.isdir(MODEL_PICKLE_PATH):
-        os.mkdir(MODEL_PICKLE_PATH)
+    DATA_DIR = '/data'
+    TF_IDF_PATH = os.path.join(DATA_DIR, 'tf_idf')
+    MODEL_PICKLE_PATH = os.path.join(DATA_DIR, 'model_pickles')
+    PROJECT_FILE_PATH = os.path.join(DATA_DIR, 'data_files')
 
     AUTH_USER_MODEL = 'auth.User'
 

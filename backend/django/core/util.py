@@ -1,14 +1,28 @@
 import random
 import redis
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.externals import joblib
+from scipy import sparse
 import os
+import math
+import numpy as np
+import hashlib
+import pandas as pd
+# https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
+# Disable warning for false positive warning that should only trigger on chained assignment
+pd.options.mode.chained_assignment = None  # default='warn'
 
 from django.db import transaction, connection
 from django.db.models import Count, Value, IntegerField, F
 from django.db.utils import ProgrammingError
 from django.contrib.auth import get_user_model
 from django.conf import settings
-from core.models import (Project, Data, Queue, DataQueue, Profile,
-                         AssignedData, DataLabel)
+
+from core.models import (Project, Data, Queue, DataQueue, Profile, Label,
+                         AssignedData, DataLabel, Model, DataPrediction,
+                         DataUncertainty, TrainingSet)
+from core import tasks
 
 
 # TODO: Divide these functions into a public/private API when we determine
@@ -36,6 +50,14 @@ def redis_parse_data(datum_key):
     """Parse a datum key from redis and return the Data object"""
     datum_pk = datum_key.decode().split(':')[1]
     return Data.objects.get(pk=datum_pk)
+
+
+def md5_hash(obj):
+    """Return MD5 hash hexdigest of obj; returns None if obj is None"""
+    if obj is not None:
+        return hashlib.md5(obj.encode('utf-8', errors='ignore')).hexdigest()
+    else:
+        return None
 
 
 def create_profile(username, password, email):
@@ -104,7 +126,7 @@ def init_redis_queues():
         pipeline.delete(*existing_keys)
 
     for queue in Queue.objects.all():
-        data_ids = [redis_serialize_data(d) for d in queue.data.all()
+        data_ids = [redis_serialize_data(d) for d in get_ordered_queue_data(queue, 'least confident')
                     if d.pk not in assigned_data_ids]
         if len(data_ids) > 0:
             # We'll get an error if we try to lpush without any data
@@ -117,15 +139,33 @@ def create_project(name, creator):
     '''
     Create a project with the given name and creator.
     '''
-    return Project.objects.create(name=name, creator=creator)
+    proj = Project.objects.create(name=name, creator=creator)
+    training_set = TrainingSet.objects.create(project=proj, set_number=0)
+
+    return proj
 
 
-def add_data(project, data):
+def add_data(project, df):
     '''
-    Add data to an existing project.  Data should be an array of strings.
+    Add data to an existing project.  df should be single column dataframe with
+    column 0 (int).
     '''
-    bulk_data = (Data(text=d, project=project) for d in data)
-    Data.objects.bulk_create(bulk_data)
+    # Set the index column
+    df['idx'] = df.index
+
+    # Create hash of text and drop duplicates
+    df['hash'] = df[0].apply(md5_hash)
+    df.drop_duplicates(subset='hash', keep='first', inplace=True)
+
+    # Limit the number of rows to 2mil
+    df = df[:2000000]
+
+    df['objects'] = df.apply(lambda x: Data(text=x[0], project=project,
+                                            hash=x['hash'], df_idx=x['idx']), axis=1)
+
+    data = Data.objects.bulk_create(df['objects'].tolist())
+
+    return data
 
 
 def add_queue(project, length, profile=None):
@@ -138,7 +178,36 @@ def add_queue(project, length, profile=None):
     return Queue.objects.create(length=length, project=project, profile=profile)
 
 
-def fill_queue(queue):
+def get_ordered_queue_data(queue, orderby):
+    """Return a queryset of data that belongs to the given queue ordered by
+        the orderby option.
+
+        least confident returns in descending order
+        margin sampling returns in ascending order
+        entropy returns in descending order
+        random returns in random order (different each time function called)
+
+    Args:
+        queue: The queue to order
+        orderby: String of order by options. ["random", "least confident",
+            "margin sampling", "entropy"]
+    Returns:
+        Query set of ordered data objects
+    """
+    ORDERBY_VALUE = {
+        'random': '?',
+        'least confident': '-datauncertainty__least_confident',
+        'margin sampling': 'datauncertainty__margin_sampling',
+        'entropy': '-datauncertainty__entropy',
+    }
+    if orderby not in ORDERBY_VALUE.keys():
+        raise ValueError('orderby parameter must be one of the following: ' +
+                         ' '.join(ORDERBY_VALUE))
+
+    return queue.data.all().order_by(ORDERBY_VALUE[orderby])
+
+
+def fill_queue(queue, orderby):
     '''
     Fill a queue with unlabeled, unassigned data randomly selected from
     the queue's project. The queue doesn't need to be empty.
@@ -146,9 +215,19 @@ def fill_queue(queue):
     If there isn't enough data left to fill the queue, use all the
     data available.
 
-    TODO: Extend to use a model to fill the queue, when one has been trained
-    for the queue's project.
+    Takes an orderby arguement to fill the qeuue based on uncertainty sampling if
+    the project has a trained model
     '''
+    ORDERBY_VALUE = {
+        'random': 'random()',
+        'least confident': 'uncertainty.least_confident DESC',
+        'margin sampling': 'uncertainty.margin_sampling ASC',
+        'entropy': 'uncertainty.entropy DESC',
+    }
+    if orderby not in ORDERBY_VALUE.keys():
+        raise ValueError('orderby parameter must be one of the following: ' +
+                         ' '.join(ORDERBY_VALUE))
+
     data_filters = {
         'project': queue.project,
         'labelers': None,
@@ -159,23 +238,48 @@ def fill_queue(queue):
 
     cte_sql, cte_params = eligible_data.query.sql_with_params()
     sample_size_sql, sample_size_params = (Queue.objects.filter(pk=queue.pk)
-                                            .annotate(
-                                                sample_size=F('length') - Count('data'))
+                                            .annotate(sample_size=F('length') - Count('data'))
                                             .values('sample_size')
                                             .query.sql_with_params())
+
+    if orderby == 'random':
+        join_clause = ''
+    else:
+        join_clause = """
+        LEFT JOIN
+            {datauncertainty_table} AS uncertainty
+          ON
+            eligible_data.{data_pk_col} = uncertainty.{datauncertainty_data_id_col}
+        WHERE
+            uncertainty.{datauncertainty_model_id_col} = (
+                SELECT max(c_model.{model_pk_col})
+                FROM {model_table} AS c_model
+                WHERE c_model.{model_project_id_col} = {project_id}
+            )
+        """.format(
+            datauncertainty_table=DataUncertainty._meta.db_table,
+            data_pk_col=Data._meta.pk.name,
+            datauncertainty_data_id_col=DataUncertainty._meta.get_field('data').column,
+            datauncertainty_model_id_col=DataUncertainty._meta.get_field('model').column,
+            model_pk_col=Model._meta.pk.name,
+            model_table=Model._meta.db_table,
+            model_project_id_col=Model._meta.get_field('project').column,
+            project_id=queue.project.pk)
 
     sql = """
     WITH eligible_data AS (
         {cte_sql}
     )
     INSERT INTO {dataqueue_table}
-      ({dataqueue_data_id_col}, {dataqueue_queue_id_col})
+       ({dataqueue_data_id_col}, {dataqueue_queue_id_col})
     SELECT
         eligible_data.{data_pk_col},
         {queue_id}
     FROM
         eligible_data
-    ORDER BY random()
+    {join_clause}
+    ORDER BY
+        {orderby_value}
     LIMIT ({sample_size_sql});
     """.format(
         cte_sql=cte_sql,
@@ -184,13 +288,15 @@ def fill_queue(queue):
         dataqueue_queue_id_col=DataQueue._meta.get_field('queue').column,
         data_pk_col=Data._meta.pk.name,
         queue_id=queue.pk,
+        join_clause=join_clause,
+        orderby_value=ORDERBY_VALUE[orderby],
         sample_size_sql=sample_size_sql)
 
     with connection.cursor() as c:
         c.execute(sql, (*cte_params, *sample_size_params))
 
-    data_ids = [redis_serialize_data(d) for d in queue.data.all()]
-    settings.REDIS.lpush(redis_serialize_queue(queue), *data_ids)
+    data_ids = [redis_serialize_data(d) for d in get_ordered_queue_data(queue, orderby)]
+    settings.REDIS.rpush(redis_serialize_queue(queue), *data_ids)
 
 
 def pop_first_nonempty_queue(project, profile=None):
@@ -320,10 +426,14 @@ def label_data(label, datum, profile):
     '''
     Record that a given datum has been labeled; remove its assignment, if any.
     '''
+    current_training_set = datum.project.get_current_training_set()
+
     with transaction.atomic():
         DataLabel.objects.create(data=datum,
                                 label=label,
-                                profile=profile)
+                                profile=profile,
+                                training_set=current_training_set
+                                )
         # There's a unique constraint on data/profile, so this is
         # guaranteed to return one object
         assignment = AssignedData.objects.filter(data=datum,
@@ -389,3 +499,222 @@ def save_data_file(df, project_pk, prefix_dir=None):
     df.to_csv(file, header=False, index=False)
 
     return file
+
+
+def create_tfidf_matrix(data, max_df=0.95, min_df=0.05):
+    """Create a TF-IDF matrix. Make sure to order the data by df_idx so that we
+        can sync the data up again when training the model
+
+    Args:
+        data: List of data objs
+    Returns:
+        tf_idf_matrix: CSR-format tf-idf matrix
+    """
+    data_list = [d.text for d in data.order_by('df_idx')]
+    vectorizer = TfidfVectorizer(max_df=max_df, min_df=min_df, stop_words='english')
+    tf_idf_matrix = vectorizer.fit_transform(data_list)
+
+    return tf_idf_matrix
+
+
+def save_tfidf_matrix(matrix, project_pk):
+    """Save tf-idf matrix to persistent volume storage defined in settings as
+        TF_IDF_PATH
+
+    Args:
+        matrix: CSR-format tf-idf matrix
+        project_pk: The project pk the data comes from
+    Returns:
+        file: The filepath to the saved matrix
+    """
+    fpath = os.path.join(settings.TF_IDF_PATH, str(project_pk) + '.npz')
+
+    sparse.save_npz(fpath, matrix)
+
+    return fpath
+
+
+def load_tfidf_matrix(project_pk):
+    """Load tf-idf matrix from persistent volume, otherwise None
+
+    Args:
+        project_pk: The project pk the data comes from
+    Returns:
+        matrix or None
+    """
+    fpath = os.path.join(settings.TF_IDF_PATH, str(project_pk) + '.npz')
+
+    if os.path.isfile(fpath):
+        return sparse.load_npz(fpath)
+    else:
+        raise ValueError('There was no tfidf matrix found for project: ' + str(project_pk))
+
+
+def check_and_trigger_model(datum):
+    """Given a recently assigned datum check if the project it belong to needs
+       its model ran.  It the model needs to be run, start the model run and
+       create a new project current_training_set
+
+    Args:
+        datum: Recently assigne Data object
+    Returns:
+        return_str: String to represent which path the function took
+    """
+    project = datum.project
+    current_training_set = project.get_current_training_set()
+    batch_size = project.labels.count() * 10
+    labeled_data = DataLabel.objects.filter(data__project=project,
+                                            training_set=current_training_set)
+    labeled_data_count = labeled_data.count()
+    labels_count = labeled_data.distinct('label').count()
+
+    if labeled_data_count >= batch_size:
+        if labels_count < project.labels.count():
+            fill_queue(project.queue_set.get(), 'random')
+            return_str = 'random'
+        else:
+            tasks.send_model_task.delay(project.pk)
+            new_training_set = TrainingSet.objects.create(project=project,
+                                       set_number=current_training_set.set_number+1)
+            return_str = 'model ran'
+    else:
+        return_str = 'no trigger'
+
+    return return_str
+
+
+def train_and_save_model(project):
+    """Given a project create a model, train it, and save the model pickle
+
+    Args:
+        project: The project to start training
+    Returns:
+        model: A model object
+    """
+    clf = LogisticRegression(class_weight='balanced', solver='lbfgs', multi_class='multinomial')
+    tf_idf = load_tfidf_matrix(project.pk).A
+    current_training_set = project.get_current_training_set()
+
+    # In order to train need X (tf-idf vector) and Y (label) for every labeled datum
+    # Order both X and Y by df_idx to ensure the tf-idf vector corresponds to the correct
+    # label
+    labeled_data = DataLabel.objects.filter(data__project=project)
+    labeled_values = list(labeled_data.values_list('label', flat=True).order_by('data__df_idx'))
+    labeled_indices = list(labeled_data.values_list('data__df_idx', flat=True).order_by('data__df_idx'))
+
+    X = tf_idf[labeled_indices]
+    Y = labeled_values
+    clf.fit(X, Y)
+
+    fpath = os.path.join(settings.MODEL_PICKLE_PATH, 'project_' + str(project.pk) + '_training_' \
+         + str(current_training_set.set_number) + '.pkl')
+
+    joblib.dump(clf, fpath)
+
+    model = Model.objects.create(pickle_path=fpath, project=project,
+                                 training_set=current_training_set)
+
+    return model
+
+
+def least_confident(probs):
+    """Least Confident
+        x = 1 - p
+        p is probability of highest probability class
+
+    Args:
+        probs: List of predicted probabilites
+    Returns:
+        x
+    """
+    if not isinstance(probs, np.ndarray):
+        raise ValueError('Probs should be a numpy array')
+
+    max_prob = max(probs)
+    return 1 - max_prob
+
+
+def margin_sampling(probs):
+    """Margin Sampling
+        x = p1 - p2
+        p1 is probabiiity of highest probability class
+        p2 is probability of lowest probability class
+    Args:
+        probs: List of predicted probabilities
+    Returns:
+        x
+    """
+    if not isinstance(probs, np.ndarray):
+        raise ValueError('Probs should be a numpy array')
+
+    probs[::-1].sort()  # https://stackoverflow.com/questions/26984414/efficiently-sorting-a-numpy-array-in-descending-order#answer-26984520
+    return probs[0] - probs[1]
+
+
+def entropy(probs):
+    """Entropy - Uncertainty Sampling
+        x = -sum(p * log(p))
+        the sum is sumation across p's
+    Args:
+        probs: List of predicted probabilities
+    Returns:
+        x
+    """
+    if not isinstance(probs, np.ndarray):
+        raise ValueError('Probs should be a numpy array')
+
+    total = 0
+    for p in probs:
+        total += p * math.log10(p)
+
+    return -total
+
+
+def predict_data(project, model):
+    """Given a project and its model, predict any unlabeled data and create
+        Prediction objects for each.  There will be #label * #unlabeled_data
+        predictions.  This is because we are saving the probability of each label
+        for every data.
+
+    Args:
+        project: Project object
+        model: Model object
+    Returns:
+        predictions: List of DataPrediction objects
+    """
+    clf = joblib.load(model.pickle_path)
+    tf_idf = load_tfidf_matrix(project.pk).A
+
+    # In order to predict need X (tf-idf vector) for every unlabeled datum. Order
+    # X by df_idx to ensure the tf-idf vector corresponds to the correct datum
+    unlabeled_data = project.data_set.filter(datalabel__isnull=True).order_by('df_idx')
+    unlabeled_indices = unlabeled_data.values_list('df_idx', flat=True).order_by('df_idx')
+
+    X = tf_idf[unlabeled_indices]
+    predictions = clf.predict_proba(X)
+
+    label_obj = [Label.objects.get(pk=label) for label in clf.classes_]
+
+    bulk_predictions = []
+    for datum, prediction in zip(unlabeled_data, predictions):
+        # each prediction is an array of probabilities.  Each index in that array
+        # corresponds to the label of the same index in clf.classes_
+        for p, label in zip(prediction, label_obj):
+            bulk_predictions.append(DataPrediction(data=datum, model=model,
+                                       label=label,
+                                       predicted_probability=p))
+
+        # Need to crate uncertainty object so fill_queue can sort by one of the metrics
+        lc = least_confident(prediction)
+        ms = margin_sampling(prediction)
+        e = entropy(prediction)
+
+        DataUncertainty.objects.create(data=datum,
+                                       model=model,
+                                       least_confident=lc,
+                                       margin_sampling=ms,
+                                       entropy=e)
+
+    prediction_objs = DataPrediction.objects.bulk_create(bulk_predictions)
+
+    return prediction_objs
