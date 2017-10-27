@@ -151,8 +151,8 @@ def test_project_with_trained_model(test_project_labeled_and_tfidf, tmpdir):
     A project which has labeled data, a tfidf matrix saved, and
     a model with pickle file
     '''
-    data_temp = tmpdir.listdir()[0]  # tmpdir already has data directory from test_project_labeled_and_tfidf
-    data_temp.mkdir('model_pickles')
+    temp_pickle_path = tmpdir.listdir()[0].mkdir('model_pickles')
+    settings.MODEL_PICKLE_PATH = str(temp_pickle_path)
 
     trained_model = train_and_save_model(test_project_labeled_and_tfidf)
 
