@@ -514,11 +514,11 @@ def check_and_trigger_model(datum):
     batch_size = project.labels.count() * 10
     labeled_data = DataLabel.objects.filter(data__project=project,
                                             training_set=current_training_set)
+    labeled_data_count = labeled_data.count()
+    labels_count = labeled_data.distinct('label').count()
 
-    labels_in_labeled_data = set([dl.label for dl in labeled_data])
-
-    if len(labeled_data) >= batch_size:
-        if len(labels_in_labeled_data) < project.labels.count():
+    if labeled_data_count >= batch_size:
+        if labels_count < project.labels.count():
             fill_queue(project.queue_set.get(), 'random')
             return_str = 'random'
         else:
