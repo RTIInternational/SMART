@@ -651,17 +651,19 @@ def test_unassign(db, test_profile, test_project_data, test_queue, test_redis):
     assert reassigned_datum == datum
 
 
-def test_save_data_file(test_project, tmpdir):
+def test_save_data_file(test_project, tmpdir, settings):
     test_file = './core/data/test_files/test.csv'
-    pre_dir = tmpdir.mkdir('data').mkdir('data_files')
+
+    temp_data_file_path = tmpdir.mkdir('data').mkdir('data_files')
+    settings.PROJECT_FILE_PATH = str(temp_data_file_path)
 
     data = pd.read_csv(test_file, header=None)
 
-    fname = save_data_file(data, test_project.pk, prefix_dir=str(tmpdir))
+    fname = save_data_file(data, test_project.pk)
 
     saved_data = pd.read_csv(fname, header=None)
 
-    assert fname == os.path.join(str(tmpdir), 'data/data_files/project_' + str(test_project.pk) + '_data.csv')
+    assert fname == os.path.join(str(temp_data_file_path), 'project_' + str(test_project.pk) + '_data.csv')
     assert os.path.isfile(fname)
     assert saved_data.equals(data)
 
