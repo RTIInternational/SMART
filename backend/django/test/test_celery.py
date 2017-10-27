@@ -3,6 +3,7 @@ import os
 from core import tasks
 from core.models import Model, DataPrediction, Data, DataUncertainty
 from core.util import get_ordered_queue_data
+from core.serializers import DataSerializer
 
 from test.util import assert_obj_exists, assert_redis_matches_db
 
@@ -63,7 +64,7 @@ def test_tfidf_creation_task(test_project_data, tmpdir, settings):
     project = test_project_data
     data = Data.objects.filter(project=project)
 
-    file = tasks.send_tfidf_creation_task.delay(data, project.pk).get()
+    file = tasks.send_tfidf_creation_task.delay(DataSerializer(data, many=True).data, project.pk).get()
 
     assert os.path.isfile(file)
     assert file == os.path.join(str(data_temp), str(test_project_data.pk) + '.npz')
