@@ -51,6 +51,10 @@ def test_model_task(test_project_labeled_and_tfidf, test_queue, test_redis, tmpd
         assert datum.datauncertainty_set.get().least_confident <= previous_lc
         previous_lc = datum.datauncertainty_set.get().least_confident
 
+    # Assert new training set
+    assert project.get_current_training_set() != initial_training_set
+    assert project.get_current_training_set().set_number == initial_training_set.set_number + 1
+
 
 def test_tfidf_creation_task(test_project_data, tmpdir, settings):
     data_temp = tmpdir.mkdir('data').mkdir('tf_idf')

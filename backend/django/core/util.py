@@ -553,8 +553,6 @@ def check_and_trigger_model(datum):
             return_str = 'random'
         else:
             tasks.send_model_task.delay(project.pk)
-            new_training_set = TrainingSet.objects.create(project=project,
-                                       set_number=current_training_set.set_number+1)
             return_str = 'model ran'
     else:
         return_str = 'no trigger'
