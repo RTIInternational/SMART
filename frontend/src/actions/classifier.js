@@ -1,5 +1,6 @@
 import { createAction } from 'redux-actions';
 import 'whatwg-fetch';
+import moment from 'moment';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
 
@@ -46,11 +47,12 @@ export const fetchCards = (projectID) => {
     }
 };
 
-export const annotateCard = (dataID, labelID) => {
+export const annotateCard = (card, labelID) => {
     let payload = {
-        labelID: labelID
+        labelID: labelID,
+        label_time: moment().diff(card['start_time'], 'seconds')
     }
-    let apiURL = `/api/annotate_data/${dataID}/`;
+    let apiURL = `/api/annotate_data/${card.text.pk}/`;
     return dispatch => {
         return fetch(apiURL, postConfig(payload))
             .then(response => {
