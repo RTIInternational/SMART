@@ -120,6 +120,8 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
                     # Create and save tf-idf
                     tasks.send_tfidf_creation_task.delay(DataSerializer(data, many=True).data, self.object.pk)
 
+                    util.save_data_file(f_data, self.object.pk)
+
                 return redirect(self.get_success_url())
             else:
                 return self.render_to_response(context)

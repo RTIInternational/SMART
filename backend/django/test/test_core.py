@@ -5,6 +5,7 @@ queues, etc.
 import pytest
 import unittest
 import os
+import filecmp
 import numpy as np
 import scipy
 import pandas as pd
@@ -20,7 +21,7 @@ from core.util import (redis_serialize_queue, redis_serialize_data,
                        add_queue, fill_queue, pop_queue,
                        init_redis_queues, get_nonempty_queue,
                        create_profile, label_data, pop_first_nonempty_queue,
-                       get_assignments, unassign_datum,
+                       get_assignments, unassign_datum,  save_data_file,
                        save_tfidf_matrix, load_tfidf_matrix,
                        train_and_save_model, predict_data,
                        least_confident, margin_sampling, entropy,
@@ -648,6 +649,40 @@ def test_unassign(db, test_profile, test_project_data, test_queue, test_redis):
     reassigned_datum = get_assignments(test_profile, test_project_data, 1)[0]
 
     assert reassigned_datum == datum
+
+
+def test_save_data_file_csv(test_project, tmpdir, settings):
+    test_file = './core/data/test_files/test.csv'
+
+    temp_data_file_path = tmpdir.mkdir('data').mkdir('data_files')
+    settings.PROJECT_FILE_PATH = str(temp_data_file_path)
+
+    data = pd.read_csv(test_file, header=None)
+
+    fname = save_data_file(data, test_project.pk)
+
+    saved_data = pd.read_csv(fname, header=None)
+
+    assert fname == os.path.join(str(temp_data_file_path), 'project_' + str(test_project.pk) + '_data.csv')
+    assert os.path.isfile(fname)
+    assert saved_data.equals(data)
+
+
+def test_save_data_file_tsv(test_project, tmpdir, settings):
+    test_file = './core/data/test_files/test.tsv'
+
+    temp_data_file_path = tmpdir.mkdir('data').mkdir('data_files')
+    settings.PROJECT_FILE_PATH = str(temp_data_file_path)
+
+    data = pd.read_csv(test_file, header=None, sep='\t')
+
+    fname = save_data_file(data, test_project.pk)
+
+    saved_data = pd.read_csv(fname, header=None)
+
+    assert fname == os.path.join(str(temp_data_file_path), 'project_' + str(test_project.pk) + '_data.csv')
+    assert os.path.isfile(fname)
+    assert saved_data.equals(data)
 
 
 def test_create_tfidf_matrix(test_tfidf_matrix):
