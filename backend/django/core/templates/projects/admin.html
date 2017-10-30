@@ -5,73 +5,103 @@
 {% block heading %}Admin - {{object}}{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-12">
-        <p>
-            This is the admin page. Admin stuff goes here
-        </p>
-    </div>
-</div>
-<div class="row">
-    <div class="col-md-12">
-        <p>
-            Click the button below to download your data with their labels
-        </p>
-        <a class="btn btn-primary" id="download_btn">Download Data</a>
-    </div>
-</div>
-<div class="row">
-    <div class="col-md-12">
-        <p>
-            This is where label distribution per coder goes
-        </p>
-        <canvas id="label-distribution-chart" width="400" height="200"></canvas>
-    </div>
-</div>
-<div class="row">
-    <div class="col-md-12">
-        <p>
-            This is where the view labeled data table goes
-        </p>
-        <table id="labeled_data_table" class="table table-hover" cellspacing="0" width="100%">
-            <thead>
-                <tr>
-                    <th>Text</th>
-                    <th>Label</th>
-                    <th>Coder</th>
-                </tr>
-            </thead>
-            <tfoot>
-                <tr>
-                    <th>Text</th>
-                    <th>Label</th>
-                    <th>Coder</th>
-                </tr>
-            </tfoot>
-        </table>
-    </div>
-</div>
-<div class="row">
-    <div class="col-md-12">
-        <p>
-            This is where the view predicted data table goes
-        </p>
-        <table id="predicted_data_table" class="table table-hover" cellspacing="0" width="100%">
-            <thead>
-                <tr>
-                    <th>Text</th>
-                    <th>Label</th>
-                    <th>Probability</th>
-                </tr>
-            </thead>
-            <tfoot>
-                <tr>
-                    <th>Text</th>
-                    <th>Label</th>
-                    <th>Probability</th>
-                </tr>
-            </tfoot>
-        </table>
+<div class="card full">
+    <div class="cardface">
+        <h1>{{ project.name }}</h1>
+        <div class="card-header">
+            <ul class="nav nav-tabs card-header-tabs">
+                <li class="nav-item">
+                    <a data-toggle="tab" href="#summary" class="nav-link active">Summary</a>
+                </li>
+                <li class="nav-item">
+                    <a data-toggle="tab" href="#distribution" class="nav-link">Label Distribution</a>
+                </li>
+                <li class="nav-item">
+                    <a data-toggle="tab" href="#labels" class="nav-link">Data Labels</a>
+                </li>
+                <li class="nav-item">
+                    <a data-toggle="tab" href="#predictions" class="nav-link">Data Predictions</a>
+                </li>
+            </ul>
+        </div>
+        <div class="tab-content">
+            <div id="summary" class="tab-pane fade in active">
+                <div class="cardface">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <p>
+                                This is the admin page. Admin stuff goes here
+                            </p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <p>
+                                Click the button below to download your data with their labels
+                            </p>
+                            <a class="btn btn-primary" id="download_btn">Download Data</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="distribution" class="tab-pane fade in">
+                <div class="cardface">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <canvas id="label-distribution-chart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="labels" class="tab-pane fade in">
+                <div class="cardface">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <table id="labeled_data_table" class="table table-hover" cellspacing="0" width="100%">
+                                <thead>
+                                    <tr>
+                                        <th>Text</th>
+                                        <th>Label</th>
+                                        <th>Coder</th>
+                                    </tr>
+                                </thead>
+                                <tfoot>
+                                    <tr>
+                                        <th>Text</th>
+                                        <th>Label</th>
+                                        <th>Coder</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="predictions" class="tab-pane fade in">
+                <div class="cardface">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <table id="predicted_data_table" class="table table-hover" cellspacing="0" width="100%">
+                                <thead>
+                                    <tr>
+                                        <th>Text</th>
+                                        <th>Label</th>
+                                        <th>Probability</th>
+                                    </tr>
+                                </thead>
+                                <tfoot>
+                                    <tr>
+                                        <th>Text</th>
+                                        <th>Label</th>
+                                        <th>Probability</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -86,13 +116,13 @@ $("#download_btn").on("click", function() {
             a = document.createElement('a');
             a.href = window.URL.createObjectURL(xhttp.response);
             today = new Date();
-            a.download = "project_" + {{ project_pk }} + '_labels_' + today.toDateString().split(" ").join("_") + ".csv";
+            a.download = "project_" + {{ project.pk }} + '_labels_' + today.toDateString().split(" ").join("_") + ".csv";
             a.style.display = 'none';
             document.body.appendChild(a);
             return a.click();
         }
     };
-    xhttp.open("GET", "/api/download_data/" + {{ project_pk }} + "/", true);
+    xhttp.open("GET", "/api/download_data/" + {{ project.pk }} + "/", true);
     xhttp.setRequestHeader("Content-Type", "application/json");
     xhttp.responseType = 'blob';
     xhttp.send();
@@ -100,7 +130,7 @@ $("#download_btn").on("click", function() {
 
 $.ajax({
     method: "GET",
-    url: '/api/label_distribution/' + {{ project_pk }} + '/',
+    url: '/api/label_distribution/' + {{ project.pk }} + '/',
     success: function (chart_data) {
         var generated_patterns = pattern.generate(['#b3e2cd','#fdcdac','#cbd5e8','#f4cae4','#e6f5c9']);
 
@@ -120,7 +150,7 @@ $.ajax({
 
 $(document).ready(function() {
     $('#labeled_data_table').DataTable({
-        "ajax": '/api/data_coded_table/' + {{ project_pk }} + '/',
+        "ajax": '/api/data_coded_table/' + {{ project.pk }} + '/',
         "columns": [
             { "data": "Text" },
             { "data": "Label" },
@@ -131,7 +161,7 @@ $(document).ready(function() {
 
 $(document).ready(function() {
     $('#predicted_data_table').DataTable({
-        "ajax": '/api/data_predicted_table/' + {{ project_pk }} + '/',
+        "ajax": '/api/data_predicted_table/' + {{ project.pk }} + '/',
         "columns": [
             { "data": "Text" },
             { "data": "Label" },

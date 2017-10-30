@@ -38,7 +38,7 @@ class ProjectAdmin(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super(ProjectAdmin, self).get_context_data(**kwargs)
 
-        ctx['project_pk'] = self.kwargs['pk']
+        ctx['project'] = Project.objects.get(pk=self.kwargs['pk'])
 
         return ctx
 
