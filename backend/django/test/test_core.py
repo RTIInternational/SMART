@@ -936,7 +936,7 @@ def test_check_and_trigger_batched_success(setup_celery, test_project_labeled_an
 
     datum = DataLabel.objects.filter(data__project=project).first().data
     check = check_and_trigger_model(datum)
-    assert check == 'model ran'
+    assert check == 'model running'
 
     # Assert model created and saved
     assert_obj_exists(Model, {

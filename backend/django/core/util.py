@@ -12,6 +12,7 @@ import pandas as pd
 # https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
 # Disable warning for false positive warning that should only trigger on chained assignment
 pd.options.mode.chained_assignment = None  # default='warn'
+from celery.result import AsyncResult
 
 from django.db import transaction, connection
 from django.db.models import Count, Value, IntegerField, F
@@ -565,15 +566,17 @@ def check_and_trigger_model(datum):
     labeled_data_count = labeled_data.count()
     labels_count = labeled_data.distinct('label').count()
 
-    if labeled_data_count >= batch_size:
+    if current_training_set.celery_task_id != '':
+        return_str = 'task already running'
+    elif labeled_data_count >= batch_size:
         if labels_count < project.labels.count():
             fill_queue(project.queue_set.get(), 'random')
             return_str = 'random'
         else:
-            tasks.send_model_task.delay(project.pk)
-            new_training_set = TrainingSet.objects.create(project=project,
-                                       set_number=current_training_set.set_number+1)
-            return_str = 'model ran'
+            task_num = tasks.send_model_task.delay(project.pk)
+            current_training_set.celery_task_id = task_num
+            current_training_set.save()
+            return_str = 'model running'
     else:
         return_str = 'no trigger'
 

@@ -75,7 +75,7 @@ class Label(models.Model):
 
 class DataLabel(models.Model):
     class Meta:
-        unique_together = (('data', 'profile', 'training_set'))
+        unique_together = (('data', 'profile'))
     data = models.ForeignKey('Data')
     profile = models.ForeignKey('Profile')
     label = models.ForeignKey('Label')
@@ -123,3 +123,4 @@ class AssignedData(models.Model):
 class TrainingSet(models.Model):
     project = models.ForeignKey('Project')
     set_number = models.IntegerField()
+    celery_task_id = models.TextField(blank=True)
