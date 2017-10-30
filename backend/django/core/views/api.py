@@ -110,7 +110,6 @@ def data_coded_table(request, pk):
 def data_predicted_table(request, pk):
     project = Project.objects.get(pk=pk)
     previous_run = project.get_current_training_set().set_number - 1
-    print(previous_run)
 
     sql = """
     SELECT d.{data_text_col}, l.{label_name_col}, dp.{pred_prob_col}
