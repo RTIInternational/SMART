@@ -129,7 +129,7 @@ def data_predicted_table(request, pk):
     ON m.{model_pk_col} = dp.{pred_model_id_col}
     JOIN {trainingset_table} as ts
     ON ts.{trainingset_pk_col} = m.{model_trainingset_id_col}
-    WHERE ts.{trainingset_setnumber_col} = {previous_run}
+    WHERE ts.{trainingset_setnumber_col} = {previous_run} AND d.{data_project_id_col} = {project_pk}
     """.format(
             data_text_col=Data._meta.get_field('text').column,
             label_name_col=Label._meta.get_field('name').column,
@@ -148,7 +148,9 @@ def data_predicted_table(request, pk):
             trainingset_pk_col=TrainingSet._meta.pk.name,
             model_trainingset_id_col=Model._meta.get_field('training_set').column,
             trainingset_setnumber_col=TrainingSet._meta.get_field('set_number').column,
-            previous_run=previous_run)
+            previous_run=previous_run,
+            data_project_id_col=Data._meta.get_field('project').column,
+            project_pk=project.pk)
 
     with connection.cursor() as c:
         result = c.execute(sql)
