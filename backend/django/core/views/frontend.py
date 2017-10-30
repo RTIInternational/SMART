@@ -7,23 +7,17 @@ from django.http import HttpResponseRedirect
 from django.db import transaction
 from django.core.exceptions import PermissionDenied
 
-import hashlib
 import pandas as pd
 import math
 
 from core.models import (Profile, Project, ProjectPermissions, Model, Data, Label,
-                         DataLabel, DataPrediction, Queue, DataQueue, AssignedData)
+                         DataLabel, DataPrediction, Queue, DataQueue, AssignedData,
+                         TrainingSet)
 from core.forms import ProjectForm, ProjectUpdateForm, PermissionsFormSet, LabelFormSet
+from core.serializers import DataSerializer
 from core.templatetags import project_extras
 import core.util as util
-
-
-def md5_hash(obj):
-    """Return MD5 hash hexdigest of obj; returns None if obj is None"""
-    if obj is not None:
-        return hashlib.md5(obj.encode('utf-8', errors='ignore')).hexdigest()
-    else:
-        return None
+from core import tasks
 
 
 # Projects
@@ -92,16 +86,23 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
         permissions = context['permissions']
         with transaction.atomic():
             if labels.is_valid() and permissions.is_valid():
-                # Save the project, labels, and permissions
+                # Save the project with creator
                 self.object = form.save(commit=False)
                 self.object.creator = self.request.user.profile
                 self.object.save()
+
+                # Training Set
+                training_set = TrainingSet.objects.create(project=self.object, set_number=0)
+
+                # Labels
                 labels.instance = self.object
                 labels.save()
+
+                # Permissions
                 permissions.instance = self.object
                 permissions.save()
 
-                # Create the queue
+                # Queue
                 batch_size = 10 * len([x for x in labels if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True])
                 num_coders = len([x for x in permissions if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True]) + 1
                 q_length = math.ceil(batch_size/num_coders) * num_coders + math.ceil(batch_size/num_coders) * (num_coders - 1)
@@ -111,20 +112,13 @@ class ProjectCreate(LoginRequiredMixin, CreateView):
                 # If data exists save attempt to save it
                 f_data = form.cleaned_data.get('data', False)
                 if isinstance(f_data, pd.DataFrame):
-                    # Create hash of text and drop duplicates
-                    f_data['hash'] = f_data[0].apply(md5_hash)
-                    f_data.drop_duplicates(subset='hash', keep='first', inplace=True)
+                    data = util.add_data(self.object, f_data)
 
-                    # Limit the number of rows to 2mil
-                    f_data = f_data[:2000000]
+                    # If data was created then populate queue
+                    util.fill_queue(queue, orderby='random')
 
-                    # Create data objects and bulk insert into database
-                    if len(f_data) > 0:
-                        f_data['objects'] = f_data.apply(lambda x: Data(text=x[0], project=self.object, hash=x['hash']), axis=1)
-                        Data.objects.bulk_create(f_data['objects'].tolist())
-
-                        # If data was created then populate queue
-                        util.fill_queue(queue)
+                    # Create and save tf-idf
+                    tasks.send_tfidf_creation_task.delay(DataSerializer(data, many=True).data, self.object.pk)
 
                 return redirect(self.get_success_url())
             else:
@@ -163,21 +157,7 @@ class ProjectUpdate(LoginRequiredMixin, UpdateView):
 
                 f_data = form.cleaned_data.get('data', False)
                 if isinstance(f_data, pd.DataFrame):
-                    # Create hash of text and drop duplicates
-                    f_data['hash'] = f_data[0].apply(md5_hash)
-                    f_data.drop_duplicates(subset='hash', keep='first', inplace=True)
-
-                    # Drop any duplicates from existing data
-                    existing_hashes = set(Data.objects.filter(project=self.object).values_list('hash', flat=True))
-                    f_data = f_data[~f_data['hash'].isin(existing_hashes)]
-
-                    # Limit the number of rows to 2mil (including existing data)
-                    f_data = f_data[:2000000-len(existing_hashes)]
-
-                    # Create data objects and bulk insert into database
-                    if len(f_data) > 0:
-                        f_data['objects'] = f_data.apply(lambda x: Data(text=x[0], project=self.object, hash=x['hash']), axis=1)
-                        Data.objects.bulk_create(f_data['objects'].tolist())
+                    data = util.add_data(self.object, f_data)
 
                 return redirect(self.get_success_url())
             else:
