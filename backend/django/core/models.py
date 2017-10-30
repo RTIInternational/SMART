@@ -32,6 +32,12 @@ class Project(models.Model):
     def get_absolute_url(self):
         return reverse('projects:project_detail', kwargs={'pk': self.pk})
 
+    def get_current_training_set(self):
+        try:
+            return self.trainingset_set.all().order_by('-set_number')[0]
+        except IndexError:
+            return None
+
 class ProjectPermissions(models.Model):
     class Meta:
         unique_together = (('profile', 'project'))
@@ -46,6 +52,7 @@ class ProjectPermissions(models.Model):
 class Model(models.Model):
     pickle_path = models.TextField()
     project = models.ForeignKey('Project')
+    training_set = models.ForeignKey('TrainingSet')
     predictions = models.ManyToManyField(
         'Data', related_name='models', through='DataPrediction'
     )
@@ -54,6 +61,7 @@ class Data(models.Model):
     text = models.TextField()
     hash = models.CharField(max_length=128)
     project = models.ForeignKey('Project')
+    df_idx = models.IntegerField()
 
     def __str__(self):
         return self.text
@@ -71,14 +79,24 @@ class DataLabel(models.Model):
     data = models.ForeignKey('Data')
     profile = models.ForeignKey('Profile')
     label = models.ForeignKey('Label')
+    training_set = models.ForeignKey('TrainingSet')
 
 class DataPrediction(models.Model):
+    class Meta:
+        unique_together = (('data', 'model', 'label'))
+    data = models.ForeignKey('Data')
+    model = models.ForeignKey('Model')
+    label = models.ForeignKey('Label')
+    predicted_probability = models.FloatField()
+
+class DataUncertainty(models.Model):
     class Meta:
         unique_together = (('data', 'model'))
     data = models.ForeignKey('Data')
     model = models.ForeignKey('Model')
-    predicted_class = models.TextField()
-    predicted_probability = models.FloatField()
+    least_confident = models.FloatField()
+    margin_sampling = models.FloatField()
+    entropy = models.FloatField()
 
 class Queue(models.Model):
     profile = models.ForeignKey('Profile', blank=True, null=True)
@@ -101,3 +119,8 @@ class AssignedData(models.Model):
     data = models.ForeignKey('Data')
     queue = models.ForeignKey('Queue')
     assigned_timestamp = models.DateTimeField(default = timezone.now)
+
+class TrainingSet(models.Model):
+    project = models.ForeignKey('Project')
+    set_number = models.IntegerField()
+    celery_task_id = models.TextField(blank=True)

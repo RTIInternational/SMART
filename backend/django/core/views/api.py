@@ -145,7 +145,8 @@ def get_card_deck(request, pk):
 def annotate_data(request, pk):
     """Annotate a single datum which is in the assigneddata queue given the user,
        data_id, and label_id.  This will remove it from assigneddata, remove it
-       from dataqueue and add it to labeleddata.
+       from dataqueue and add it to labeleddata.  Also check if project is ready
+       to have model run, if so start that process.
 
     Args:
         request: The POST request
@@ -157,6 +158,8 @@ def annotate_data(request, pk):
     profile = request.user.profile
     label = Label.objects.get(pk=request.data['labelID'])
     util.label_data(label, data, profile)
+
+    util.check_and_trigger_model(data)
 
     return Response({})
 

@@ -12,7 +12,7 @@ SEED_USERNAME = 'test'
 SEED_PASSWORD = 'password'
 SEED_EMAIL = 'dummy@smart.org'
 SEED_PROJECT = 'seed-data'
-SEED_FILE_PATH = './core/data/SemEval-2016-Task6/train-feminism.csv'
+SEED_FILE_PATH = './core/data/SemEval-2016-Task6/test-feminism.csv'
 SEED_LABELS = ['AGAINST', 'FAVOR', 'NONE']
 
 def seed_database(noprofile=False, nodata=False):
@@ -32,7 +32,7 @@ def seed_database(noprofile=False, nodata=False):
         else:
             with open(SEED_FILE_PATH) as inf:
                 reader = csv.DictReader(inf)
-                sample_data = [Data(text=row['Tweet'], project=project) for row in reader]
+                sample_data = [Data(text=row['Tweet'], project=project, df_idx=i) for i, row in enumerate(reader)]
                 dataset = Data.objects.bulk_create(sample_data)
             for label in SEED_LABELS:
                 Label.objects.create(name=label, project=project)
