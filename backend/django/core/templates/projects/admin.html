@@ -140,7 +140,13 @@ $.ajax({
         var ctx = document.getElementById('label-distribution-chart').getContext("2d");
         var label_dist_chart = new Chart(ctx, {
             type: 'bar',
-            data: chart_data
+            data: chart_data,
+            options: {
+                title: {
+                    display: true,
+                    text: 'Label Distribution per Coder'
+                }
+            }
         })
     },
     error: function (error) {
