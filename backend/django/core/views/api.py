@@ -119,15 +119,15 @@ def data_predicted_table(request, pk):
         FROM {pred_table}
         GROUP BY {pred_data_id_col}
         ) as tmp
-    JOIN {pred_table} as dp
+    LEFT JOIN {pred_table} as dp
     ON dp.{pred_data_id_col} = tmp.{pred_data_id_col} AND dp.{pred_prob_col} = tmp.max_prob
-    JOIN {label_table} as l
+    LEFT JOIN {label_table} as l
     ON l.{label_pk_col} = dp.{pred_label_id_col}
-    JOIN {data_table} as d
+    LEFT JOIN {data_table} as d
     ON d.{data_pk_col} = dp.{pred_data_id_col}
-    JOIN {model_table} as m
+    LEFT JOIN {model_table} as m
     ON m.{model_pk_col} = dp.{pred_model_id_col}
-    JOIN {trainingset_table} as ts
+    LEFT JOIN {trainingset_table} as ts
     ON ts.{trainingset_pk_col} = m.{model_trainingset_id_col}
     WHERE ts.{trainingset_setnumber_col} = {previous_run} AND d.{data_project_id_col} = {project_pk}
     """.format(
