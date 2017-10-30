@@ -5,6 +5,8 @@ from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
+from django.db.models import Max
+from django.db import connection
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -21,7 +23,7 @@ from core.serializers import (ProfileSerializer, AuthUserGroupSerializer,
                               DataLabelSerializer, DataPredictionSerializer,
                               QueueSerializer, AssignedDataSerializer)
 from core.models import (Profile, Project, Model, Data, Label, DataLabel,
-                         DataPrediction, Queue, DataQueue, AssignedData)
+                         DataPrediction, Queue, DataQueue, AssignedData, TrainingSet)
 import core.util as util
 from core.pagination import SmartPagination
 
@@ -72,14 +74,14 @@ def label_distribution(request, pk):
     users.extend([perm.profile for perm in project.projectpermissions_set.all()])
 
     datasets = []
-    for u in users:
+    for l in labels:
         temp_data = []
-        for l in labels:
+        for u in users:
             temp_data.append(DataLabel.objects.filter(profile=u, label=l).count())
-        datasets.append({'label':u.__str__(), 'data':temp_data})
+        datasets.append({'label':l.name, 'data':temp_data})
 
     chart_data = {
-        'labels': [l.name for l in labels],
+        'labels': [u.__str__() for u in users],
         'datasets': [ds for ds in datasets]
     }
 
@@ -87,25 +89,77 @@ def label_distribution(request, pk):
 
 
 @api_view(['GET'])
-def data_table(request, pk):
+def data_coded_table(request, pk):
     project = Project.objects.get(pk=pk)
 
-    data_objs = Data.objects.filter(project=project)
-    labels = [l.name for l in project.labels.all()]
-    users = []
-    users.append(project.creator)
-    users.extend([perm.profile for perm in project.projectpermissions_set.all()])
-    users = [u.__str__() for u in users]
+    data_objs = DataLabel.objects.filter(data__project=project)
 
     data = []
     for d in data_objs:
         temp = {
-            'ID': d.pk,
-            'Text': d.text,
-            'Label': random.choice(labels),
-            'OG Prob': random.randint(0,100),
-            'Current Prob': random.randint(0,100),
-            'Coder': random.choice(users)
+            'Text': d.data.text,
+            'Label': d.label.name,
+            'Coder': d.profile.__str__()
+        }
+        data.append(temp)
+
+    return Response({'data': data})
+
+
+@api_view(['GET'])
+def data_predicted_table(request, pk):
+    project = Project.objects.get(pk=pk)
+    previous_run = project.get_current_training_set().set_number - 1
+    print(previous_run)
+
+    sql = """
+    SELECT d.{data_text_col}, l.{label_name_col}, dp.{pred_prob_col}
+    FROM (
+        SELECT {pred_data_id_col}, MAX({pred_prob_col}) AS max_prob
+        FROM {pred_table}
+        GROUP BY {pred_data_id_col}
+        ) as tmp
+    JOIN {pred_table} as dp
+    ON dp.{pred_data_id_col} = tmp.{pred_data_id_col} AND dp.{pred_prob_col} = tmp.max_prob
+    JOIN {label_table} as l
+    ON l.{label_pk_col} = dp.{pred_label_id_col}
+    JOIN {data_table} as d
+    ON d.{data_pk_col} = dp.{pred_data_id_col}
+    JOIN {model_table} as m
+    ON m.{model_pk_col} = dp.{pred_model_id_col}
+    JOIN {trainingset_table} as ts
+    ON ts.{trainingset_pk_col} = m.{model_trainingset_id_col}
+    WHERE ts.{trainingset_setnumber_col} = {previous_run}
+    """.format(
+            data_text_col=Data._meta.get_field('text').column,
+            label_name_col=Label._meta.get_field('name').column,
+            pred_prob_col=DataPrediction._meta.get_field('predicted_probability').column,
+            pred_data_id_col=DataPrediction._meta.get_field('data').column,
+            pred_table=DataPrediction._meta.db_table,
+            label_table=Label._meta.db_table,
+            label_pk_col=Label._meta.pk.name,
+            pred_label_id_col=DataPrediction._meta.get_field('label').column,
+            data_table=Data._meta.db_table,
+            data_pk_col=Data._meta.pk.name,
+            model_table=Model._meta.db_table,
+            model_pk_col=Model._meta.pk.name,
+            pred_model_id_col=DataPrediction._meta.get_field('model').column,
+            trainingset_table=TrainingSet._meta.db_table,
+            trainingset_pk_col=TrainingSet._meta.pk.name,
+            model_trainingset_id_col=Model._meta.get_field('training_set').column,
+            trainingset_setnumber_col=TrainingSet._meta.get_field('set_number').column,
+            previous_run=previous_run)
+
+    with connection.cursor() as c:
+        result = c.execute(sql)
+        data_objs = c.fetchall()
+
+    data = []
+    for d in data_objs:
+        temp = {
+            'Text': d[0],
+            'Label': d[1],
+            'Probability': d[2]
         }
         data.append(temp)
 
