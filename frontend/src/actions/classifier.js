@@ -50,7 +50,7 @@ export const fetchCards = (projectID) => {
 export const annotateCard = (card, labelID) => {
     let payload = {
         labelID: labelID,
-        label_time: moment().diff(card['start_time'], 'seconds')
+        labeling_time: moment().diff(card['start_time'], 'seconds') // now - start_time rounded to whole seconds
     }
     let apiURL = `/api/annotate_data/${card.text.pk}/`;
     return dispatch => {

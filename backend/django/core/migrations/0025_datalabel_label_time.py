@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name='datalabel',
-            name='label_time',
+            name='time_to_label',
             field=models.IntegerField(default=0),
             preserve_default=False,
         ),
