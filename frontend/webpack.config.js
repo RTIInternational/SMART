@@ -75,15 +75,6 @@ var config = {
                 ]
             },
             {
-                test: require.resolve('patternomaly'),
-                use: [
-                    {
-                        loader: 'expose-loader',
-                        options: 'pattern'
-                    }
-                ]
-            },
-            {
                 test: /\.(jpe?g|gif|html)$/,
                 use: [
                     {
