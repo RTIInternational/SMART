@@ -47,6 +47,7 @@ class Dev(Configuration):
         'django.contrib.sites',
         'allauth',
         'allauth.account',
+        'postgres_stats',
         'rest_auth.registration',
         'rest_framework_swagger',
         'webpack_loader'

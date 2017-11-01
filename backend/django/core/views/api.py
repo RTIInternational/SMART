@@ -5,8 +5,9 @@ from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
-from django.db.models import Max
+from django.db.models import Max, Min, FloatField
 from django.db import connection
+from django.contrib.postgres.fields import ArrayField
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -16,6 +17,7 @@ import io
 import math
 import random
 import pandas as pd
+from postgres_stats.aggregates import Percentile
 
 from core.serializers import (ProfileSerializer, AuthUserGroupSerializer,
                               AuthUserSerializer, ProjectSerializer,
@@ -73,19 +75,52 @@ def label_distribution(request, pk):
     users.append(project.creator)
     users.extend([perm.profile for perm in project.projectpermissions_set.all()])
 
-    datasets = []
+    dataset = []
     for l in labels:
-        temp_data = []
+        temp_data = {'key':l.name}
+        temp_values = []
         for u in users:
-            temp_data.append(DataLabel.objects.filter(profile=u, label=l).count())
-        datasets.append({'label':l.name, 'data':temp_data})
+            temp_values.append({'x':u.__str__(), 'y': DataLabel.objects.filter(profile=u, label=l).count()})
+        dataset.append({'key':l.name, 'values': temp_values})
 
-    chart_data = {
-        'labels': [u.__str__() for u in users],
-        'datasets': [ds for ds in datasets]
-    }
+    return Response(dataset)
 
-    return Response(chart_data)
+
+@api_view(['GET'])
+def label_timing(request, pk):
+    project = Project.objects.get(pk=pk)
+
+    users = []
+    users.append(project.creator)
+    users.extend([perm.profile for perm in project.projectpermissions_set.all()])
+
+    dataset = []
+    yDomain = 30
+    for u in users:
+        result = DataLabel.objects.filter(data__project=pk, profile=u)\
+                    .aggregate(quartiles=Percentile('time_to_label', [0.25, 0.5, 0.75],
+                               continuous=False,
+                               output_field=ArrayField(FloatField())),
+                               min_time=Min('time_to_label'),
+                               max_time=Max('time_to_label'))
+
+        if result['max_time'] > yDomain:
+            yDomain = result['max_time'] + 10
+
+        temp = {
+            'label': u.__str__(),
+            'values': {
+                'Q1': result['quartiles'][0],
+                'Q2': result['quartiles'][1],
+                'Q3': result['quartiles'][2],
+                'whisker_low': result['min_time'],
+                'whisker_high': result['max_time']
+            }
+        }
+        dataset.append(temp)
+
+
+    return Response({'data': dataset, 'yDomain': yDomain})
 
 
 @api_view(['GET'])
