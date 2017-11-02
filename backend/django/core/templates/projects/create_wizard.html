@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+{% load static %}
+{% load render_bundle from webpack_loader %}
+
+{% block head %}
+{{ wizard.form.media }}
+{{ form.media.css }}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <div class="card">
+      <div class="cardface">
+        <form action="." method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          {{ wizard.management_form }}
+
+          {% if wizard.steps.step0 == 0 %}
+            <div class="form-group">
+              <label class="control-label" for="{{ wizard.form.name.id_for_label }}">{{ wizard.form.name.label }}</label>
+              <input class="form-control" id="{{ wizard.form.name.id_for_label }}" maxlength="30" name="{{ wizard.form.name.html_name }}" type="text" placeholder="{{ form.name.label }}" value="{{ form.name.value|default_if_none:'' }}"/>
+              {{ wizard.form.name.errors }}
+            </div>
+            <div class="form-group">
+              <label class="control-label" for="{{ wizard.form.description.id_for_label }}">{{ wizard.form.description.label }}</label>
+              <textarea class="form-control" id="{{ wizard.form.description.id_for_label }}" name="{{ wizard.form.description.html_name }}">{{ form.description.value|default_if_none:'' }}</textarea>
+              {{ wizard.form.description.errors }}
+            </div>
+          {% elif wizard.steps.step0 == 1 %}
+            <table class="table table-striped">
+              {{ wizard.form.management_form }}
+              {{ wizard.non_form_errors }}
+              {% for form in wizard.form %}
+                {% if forloop.first %}
+                  <thead>
+                  <tr>
+                    {% for field in form.visible_fields %}{% if field != data %}
+                      <th>{{ field.label|capfirst }}</th>
+                    {% endif %}{% endfor %}
+                  </tr>
+                  </thead>
+                  {% endif %}
+                  <tr class="formset_row_label">
+                    {% for field in form.visible_fields %}
+                      <td>
+                        {# Include the hidden fields in the form #}
+                        {% if forloop.first %}
+                          {% for hidden in form.hidden_fields %}
+                            {{ hidden }}
+                          {% endfor %}
+                        {% endif %}
+                        {{ field.errors.as_ul }}
+                        {{ field }}
+                      </td>
+                    {% endfor %}
+                  </tr>
+              {% endfor %}
+            </table>
+          {% elif wizard.steps.step0 == 2 %}
+            {{ wizard.form.management_form }}
+            <table class="table table-striped">
+              {{ wizard.non_form_errors }}
+              {% for form in wizard.form %}
+                {% if forloop.first %}
+                  <thead>
+                  <tr>
+                    {% for field in form.visible_fields %}{% if field != data %}
+                      <th>{{ field.label|capfirst }}</th>
+                    {% endif %}{% endfor %}
+                  </tr>
+                  </thead>
+                {% endif %}
+                <tr class="formset_row_perm">
+                  {% for field in form.visible_fields %}
+                    <td>
+                      {# Include the hidden fields in the form #}
+                      {% if forloop.first %}
+                        {% for hidden in form.hidden_fields %}
+                          {{ hidden }}
+                        {% endfor %}
+                      {% endif %}
+                      {{ field.errors.as_ul }}
+                      {{ field }}
+                    </td>
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            </table>
+          {% else %}
+            <div class="form-group">
+              <label class="control-label" for="{{ wizard.form.data.id_for_label }}">{{ wizard.form.data.label }}</label>
+              <input class="form-control" id="{{ wizard.form.data.id_for_label }}" maxlength="30" name="{{ wizard.form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" />
+              {{ wizard.form.data.errors }}
+            </div>
+          {% endif %}
+
+          <div class="my-container">
+            {% if wizard.steps.prev %}
+              <button class="btn btn-info" name="wizard_goto_step" type="submit" value="{{ wizard.steps.first }}">{% trans "first step" %}</button>
+              <button class="btn btn-info" name="wizard_goto_step" type="submit" value="{{ wizard.steps.prev }}">{% trans "prev step" %}</button>
+            {% endif %}
+            <input class="btn btn-primary" type="submit" value="{% trans "submit" %}"/>
+            <p class="pull-right">Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts_body %}
+<script type="text/javascript">
+    $('.formset_row_label').formset({
+        addText: 'add label',
+        deleteText: 'remove label',
+        prefix: 'label_set',
+        added: function () {
+            // Reset drop down and errors from both columns when adding new rows
+            $('tr.formset_row_label').last().children(':first').find('ul.errorlist li').empty();
+        }
+    });
+    $('.formset_row_perm').formset({
+        addText: 'add permissions',
+        deleteText: 'remove permission',
+        prefix: 'permission_set',
+        added: function () {
+            // Reset drop down and errors from both columns when adding new rows
+            $('tr.formset_row_perm').last().children(':first').find('option:eq(0)').prop('selected', true);
+            $('tr.formset_row_perm').last().children().eq(1).find('option:eq(0)').prop('selected', true);
+            $('tr.formset_row_perm').last().children(':first').find('ul.errorlist li').empty();
+            $('tr.formset_row_perm').last().children().eq(1).find('ul.errorlist li').empty();
+        }
+    });
+</script>
+{% endblock %}

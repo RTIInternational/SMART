@@ -86,5 +86,57 @@ class ProjectPermissionsForm(forms.ModelForm):
 
         return profile
 
+
 LabelFormSet = forms.inlineformset_factory(Project, Label, form=LabelForm, min_num=2, validate_min=True, extra=0, can_delete=True)
 PermissionsFormSet = forms.inlineformset_factory(Project, ProjectPermissions, form=ProjectPermissionsForm, extra=1, can_delete=True)
+
+
+class ProjectWizardForm(forms.ModelForm):
+    class Meta:
+        model = Project
+        fields = ['name', 'description']
+
+
+class DataWizardForm(forms.Form):
+    data = forms.FileField()
+
+    def clean_data(self):
+        allowed_types = [
+            'text/csv',
+            'text/tab-separated-values'
+        ]
+
+        max_file_size = 4 * 1000 * 1000 * 1000
+
+        data = self.cleaned_data.get('data', False)
+
+        if data:
+            if data.size > max_file_size:
+                raise ValidationError("File is too large")
+
+            if data.content_type not in allowed_types:
+                raise ValidationError("File type is not supported")
+
+            try:
+                if data.content_type == 'text/tab-separated-values':
+                    data = pd.read_csv(data, header=None, sep='\t')
+                elif data.content_type == 'text/csv':
+                    data = pd.read_csv(data, header=None)
+                else:
+                    raise ValidationError("File type is not supported")
+
+                if len(data.columns) > 1:
+                    raise ValidationError("File should only contain one column")
+
+                if len(data) < 1:
+                    raise ValidationError("File should contain some data")
+            except EmptyDataError:
+                # For some reason when you upload data but leave other required form
+                # fields blank EmptyDataError is thrown.  I can not seem to figure
+                # out why it is thrown.
+                pass
+            except ParserError:
+                # If there was an error while parsing then raise invalid file error
+                raise ValidationError("Invalid file, unable to parse the file")
+
+        return data

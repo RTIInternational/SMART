@@ -6,6 +6,11 @@ from django.urls import reverse_lazy
 from django.http import HttpResponseRedirect
 from django.db import transaction
 from django.core.exceptions import PermissionDenied
+from django.core.files.storage import FileSystemStorage
+from django.conf import settings
+from django import forms
+from formtools.wizard.views import SessionWizardView, StepsHelper
+from formtools.wizard.storage import get_storage
 
 import pandas as pd
 import math
@@ -13,7 +18,8 @@ import math
 from core.models import (Profile, Project, ProjectPermissions, Model, Data, Label,
                          DataLabel, DataPrediction, Queue, DataQueue, AssignedData,
                          TrainingSet)
-from core.forms import ProjectForm, ProjectUpdateForm, PermissionsFormSet, LabelFormSet
+from core.forms import (ProjectForm, ProjectUpdateForm, PermissionsFormSet, LabelFormSet,
+                        ProjectWizardForm, DataWizardForm)
 from core.serializers import DataSerializer
 from core.templatetags import project_extras
 import core.util as util
@@ -63,68 +69,110 @@ class ProjectDetail(LoginRequiredMixin, DetailView):
         return obj
 
 
-class ProjectCreate(LoginRequiredMixin, CreateView):
-    model = Project
-    form_class = ProjectForm
-    template_name = 'projects/create.html'
+class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
+    file_storage = FileSystemStorage(location=settings.DATA_DIR)
+    form_list = [
+        ('project', ProjectWizardForm),
+        ('labels', LabelFormSet),
+        ('permissions', PermissionsFormSet),
+        ('data', DataWizardForm)
+    ]
 
-    def get_context_data(self, **kwargs):
-        data = super(ProjectCreate, self).get_context_data(**kwargs)
+    def get_template_names(self):
+        return 'projects/create_wizard.html'
 
-        # Set the formsets for the create view
-        if self.request.POST:
-            data['labels'] = LabelFormSet(self.request.POST, prefix='label_set')
-            data['permissions'] = PermissionsFormSet(self.request.POST, prefix='permissions_set', form_kwargs={'action': 'create', 'profile': self.request.user.profile})
+    def get_form_kwargs_special(self, step=None):
+        form_kwargs = {}
+
+        if step == 'permissions':
+            form_kwargs.update({
+                'action': 'create',
+                'profile': self.request.user.profile
+            })
+
+        return form_kwargs
+
+    def get_form_prefix(self, step=None, form=None):
+        prefix = ''
+
+        if step == 'labels':
+            prefix = 'label_set'
+        if step == 'permissions':
+            prefix = 'permission_set'
+
+        return prefix
+
+    def get_form(self, step=None, data=None, files=None):
+        """
+        Overriding get_form.  All the code is exactly the same except the if
+        statement by the return.  InlineLabelFormsets do not allow kwargs to be
+        added to them through the traditional method of adding the kwargs to
+        their init method.  Instead they must be passed using the `form_kwargs`
+        parameter.  So If the step is a inline formset pass those special kwargs
+        """
+        if step is None:
+            step = self.steps.current
+        form_class = self.form_list[step]
+        # prepare the kwargs for the form instance.
+        kwargs = self.get_form_kwargs(step)
+        kwargs.update({
+            'data': data,
+            'files': files,
+            'prefix': self.get_form_prefix(step, form_class),
+            'initial': self.get_form_initial(step),
+        })
+        if issubclass(form_class, (forms.ModelForm, forms.models.BaseInlineFormSet)):
+            # If the form is based on ModelForm or InlineFormSet,
+            # add instance if available and not previously set.
+            kwargs.setdefault('instance', self.get_form_instance(step))
+        elif issubclass(form_class, forms.models.BaseModelFormSet):
+            # If the form is based on ModelFormSet, add queryset if available
+            # and not previous set.
+            kwargs.setdefault('queryset', self.get_form_instance(step))
+
+        if step == 'labels' or step == 'permissions':
+            return form_class(**kwargs, form_kwargs=self.get_form_kwargs_special(step))
         else:
-            data['labels'] = LabelFormSet(prefix='label_set')
-            data['permissions'] = PermissionsFormSet(prefix='permissions_set', form_kwargs={'action': 'create', 'profile': self.request.user.profile})
-        return data
+            return form_class(**kwargs)
 
-    def form_valid(self, form):
-        context = self.get_context_data()
-        labels = context['labels']
-        permissions = context['permissions']
+    def done(self, form_list, form_dict, **kwargs):
+        proj = form_dict['project']
+        labels = form_dict['labels']
+        permissions = form_dict['permissions']
+        data = form_dict['data']
+
         with transaction.atomic():
-            if labels.is_valid() and permissions.is_valid():
-                # Save the project with creator
-                self.object = form.save(commit=False)
-                self.object.creator = self.request.user.profile
-                self.object.save()
+            # Project
+            proj_obj = proj.save(commit=False)
+            proj_obj.creator = self.request.user.profile
+            proj_obj.save()
 
-                # Training Set
-                training_set = TrainingSet.objects.create(project=self.object, set_number=0)
+            # Training Set
+            training_set = TrainingSet.objects.create(project=proj_obj, set_number=0)
 
-                # Labels
-                labels.instance = self.object
-                labels.save()
+            # Labels
+            labels.instance = proj_obj
+            labels.save()
 
-                # Permissions
-                permissions.instance = self.object
-                permissions.save()
+            # Permissions
+            permissions.instance = proj_obj
+            permissions.save()
 
-                # Queue
-                batch_size = 10 * len([x for x in labels if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True])
-                num_coders = len([x for x in permissions if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True]) + 1
-                q_length = math.ceil(batch_size/num_coders) * num_coders + math.ceil(batch_size/num_coders) * (num_coders - 1)
+            # Queue
+            batch_size = 10 * len([x for x in labels if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True])
+            num_coders = len([x for x in permissions if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True]) + 1
+            q_length = math.ceil(batch_size/num_coders) * num_coders + math.ceil(batch_size/num_coders) * (num_coders - 1)
 
-                queue = util.add_queue(project=self.object, length=q_length)
+            queue = util.add_queue(project=proj_obj, length=q_length)
 
-                # If data exists save attempt to save it
-                f_data = form.cleaned_data.get('data', False)
-                if isinstance(f_data, pd.DataFrame):
-                    data = util.add_data(self.object, f_data)
+            # Data
+            f_data = data.cleaned_data['data']
+            new_data = util.add_data(proj_obj, f_data)
+            util.fill_queue(queue, orderby='random')
+            tasks.send_tfidf_creation_task.delay(DataSerializer(new_data, many=True).data, proj_obj.pk)
+            util.save_data_file(f_data, proj_obj.pk)
 
-                    # If data was created then populate queue
-                    util.fill_queue(queue, orderby='random')
-
-                    # Create and save tf-idf
-                    tasks.send_tfidf_creation_task.delay(DataSerializer(data, many=True).data, self.object.pk)
-
-                    util.save_data_file(f_data, self.object.pk)
-
-                return redirect(self.get_success_url())
-            else:
-                return self.render_to_response(context)
+        return HttpResponseRedirect(proj_obj.get_absolute_url())
 
 
 class ProjectUpdate(LoginRequiredMixin, UpdateView):
