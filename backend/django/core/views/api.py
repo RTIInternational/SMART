@@ -65,7 +65,9 @@ def annotate_data(request, pk):
     data = Data.objects.get(pk=pk)
     profile = request.user.profile
     label = Label.objects.get(pk=request.data['labelID'])
-    util.label_data(label, data, profile)
+    labeling_time = request.data['labeling_time']
+
+    util.label_data(label, data, profile, labeling_time)
 
     util.check_and_trigger_model(data)
 
