@@ -67,6 +67,8 @@ class Data(models.Model):
         return self.text
 
 class Label(models.Model):
+    class Meta:
+        unique_together = (('name', 'project'))
     name = models.TextField()
     project = models.ForeignKey('Project', related_name='labels', on_delete=models.CASCADE)
 
