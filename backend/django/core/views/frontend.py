@@ -14,6 +14,7 @@ from formtools.wizard.storage import get_storage
 
 import pandas as pd
 import math
+from celery import chord
 
 from core.models import (Profile, Project, ProjectPermissions, Model, Data, Label,
                          DataLabel, DataPrediction, Queue, DataQueue, AssignedData,
@@ -80,6 +81,15 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
     def get_template_names(self):
         return 'projects/create_wizard.html'
+
+    def get_form_kwargs(self, step):
+        kwargs = {}
+        if step == 'data':
+            temp = []
+            for label in self.get_cleaned_data_for_step('labels'):
+                temp.append(label['name'])
+            kwargs['labels'] = temp
+        return kwargs
 
     def get_form_kwargs_special(self, step=None):
         form_kwargs = {}
@@ -169,8 +179,15 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             f_data = data.cleaned_data['data']
             new_data = util.add_data(proj_obj, f_data)
             util.fill_queue(queue, orderby='random')
-            tasks.send_tfidf_creation_task.delay(DataSerializer(new_data, many=True).data, proj_obj.pk)
             util.save_data_file(f_data, proj_obj.pk)
+            # Since User can upload Labeled Data and this data is added to training_set 0
+            # we need to check_and_trigger model.  However since training model requires
+            # tf_idf to be created we must create a chord which garuntees that tfidf
+            # creation task is completed before check and trigger model task
+            chord(
+                  tasks.send_tfidf_creation_task.s(DataSerializer(new_data, many=True).data, proj_obj.pk),
+                  tasks.send_check_and_trigger_model_task.si(proj_obj.pk)
+            ).apply_async()
 
         return HttpResponseRedirect(proj_obj.get_absolute_url())
 

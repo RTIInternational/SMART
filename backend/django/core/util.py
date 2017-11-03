@@ -148,23 +148,43 @@ def create_project(name, creator):
 
 def add_data(project, df):
     '''
-    Add data to an existing project.  df should be single column dataframe with
-    column 0 (int).
+    Add data to an existing project.  df should be two column dataframe with
+    columns Text and Label.  Label can be empty and should have at least one
+    null value.  Any row that has Label should be added to DataLabel
     '''
     # Set the index column
     df['idx'] = df.index
 
     # Create hash of text and drop duplicates
-    df['hash'] = df[0].apply(md5_hash)
+    df['hash'] = df['Text'].apply(md5_hash)
     df.drop_duplicates(subset='hash', keep='first', inplace=True)
 
     # Limit the number of rows to 2mil
     df = df[:2000000]
 
-    df['objects'] = df.apply(lambda x: Data(text=x[0], project=project,
+    # Create the data objects
+    df['objects'] = df.apply(lambda x: Data(text=x['Text'], project=project,
                                             hash=x['hash'], df_idx=x['idx']), axis=1)
 
+    # Split labeled data from unlabeled data
     data = Data.objects.bulk_create(df['objects'].tolist())
+
+    labels = {}
+    for l in project.labels.all():
+        labels[l.name] = l
+
+    # Find the data that has labels
+    labeled_df = df[~pd.isnull(df['Label'])]
+    if len(labeled_df) > 0:
+        labeled_df['labeled_objects'] = labeled_df.apply(lambda x:
+            DataLabel(data=x['objects'],
+                      profile=project.creator,
+                      label=labels[x['Label']],
+                      training_set=project.get_current_training_set()
+                      ), axis=1
+        )
+
+        labels = DataLabel.objects.bulk_create(labeled_df['labeled_objects'].tolist())
 
     return data
 
@@ -485,7 +505,7 @@ def save_data_file(df, project_pk):
     """Given the df used to create and save objects save just the data to a file
 
     Args:
-        df: dataframe used to create and save data objects, contains `0` column
+        df: dataframe used to create and save data objects, contains `Text` column
             which has the text data
         project_pk: Primary key of the project
     Returns:
@@ -493,8 +513,7 @@ def save_data_file(df, project_pk):
     """
     fpath = os.path.join(settings.PROJECT_FILE_PATH, 'project_' + str(project_pk) + '_data.csv')
 
-    df = df[0]
-    df.to_csv(fpath, header=False, index=False)
+    df.to_csv(fpath, index=False)
 
     return fpath
 

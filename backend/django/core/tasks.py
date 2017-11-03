@@ -34,3 +34,11 @@ def send_tfidf_creation_task(response, project_pk):
     file = save_tfidf_matrix(tf_idf, project_pk)
 
     return file
+
+@shared_task
+def send_check_and_trigger_model_task(project_pk):
+    from core.util import check_and_trigger_model
+    from core.models import Data
+
+    datum = Data.objects.filter(project=project_pk).first()
+    check_and_trigger_model(datum)
