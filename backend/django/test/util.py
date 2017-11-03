@@ -29,10 +29,10 @@ def assert_redis_matches_db(test_redis):
             assert not test_redis.exists('queue:'+str(q.pk))
 
 
-def read_test_data():
+def read_test_data(file=SEED_FILE_PATH):
     '''
     Read the test data from its file, as we'd expect to find
     it in the database.
     '''
-    with open(SEED_FILE_PATH) as f:
-        return [{'text': d['Tweet'], 'label': d['Stance']} for d in csv.DictReader(f)]
+    with open(file) as f:
+        return [{'Text': d['Text'], 'Label': d['Label']} for d in csv.DictReader(f)]
