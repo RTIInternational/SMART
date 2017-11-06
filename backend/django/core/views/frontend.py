@@ -19,7 +19,7 @@ from celery import chord
 from core.models import (Profile, Project, ProjectPermissions, Model, Data, Label,
                          DataLabel, DataPrediction, Queue, DataQueue, AssignedData,
                          TrainingSet)
-from core.forms import (ProjectForm, ProjectUpdateForm, PermissionsFormSet, LabelFormSet,
+from core.forms import (ProjectUpdateForm, PermissionsFormSet, LabelFormSet,
                         ProjectWizardForm, DataWizardForm)
 from core.serializers import DataSerializer
 from core.templatetags import project_extras
@@ -195,7 +195,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 class ProjectUpdate(LoginRequiredMixin, UpdateView):
     model = Project
     form_class = ProjectUpdateForm
-    template_name = 'projects/create.html'
+    template_name = 'projects/update.html'
 
     def get_object(self, *args, **kwargs):
         obj = super(ProjectUpdate, self).get_object(*args, **kwargs)
@@ -205,11 +205,19 @@ class ProjectUpdate(LoginRequiredMixin, UpdateView):
             raise PermissionDenied('You do not have permission to view this project')
         return obj
 
+    def get_form_kwargs(self):
+        form_kwargs = super(ProjectUpdate, self).get_form_kwargs()
+
+        form_kwargs['labels'] = list(Label.objects.filter(project=form_kwargs['instance']).values_list('name', flat=True))
+
+        return form_kwargs
+
     def get_context_data(self, **kwargs):
         data = super(ProjectUpdate, self).get_context_data(**kwargs)
         if self.request.POST:
             data['permissions'] = PermissionsFormSet(self.request.POST, instance=data['project'], prefix='permissions_set', form_kwargs={'action': 'update', 'creator':data['project'].creator, 'profile': self.request.user.profile})
         else:
+            data['num_data'] = Data.objects.filter(project=data['project']).count()
             data['permissions'] = PermissionsFormSet(instance=data['project'], prefix='permissions_set', form_kwargs={'action': 'update', 'creator':data['project'].creator, 'profile': self.request.user.profile})
         return data
 
@@ -222,10 +230,18 @@ class ProjectUpdate(LoginRequiredMixin, UpdateView):
                 permissions.instance = self.object
                 permissions.save()
 
-                f_data = form.cleaned_data.get('data', False)
-                if isinstance(f_data, pd.DataFrame):
-                    data = util.add_data(self.object, f_data)
-
+                # Data
+                f_data = data.cleaned_data['data']
+                new_data = util.add_data(proj_obj, f_data)
+                util.save_data_file(f_data, proj_obj.pk)
+                # Since User can upload Labeled Data and this data is added to training_set 0
+                # we need to check_and_trigger model.  However since training model requires
+                # tf_idf to be created we must create a chord which garuntees that tfidf
+                # creation task is completed before check and trigger model task
+                chord(
+                      tasks.send_tfidf_creation_task.s(DataSerializer(new_data, many=True).data, proj_obj.pk),
+                      tasks.send_check_and_trigger_model_task.si(proj_obj.pk)
+                ).apply_async()
                 return redirect(self.get_success_url())
             else:
                 return self.render_to_response(context)
