@@ -20,12 +20,30 @@
                         <textarea class="form-control" id="{{ form.description.id_for_label }}" name="{{ form.description.html_name }}">{{ form.description.value|default_if_none:'' }}</textarea>
                         {{ form.description.errors }}
                     </div>
+                    <div>
+                        <h3>Data Upload Instructions</h3>
+                        <p>You can upload an additional data file that contains text (and optionally labels) for your project.  The file <strong>must pass the following checks</strong>:</p>
+                        <ul class="list-group">
+                            <li class="list-group-item"><code>.csv</code> or <code>.tsv</code> file</li>
+                            <li class="list-group-item">Two columns with headers <code>Text</code> and <code>Label</code></li>
+                            <li class="list-group-item">Less than 4GBs</li>
+                        </ul>
+                        <p>The <code>Text</code> column should have the text of your data which will be annotated by users.  The <code>Label</code> column should have any pre-existing labels for the corresponding text.  If you have no labels then this column can be blank.</p>
+                        <p>SMART restricts your project to having two million unique data objects.  Any row after the two millionth will be discarded and any duplicated text that appears previously in the file will also be discarded.</p>
+                    </div>
+                    {% if num_data < 2000000 %}
                     <div class="form-group">
                         <label class="control-label" for="{{ form.data.id_for_label }}">{{ form.data.label }}</label>
                         <input class="form-control" id="{{ form.data.id_for_label }}" maxlength="30" name="{{ form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" />
                         {{ form.data.errors }}
                     </div>
+                    {% else %}
+                    <div>
+                        <p>You already have two million unique data objects for this project, you can not upload additional data.</p>
+                    </div>
+                    {% endif %}
                     <br />
+                    <h3>Project Permissions</h3>
                     <table class="table table-striped">
                         {{ labels.management_form }}
                         {{ labels.non_form_errors }}
