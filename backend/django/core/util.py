@@ -505,6 +505,17 @@ def unassign_datum(datum, profile):
     settings.REDIS.lpush(redis_serialize_queue(queue), redis_serialize_data(datum))
 
 
+def batch_unassign(profile):
+    '''
+    Remove all of a profile's assignments and Re-add them to its respective
+    queue in Redis.
+    '''
+    assignments = AssignedData.objects.filter(profile=profile)
+
+    for a in assignments:
+        unassign_datum(a.data, profile)
+
+
 def save_data_file(df, project_pk):
     """Given the df used to create and save objects save just the data to a file.
         Make sure to count the number of files in directory assocaited with the
