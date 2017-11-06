@@ -100,7 +100,7 @@
                 <li class="list-group-item">Less than 4GBs</li>
               </ul>
               <p>The <code>Text</code> column should have the text of your data which will be annotated by users.  The <code>Label</code> column should have any pre-existing labels for the corresponding text.  If you have no labels then this column can be blank.</p>
-              <p>SMART restricts your project to having two million unique data objects.  Any row after the two millionth will be discarded and any text that appears previously in the file will also be discarded.</p>
+              <p>SMART restricts your project to having two million unique data objects.  Any row after the two millionth will be discarded and any duplicated text that appears previously in the file will also be discarded.</p>
             </div>
             <div class="form-group">
               <label class="control-label" for="{{ wizard.form.data.id_for_label }}">{{ wizard.form.data.label }}</label>
