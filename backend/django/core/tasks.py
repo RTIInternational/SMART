@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 from celery import shared_task
+import math
 
 
 @shared_task
@@ -13,12 +14,23 @@ def send_model_task(project_pk):
     from core.util import train_and_save_model, predict_data, fill_queue
 
     project = Project.objects.get(pk=project_pk)
+    queue = project.queue_set.get()
 
     model = train_and_save_model(project)
     predictions = predict_data(project, model)
     new_training_set = TrainingSet.objects.create(project=project,
                                set_number=project.get_current_training_set().set_number+1)
-    fill_queue(project.queue_set.get(), 'least confident')
+
+    # Determine if queue size has changed (num_coders changed) and re-fill queue
+    batch_size = len(project.labels.all()) * 10
+    num_coders = len(project.projectpermissions_set.all()) + 1
+    q_length = math.ceil(batch_size/num_coders) * num_coders + math.ceil(batch_size/num_coders) * (num_coders - 1)
+
+    if q_length != queue.length:
+        queue.length = q_length
+        queue.save()
+
+    fill_queue(queue, 'least confident')
 
 @shared_task
 def send_tfidf_creation_task(response, project_pk):
