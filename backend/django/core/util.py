@@ -152,15 +152,19 @@ def add_data(project, df):
     columns Text and Label.  Label can be empty and should have at least one
     null value.  Any row that has Label should be added to DataLabel
     '''
-    # Set the index column
-    df['idx'] = df.index
-
     # Create hash of text and drop duplicates
     df['hash'] = df['Text'].apply(md5_hash)
     df.drop_duplicates(subset='hash', keep='first', inplace=True)
 
     # Limit the number of rows to 2mil
     df = df[:2000000]
+
+    # Set the index column.  If previous data exists then we want to start the
+    # index from the end of the current data.  The next new index should start
+    # at the count of existing data since the existing df_idx is zero indexed
+    num_existing_data = Data.objects.filter(project=project).count()
+    df.reset_index(drop=True, inplace=True)
+    df['idx'] = df.index + num_existing_data
 
     # Create the data objects
     df['objects'] = df.apply(lambda x: Data(text=x['Text'], project=project,
