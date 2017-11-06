@@ -506,7 +506,9 @@ def unassign_datum(datum, profile):
 
 
 def save_data_file(df, project_pk):
-    """Given the df used to create and save objects save just the data to a file
+    """Given the df used to create and save objects save just the data to a file.
+        Make sure to count the number of files in directory assocaited with the
+        project and save as next incremented file name
 
     Args:
         df: dataframe used to create and save data objects, contains `Text` column
@@ -515,7 +517,9 @@ def save_data_file(df, project_pk):
     Returns:
         file: The filepath to the saved datafile
     """
-    fpath = os.path.join(settings.PROJECT_FILE_PATH, 'project_' + str(project_pk) + '_data.csv')
+    num_proj_files = len([f for f in os.listdir(settings.PROJECT_FILE_PATH)
+                          if f.startswith('project_'+str(project_pk))])
+    fpath = os.path.join(settings.PROJECT_FILE_PATH, 'project_' + str(project_pk) + '_data_' + str(num_proj_files) + '.csv')
 
     df.to_csv(fpath, index=False)
 

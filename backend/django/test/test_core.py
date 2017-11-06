@@ -690,12 +690,12 @@ def test_save_data_file_no_labels_csv(test_project, tmpdir, settings):
 
     saved_data = pd.read_csv(fname)
 
-    assert fname == os.path.join(str(temp_data_file_path), 'project_' + str(test_project.pk) + '_data.csv')
+    assert fname == os.path.join(str(temp_data_file_path), 'project_' + str(test_project.pk) + '_data_0.csv')
     assert os.path.isfile(fname)
     assert saved_data.equals(data)
 
 
-def test_save_data_file_some_labels_tsv(test_project, tmpdir, settings):
+def test_save_data_file_some_labels_csv(test_project, tmpdir, settings):
     test_file = './core/data/test_files/test_some_labels.csv'
 
     temp_data_file_path = tmpdir.mkdir('data').mkdir('data_files')
@@ -707,9 +707,29 @@ def test_save_data_file_some_labels_tsv(test_project, tmpdir, settings):
 
     saved_data = pd.read_csv(fname)
 
-    assert fname == os.path.join(str(temp_data_file_path), 'project_' + str(test_project.pk) + '_data.csv')
+    assert fname == os.path.join(str(temp_data_file_path), 'project_' + str(test_project.pk) + '_data_0.csv')
     assert os.path.isfile(fname)
     assert saved_data.equals(data)
+
+
+def test_save_data_file_multiple_files(test_project, tmpdir, settings):
+    test_file = './core/data/test_files/test_no_labels.csv'
+
+    temp_data_file_path = tmpdir.mkdir('data').mkdir('data_files')
+    settings.PROJECT_FILE_PATH = str(temp_data_file_path)
+
+    data = pd.read_csv(test_file)
+
+    fname1 = save_data_file(data, test_project.pk)
+    fname2 = save_data_file(data, test_project.pk)
+    fname3 = save_data_file(data, test_project.pk)
+
+    assert fname1 == os.path.join(str(temp_data_file_path), 'project_' + str(test_project.pk) + '_data_0.csv')
+    assert os.path.isfile(fname1)
+    assert fname2 == os.path.join(str(temp_data_file_path), 'project_' + str(test_project.pk) + '_data_1.csv')
+    assert os.path.isfile(fname2)
+    assert fname3 == os.path.join(str(temp_data_file_path), 'project_' + str(test_project.pk) + '_data_2.csv')
+    assert os.path.isfile(fname3)
 
 
 def test_create_tfidf_matrix(test_tfidf_matrix):
