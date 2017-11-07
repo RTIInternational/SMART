@@ -167,11 +167,9 @@ def add_data(project, df):
     df['idx'] = df.index + num_existing_data
 
     # Create the data objects
-    df['objects'] = df.apply(lambda x: Data(text=x['Text'], project=project,
+    df['object'] = df.apply(lambda x: Data(text=x['Text'], project=project,
                                             hash=x['hash'], df_idx=x['idx']), axis=1)
-
-    # Split labeled data from unlabeled data
-    data = Data.objects.bulk_create(df['objects'].tolist())
+    data = Data.objects.bulk_create(df['object'].tolist())
 
     labels = {}
     for l in project.labels.all():
@@ -180,15 +178,13 @@ def add_data(project, df):
     # Find the data that has labels
     labeled_df = df[~pd.isnull(df['Label'])]
     if len(labeled_df) > 0:
-        labeled_df['labeled_objects'] = labeled_df.apply(lambda x:
-            DataLabel(data=x['objects'],
-                      profile=project.creator,
-                      label=labels[x['Label']],
-                      training_set=project.get_current_training_set()
-                      ), axis=1
+        labels = DataLabel.objects.bulk_create(
+            [DataLabel(data=row['object'],
+                       profile=project.creator,
+                       label=labels[row['Label']],
+                       training_set=project.get_current_training_set())
+             for i, row in labeled_df.iterrows()]
         )
-
-        labels = DataLabel.objects.bulk_create(labeled_df['labeled_objects'].tolist())
 
     return data
 
