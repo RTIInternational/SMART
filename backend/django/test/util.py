@@ -1,4 +1,5 @@
 import csv
+import pandas as pd
 
 from core.management.commands.seed import (SEED_FILE_PATH)
 from core.models import Queue
@@ -29,10 +30,17 @@ def assert_redis_matches_db(test_redis):
             assert not test_redis.exists('queue:'+str(q.pk))
 
 
-def read_test_data(file=SEED_FILE_PATH):
+def read_test_data_api(file=SEED_FILE_PATH):
     '''
-    Read the test data from its file, as we'd expect to find
-    it in the database.
+    Read the test data from its file and store as list of dicts.  Used for API
+    tests.
     '''
     with open(file) as f:
         return [{'Text': d['Text'], 'Label': d['Label']} for d in csv.DictReader(f)]
+
+def read_test_data_backend(file=SEED_FILE_PATH):
+    '''
+    Read the test data from its file and store as dataframe.  Used for backend
+    tests.
+    '''
+    return pd.read_csv(file)

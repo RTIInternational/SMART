@@ -14,7 +14,7 @@ from core.util import (create_project, add_queue,
                        create_tfidf_matrix, save_tfidf_matrix,
                        train_and_save_model, predict_data)
 
-from test.util import read_test_data
+from test.util import read_test_data_backend
 
 TEST_QUEUE_LEN = 30
 
@@ -58,10 +58,8 @@ def test_project_data(db, test_project):
     '''
     Creates the test project and adds test data to it.
     '''
-    test_data = read_test_data(file='./core/data/test_files/test_no_labels.csv')
-    df =  pd.DataFrame(test_data)
-    df['Label'] = df['Label'].apply(lambda x: None if x == '' else x)
-    add_data(test_project, df)
+    test_data = read_test_data_backend(file='./core/data/test_files/test_no_labels.csv')
+    add_data(test_project, test_data)
     return test_project
 
 @pytest.fixture
@@ -138,10 +136,8 @@ def test_project_labeled(test_project, test_labels):
     '''
     A project that has labeled data
     '''
-    test_data = read_test_data(file='./core/data/test_files/test_some_labels.csv')
-    df =  pd.DataFrame(test_data)
-    df['Label'] = df['Label'].apply(lambda x: None if x == '' else x)
-    add_data(test_project, df)
+    test_data = read_test_data_backend(file='./core/data/test_files/test_some_labels.csv')
+    add_data(test_project, test_data)
     return test_project
 
 

@@ -6,7 +6,7 @@ from core.management.commands.seed import (
 from core.pagination import SmartPagination
 from core.models import (Project)
 
-from test.util import read_test_data
+from test.util import read_test_data_api
 
 # Need a hashable dict so we can put them in a set
 class HashableDict(dict):
@@ -92,7 +92,7 @@ def test_get_labels(seeded_database, admin_client):
     ], ['name'])
 
 def test_get_data(seeded_database, admin_client):
-    expected = read_test_data()
+    expected = read_test_data_api()
     expected = [{'text': x['Text']} for x in expected]
 
     assert SmartPagination.max_page_size >= len(expected), \

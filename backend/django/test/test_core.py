@@ -28,7 +28,7 @@ from core.util import (redis_serialize_queue, redis_serialize_data,
                        check_and_trigger_model, get_ordered_queue_data,
                        find_queue_length)
 
-from test.util import read_test_data, assert_obj_exists, assert_redis_matches_db
+from test.util import read_test_data_backend, assert_obj_exists, assert_redis_matches_db
 from test.conftest import TEST_QUEUE_LEN
 
 
@@ -135,36 +135,30 @@ def test_get_current_training_set_multiple_training_set(test_project):
 
 
 def test_add_data_no_labels(db, test_project):
-    test_data = read_test_data(file='./core/data/test_files/test_no_labels.csv')
+    test_data = read_test_data_backend(file='./core/data/test_files/test_no_labels.csv')
+    add_data(test_project, test_data)
 
-    df =  pd.DataFrame(test_data)
-    df['Label'] = df['Label'].apply(lambda x: None if x == '' else x)
-    add_data(test_project, df)
-
-    for d in test_data:
+    for i, row in test_data.iterrows():
         assert_obj_exists(Data, {
-            'text': d['Text'],
+            'text': row['Text'],
             'project': test_project
         })
 
 
 def test_add_data_with_labels(db, test_project_labels):
-    test_data = read_test_data(file='./core/data/test_files/test_some_labels.csv')
+    test_data = read_test_data_backend(file='./core/data/test_files/test_some_labels.csv')
+    add_data(test_project_labels, test_data)
 
-    df =  pd.DataFrame(test_data)
-    df['Label'] = df['Label'].apply(lambda x: None if x == '' else x)
-    add_data(test_project_labels, df)
-
-    for d in test_data:
+    for i, row in test_data.iterrows():
         assert_obj_exists(Data, {
-            'text': d['Text'],
+            'text': row['Text'],
             'project': test_project_labels
         })
-        if d['Label'] != '':
+        if not pd.isnull(row['Label']):
             assert_obj_exists(DataLabel, {
-                'data__text': d['Text'],
+                'data__text': row['Text'],
                 'profile': test_project_labels.creator,
-                'label__name': d['Label']
+                'label__name': row['Label']
             })
 
 
@@ -217,11 +211,9 @@ def test_fill_multiple_projects(db, test_queue, test_profile):
     test_queue.length = project_data_count + 1
     test_queue.save()
     test_project2 = create_project('test_project2', test_profile)
-    project2_data = read_test_data(file='./core/data/test_files/test_no_labels.csv')
-    df =  pd.DataFrame(project2_data)
-    df['Label'] = df['Label'].apply(lambda x: None if x == '' else x)
+    project2_data = read_test_data_backend(file='./core/data/test_files/test_no_labels.csv')
 
-    add_data(test_project2, pd.DataFrame(df))
+    add_data(test_project2, project2_data)
 
     fill_queue(test_queue, orderby='random')
 
@@ -276,11 +268,9 @@ def test_init_redis_queues_multiple_projects(db, test_project_data, test_redis, 
     p1_queue2 = add_queue(test_project_data, 10)
 
     project2 = create_project('test_project2', test_profile)
-    project2_data = read_test_data(file='./core/data/test_files/test_no_labels.csv')
-    df =  pd.DataFrame(project2_data)
-    df['Label'] = df['Label'].apply(lambda x: None if x == '' else x)
+    project2_data = read_test_data_backend(file='./core/data/test_files/test_no_labels.csv')
 
-    add_data(project2, pd.DataFrame(df))
+    add_data(project2, project2_data)
     p2_queue1 = add_queue(project2, 10)
     fill_queue(p2_queue1, orderby='random')
     p2_queue2 = add_queue(project2, 10)
