@@ -171,7 +171,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             # Queue
             batch_size = 10 * len([x for x in labels if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True])
             num_coders = len([x for x in permissions if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True]) + 1
-            q_length = math.ceil(batch_size/num_coders) * num_coders + math.ceil(batch_size/num_coders) * (num_coders - 1)
+            q_length = util.find_queue_length(batch_size, num_coders)
 
             queue = util.add_queue(project=proj_obj, length=q_length)
 

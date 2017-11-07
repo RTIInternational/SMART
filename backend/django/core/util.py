@@ -189,6 +189,18 @@ def add_data(project, df):
     return data
 
 
+def find_queue_length(batch_size, num_coders):
+    """Determine the length of the queue given by the batch_size and number of coders
+
+    Args:
+        batch_size [number of labels * 10]
+        num_coders [creator, admins, coders]
+    Returns:
+        queue_length
+    """
+    return math.ceil(batch_size/num_coders) * num_coders + math.ceil(batch_size/num_coders) * (num_coders - 1)
+
+
 def add_queue(project, length, profile=None):
     '''
     Add a queue of the given length to the given project.  If a profile is provided,

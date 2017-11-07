@@ -25,7 +25,8 @@ from core.util import (redis_serialize_queue, redis_serialize_data,
                        save_tfidf_matrix, load_tfidf_matrix,
                        train_and_save_model, predict_data,
                        least_confident, margin_sampling, entropy,
-                       check_and_trigger_model, get_ordered_queue_data)
+                       check_and_trigger_model, get_ordered_queue_data,
+                       find_queue_length)
 
 from test.util import read_test_data, assert_obj_exists, assert_redis_matches_db
 from test.conftest import TEST_QUEUE_LEN
@@ -63,6 +64,20 @@ def test_redis_parse_data(test_queue, test_redis):
 
     assert_obj_exists(Data, { 'pk': parsed_data.pk })
     assert_obj_exists(DataQueue, { 'data_id': parsed_data.pk })
+
+
+def test_find_queue_length():
+    # [batch_size, num_coders, q_length]
+    test_vals = [
+        [20, 1, 20],
+        [20, 2, 30],
+        [30, 2, 45],
+        [30, 3, 50]
+    ]
+
+    for vals in test_vals:
+        q_length = find_queue_length(vals[0], vals[1])
+        assert q_length == vals[2]
 
 
 def test_create_profile(db):
@@ -1100,7 +1115,7 @@ def test_check_and_trigger_queue_changes_success(setup_celery, test_project_labe
 
     batch_size = len(project.labels.all()) * 10
     num_coders = len(project.projectpermissions_set.all()) + 1
-    new_queue_length = math.ceil(batch_size/num_coders) * num_coders + math.ceil(batch_size/num_coders) * (num_coders - 1)
+    new_queue_length = find_queue_length(batch_size, num_coders)
     assert q.length == new_queue_length
 
     # Assert least confident in queue

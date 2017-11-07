@@ -11,7 +11,7 @@ def send_test_task():
 def send_model_task(project_pk):
     """Trains, Saves, Predicts, Fills Queue"""
     from core.models import Project, Data, Label, TrainingSet
-    from core.util import train_and_save_model, predict_data, fill_queue
+    from core.util import train_and_save_model, predict_data, fill_queue, find_queue_length
 
     project = Project.objects.get(pk=project_pk)
     queue = project.queue_set.get()
@@ -24,7 +24,7 @@ def send_model_task(project_pk):
     # Determine if queue size has changed (num_coders changed) and re-fill queue
     batch_size = len(project.labels.all()) * 10
     num_coders = len(project.projectpermissions_set.all()) + 1
-    q_length = math.ceil(batch_size/num_coders) * num_coders + math.ceil(batch_size/num_coders) * (num_coders - 1)
+    q_length = find_queue_length(batch_size, num_coders)
 
     if q_length != queue.length:
         queue.length = q_length
