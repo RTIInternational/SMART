@@ -65,6 +65,7 @@ def annotate_data(request, pk):
     """
     data = Data.objects.get(pk=pk)
     profile = request.user.profile
+    response = {}
 
     # Make sure coder still has permissions before labeling data
     if project_extras.proj_permission_level(data.project, profile) > 0:
@@ -72,8 +73,10 @@ def annotate_data(request, pk):
         util.label_data(label, data, profile)
 
         util.check_and_trigger_model(data)
+    else:
+        response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
 
-    return Response({})
+    return Response(response)
 
 @api_view(['GET'])
 def leave_coding_page(request):

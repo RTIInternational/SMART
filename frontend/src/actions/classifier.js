@@ -7,11 +7,13 @@ export const PASS_CARD = 'PASS_CARD';
 export const POP_CARD = 'POP_CARD';
 export const PUSH_CARD = 'PUSH_CARD';
 export const SET_MESSAGE = 'SET_MESSAGE';
+export const CLEAR_DECK = 'CLEAR_DECK';
 
 export const passCard = createAction(PASS_CARD);
 export const popCard = createAction(POP_CARD);
 export const pushCard = createAction(PUSH_CARD);
 export const setMessage = createAction(SET_MESSAGE);
+export const clearDeck = createAction(CLEAR_DECK);
 
 
 // Create cards by reading from a queue
@@ -64,7 +66,13 @@ export const annotateCard = (dataID, labelID) => {
                 }
             })
             .then(response => {
-                dispatch(popCard())
+                if ('error' in response) {
+                    dispatch(clearDeck())
+                    return dispatch(setMessage(response.error))
+                }
+                else {
+                    dispatch(popCard())
+                }
             })
     }
 }
