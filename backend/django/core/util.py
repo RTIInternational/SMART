@@ -533,6 +533,7 @@ def save_data_file(df, project_pk):
                           if f.startswith('project_'+str(project_pk))])
     fpath = os.path.join(settings.PROJECT_FILE_PATH, 'project_' + str(project_pk) + '_data_' + str(num_proj_files) + '.csv')
 
+    df = [['Text', 'Label']]
     df.to_csv(fpath, index=False)
 
     return fpath
