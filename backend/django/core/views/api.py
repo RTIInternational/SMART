@@ -19,6 +19,7 @@ from core.models import (Profile, Project, Model, Data, Label, DataLabel,
                          DataPrediction, Queue, DataQueue, AssignedData)
 import core.util as util
 from core.pagination import SmartPagination
+from core.templatetags import project_extras
 
 ############################################
 #    REACT API ENDPOINTS FOR CODING VIEW   #
@@ -64,10 +65,13 @@ def annotate_data(request, pk):
     """
     data = Data.objects.get(pk=pk)
     profile = request.user.profile
-    label = Label.objects.get(pk=request.data['labelID'])
-    util.label_data(label, data, profile)
 
-    util.check_and_trigger_model(data)
+    # Make sure coder still has permissions before labeling data
+    if project_extras.proj_permission_level(data.project, profile) > 0:
+        label = Label.objects.get(pk=request.data['labelID'])
+        util.label_data(label, data, profile)
+
+        util.check_and_trigger_model(data)
 
     return Response({})
 
