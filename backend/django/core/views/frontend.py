@@ -229,7 +229,8 @@ class ProjectUpdate(LoginRequiredMixin, UpdateView):
                 self.object = form.save()
                 permissions.instance = self.object
                 for deleted_permissions in permissions.deleted_forms:
-                    util.batch_unassign(deleted_permissions.profile)
+                    del_perm_profile = deleted_permissions.cleaned_data.get('profile', None)
+                    util.batch_unassign(del_perm_profile)
                 permissions.save()
 
                 # Data
