@@ -70,6 +70,30 @@ class ProjectDetail(LoginRequiredMixin, DetailView):
         return obj
 
 
+def upload_data(form_data, project, queue=None):
+    """Perform data upload given validated form_data.
+
+    1. Add data to database
+    2. If new project then fill queue (only new project will pass queue object)
+    3. Save the uploaded data file
+    4. Create tf_idf file
+    5. Check and Trigger model
+    """
+    data_objs = util.add_data(project, form_data)
+    if queue:
+        util.fill_queue(queue, orderby='random')
+    util.save_data_file(form_data, project.pk)
+
+    # Since User can upload Labeled Data and this data is added to current training_set
+    # we need to check_and_trigger model.  However since training model requires
+    # tf_idf to be created we must create a chord which garuntees that tfidf
+    # creation task is completed before check and trigger model task
+    chord(
+          tasks.send_tfidf_creation_task.s(DataSerializer(data_objs, many=True).data, project.pk),
+          tasks.send_check_and_trigger_model_task.si(project.pk)
+    ).apply_async()
+
+
 class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
     file_storage = FileSystemStorage(location=settings.DATA_DIR)
     form_list = [
@@ -177,17 +201,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
             # Data
             f_data = data.cleaned_data['data']
-            new_data = util.add_data(proj_obj, f_data)
-            util.fill_queue(queue, orderby='random')
-            util.save_data_file(f_data, proj_obj.pk)
-            # Since User can upload Labeled Data and this data is added to training_set 0
-            # we need to check_and_trigger model.  However since training model requires
-            # tf_idf to be created we must create a chord which garuntees that tfidf
-            # creation task is completed before check and trigger model task
-            chord(
-                  tasks.send_tfidf_creation_task.s(DataSerializer(new_data, many=True).data, proj_obj.pk),
-                  tasks.send_check_and_trigger_model_task.si(proj_obj.pk)
-            ).apply_async()
+            upload_data(f_data, proj_obj, queue)
 
         return HttpResponseRedirect(proj_obj.get_absolute_url())
 
@@ -235,17 +249,8 @@ class ProjectUpdate(LoginRequiredMixin, UpdateView):
 
                 # Data
                 f_data = form.cleaned_data.get('data', False)
-                if f_data:
-                    new_data = util.add_data(self.object, f_data)
-                    util.save_data_file(f_data, self.object.pk)
-                    # Since User can upload Labeled Data and this data is added to training_set 0
-                    # we need to check_and_trigger model.  However since training model requires
-                    # tf_idf to be created we must create a chord which garuntees that tfidf
-                    # creation task is completed before check and trigger model task
-                    chord(
-                          tasks.send_tfidf_creation_task.s(DataSerializer(new_data, many=True).data, self.object.pk),
-                          tasks.send_check_and_trigger_model_task.si(self.object.pk)
-                    ).apply_async()
+                if isinstance(f_data, pd.DataFrame):
+                    upload_data(f_data, self.object)
                 return redirect(self.get_success_url())
             else:
                 return self.render_to_response(context)
