@@ -5,16 +5,16 @@ queues, etc.
 import pytest
 import unittest
 import os
-import filecmp
 import numpy as np
 import scipy
 import pandas as pd
+import math
 
 from django.contrib.auth import get_user_model
 
 from core.models import (Project, Queue, Data, DataQueue, Profile, Model,
                          AssignedData, Label, DataLabel, DataPrediction,
-                         DataUncertainty, TrainingSet)
+                         DataUncertainty, TrainingSet, ProjectPermissions)
 from core.util import (redis_serialize_queue, redis_serialize_data,
                        redis_parse_queue, redis_parse_data,
                        create_project, add_data, assign_datum,
@@ -995,6 +995,7 @@ def test_check_and_trigger_batched_success(setup_celery, test_project_labeled_an
                                            test_queue, test_redis, tmpdir, settings):
     project = test_project_labeled_and_tfidf
     initial_training_set = project.get_current_training_set()
+    initial_queue_size = test_queue.length
     model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
     settings.MODEL_PICKLE_PATH = str(model_path_temp)
 
@@ -1020,6 +1021,7 @@ def test_check_and_trigger_batched_success(setup_celery, test_project_labeled_an
     # Assert queue filled and redis sycned
     assert test_queue.data.count() == test_queue.length
     assert_redis_matches_db(test_redis)
+    assert test_queue.length == initial_queue_size
 
     # Assert least confident in queue
     data_list = get_ordered_queue_data(test_queue, 'least confident')
@@ -1056,3 +1058,62 @@ def test_check_and_trigger_batched_onlyone_label(setup_celery, test_project_data
     assert DataPrediction.objects.filter(data__project=test_project_data).count() == 0
     assert DataUncertainty.objects.filter(data__project=test_project_data).count() == 0
     assert DataQueue.objects.filter(queue=test_queue).count() == TEST_QUEUE_LEN
+
+
+def test_check_and_trigger_queue_changes_success(setup_celery, test_project_labeled_and_tfidf,
+                                           test_queue, test_redis, tmpdir, settings, test_profile2):
+    project = test_project_labeled_and_tfidf
+    initial_training_set = project.get_current_training_set()
+    initial_queue_size = test_queue.length
+    model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
+    settings.MODEL_PICKLE_PATH = str(model_path_temp)
+
+    # Add another user to permissions
+    ProjectPermissions.objects.create(profile=test_profile2,
+                                      project=project,
+                                      permission='CODER')
+
+    datum = DataLabel.objects.filter(data__project=project).first().data
+    check = check_and_trigger_model(datum)
+    assert check == 'model running'
+
+    # Assert model created and saved
+    assert_obj_exists(Model, {
+        'project': project
+    })
+    model = Model.objects.get(project=project)
+    assert os.path.isfile(model.pickle_path)
+    assert model.pickle_path == os.path.join(str(model_path_temp), 'project_' + str(project.pk)
+                                             + '_training_' + str(initial_training_set.set_number)
+                                             + '.pkl')
+
+    # Assert predictions created
+    predictions = DataPrediction.objects.filter(data__project=project)
+    assert len(predictions) == Data.objects.filter(project=project,
+                                                   labelers=None).count() * project.labels.count()
+
+    # Assert queue filled and redis sycned
+    q = project.queue_set.get()
+    assert q.data.count() == q.length
+    assert_redis_matches_db(test_redis)
+
+    batch_size = len(project.labels.all()) * 10
+    num_coders = len(project.projectpermissions_set.all()) + 1
+    new_queue_length = math.ceil(batch_size/num_coders) * num_coders + math.ceil(batch_size/num_coders) * (num_coders - 1)
+    assert q.length == new_queue_length
+
+    # Assert least confident in queue
+    data_list = get_ordered_queue_data(test_queue, 'least confident')
+    previous_lc = data_list[0].datauncertainty_set.get().least_confident
+    for datum in data_list:
+        assert len(datum.datalabel_set.all()) == 0
+        assert_obj_exists(DataUncertainty, {
+            'data': datum
+        })
+        assert datum.datauncertainty_set.get().least_confident <= previous_lc
+        previous_lc = datum.datauncertainty_set.get().least_confident
+    assert DataQueue.objects.filter(queue=test_queue).count() == new_queue_length
+
+    # Assert new training set
+    assert project.get_current_training_set() != initial_training_set
+    assert project.get_current_training_set().set_number == initial_training_set.set_number + 1
