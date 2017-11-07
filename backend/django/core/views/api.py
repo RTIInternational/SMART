@@ -39,23 +39,15 @@ def download_data(request, pk):
 
     data = []
     for d in data_objs:
-        temp = {}
-        temp['text'] = d.text
-
         if d.datalabel_set.count() >= 1:
-            label = d.datalabel_set.first().label.name
-        elif d.dataprediction_set.count() >= 1:
-            newest_model = Model.objects.filter(project=pk).order_by('-pk')[0]
-            label = d.dataprediction_set.filter(model=newest_model).order_by('-predicted_probability')[0].predicted_class
-        else:
-            label = None
-
-        temp['label'] = label
-
-        data.append(temp)
+            temp = {}
+            temp['Text'] = d.text
+            temp['Label'] = d.datalabel_set.first().label.name
+            data.append(temp)
 
     buffer = io.StringIO()
-    wr = csv.DictWriter(buffer, fieldnames=['text', 'label'], quoting=csv.QUOTE_ALL)
+    wr = csv.DictWriter(buffer, fieldnames=['Text', 'Label'], quoting=csv.QUOTE_ALL)
+    wr.writeheader()
     wr.writerows(data)
 
     buffer.seek(0)
