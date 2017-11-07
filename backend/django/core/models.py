@@ -53,6 +53,8 @@ class Model(models.Model):
     pickle_path = models.TextField()
     project = models.ForeignKey('Project')
     training_set = models.ForeignKey('TrainingSet')
+    cv_accuracy = models.FloatField()
+    cv_std = models.FloatField()
     predictions = models.ManyToManyField(
         'Data', related_name='models', through='DataPrediction'
     )
