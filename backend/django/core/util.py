@@ -2,6 +2,7 @@ import random
 import redis
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import cross_val_score
 from sklearn.externals import joblib
 from scipy import sparse
 import os
@@ -607,13 +608,17 @@ def train_and_save_model(project):
     Y = labeled_values
     clf.fit(X, Y)
 
+    cv_scores = cross_val_score(clf, X, Y, cv=5)
+
     fpath = os.path.join(settings.MODEL_PICKLE_PATH, 'project_' + str(project.pk) + '_training_' \
          + str(current_training_set.set_number) + '.pkl')
 
     joblib.dump(clf, fpath)
 
     model = Model.objects.create(pickle_path=fpath, project=project,
-                                 training_set=current_training_set)
+                                 training_set=current_training_set,
+                                 cv_accuracy=cv_scores.mean(),
+                                 cv_std=cv_scores.std())
 
     return model
 
