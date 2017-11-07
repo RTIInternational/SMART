@@ -447,7 +447,7 @@ def assign_datum(profile, project):
             return datum
 
 
-def label_data(label, datum, profile):
+def label_data(label, datum, profile, time):
     '''
     Record that a given datum has been labeled; remove its assignment, if any.
     '''
@@ -457,7 +457,8 @@ def label_data(label, datum, profile):
         DataLabel.objects.create(data=datum,
                                 label=label,
                                 profile=profile,
-                                training_set=current_training_set
+                                training_set=current_training_set,
+                                time_to_label=time
                                 )
         # There's a unique constraint on data/profile, so this is
         # guaranteed to return one object

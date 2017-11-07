@@ -70,7 +70,8 @@ def annotate_data(request, pk):
     # Make sure coder still has permissions before labeling data
     if project_extras.proj_permission_level(data.project, profile) > 0:
         label = Label.objects.get(pk=request.data['labelID'])
-        util.label_data(label, data, profile)
+        labeling_time = request.data['labeling_time']
+        util.label_data(label, data, profile, labeling_time)
 
         util.check_and_trigger_model(data)
     else:

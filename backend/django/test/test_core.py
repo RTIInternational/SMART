@@ -538,14 +538,15 @@ def test_label_data(db, test_profile, test_queue, test_redis):
 
     datum = assign_datum(test_profile, test_queue.project)
     test_label = Label.objects.create(name='test', project=test_queue.project)
-    label_data(test_label, datum, test_profile)
+    label_data(test_label, datum, test_profile, 3)
 
     # Make sure the label was properly recorded
     assert datum in test_profile.labeled_data.all()
     assert_obj_exists(DataLabel, {
         'data': datum,
         'profile': test_profile,
-        'label': test_label
+        'label': test_label,
+        'time_to_label': 3
     })
 
     # Make sure the assignment was removed
@@ -959,7 +960,7 @@ def test_check_and_trigger_model_first_labeled(setup_celery, test_project_data, 
 
     datum = assign_datum(test_profile, test_queue.project)
     test_label = test_labels[0]
-    label_data(test_label, datum, test_profile)
+    label_data(test_label, datum, test_profile, 3)
 
     check = check_and_trigger_model(datum)
     assert check == 'no trigger'
@@ -979,7 +980,7 @@ def test_check_and_trigger_lt_batch_labeled(setup_celery, test_project_data, tes
     for i in range(TEST_QUEUE_LEN // 2):
         datum = assign_datum(test_profile, test_queue.project)
         test_label = test_labels[0]
-        label_data(test_label, datum, test_profile)
+        label_data(test_label, datum, test_profile, 3)
 
     check = check_and_trigger_model(datum)
     assert check == 'no trigger'
@@ -1048,7 +1049,7 @@ def test_check_and_trigger_batched_onlyone_label(setup_celery, test_project_data
     for i in range(TEST_QUEUE_LEN):
         datum = assign_datum(test_profile, test_queue.project)
         test_label = test_labels[0]
-        label_data(test_label, datum, test_profile)
+        label_data(test_label, datum, test_profile, 3)
 
     check = check_and_trigger_model(datum)
     assert check == 'random'
