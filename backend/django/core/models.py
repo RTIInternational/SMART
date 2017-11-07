@@ -82,7 +82,7 @@ class DataLabel(models.Model):
     profile = models.ForeignKey('Profile')
     label = models.ForeignKey('Label')
     training_set = models.ForeignKey('TrainingSet')
-    time_to_label = models.IntegerField()
+    time_to_label = models.IntegerField(null=True)
 
 class DataPrediction(models.Model):
     class Meta:
