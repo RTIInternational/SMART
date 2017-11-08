@@ -4,6 +4,7 @@ from django.utils import timezone
 from django.urls import reverse
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.contrib.postgres.fields import JSONField
 
 class Profile(models.Model):
     # Link to the auth user, since we're basically just extending it
@@ -54,7 +55,7 @@ class Model(models.Model):
     project = models.ForeignKey('Project')
     training_set = models.ForeignKey('TrainingSet')
     cv_accuracy = models.FloatField()
-    cv_std = models.FloatField()
+    cv_metrics = JSONField()
     predictions = models.ManyToManyField(
         'Data', related_name='models', through='DataPrediction'
     )
