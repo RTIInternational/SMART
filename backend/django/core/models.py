@@ -69,6 +69,8 @@ class Data(models.Model):
         return self.text
 
 class Label(models.Model):
+    class Meta:
+        unique_together = (('name', 'project'))
     name = models.TextField()
     project = models.ForeignKey('Project', related_name='labels', on_delete=models.CASCADE)
 
@@ -82,7 +84,7 @@ class DataLabel(models.Model):
     profile = models.ForeignKey('Profile')
     label = models.ForeignKey('Label')
     training_set = models.ForeignKey('TrainingSet')
-    time_to_label = models.IntegerField()
+    time_to_label = models.IntegerField(null=True)
 
 class DataPrediction(models.Model):
     class Meta:

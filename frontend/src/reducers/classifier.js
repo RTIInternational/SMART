@@ -2,7 +2,7 @@ import { handleActions } from 'redux-actions';
 import update from 'immutability-helper';
 import moment from 'moment';
 
-import { PASS_CARD, POP_CARD, PUSH_CARD, SET_MESSAGE } from '../actions/classifier'
+import { PASS_CARD, POP_CARD, PUSH_CARD, SET_MESSAGE, CLEAR_DECK } from '../actions/classifier'
 
 const initialState = {
     cards: [],
@@ -36,6 +36,9 @@ const classifier = handleActions({
     },
     [SET_MESSAGE]: (state, action) => (
         update(state, { message: { $set: [action.payload] } } )
+    ),
+    [CLEAR_DECK]: (state) => (
+        update(state, { cards : { $set: [] } } )
     )
 }, initialState);
 

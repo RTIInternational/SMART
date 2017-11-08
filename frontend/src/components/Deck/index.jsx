@@ -12,7 +12,7 @@ class Deck extends React.Component {
     }
     
     render() {
-        const { message, cards, passCard, popCard, annotateCard } = this.props;
+        const { message, cards, passCard, annotateCard } = this.props;
         const cardCount = cards.length;
 
         let deck;

@@ -149,25 +149,57 @@ def create_project(name, creator):
 
 def add_data(project, df):
     '''
-    Add data to an existing project.  df should be single column dataframe with
-    column 0 (int).
+    Add data to an existing project.  df should be two column dataframe with
+    columns Text and Label.  Label can be empty and should have at least one
+    null value.  Any row that has Label should be added to DataLabel
     '''
-    # Set the index column
-    df['idx'] = df.index
-
     # Create hash of text and drop duplicates
-    df['hash'] = df[0].apply(md5_hash)
+    df['hash'] = df['Text'].apply(md5_hash)
     df.drop_duplicates(subset='hash', keep='first', inplace=True)
 
     # Limit the number of rows to 2mil
     df = df[:2000000]
 
-    df['objects'] = df.apply(lambda x: Data(text=x[0], project=project,
-                                            hash=x['hash'], df_idx=x['idx']), axis=1)
+    # Set the index column.  If previous data exists then we want to start the
+    # index from the end of the current data.  The next new index should start
+    # at the count of existing data since the existing df_idx is zero indexed
+    num_existing_data = Data.objects.filter(project=project).count()
+    df.reset_index(drop=True, inplace=True)
+    df['idx'] = df.index + num_existing_data
 
-    data = Data.objects.bulk_create(df['objects'].tolist())
+    # Create the data objects
+    df['object'] = df.apply(lambda x: Data(text=x['Text'], project=project,
+                                            hash=x['hash'], df_idx=x['idx']), axis=1)
+    data = Data.objects.bulk_create(df['object'].tolist())
+
+    labels = {}
+    for l in project.labels.all():
+        labels[l.name] = l
+
+    # Find the data that has labels
+    labeled_df = df[~pd.isnull(df['Label'])]
+    if len(labeled_df) > 0:
+        labels = DataLabel.objects.bulk_create(
+            [DataLabel(data=row['object'],
+                       profile=project.creator,
+                       label=labels[row['Label']],
+                       training_set=project.get_current_training_set())
+             for i, row in labeled_df.iterrows()]
+        )
 
     return data
+
+
+def find_queue_length(batch_size, num_coders):
+    """Determine the length of the queue given by the batch_size and number of coders
+
+    Args:
+        batch_size [number of labels * 10]
+        num_coders [creator, admins, coders]
+    Returns:
+        queue_length
+    """
+    return math.ceil(batch_size/num_coders) * num_coders + math.ceil(batch_size/num_coders) * (num_coders - 1)
 
 
 def add_queue(project, length, profile=None):
@@ -483,20 +515,35 @@ def unassign_datum(datum, profile):
     settings.REDIS.lpush(redis_serialize_queue(queue), redis_serialize_data(datum))
 
 
+def batch_unassign(profile):
+    '''
+    Remove all of a profile's assignments and Re-add them to its respective
+    queue in Redis.
+    '''
+    assignments = AssignedData.objects.filter(profile=profile)
+
+    for a in assignments:
+        unassign_datum(a.data, profile)
+
+
 def save_data_file(df, project_pk):
-    """Given the df used to create and save objects save just the data to a file
+    """Given the df used to create and save objects save just the data to a file.
+        Make sure to count the number of files in directory assocaited with the
+        project and save as next incremented file name
 
     Args:
-        df: dataframe used to create and save data objects, contains `0` column
+        df: dataframe used to create and save data objects, contains `Text` column
             which has the text data
         project_pk: Primary key of the project
     Returns:
         file: The filepath to the saved datafile
     """
-    fpath = os.path.join(settings.PROJECT_FILE_PATH, 'project_' + str(project_pk) + '_data.csv')
+    num_proj_files = len([f for f in os.listdir(settings.PROJECT_FILE_PATH)
+                          if f.startswith('project_'+str(project_pk))])
+    fpath = os.path.join(settings.PROJECT_FILE_PATH, 'project_' + str(project_pk) + '_data_' + str(num_proj_files) + '.csv')
 
-    df = df[0]
-    df.to_csv(fpath, header=False, index=False)
+    df = df[['Text', 'Label']]
+    df.to_csv(fpath, index=False)
 
     return fpath
 
