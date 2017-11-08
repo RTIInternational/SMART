@@ -16,6 +16,7 @@ def test_celery():
 def test_model_task(test_project_labeled_and_tfidf, test_queue, test_redis, tmpdir, settings):
     project = test_project_labeled_and_tfidf
     initial_training_set = project.get_current_training_set()
+    initial_queue_length = test_queue.length
 
     model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
     settings.MODEL_PICKLE_PATH = str(model_path_temp)
@@ -40,6 +41,9 @@ def test_model_task(test_project_labeled_and_tfidf, test_queue, test_redis, tmpd
     # Assert queue filled and redis sycned
     assert test_queue.data.count() == test_queue.length
     assert_redis_matches_db(test_redis)
+
+    # Assert queue correct size
+    assert test_queue.length == initial_queue_length
 
     # Assert least confident in queue
     data_list = get_ordered_queue_data(test_queue, 'least confident')

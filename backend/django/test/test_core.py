@@ -5,16 +5,16 @@ queues, etc.
 import pytest
 import unittest
 import os
-import filecmp
 import numpy as np
 import scipy
 import pandas as pd
+import math
 
 from django.contrib.auth import get_user_model
 
 from core.models import (Project, Queue, Data, DataQueue, Profile, Model,
                          AssignedData, Label, DataLabel, DataPrediction,
-                         DataUncertainty, TrainingSet)
+                         DataUncertainty, TrainingSet, ProjectPermissions)
 from core.util import (redis_serialize_queue, redis_serialize_data,
                        redis_parse_queue, redis_parse_data,
                        create_project, add_data, assign_datum,
@@ -25,9 +25,10 @@ from core.util import (redis_serialize_queue, redis_serialize_data,
                        save_tfidf_matrix, load_tfidf_matrix,
                        train_and_save_model, predict_data,
                        least_confident, margin_sampling, entropy,
-                       check_and_trigger_model, get_ordered_queue_data)
+                       check_and_trigger_model, get_ordered_queue_data,
+                       find_queue_length)
 
-from test.util import read_test_data, assert_obj_exists, assert_redis_matches_db
+from test.util import read_test_data_backend, assert_obj_exists, assert_redis_matches_db
 from test.conftest import TEST_QUEUE_LEN
 
 
@@ -63,6 +64,20 @@ def test_redis_parse_data(test_queue, test_redis):
 
     assert_obj_exists(Data, { 'pk': parsed_data.pk })
     assert_obj_exists(DataQueue, { 'data_id': parsed_data.pk })
+
+
+def test_find_queue_length():
+    # [batch_size, num_coders, q_length]
+    test_vals = [
+        [20, 1, 20],
+        [20, 2, 30],
+        [30, 2, 45],
+        [30, 3, 50]
+    ]
+
+    for vals in test_vals:
+        q_length = find_queue_length(vals[0], vals[1])
+        assert q_length == vals[2]
 
 
 def test_create_profile(db):
@@ -119,16 +134,32 @@ def test_get_current_training_set_multiple_training_set(test_project):
     assert test_project.get_current_training_set() == set_num_three
 
 
-def test_add_data(db, test_project):
-    test_data = read_test_data()
+def test_add_data_no_labels(db, test_project):
+    test_data = read_test_data_backend(file='./core/data/test_files/test_no_labels.csv')
+    add_data(test_project, test_data)
 
-    add_data(test_project, pd.DataFrame([d['text'] for d in test_data], columns=None))
-
-    for d in test_data:
+    for i, row in test_data.iterrows():
         assert_obj_exists(Data, {
-            'text': d['text'],
+            'text': row['Text'],
             'project': test_project
         })
+
+
+def test_add_data_with_labels(db, test_project_labels):
+    test_data = read_test_data_backend(file='./core/data/test_files/test_some_labels.csv')
+    add_data(test_project_labels, test_data)
+
+    for i, row in test_data.iterrows():
+        assert_obj_exists(Data, {
+            'text': row['Text'],
+            'project': test_project_labels
+        })
+        if not pd.isnull(row['Label']):
+            assert_obj_exists(DataLabel, {
+                'data__text': row['Text'],
+                'profile': test_project_labels.creator,
+                'label__name': row['Label']
+            })
 
 
 def test_add_queue_no_profile(test_project):
@@ -180,9 +211,9 @@ def test_fill_multiple_projects(db, test_queue, test_profile):
     test_queue.length = project_data_count + 1
     test_queue.save()
     test_project2 = create_project('test_project2', test_profile)
-    project2_data = read_test_data()
+    project2_data = read_test_data_backend(file='./core/data/test_files/test_no_labels.csv')
 
-    add_data(test_project2, pd.DataFrame([d['text'] for d in project2_data], columns=None))
+    add_data(test_project2, project2_data)
 
     fill_queue(test_queue, orderby='random')
 
@@ -237,8 +268,9 @@ def test_init_redis_queues_multiple_projects(db, test_project_data, test_redis, 
     p1_queue2 = add_queue(test_project_data, 10)
 
     project2 = create_project('test_project2', test_profile)
-    project2_data = read_test_data()
-    add_data(project2, pd.DataFrame([d['text'] for d in project2_data], columns=None))
+    project2_data = read_test_data_backend(file='./core/data/test_files/test_no_labels.csv')
+
+    add_data(project2, project2_data)
     p2_queue1 = add_queue(project2, 10)
     fill_queue(p2_queue1, orderby='random')
     p2_queue2 = add_queue(project2, 10)
@@ -652,38 +684,58 @@ def test_unassign(db, test_profile, test_project_data, test_queue, test_redis):
     assert reassigned_datum == datum
 
 
-def test_save_data_file_csv(test_project, tmpdir, settings):
-    test_file = './core/data/test_files/test.csv'
+def test_save_data_file_no_labels_csv(test_project, tmpdir, settings):
+    test_file = './core/data/test_files/test_no_labels.csv'
 
     temp_data_file_path = tmpdir.mkdir('data').mkdir('data_files')
     settings.PROJECT_FILE_PATH = str(temp_data_file_path)
 
-    data = pd.read_csv(test_file, header=None)
+    data = pd.read_csv(test_file)
 
     fname = save_data_file(data, test_project.pk)
 
-    saved_data = pd.read_csv(fname, header=None)
+    saved_data = pd.read_csv(fname)
 
-    assert fname == os.path.join(str(temp_data_file_path), 'project_' + str(test_project.pk) + '_data.csv')
+    assert fname == os.path.join(str(temp_data_file_path), 'project_' + str(test_project.pk) + '_data_0.csv')
     assert os.path.isfile(fname)
     assert saved_data.equals(data)
 
 
-def test_save_data_file_tsv(test_project, tmpdir, settings):
-    test_file = './core/data/test_files/test.tsv'
+def test_save_data_file_some_labels_csv(test_project, tmpdir, settings):
+    test_file = './core/data/test_files/test_some_labels.csv'
 
     temp_data_file_path = tmpdir.mkdir('data').mkdir('data_files')
     settings.PROJECT_FILE_PATH = str(temp_data_file_path)
 
-    data = pd.read_csv(test_file, header=None, sep='\t')
+    data = pd.read_csv(test_file)
 
     fname = save_data_file(data, test_project.pk)
 
-    saved_data = pd.read_csv(fname, header=None)
+    saved_data = pd.read_csv(fname)
 
-    assert fname == os.path.join(str(temp_data_file_path), 'project_' + str(test_project.pk) + '_data.csv')
+    assert fname == os.path.join(str(temp_data_file_path), 'project_' + str(test_project.pk) + '_data_0.csv')
     assert os.path.isfile(fname)
     assert saved_data.equals(data)
+
+
+def test_save_data_file_multiple_files(test_project, tmpdir, settings):
+    test_file = './core/data/test_files/test_no_labels.csv'
+
+    temp_data_file_path = tmpdir.mkdir('data').mkdir('data_files')
+    settings.PROJECT_FILE_PATH = str(temp_data_file_path)
+
+    data = pd.read_csv(test_file)
+
+    fname1 = save_data_file(data, test_project.pk)
+    fname2 = save_data_file(data, test_project.pk)
+    fname3 = save_data_file(data, test_project.pk)
+
+    assert fname1 == os.path.join(str(temp_data_file_path), 'project_' + str(test_project.pk) + '_data_0.csv')
+    assert os.path.isfile(fname1)
+    assert fname2 == os.path.join(str(temp_data_file_path), 'project_' + str(test_project.pk) + '_data_1.csv')
+    assert os.path.isfile(fname2)
+    assert fname3 == os.path.join(str(temp_data_file_path), 'project_' + str(test_project.pk) + '_data_2.csv')
+    assert os.path.isfile(fname3)
 
 
 def test_create_tfidf_matrix(test_tfidf_matrix):
@@ -821,7 +873,7 @@ def test_train_and_save_model(test_project_labeled_and_tfidf, tmpdir, settings):
         'project': project
     })
     assert os.path.isfile(model.pickle_path)
-    assert model.pickle_path == os.path.join(str(model_path_temp), 'project_' + str(project.pk) 
+    assert model.pickle_path == os.path.join(str(model_path_temp), 'project_' + str(project.pk)
                                              + '_training_' + str(project.get_current_training_set().set_number)
                                              + '.pkl')
 
@@ -949,6 +1001,7 @@ def test_check_and_trigger_batched_success(setup_celery, test_project_labeled_an
                                            test_queue, test_redis, tmpdir, settings):
     project = test_project_labeled_and_tfidf
     initial_training_set = project.get_current_training_set()
+    initial_queue_size = test_queue.length
     model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
     settings.MODEL_PICKLE_PATH = str(model_path_temp)
 
@@ -974,6 +1027,7 @@ def test_check_and_trigger_batched_success(setup_celery, test_project_labeled_an
     # Assert queue filled and redis sycned
     assert test_queue.data.count() == test_queue.length
     assert_redis_matches_db(test_redis)
+    assert test_queue.length == initial_queue_size
 
     # Assert least confident in queue
     data_list = get_ordered_queue_data(test_queue, 'least confident')
@@ -1010,3 +1064,62 @@ def test_check_and_trigger_batched_onlyone_label(setup_celery, test_project_data
     assert DataPrediction.objects.filter(data__project=test_project_data).count() == 0
     assert DataUncertainty.objects.filter(data__project=test_project_data).count() == 0
     assert DataQueue.objects.filter(queue=test_queue).count() == TEST_QUEUE_LEN
+
+
+def test_check_and_trigger_queue_changes_success(setup_celery, test_project_labeled_and_tfidf,
+                                           test_queue, test_redis, tmpdir, settings, test_profile2):
+    project = test_project_labeled_and_tfidf
+    initial_training_set = project.get_current_training_set()
+    initial_queue_size = test_queue.length
+    model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
+    settings.MODEL_PICKLE_PATH = str(model_path_temp)
+
+    # Add another user to permissions
+    ProjectPermissions.objects.create(profile=test_profile2,
+                                      project=project,
+                                      permission='CODER')
+
+    datum = DataLabel.objects.filter(data__project=project).first().data
+    check = check_and_trigger_model(datum)
+    assert check == 'model running'
+
+    # Assert model created and saved
+    assert_obj_exists(Model, {
+        'project': project
+    })
+    model = Model.objects.get(project=project)
+    assert os.path.isfile(model.pickle_path)
+    assert model.pickle_path == os.path.join(str(model_path_temp), 'project_' + str(project.pk)
+                                             + '_training_' + str(initial_training_set.set_number)
+                                             + '.pkl')
+
+    # Assert predictions created
+    predictions = DataPrediction.objects.filter(data__project=project)
+    assert len(predictions) == Data.objects.filter(project=project,
+                                                   labelers=None).count() * project.labels.count()
+
+    # Assert queue filled and redis sycned
+    q = project.queue_set.get()
+    assert q.data.count() == q.length
+    assert_redis_matches_db(test_redis)
+
+    batch_size = len(project.labels.all()) * 10
+    num_coders = len(project.projectpermissions_set.all()) + 1
+    new_queue_length = find_queue_length(batch_size, num_coders)
+    assert q.length == new_queue_length
+
+    # Assert least confident in queue
+    data_list = get_ordered_queue_data(test_queue, 'least confident')
+    previous_lc = data_list[0].datauncertainty_set.get().least_confident
+    for datum in data_list:
+        assert len(datum.datalabel_set.all()) == 0
+        assert_obj_exists(DataUncertainty, {
+            'data': datum
+        })
+        assert datum.datauncertainty_set.get().least_confident <= previous_lc
+        previous_lc = datum.datauncertainty_set.get().least_confident
+    assert DataQueue.objects.filter(queue=test_queue).count() == new_queue_length
+
+    # Assert new training set
+    assert project.get_current_training_set() != initial_training_set
+    assert project.get_current_training_set().set_number == initial_training_set.set_number + 1

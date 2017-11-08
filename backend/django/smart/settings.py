@@ -48,6 +48,7 @@ class Dev(Configuration):
         'allauth',
         'allauth.account',
         'postgres_stats',
+        'formtools',
         'rest_auth.registration',
         'rest_framework_swagger',
         'webpack_loader'

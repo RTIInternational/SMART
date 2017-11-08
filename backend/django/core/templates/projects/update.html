@@ -10,6 +10,7 @@
                 {{ form.media.css }}
                 <form action="." method="post" enctype="multipart/form-data">
                     {% csrf_token %}
+                    <h3>Overview</h3>
                     <div class="form-group">
                         <label class="control-label" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
                         <input class="form-control" id="{{ form.name.id_for_label }}" maxlength="30" name="{{ form.name.html_name }}" type="text" placeholder="{{ form.name.label }}" value="{{ form.name.value|default_if_none:'' }}"/>
@@ -20,41 +21,36 @@
                         <textarea class="form-control" id="{{ form.description.id_for_label }}" name="{{ form.description.html_name }}">{{ form.description.value|default_if_none:'' }}</textarea>
                         {{ form.description.errors }}
                     </div>
+                    <br />
+                    <h3>Data Upload Instructions</h3>
+                    <p>You can upload an additional data file that contains text (and optionally labels) for your project.  The file <strong>must pass the following checks</strong>:</p>
+                    <ul class="list-group">
+                        <li class="list-group-item"><code>.csv</code> or <code>.tsv</code> file</li>
+                        <li class="list-group-item">Two columns with headers <code>Text</code> and <code>Label</code></li>
+                        <li class="list-group-item">Less than 4GBs</li>
+                    </ul>
+                    <p>The <code>Text</code> column should have the text of your data which will be annotated by users.  The <code>Label</code> column should have any pre-existing labels for the corresponding text.  If you have no labels then this column can be blank.</p>
+                    <p>SMART restricts your project to having two million unique data objects.  Any row after the two millionth will be discarded and any duplicated text that appears previously in the file will also be discarded.</p>
+                    {% if num_data < 2000000 %}
                     <div class="form-group">
                         <label class="control-label" for="{{ form.data.id_for_label }}">{{ form.data.label }}</label>
                         <input class="form-control" id="{{ form.data.id_for_label }}" maxlength="30" name="{{ form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" />
                         {{ form.data.errors }}
                     </div>
+                    {% else %}
+                    <div>
+                        <p>You already have two million unique data objects for this project, you can not upload additional data.</p>
+                    </div>
+                    {% endif %}
                     <br />
-                    <table class="table table-striped">
-                        {{ labels.management_form }}
-                        {{ labels.non_form_errors }}
-                        {% for form in labels.forms %}
-                            {% if forloop.first %}
-                                <thead>
-                                <tr>
-                                    {% for field in form.visible_fields %}{% if field != data %}
-                                        <th>{{ field.label|capfirst }}</th>
-                                    {% endif %}{% endfor %}
-                                </tr>
-                                </thead>
-                            {% endif %}
-                            <tr class="formset_row_label">
-                                {% for field in form.visible_fields %}
-                                    <td>
-                                        {# Include the hidden fields in the form #}
-                                        {% if forloop.first %}
-                                            {% for hidden in form.hidden_fields %}
-                                                {{ hidden }}
-                                            {% endfor %}
-                                        {% endif %}
-                                        {{ field.errors.as_ul }}
-                                        {{ field }}
-                                    </td>
-                                {% endfor %}
-                            </tr>
-                        {% endfor %}
-                    </table>
+                    <h3>Project Permissions</h3>
+                    <p>Admins are able to update project description, upload additional data, control project permissions and annotate data.  Coders are able to view project details and annotate data.</p>
+                    <ul class="list-group">
+                        <li class="list-group-item">The creator of the project ({{ object.creator }}) can not have special permissions set</li>
+                        <li class="list-group-item">Each profile can only have one permission type</li>
+                        <li class="list-group-item">Every row must be completely filled in with both a profile and permission.</li>
+                    </ul>
+                    <p>You can click the <code>add permissions</code> button to add more rows to the form.  If you decide that you want to remove a permission after adding it click the <code>remove permission</code> button next to the inputs.</p>
                     <table class="table table-striped">
                         {{ permissions.management_form }}
                         {{ permissions.non_form_errors }}

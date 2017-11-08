@@ -14,7 +14,7 @@ from core.util import (create_project, add_queue,
                        create_tfidf_matrix, save_tfidf_matrix,
                        train_and_save_model, predict_data)
 
-from test.util import read_test_data
+from test.util import read_test_data_backend
 
 TEST_QUEUE_LEN = 30
 
@@ -58,8 +58,8 @@ def test_project_data(db, test_project):
     '''
     Creates the test project and adds test data to it.
     '''
-    test_data = read_test_data()
-    add_data(test_project, pd.DataFrame([d['text'] for d in test_data], columns=None))
+    test_data = read_test_data_backend(file='./core/data/test_files/test_no_labels.csv')
+    add_data(test_project, test_data)
     return test_project
 
 @pytest.fixture
@@ -120,23 +120,26 @@ def test_labels(test_project_data):
     return labels
 
 @pytest.fixture
-def test_project_labeled(test_project_data, test_labels):
+def test_project_labels(test_project_data):
+    '''
+    A list of labels that correspond to SEED_LABELS
+    '''
+    labels = []
+
+    for l in SEED_LABELS:
+        labels.append(Label.objects.create(name=l, project=test_project_data))
+
+    return test_project_data
+
+@pytest.fixture
+def test_project_labeled(test_project, test_labels):
     '''
     A project that has labeled data
     '''
-    data = test_project_data.data_set.all()[:TEST_QUEUE_LEN]
-    random_labels = [0, 1, 2, 0, 1, 2, 0, 1, 2, 0,
-                     0, 1, 2, 0, 1, 2, 0, 1, 2, 0,
-                     0, 1, 2, 0, 1, 2, 0, 1, 2, 0]
-    for i, d in enumerate(data):
-        DataLabel.objects.create(data=d,
-                                label=test_labels[random_labels[i]],
-                                profile=test_project_data.creator,
-                                training_set=test_project_data.get_current_training_set(),
-                                time_to_label=0
-                                )
+    test_data = read_test_data_backend(file='./core/data/test_files/test_some_labels.csv')
+    add_data(test_project, test_data)
+    return test_project
 
-    return test_project_data
 
 @pytest.fixture
 def test_project_labeled_and_tfidf(test_project_labeled, test_tfidf_matrix, tmpdir, settings):
