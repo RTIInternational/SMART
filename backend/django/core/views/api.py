@@ -96,23 +96,64 @@ def label_timing(request, pk):
                                min_time=Min('time_to_label'),
                                max_time=Max('time_to_label'))
 
-        if result['max_time'] > yDomain:
-            yDomain = result['max_time'] + 10
+        if result['quartiles']:
+            if result['max_time'] > yDomain:
+                yDomain = result['max_time'] + 10
 
-        temp = {
-            'label': u.__str__(),
-            'values': {
-                'Q1': result['quartiles'][0],
-                'Q2': result['quartiles'][1],
-                'Q3': result['quartiles'][2],
-                'whisker_low': result['min_time'],
-                'whisker_high': result['max_time']
+            temp = {
+                'label': u.__str__(),
+                'values': {
+                    'Q1': result['quartiles'][0],
+                    'Q2': result['quartiles'][1],
+                    'Q3': result['quartiles'][2],
+                    'whisker_low': result['min_time'],
+                    'whisker_high': result['max_time']
+                }
             }
-        }
-        dataset.append(temp)
-
+            dataset.append(temp)
 
     return Response({'data': dataset, 'yDomain': yDomain})
+
+
+@api_view(['GET'])
+def model_metrics(request, pk):
+    metric = request.GET.get('metric', 'accuracy')
+
+    project = Project.objects.get(pk=pk)
+    models = Model.objects.filter(project=project).order_by('training_set__set_number')
+
+    if metric == 'accuracy':
+        values = []
+        for model in models:
+            values.append({
+                'x': model.training_set.set_number,
+                'y': model.cv_accuracy
+            })
+
+        dataset = [
+            {
+                'key': 'Accuracy',
+                'values': values
+            }
+        ]
+    else:
+        labels = {str(label.pk): label.name for label in  project.labels.all()}
+        dataset = []
+        for label in labels:
+            values = []
+            for model in models:
+                current_metric = model.cv_metrics[metric][label]
+                values.append({
+                    'x':  model.training_set.set_number,
+                    'y': current_metric
+                  })
+            dataset.append({
+                'key': labels[label],
+                'values': values
+            })
+
+    return Response(dataset)
+
 
 
 @api_view(['GET'])

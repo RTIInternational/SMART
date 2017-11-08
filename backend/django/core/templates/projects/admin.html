@@ -25,6 +25,9 @@
                 <li class="nav-item">
                     <a data-toggle="tab" href="#timer" class="nav-link">Time To Label</a>
                 </li>
+                <li class="nav-item">
+                    <a data-toggle="tab" href="#metrics" class="nav-link">Model Metrics</a>
+                </li>
             </ul>
         </div>
         <div class="tab-content">
@@ -104,6 +107,26 @@
                     <div class="row">
                         <div class="col-md-12">
                             <div id="timer_chart" style="height:500px">
+                                <svg class="nvd3-svg"></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="metrics" class="tab-pane fade in">
+                <div class="cardface">
+                    <div class="form-group">
+                        <label for="metric_select">Select the metric to appear on the chart:</label>
+                        <select class="form-control" id="metric_select">
+                            <option value="accuracy">Accuracy</option>
+                            <option value="f1">F1 Score</option>
+                            <option value="precision">Precision</option>
+                            <option value="recall">Recall</option>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div id="metric_chart" style="height:500px">
                                 <svg class="nvd3-svg"></svg>
                             </div>
                         </div>
@@ -214,6 +237,58 @@ $.ajax({
                 .call(chart);
             nv.utils.windowResize(chart.update);
             return chart;
+        });
+    },
+    error: function (error) {
+        console.log(error);
+    }
+});
+
+
+/*
+ *  Make ajax call to `model_metrics` route.  This will fetch data to populate
+ *  the line chart and show how well the model is training over time.
+ */
+$.ajax({
+    method: 'GET',
+    url: '/api/model_metrics/' + {{ project.pk }} + '/?metric=accuracy',
+    success: function (response) {
+        var chart;
+        nv.addGraph(function() {
+            chart = nv.models.lineChart()
+                .options({
+                    duration: 300,
+                    useInteractiveGuideline: true,
+                    forceY: [0, 1]
+                })
+            ;
+            chart.xAxis
+                .axisLabel("Run ID")
+            ;
+            chart.yAxis
+                .axisLabel('Metric')
+                .tickFormat(function(d) {
+                    return d3.format(',.2f')(d);
+                })
+            ;
+            d3.select('#metric_chart svg')
+                .datum(response)
+                .call(chart);
+            nv.utils.windowResize(chart.update);
+            return chart;
+        });
+        $('#metric_select').change(function () {
+            $.ajax({
+                method: 'GET',
+                url: '/api/model_metrics/' + {{ project.pk }} + '/?metric=' + $(this).val(),
+                success: function (response) {
+                    d3.select('#metric_chart svg').datum(response).transition().duration(300).call(chart);
+                    nv.utils.windowResize(chart.update);
+                },
+                error: function (error) {
+                    console.log(error);
+                }
+            });
         });
     },
     error: function (error) {
