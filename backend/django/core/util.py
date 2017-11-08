@@ -16,7 +16,7 @@ pd.options.mode.chained_assignment = None  # default='warn'
 from celery.result import AsyncResult
 
 from django.db import transaction, connection
-from django.db.models import Count, Value, IntegerField, F
+from django.db.models import Count, Value, IntegerField, F, Max, Min
 from django.db.utils import ProgrammingError
 from django.contrib.auth import get_user_model
 from django.conf import settings
@@ -228,17 +228,19 @@ def get_ordered_queue_data(queue, orderby):
     Returns:
         Query set of ordered data objects
     """
-    ORDERBY_VALUE = {
-        'random': '?',
-        'least confident': '-datauncertainty__least_confident',
-        'margin sampling': 'datauncertainty__margin_sampling',
-        'entropy': '-datauncertainty__entropy',
-    }
-    if orderby not in ORDERBY_VALUE.keys():
+    ORDERBY_OPTIONS = ['random', 'least confident', 'margin sampling', 'entropy']
+    if orderby not in ORDERBY_OPTIONS:
         raise ValueError('orderby parameter must be one of the following: ' +
-                         ' '.join(ORDERBY_VALUE))
+                         ' '.join(ORDERBY_OPTIONS))
 
-    return queue.data.all().order_by(ORDERBY_VALUE[orderby])
+    if orderby == 'random':
+        return queue.data.all().order_by('?')
+    elif orderby == 'least confident':
+        return queue.data.all().annotate(max_least_confident=Max('datauncertainty__least_confident')).order_by('-max_least_confident')
+    elif orderby == 'margin sampling':
+        return queue.data.all().annotate(min_margin_sampling=Min('datauncertainty__margin_sampling')).order_by('min_margin_sampling')
+    elif orderby == 'entropy':
+        return queue.data.all().annotate(max_entropy=Max('datauncertainty__entropy')).order_by('-max_entropy')
 
 
 def fill_queue(queue, orderby):
