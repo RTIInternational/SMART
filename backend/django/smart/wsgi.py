@@ -14,10 +14,10 @@ from configurations.wsgi import get_wsgi_application
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "smart.settings")
 os.environ.setdefault("DJANGO_CONFIGURATION", "Prod")
 
-from core.util import init_redis_queues
+from core.util import init_redis
 
 print('Core Config Startup')
 
-init_redis_queues()
+init_redis()
 
 application = get_wsgi_application()

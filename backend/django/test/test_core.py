@@ -15,17 +15,17 @@ from django.contrib.auth import get_user_model
 from core.models import (Project, Queue, Data, DataQueue, Profile, Model,
                          AssignedData, Label, DataLabel, DataPrediction,
                          DataUncertainty, TrainingSet, ProjectPermissions)
-from core.util import (redis_serialize_queue, redis_serialize_data,
-                       redis_parse_queue, redis_parse_data,
+from core.util import (redis_serialize_queue, redis_serialize_data, redis_serialize_set,
+                       redis_parse_queue, redis_parse_data, redis_parse_list_dataids,
                        create_project, add_data, assign_datum,
                        add_queue, fill_queue, pop_queue,
-                       init_redis_queues, get_nonempty_queue,
+                       init_redis, get_nonempty_queue,
                        create_profile, label_data, pop_first_nonempty_queue,
                        get_assignments, unassign_datum,  save_data_file,
                        save_tfidf_matrix, load_tfidf_matrix,
                        train_and_save_model, predict_data,
                        least_confident, margin_sampling, entropy,
-                       check_and_trigger_model, get_ordered_queue_data,
+                       check_and_trigger_model, get_ordered_data,
                        find_queue_length)
 
 from test.util import read_test_data_backend, assert_obj_exists, assert_redis_matches_db
@@ -36,6 +36,12 @@ def test_redis_serialize_queue(test_queue):
     queue_key = redis_serialize_queue(test_queue)
 
     assert queue_key == 'queue:' + str(test_queue.pk)
+
+
+def test_redis_serialzie_set(test_queue):
+    set_key = redis_serialize_set(test_queue)
+
+    assert set_key == 'set:' + str(test_queue.pk)
 
 
 def test_redis_serialize_data(test_project_data):
@@ -64,6 +70,16 @@ def test_redis_parse_data(test_queue, test_redis):
 
     assert_obj_exists(Data, { 'pk': parsed_data.pk })
     assert_obj_exists(DataQueue, { 'data_id': parsed_data.pk })
+
+
+def test_redis_parse_list_dataids(test_queue, test_redis):
+    fill_queue(test_queue, orderby='random')
+
+    data_ids = [d.pk for d in test_queue.data.all()]
+    redis_ids = test_redis.lrange(redis_serialize_queue(test_queue), 0, -1)
+    parsed_ids = redis_parse_list_dataids(redis_ids)
+
+    assert data_ids.sort() == parsed_ids.sort()
 
 
 def test_find_queue_length():
@@ -223,44 +239,44 @@ def test_fill_multiple_projects(db, test_queue, test_profile):
                 for d in test_queue.data.all()))
 
 
-def test_init_redis_queues_empty(db, test_redis):
-    init_redis_queues()
+def test_init_redis_empty(db, test_redis):
+    init_redis()
 
     assert_redis_matches_db(test_redis)
 
 
-def test_init_redis_queues_one_empty_queue(db, test_project, test_redis):
+def test_init_redis_one_empty_queue(db, test_project, test_redis):
     queue = add_queue(test_project, 10)
 
     test_redis.flushdb()
-    init_redis_queues()
+    init_redis()
 
     assert_redis_matches_db(test_redis)
 
 
-def test_init_redis_queues_one_nonempty_queue(db, test_project_data, test_redis):
+def test_init_redis_one_nonempty_queue(db, test_project_data, test_redis):
     queue = add_queue(test_project_data, 10)
     fill_queue(queue, orderby='random')
 
     test_redis.flushdb()
-    init_redis_queues()
+    init_redis()
 
     assert_redis_matches_db(test_redis)
 
 
-def test_init_redis_queues_multiple_queues(db, test_project_data, test_redis):
+def test_init_redis_multiple_queues(db, test_project_data, test_redis):
     queue = add_queue(test_project_data, 10)
     fill_queue(queue, orderby='random')
 
     queue2 = add_queue(test_project_data, 10)
 
     test_redis.flushdb()
-    init_redis_queues()
+    init_redis()
 
     assert_redis_matches_db(test_redis)
 
 
-def test_init_redis_queues_multiple_projects(db, test_project_data, test_redis, test_profile):
+def test_init_redis_multiple_projects(db, test_project_data, test_redis, test_profile):
     # Try a mix of multiple queues in multiple projects with
     # and without data to see if everything initializes as expected.
     p1_queue1 = add_queue(test_project_data, 10)
@@ -276,7 +292,7 @@ def test_init_redis_queues_multiple_projects(db, test_project_data, test_redis, 
     p2_queue2 = add_queue(project2, 10)
 
     test_redis.flushdb()
-    init_redis_queues()
+    init_redis()
 
     assert_redis_matches_db(test_redis)
 
@@ -300,6 +316,7 @@ def test_pop_nonempty_queue(db, test_project_data, test_redis):
 
     assert isinstance(datum, Data)
     assert test_redis.llen('queue:'+str(queue.pk)) == (queue_len - 1)
+    assert test_redis.scard('set:'+str(queue.pk)) == (queue_len)
     assert queue.data.count() == queue_len
 
 
@@ -314,9 +331,11 @@ def test_pop_only_affects_one_queue(db, test_project_data, test_redis):
 
     assert isinstance(datum, Data)
     assert test_redis.llen('queue:'+str(queue.pk)) == (queue_len - 1)
+    assert test_redis.scard('set:'+str(queue.pk)) == (queue_len)
     assert queue.data.count() == queue_len
 
     assert test_redis.llen('queue:'+str(queue2.pk)) == queue_len
+    assert test_redis.scard('set:'+str(queue2.pk)) == (queue_len)
     assert queue2.data.count() == queue_len
 
 
@@ -365,7 +384,7 @@ def test_get_nonempty_queue_multiple_profiles(db, test_project_data, test_profil
 
 
 def test_pop_first_nonempty_queue_noqueue(db, test_project_data, test_redis):
-    init_redis_queues()
+    init_redis()
 
     queue, data = pop_first_nonempty_queue(test_project_data)
 
@@ -374,7 +393,7 @@ def test_pop_first_nonempty_queue_noqueue(db, test_project_data, test_redis):
 
 
 def test_pop_first_nonempty_queue_empty(db, test_project_data, test_queue, test_redis):
-    init_redis_queues()
+    init_redis()
 
     queue, data = pop_first_nonempty_queue(test_project_data)
 
@@ -471,8 +490,9 @@ def test_assign_datum_project_queue_pops_queues(db, test_queue, test_profile, te
 
     datum = assign_datum(test_profile, test_queue.project)
 
-    # Make sure the datum was removed from queues
+    # Make sure the datum was removed from queues but not set
     assert test_redis.llen('queue:'+str(test_queue.pk)) == test_queue.length - 1
+    assert test_redis.scard('set:'+str(test_queue.pk)) == test_queue.length
 
     # but not from the db queue
     assert test_queue.data.count() == test_queue.length
@@ -512,17 +532,19 @@ def test_assign_datum_profile_queue_pops_queues(db, test_profile_queue, test_pro
 
     datum = assign_datum(test_profile, test_profile_queue.project)
 
-    # Make sure the datum was removed from the correct queues
+    # Make sure the datum was removed from the correct queues but not sets
     assert test_redis.llen('queue:'+str(test_profile_queue.pk)) == test_profile_queue.length - 1
+    assert test_redis.scard('set:'+str(test_profile_queue.pk)) == test_profile_queue.length
 
     # ...but not the other queues
     assert test_profile_queue.data.count() == test_profile_queue.length
     assert datum in test_profile_queue.data.all()
     assert test_redis.llen('queue:'+str(test_profile_queue2.pk)) == test_profile_queue2.length
+    assert test_redis.scard('set:'+str(test_profile_queue2.pk)) == test_profile_queue2.length
     assert test_profile_queue2.data.count() == test_profile_queue2.length
 
 
-def test_init_redis_queues_ignores_assigned_data(db, test_profile, test_queue, test_redis):
+def test_init_redis_ignores_assigned_data(db, test_profile, test_queue, test_redis):
     fill_queue(test_queue, orderby='random')
 
     assigned_datum = test_queue.data.first()
@@ -532,10 +554,11 @@ def test_init_redis_queues_ignores_assigned_data(db, test_profile, test_queue, t
         data=assigned_datum,
         queue=test_queue)
 
-    init_redis_queues()
+    init_redis()
 
     # Make sure the assigned datum didn't get into the redis queue
     assert test_redis.llen('queue:'+str(test_queue.pk)) == test_queue.length - 1
+    assert test_redis.scard('set:'+str(test_queue.pk)) == test_queue.length - 1
 
 
 def test_label_data(db, test_profile, test_queue, test_redis):
@@ -663,10 +686,12 @@ def test_unassign(db, test_profile, test_project_data, test_queue, test_redis):
     fill_queue(test_queue, orderby='random')
 
     assert test_redis.llen('queue:'+str(test_queue.pk)) == test_queue.length
+    assert test_redis.scard('set:'+str(test_queue.pk)) == test_queue.length
 
     datum = get_assignments(test_profile, test_project_data, 1)[0]
 
     assert test_redis.llen('queue:'+str(test_queue.pk)) == (test_queue.length - 1)
+    assert test_redis.scard('set:'+str(test_queue.pk)) == test_queue.length
     assert AssignedData.objects.filter(
         data=datum,
         profile=test_profile).exists()
@@ -674,6 +699,7 @@ def test_unassign(db, test_profile, test_project_data, test_queue, test_redis):
     unassign_datum(datum, test_profile)
 
     assert test_redis.llen('queue:'+str(test_queue.pk)) == test_queue.length
+    assert test_redis.scard('set:'+str(test_queue.pk)) == test_queue.length
     assert not AssignedData.objects.filter(
         data=datum,
         profile=test_profile).exists()
@@ -682,6 +708,30 @@ def test_unassign(db, test_profile, test_project_data, test_queue, test_redis):
     reassigned_datum = get_assignments(test_profile, test_project_data, 1)[0]
 
     assert reassigned_datum == datum
+
+
+def test_unassign_after_fillqueue(db, test_profile, test_project_data, test_queue, test_labels, test_redis):
+    fill_queue(test_queue, 'random')
+
+    assert test_redis.llen('queue:'+str(test_queue.pk)) == test_queue.length
+    assert test_redis.scard('set:'+str(test_queue.pk)) == test_queue.length
+
+    data = get_assignments(test_profile, test_project_data, 10)
+
+    assert test_redis.llen('queue:'+str(test_queue.pk)) == (test_queue.length - 10)
+    assert test_redis.scard('set:'+str(test_queue.pk)) == test_queue.length
+
+    test_label = test_labels[0]
+    for i in range(5):
+        label_data(test_label, data[i], test_profile, 3)
+
+    assert test_redis.llen('queue:'+str(test_queue.pk)) == (test_queue.length - 10)
+    assert test_redis.scard('set:'+str(test_queue.pk)) == (test_queue.length - 5)
+
+    fill_queue(test_queue, 'random')
+
+    assert test_redis.llen('queue:'+str(test_queue.pk)) == test_queue.length - 5
+    assert test_redis.scard('set:'+str(test_queue.pk)) == test_queue.length
 
 
 def test_save_data_file_no_labels_csv(test_project, tmpdir, settings):
@@ -915,7 +965,7 @@ def test_fill_queue_least_confident_predicted_data(test_project_predicted_data, 
     assert_redis_matches_db(test_redis)
     assert test_queue.data.count() == test_queue.length
 
-    data_list = get_ordered_queue_data(test_queue, 'least confident')
+    data_list = get_ordered_data(test_queue.data.all(), 'least confident')
     previous_lc = data_list[0].datauncertainty_set.get().least_confident
     for datum in data_list:
         assert len(datum.datalabel_set.all()) == 0
@@ -931,7 +981,8 @@ def test_fill_queue_margin_sampling_predicted_data(test_project_predicted_data, 
 
     assert_redis_matches_db(test_redis)
     assert test_queue.data.count() == test_queue.length
-    data_list = get_ordered_queue_data(test_queue, 'margin sampling')
+
+    data_list = get_ordered_data(test_queue.data.all(), 'margin sampling')
     previous_ms = data_list[0].datauncertainty_set.get().margin_sampling
     for datum in data_list:
         assert len(datum.datalabel_set.all()) == 0
@@ -947,7 +998,8 @@ def test_fill_queue_entropy_predicted_data(test_project_predicted_data, test_que
 
     assert_redis_matches_db(test_redis)
     assert test_queue.data.count() == test_queue.length
-    data_list = get_ordered_queue_data(test_queue, 'entropy')
+
+    data_list = get_ordered_data(test_queue.data.all(), 'entropy')
     previous_e = data_list[0].datauncertainty_set.get().entropy
     for datum in data_list:
         assert len(datum.datalabel_set.all()) == 0
@@ -1030,7 +1082,7 @@ def test_check_and_trigger_batched_success(setup_celery, test_project_labeled_an
     assert test_queue.length == initial_queue_size
 
     # Assert least confident in queue
-    data_list = get_ordered_queue_data(test_queue, 'least confident')
+    data_list = get_ordered_data(test_queue.data.all(), 'least confident')
     previous_lc = data_list[0].datauncertainty_set.get().least_confident
     for datum in data_list:
         assert len(datum.datalabel_set.all()) == 0
@@ -1109,7 +1161,7 @@ def test_check_and_trigger_queue_changes_success(setup_celery, test_project_labe
     assert q.length == new_queue_length
 
     # Assert least confident in queue
-    data_list = get_ordered_queue_data(test_queue, 'least confident')
+    data_list = get_ordered_data(test_queue.data.all(), 'least confident')
     previous_lc = data_list[0].datauncertainty_set.get().least_confident
     for datum in data_list:
         assert len(datum.datalabel_set.all()) == 0
