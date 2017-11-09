@@ -15,8 +15,8 @@ from django.contrib.auth import get_user_model
 from core.models import (Project, Queue, Data, DataQueue, Profile, Model,
                          AssignedData, Label, DataLabel, DataPrediction,
                          DataUncertainty, TrainingSet, ProjectPermissions)
-from core.util import (redis_serialize_queue, redis_serialize_data,
-                       redis_parse_queue, redis_parse_data,
+from core.util import (redis_serialize_queue, redis_serialize_data, redis_serialize_set,
+                       redis_parse_queue, redis_parse_data, redis_parse_list_dataids,
                        create_project, add_data, assign_datum,
                        add_queue, fill_queue, pop_queue,
                        init_redis, get_nonempty_queue,
@@ -36,6 +36,12 @@ def test_redis_serialize_queue(test_queue):
     queue_key = redis_serialize_queue(test_queue)
 
     assert queue_key == 'queue:' + str(test_queue.pk)
+
+
+def test_redis_serialzie_set(test_queue):
+    set_key = redis_serialize_set(test_queue)
+
+    assert set_key == 'set:' + str(test_queue.pk)
 
 
 def test_redis_serialize_data(test_project_data):
@@ -64,6 +70,16 @@ def test_redis_parse_data(test_queue, test_redis):
 
     assert_obj_exists(Data, { 'pk': parsed_data.pk })
     assert_obj_exists(DataQueue, { 'data_id': parsed_data.pk })
+
+
+def test_redis_parse_list_dataids(test_queue, test_redis):
+    fill_queue(test_queue, orderby='random')
+
+    data_ids = [d.pk for d in test_queue.data.all()]
+    redis_ids = test_redis.lrange(redis_serialize_queue(test_queue), 0, -1)
+    parsed_ids = redis_parse_list_dataids(redis_ids)
+
+    assert data_ids.sort() == parsed_ids.sort()
 
 
 def test_find_queue_length():
