@@ -169,10 +169,13 @@ def sync_redis_objects(queue, orderby):
         redis_set_data = settings.REDIS.smembers(redis_serialize_set(queue))
         redis_queue_data = settings.REDIS.lrange(redis_serialize_queue(queue), 0, -1)
 
+        # IDs not already in redis queue
         new_data_ids = redis_parse_list_dataids(redis_set_data.difference(set(redis_queue_data)))
 
-        ordered_data_ids = [redis_serialize_data(d) for d in get_ordered_data(new_data_ids, orderby)]
+        # IDs not already assigned
+        new_data_ids = set(new_data_ids).difference([str(a.data.pk) for a in AssignedData.objects.filter(queue=queue)])
 
+        ordered_data_ids = [redis_serialize_data(d) for d in get_ordered_data(new_data_ids, orderby)]
         settings.REDIS.rpush(redis_serialize_queue(queue), *ordered_data_ids)
 
 

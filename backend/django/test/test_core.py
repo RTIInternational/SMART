@@ -710,6 +710,30 @@ def test_unassign(db, test_profile, test_project_data, test_queue, test_redis):
     assert reassigned_datum == datum
 
 
+def test_unassign_after_fillqueue(db, test_profile, test_project_data, test_queue, test_labels, test_redis):
+    fill_queue(test_queue, 'random')
+
+    assert test_redis.llen('queue:'+str(test_queue.pk)) == test_queue.length
+    assert test_redis.scard('set:'+str(test_queue.pk)) == test_queue.length
+
+    data = get_assignments(test_profile, test_project_data, 10)
+
+    assert test_redis.llen('queue:'+str(test_queue.pk)) == (test_queue.length - 10)
+    assert test_redis.scard('set:'+str(test_queue.pk)) == test_queue.length
+
+    test_label = test_labels[0]
+    for i in range(5):
+        label_data(test_label, data[i], test_profile, 3)
+
+    assert test_redis.llen('queue:'+str(test_queue.pk)) == (test_queue.length - 10)
+    assert test_redis.scard('set:'+str(test_queue.pk)) == (test_queue.length - 5)
+
+    fill_queue(test_queue, 'random')
+
+    assert test_redis.llen('queue:'+str(test_queue.pk)) == test_queue.length - 5
+    assert test_redis.scard('set:'+str(test_queue.pk)) == test_queue.length
+
+
 def test_save_data_file_no_labels_csv(test_project, tmpdir, settings):
     test_file = './core/data/test_files/test_no_labels.csv'
 
