@@ -3,7 +3,7 @@ import random
 
 from core import tasks
 from core.models import Model, DataPrediction, Data, DataUncertainty
-from core.util import (get_ordered_queue_data, label_data, fill_queue,
+from core.util import (label_data, fill_queue, get_ordered_data,
                        assign_datum, redis_serialize_queue)
 from core.serializers import DataSerializer
 
@@ -48,7 +48,7 @@ def test_model_task(test_project_labeled_and_tfidf, test_queue, test_redis, tmpd
     assert test_queue.length == initial_queue_length
 
     # Assert least confident in queue
-    data_list = get_ordered_queue_data(test_queue, 'least confident')
+    data_list = get_ordered_data(test_queue.data.all(), 'least confident')
     previous_lc = data_list[0].datauncertainty_set.get().least_confident
     for datum in data_list:
         assert len(datum.datalabel_set.all()) == 0
