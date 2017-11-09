@@ -500,6 +500,8 @@ def assign_datum(profile, project):
 def label_data(label, datum, profile, time):
     '''
     Record that a given datum has been labeled; remove its assignment, if any.
+
+    Remove datum from DataQueue and its assocaited redis set.
     '''
     current_training_set = datum.project.get_current_training_set()
 
@@ -517,6 +519,8 @@ def label_data(label, datum, profile, time):
         queue = assignment.queue
         assignment.delete()
         DataQueue.objects.filter(data=datum, queue=queue).delete()
+
+    settings.REDIS.srem(redis_serialize_set(queue), redis_serialize_data(datum))
 
 
 def get_assignments(profile, project, num_assignments):
