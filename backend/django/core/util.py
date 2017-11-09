@@ -177,7 +177,9 @@ def sync_redis_objects(queue, orderby):
         new_data_ids = set(new_data_ids).difference([str(a.data.pk) for a in AssignedData.objects.filter(queue=queue)])
 
         ordered_data_ids = [redis_serialize_data(d) for d in get_ordered_data(new_data_ids, orderby)]
-        settings.REDIS.rpush(redis_serialize_queue(queue), *ordered_data_ids)
+
+        if len(ordered_data_ids) > 0:
+            settings.REDIS.rpush(redis_serialize_queue(queue), *ordered_data_ids)
 
 
 def create_project(name, creator):
