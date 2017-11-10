@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import TemplateView, ListView, DetailView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
@@ -28,8 +28,15 @@ from core import tasks
 
 
 # Projects
-class ProjectCode(LoginRequiredMixin, TemplateView):
+class ProjectCode(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'smart/smart.html'
+    permission_denied_message = 'You must have permissions to access the coding page for this project.'
+    raise_exception = True
+
+    def test_func(self):
+        project = Project.objects.get(pk=self.kwargs['pk'])
+
+        return project_extras.proj_permission_level(project, self.request.user.profile) > 0
 
     def get_context_data(self, **kwargs):
         ctx = super(ProjectCode, self).get_context_data(**kwargs)
@@ -39,8 +46,15 @@ class ProjectCode(LoginRequiredMixin, TemplateView):
         return ctx
 
 
-class ProjectAdmin(LoginRequiredMixin, TemplateView):
+class ProjectAdmin(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'projects/admin.html'
+    permission_denied_message = 'You must be an Admin or Project Creator to access the Admin page.'
+    raise_exception = True
+
+    def test_func(self):
+        project = Project.objects.get(pk=self.kwargs['pk'])
+
+        return project_extras.proj_permission_level(project, self.request.user.profile) >= 2
 
     def get_context_data(self, **kwargs):
         ctx = super(ProjectAdmin, self).get_context_data(**kwargs)
@@ -68,17 +82,16 @@ class ProjectList(LoginRequiredMixin, ListView):
         return qs.distinct().order_by(self.ordering)
 
 
-class ProjectDetail(LoginRequiredMixin, DetailView):
+class ProjectDetail(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     model = Project
     template_name = 'projects/detail.html'
+    permission_denied_message = 'You must have permissions to access this project page.'
+    raise_exception = True
 
-    def get_object(self, *args, **kwargs):
-        obj = super(ProjectDetail, self).get_object(*args, **kwargs)
+    def test_func(self):
+        project = Project.objects.get(pk=self.kwargs['pk'])
 
-        # Check profile permissions before showing project detail page
-        if project_extras.proj_permission_level(obj, self.request.user.profile) == 0:
-            raise PermissionDenied('You do not have permission to view this project')
-        return obj
+        return project_extras.proj_permission_level(project, self.request.user.profile) > 0
 
 
 def upload_data(form_data, project, queue=None):
@@ -217,18 +230,17 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         return HttpResponseRedirect(proj_obj.get_absolute_url())
 
 
-class ProjectUpdate(LoginRequiredMixin, UpdateView):
+class ProjectUpdate(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Project
     form_class = ProjectUpdateForm
     template_name = 'projects/update.html'
+    permission_denied_message = 'You must be an Admin or Project Creator to access the Project Update page.'
+    raise_exception = True
 
-    def get_object(self, *args, **kwargs):
-        obj = super(ProjectUpdate, self).get_object(*args, **kwargs)
+    def test_func(self):
+        project = Project.objects.get(pk=self.kwargs['pk'])
 
-        # Check profile permissions before showing project update page
-        if project_extras.proj_permission_level(obj, self.request.user.profile) == 0:
-            raise PermissionDenied('You do not have permission to view this project')
-        return obj
+        return project_extras.proj_permission_level(project, self.request.user.profile) >= 2
 
     def get_form_kwargs(self):
         form_kwargs = super(ProjectUpdate, self).get_form_kwargs()
@@ -267,15 +279,14 @@ class ProjectUpdate(LoginRequiredMixin, UpdateView):
                 return self.render_to_response(context)
 
 
-class ProjectDelete(LoginRequiredMixin, DeleteView):
+class ProjectDelete(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Project
     template_name = 'projects/confirm_delete.html'
     success_url = reverse_lazy('projects:project_list')
+    permission_denied_message = 'You must be an Admin or Project Creator to access the Project Delete page.'
+    raise_exception = True
 
-    def get_object(self, *args, **kwargs):
-        obj = super(ProjectDelete, self).get_object(*args, **kwargs)
+    def test_func(self):
+        project = Project.objects.get(pk=self.kwargs['pk'])
 
-        # Check profile permissions before showing project delete page
-        if project_extras.proj_permission_level(obj, self.request.user.profile) == 0:
-            raise PermissionDenied('You do not have permission to view this project')
-        return obj
+        return project_extras.proj_permission_level(project, self.request.user.profile) >= 2
