@@ -91,24 +91,22 @@ def label_timing(request, pk):
     yDomain = 30
     for u in users:
         result = DataLabel.objects.filter(data__project=pk, profile=u)\
-                    .aggregate(quartiles=Percentile('time_to_label', [0.25, 0.5, 0.75],
+                    .aggregate(quartiles=Percentile('time_to_label', [0.05, 0.25, 0.5, 0.75, 0.95],
                                continuous=False,
-                               output_field=ArrayField(FloatField())),
-                               min_time=Min('time_to_label'),
-                               max_time=Max('time_to_label'))
+                               output_field=ArrayField(FloatField())))
 
         if result['quartiles']:
-            if result['max_time'] > yDomain:
-                yDomain = result['max_time'] + 10
+            if result['quartiles'][4] > yDomain:
+                yDomain = result['quartiles'][4] + 10
 
             temp = {
                 'label': u.__str__(),
                 'values': {
-                    'Q1': result['quartiles'][0],
-                    'Q2': result['quartiles'][1],
-                    'Q3': result['quartiles'][2],
-                    'whisker_low': result['min_time'],
-                    'whisker_high': result['max_time']
+                    'Q1': result['quartiles'][1],
+                    'Q2': result['quartiles'][2],
+                    'Q3': result['quartiles'][3],
+                    'whisker_low': result['quartiles'][0],
+                    'whisker_high': result['quartiles'][4]
                 }
             }
             dataset.append(temp)
