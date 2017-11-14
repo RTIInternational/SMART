@@ -11,10 +11,7 @@
         <div class="card-header">
             <ul class="nav nav-tabs card-header-tabs">
                 <li class="nav-item">
-                    <a data-toggle="tab" href="#summary" class="nav-link active">Summary</a>
-                </li>
-                <li class="nav-item">
-                    <a data-toggle="tab" href="#distribution" class="nav-link">Label Distribution</a>
+                    <a data-toggle="tab" href="#distribution" class="nav-link active">Label Distribution</a>
                 </li>
                 <li class="nav-item">
                     <a data-toggle="tab" href="#labels" class="nav-link">Data Labels</a>
@@ -31,33 +28,7 @@
             </ul>
         </div>
         <div class="tab-content">
-            <div id="summary" class="tab-pane fade in active">
-                <div class="cardface">
-                    <div class="row">
-                        <div class="col-md-12">
-                            <p>
-                                This is the admin page. Admin stuff goes here.
-                            </p>
-                            <p>
-                                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer ut accumsan ex. Nam tincidunt, ligula tempor efficitur tempor, lorem urna ullamcorper lacus, eget luctus odio tellus quis nibh. Suspendisse est elit, faucibus ac orci id, maximus blandit lacus. In feugiat velit condimentum, luctus turpis sed, placerat tellus. Vivamus pellentesque ut velit nec ornare. Phasellus efficitur tempus metus. Ut accumsan sit amet turpis at iaculis. Morbi nec vehicula lectus. Nunc eu nunc felis. Vestibulum sit amet convallis diam. Integer vel risus at dolor suscipit gravida in sed mauris. Nullam interdum porttitor pulvinar.
-                            </p>
-                            <p>
-                                Fusce sit amet nibh blandit nisi finibus pharetra. Vestibulum at tempor nunc. Nulla ac tincidunt tellus. Integer nisl orci, pulvinar at augue et, maximus tempor tortor. Fusce auctor pulvinar bibendum. In placerat risus et lacus auctor, non varius arcu hendrerit. Nulla cursus pulvinar hendrerit. Nam vitae sapien sed est pulvinar dapibus.
-                            </p>
-                        </div>
-                    </div>
-                    <hr>
-                    <div class="row">
-                        <div class="col-md-12">
-                            <p>
-                                Click the button below to download your data with their labels
-                            </p>
-                            <a class="btn btn-primary" id="download_btn">Download Data</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div id="distribution" class="tab-pane fade in">
+            <div id="distribution" class="tab-pane fade in active">
                 <div class="cardface">
                     <div class="row">
                         <div class="col-md-12">
@@ -141,32 +112,6 @@
 
 {% block scripts_body %}
 <script>
-/*
- *  When download button is pressed request the csv file, add the data as a blob
- *  to a new anchor element, and trigger a click event on that anchor element
- *  to prompt the download file popup
- */
-$("#download_btn").on("click", function() {
-    xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function() {
-        var a, today;
-        if (xhttp.readyState === 4 && xhttp.status === 200) {
-            a = document.createElement('a');
-            a.href = window.URL.createObjectURL(xhttp.response);
-            today = new Date();
-            a.download = "project_" + {{ project.pk }} + '_labels_' + today.toDateString().split(" ").join("_") + ".csv";
-            a.style.display = 'none';
-            document.body.appendChild(a);
-            return a.click();
-        }
-    };
-    xhttp.open("GET", "/api/download_data/" + {{ project.pk }} + "/", true);
-    xhttp.setRequestHeader("Content-Type", "application/json");
-    xhttp.responseType = 'blob';
-    xhttp.send();
-});
-
-
 /*
  *  Make ajax call to `label_distribution` route.  This will fetch data to
  *  populate the discrete multi bar chart and show the label distribution

@@ -73,6 +73,7 @@
                 </div>
                 {% if project|proj_permission_level:request.user.profile > 1 %}
                 <div class="btn-group pull-right" role="group" aria-label="Admin Controls">
+                    <a class="btn btn-primary" id="download_btn">Download Labeled Data</a>
                     <a class="btn btn-primary" href="{% url 'projects:project_admin' project.pk %}" role="button">
                         Admin Page
                     </a>
@@ -82,4 +83,33 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts_body %}
+<script>
+/*
+ *  When download button is pressed request the csv file, add the data as a blob
+ *  to a new anchor element, and trigger a click event on that anchor element
+ *  to prompt the download file popup
+ */
+$("#download_btn").on("click", function() {
+    xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+        var a, today;
+        if (xhttp.readyState === 4 && xhttp.status === 200) {
+            a = document.createElement('a');
+            a.href = window.URL.createObjectURL(xhttp.response);
+            today = new Date();
+            a.download = "project_" + {{ project.pk }} + '_labels_' + today.toDateString().split(" ").join("_") + ".csv";
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            return a.click();
+        }
+    };
+    xhttp.open("GET", "/api/download_data/" + {{ project.pk }} + "/", true);
+    xhttp.setRequestHeader("Content-Type", "application/json");
+    xhttp.responseType = 'blob';
+    xhttp.send();
+});
+</script>
 {% endblock %}
