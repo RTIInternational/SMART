@@ -248,7 +248,6 @@ $.ajax({
 $(document).ready(function() {
     $('#labeled_data_table').DataTable({
         "ajax": '/api/data_coded_table/' + {{ project.pk }} + '/',
-        "lengthChange": false,
         "columns": [
             { "data": "Text" },
             { "data": "Label" },
@@ -264,7 +263,6 @@ $(document).ready(function() {
 $(document).ready(function() {
     $('#predicted_data_table').DataTable({
         "ajax": '/api/data_predicted_table/' + {{ project.pk }} + '/',
-        "lengthChange": false,
         "columns": [
             { "data": "Text" },
             { "data": "Probability" },
