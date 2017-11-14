@@ -268,7 +268,12 @@ $(document).ready(function() {
         "ajax": '/api/data_predicted_table/' + {{ project.pk }} + '/',
         "columns": [
             { "data": "Text" },
-            { "data": "Probability", "searchable": false },
+            { "data": "Probability",
+              "searchable": false,
+              "render": function (data, type, row) {
+                return d3.format('.2%')(data);
+              },
+            },
             { "data": "Label", "searchable": false }
         ],
         "oLanguage": {
