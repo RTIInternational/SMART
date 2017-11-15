@@ -11,96 +11,80 @@
         <div class="card-header">
             <ul class="nav nav-tabs card-header-tabs">
                 <li class="nav-item">
-                    <a data-toggle="tab" href="#distribution" class="nav-link active">Label Distribution</a>
+                    <a data-toggle="tab" href="#label" class="nav-link active in">Labeled Data</a>
                 </li>
                 <li class="nav-item">
-                    <a data-toggle="tab" href="#labels" class="nav-link">Labeled Data</a>
-                </li>
-                <li class="nav-item">
-                    <a data-toggle="tab" href="#predictions" class="nav-link">Predictions</a>
-                </li>
-                <li class="nav-item">
-                    <a data-toggle="tab" href="#timer" class="nav-link">Time To Label</a>
-                </li>
-                <li class="nav-item">
-                    <a data-toggle="tab" href="#metrics" class="nav-link">Model Metrics</a>
+                    <a data-toggle="tab" href="#model" class="nav-link">Active Learning Model</a>
                 </li>
             </ul>
         </div>
         <div class="tab-content">
-            <div id="distribution" class="tab-pane fade in active">
-                <div class="cardface">
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div id="distribution_chart" style="height:500px">
-                                <svg class="nvd3-svg"></svg>
+            <div id="label" class="tab-pane fade in active">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h3>Label Distribution</h3>
+                        <div id="distribution_chart" style="height:300px">
+                            <svg class="nvd3-svg"></svg>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h3>Time To Label</h3>
+                        <div id="timer_chart" style="height:300px">
+                            <svg class="nvd3-svg"></svg>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-md-12">
+                        <h3>Labeled Data Table</h3>
+                        <table id="labeled_data_table" class="table table-hover" cellspacing="0" width="100%">
+                            <thead>
+                                <tr>
+                                    <th>Text</th>
+                                    <th>Label</th>
+                                    <th>Coder</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div id="model" class="tab-pane fade in">
+                <div class="row">
+                    <div class="col-md-12">
+                        <h3>Model Metrics</h3>
+                        <div class="form-group">
+                            <label for="metric_select">Select the metric to appear on the chart:</label>
+                            <select class="form-control" id="metric_select">
+                                <option value="accuracy">Accuracy</option>
+                                <option value="f1">F1 Score</option>
+                                <option value="precision">Precision</option>
+                                <option value="recall">Recall</option>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div id="metric_chart" style="height:350px">
+                                    <svg class="nvd3-svg"></svg>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div id="labels" class="tab-pane fade in">
-                <div class="cardface">
-                    <div class="row">
-                        <div class="col-md-12">
-                            <table id="labeled_data_table" class="table table-hover" cellspacing="0" width="100%">
-                                <thead>
-                                    <tr>
-                                        <th>Text</th>
-                                        <th>Label</th>
-                                        <th>Coder</th>
-                                    </tr>
-                                </thead>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div id="predictions" class="tab-pane fade in">
-                <div class="cardface">
-                    <div class="row">
-                        <div class="col-md-12">
-                            <table id="predicted_data_table" class="table table-hover" cellspacing="0" width="100%">
-                                <thead>
-                                    <tr>
-                                        <th>Text</th>
-                                        <th>Predicted Probability</th>
-                                        <th>Predicted Label</th>
-                                    </tr>
-                                </thead>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div id="timer" class="tab-pane fade in">
-                <div class="cardface">
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div id="timer_chart" style="height:500px">
-                                <svg class="nvd3-svg"></svg>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div id="metrics" class="tab-pane fade in">
-                <div class="cardface">
-                    <div class="form-group">
-                        <label for="metric_select">Select the metric to appear on the chart:</label>
-                        <select class="form-control" id="metric_select">
-                            <option value="accuracy">Accuracy</option>
-                            <option value="f1">F1 Score</option>
-                            <option value="precision">Precision</option>
-                            <option value="recall">Recall</option>
-                        </select>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div id="metric_chart" style="height:500px">
-                                <svg class="nvd3-svg"></svg>
-                            </div>
-                        </div>
+                <hr>
+                <div class="row">
+                    <div class="col-md-12">
+                        <h3>Predictions</h3>
+                        <table id="predicted_data_table" class="table table-hover" cellspacing="0" width="100%">
+                            <thead>
+                                <tr>
+                                    <th>Text</th>
+                                    <th>Predicted Probability</th>
+                                    <th>Predicted Label</th>
+                                </tr>
+                            </thead>
+                        </table>
                     </div>
                 </div>
             </div>
