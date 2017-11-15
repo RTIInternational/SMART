@@ -88,7 +88,7 @@ def label_timing(request, pk):
     users.extend([perm.profile for perm in project.projectpermissions_set.all()])
 
     dataset = []
-    yDomain = 30
+    yDomain = 0
     for u in users:
         result = DataLabel.objects.filter(data__project=pk, profile=u)\
                     .aggregate(quartiles=Percentile('time_to_label', [0.05, 0.25, 0.5, 0.75, 0.95],
