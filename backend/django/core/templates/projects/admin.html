@@ -123,6 +123,7 @@ $.ajax({
     success: function (response) {
         nv.addGraph(function() {
             var chart = nv.models.multiBarChart()
+                .color(["#66c2a5","#fc8d62","#8da0cb","#e78ac3","#a6d854","#ffd92f","#e5c494","#b3b3b3"])
                 .duration(300)
                 .margin({bottom: 70, left: 70})
                 .groupSpacing(0.1)
