@@ -226,10 +226,11 @@ $.ajax({
 });
 
 
-/*
- *  Activate DataTable script to create the labeled data DataTable
- */
+
 $(document).ready(function() {
+    /*
+     *  Activate DataTable script to create the labeled data DataTable
+     */
     $('#labeled_data_table').DataTable({
         "ajax": '/api/data_coded_table/' + {{ project.pk }} + '/',
         "columns": [
@@ -241,13 +242,10 @@ $(document).ready(function() {
             "sSearch": "Filter Text: "
         }
     });
-});
 
-
-/*
- *  Activate DataTable script to create the predicted data DataTable
- */
-$(document).ready(function() {
+    /*
+     *  Activate DataTable script to create the predicted data DataTable
+     */
     $('#predicted_data_table').DataTable({
         "ajax": '/api/data_predicted_table/' + {{ project.pk }} + '/',
         "columns": [
