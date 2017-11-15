@@ -45,6 +45,9 @@ class Project(models.Model):
     def coder_count(self):
         return self.projectpermissions_set.all().filter(permission='CODER').count()
 
+    def labeled_data_count(self):
+        return self.data_set.all().filter(datalabel__isnull=False).count()
+
 class ProjectPermissions(models.Model):
     class Meta:
         unique_together = (('profile', 'project'))

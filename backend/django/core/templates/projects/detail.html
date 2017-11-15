@@ -85,7 +85,11 @@
                 </div>
                 {% if project|proj_permission_level:request.user.profile > 1 %}
                 <div class="btn-group pull-right" role="group" aria-label="Admin Controls">
+                    {% if project.labeled_data_count > 0 %}
                     <a class="btn btn-primary" id="download_btn">Download Labeled Data</a>
+                    {% else %}
+                    <a class="btn btn-primary disabled" id="download_btn">No Labeled Data to Download</a>
+                    {% endif %}
                     <a class="btn btn-primary" href="{% url 'projects:project_admin' project.pk %}" role="button">
                         Admin Page
                     </a>
