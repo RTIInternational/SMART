@@ -14,28 +14,40 @@
           <div class="col-md-6">
             <h4>Admin(s)</h4>
             <ul class="list-group">
-            {% for perm in project.projectpermissions_set.all %}
-              {% if perm.permission == 'ADMIN' %}
-              <li class="list-group-item">{{ perm.profile }}</li>
-              {% endif %}
-            {% endfor %}
+            {% if project.admin_count > 0 %}
+                {% for perm in project.projectpermissions_set.all %}
+                  {% if perm.permission == 'ADMIN' %}
+                  <li class="list-group-item">{{ perm.profile }}</li>
+                  {% endif %}
+                {% endfor %}
+            {% else %}
+            <h5><strong>No ADMIN Permissions Available</strong></h5>
+            {% endif %}
             </ul>
           </div>
           <div class="col-md-6">
             <h4>Coder(s)</h4>
             <ul class="list-group">
-            {% for perm in project.projectpermissions_set.all %}
-              {% if perm.permission == 'CODER' %}
-              <li class="list-group-item">{{ perm.profile }}</li>
-              {% endif %}
-            {% endfor %}
+            {% if project.coder_count > 0 %}
+                {% for perm in project.projectpermissions_set.all %}
+                  {% if perm.permission == 'CODER' %}
+                  <li class="list-group-item">{{ perm.profile }}</li>
+                  {% endif %}
+                {% endfor %}
+            {% else %}
+            <h5><strong>No CODER Permissions Available</strong></h5>
+            {% endif %}
             </ul>
           </div>
         </div>
         <div class="row">
             <div class="col-md-8">
                 <h4>Description</h4>
+                {% if project.description %}
                 <p>{{ project.description }}</p>
+                {% else %}
+                <h5><strong>No Description Available</strong></h5>
+                {% endif %}
             </div>
             <div class="col-md-4">
                 <h4>Labels</h4>

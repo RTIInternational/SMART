@@ -39,6 +39,12 @@ class Project(models.Model):
         except IndexError:
             return None
 
+    def admin_count(self):
+        return self.projectpermissions_set.all().filter(permission='ADMIN').count()
+
+    def coder_count(self):
+        return self.projectpermissions_set.all().filter(permission='CODER').count()
+
 class ProjectPermissions(models.Model):
     class Meta:
         unique_together = (('profile', 'project'))
