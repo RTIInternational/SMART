@@ -69,12 +69,18 @@ def label_distribution(request, pk):
     users.extend([perm.profile for perm in project.projectpermissions_set.all()])
 
     dataset = []
+    all_counts = []
     for l in labels:
         temp_data = {'key':l.name}
         temp_values = []
         for u in users:
-            temp_values.append({'x':u.__str__(), 'y': DataLabel.objects.filter(profile=u, label=l).count()})
+            label_count = DataLabel.objects.filter(profile=u, label=l).count()
+            all_counts.append(label_count)
+            temp_values.append({'x':u.__str__(), 'y': label_count})
         dataset.append({'key':l.name, 'values': temp_values})
+
+    if not any(count > 0 for count in all_counts):
+        dataset = []
 
     return Response(dataset)
 
