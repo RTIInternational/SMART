@@ -93,6 +93,13 @@ class Command(BaseCommand):
                 label_list=['Good', 'Bad'],
                 perm_list=[user1, test_user]
             )
+            no_data_project = seed_project(creator=root,
+                name='No Label Project',
+                description="This project has no labels, all charts should say No Data Available",
+                data_file='./core/data/test_files/test_no_labels.csv',
+                label_list=['Good', 'Bad', 'Neutral'],
+                perm_list=[]
+            )
 
             print('Test labels...')
             for i in range(3):
