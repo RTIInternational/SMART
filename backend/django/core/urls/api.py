@@ -20,4 +20,10 @@ urlpatterns = [
     url(r'^get_card_deck/(?P<pk>\d+)/$', api.get_card_deck),
     url(r'^annotate_data/(?P<pk>\d+)/$', api.annotate_data),
     url(r'^leave_coding_page/$', api.leave_coding_page),
+    url(r'^download_data/(?P<pk>\d+)/$', api.download_data),
+    url(r'^label_distribution/(?P<pk>\d+)/$', api.label_distribution),
+    url(r'^label_timing/(?P<pk>\d+)/$', api.label_timing),
+    url(r'^data_coded_table/(?P<pk>\d+)/$', api.data_coded_table),
+    url(r'^data_predicted_table/(?P<pk>\d+)/$', api.data_predicted_table),
+    url(r'^model_metrics/(?P<pk>\d+)/$', api.model_metrics),
 ]

@@ -4,6 +4,7 @@ from django.utils import timezone
 from django.urls import reverse
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.contrib.postgres.fields import JSONField
 
 class Profile(models.Model):
     # Link to the auth user, since we're basically just extending it
@@ -38,6 +39,15 @@ class Project(models.Model):
         except IndexError:
             return None
 
+    def admin_count(self):
+        return self.projectpermissions_set.all().filter(permission='ADMIN').count()
+
+    def coder_count(self):
+        return self.projectpermissions_set.all().filter(permission='CODER').count()
+
+    def labeled_data_count(self):
+        return self.data_set.all().filter(datalabel__isnull=False).count()
+
 class ProjectPermissions(models.Model):
     class Meta:
         unique_together = (('profile', 'project'))
@@ -54,7 +64,7 @@ class Model(models.Model):
     project = models.ForeignKey('Project')
     training_set = models.ForeignKey('TrainingSet')
     cv_accuracy = models.FloatField()
-    cv_std = models.FloatField()
+    cv_metrics = JSONField()
     predictions = models.ManyToManyField(
         'Data', related_name='models', through='DataPrediction'
     )

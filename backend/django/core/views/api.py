@@ -4,11 +4,20 @@ from django.contrib.auth import get_user
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from django.http import HttpResponse
+from django.db.models import Max, Min, FloatField
+from django.db import connection
+from django.contrib.postgres.fields import ArrayField
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+import csv
+import io
 import math
+import random
+import pandas as pd
+from postgres_stats.aggregates import Percentile
 
 from core.serializers import (ProfileSerializer, AuthUserGroupSerializer,
                               AuthUserSerializer, ProjectSerializer,
@@ -16,10 +25,220 @@ from core.serializers import (ProfileSerializer, AuthUserGroupSerializer,
                               DataLabelSerializer, DataPredictionSerializer,
                               QueueSerializer, AssignedDataSerializer)
 from core.models import (Profile, Project, Model, Data, Label, DataLabel,
-                         DataPrediction, Queue, DataQueue, AssignedData)
+                         DataPrediction, Queue, DataQueue, AssignedData, TrainingSet)
 import core.util as util
 from core.pagination import SmartPagination
 from core.templatetags import project_extras
+
+
+############################################
+#        FRONTEND USER API ENDPOINTS       #
+############################################
+@api_view(['GET'])
+def download_data(request, pk):
+    data_objs = Data.objects.filter(project=pk)
+
+    data = []
+    for d in data_objs:
+        if d.datalabel_set.count() >= 1:
+            temp = {}
+            temp['Text'] = d.text
+            temp['Label'] = d.datalabel_set.first().label.name
+            data.append(temp)
+
+    buffer = io.StringIO()
+    wr = csv.DictWriter(buffer, fieldnames=['Text', 'Label'], quoting=csv.QUOTE_ALL)
+    wr.writeheader()
+    wr.writerows(data)
+
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='text/csv')
+    response['Content-Disposition'] = 'attachment;'
+
+    return response
+
+
+@api_view(['GET'])
+def label_distribution(request, pk):
+    project = Project.objects.get(pk=pk)
+
+    labels = [l for l in project.labels.all()]
+
+    users = []
+    users.append(project.creator)
+    users.extend([perm.profile for perm in project.projectpermissions_set.all()])
+
+    dataset = []
+    all_counts = []
+    for l in labels:
+        temp_data = {'key':l.name}
+        temp_values = []
+        for u in users:
+            label_count = DataLabel.objects.filter(profile=u, label=l).count()
+            all_counts.append(label_count)
+            temp_values.append({'x':u.__str__(), 'y': label_count})
+        dataset.append({'key':l.name, 'values': temp_values})
+
+    if not any(count > 0 for count in all_counts):
+        dataset = []
+
+    return Response(dataset)
+
+
+@api_view(['GET'])
+def label_timing(request, pk):
+    project = Project.objects.get(pk=pk)
+
+    users = []
+    users.append(project.creator)
+    users.extend([perm.profile for perm in project.projectpermissions_set.all()])
+
+    dataset = []
+    yDomain = 0
+    for u in users:
+        result = DataLabel.objects.filter(data__project=pk, profile=u)\
+                    .aggregate(quartiles=Percentile('time_to_label', [0.05, 0.25, 0.5, 0.75, 0.95],
+                               continuous=False,
+                               output_field=ArrayField(FloatField())))
+
+        if result['quartiles']:
+            if result['quartiles'][4] > yDomain:
+                yDomain = result['quartiles'][4] + 10
+
+            temp = {
+                'label': u.__str__(),
+                'values': {
+                    'Q1': result['quartiles'][1],
+                    'Q2': result['quartiles'][2],
+                    'Q3': result['quartiles'][3],
+                    'whisker_low': result['quartiles'][0],
+                    'whisker_high': result['quartiles'][4]
+                }
+            }
+            dataset.append(temp)
+
+    return Response({'data': dataset, 'yDomain': yDomain})
+
+
+@api_view(['GET'])
+def model_metrics(request, pk):
+    metric = request.GET.get('metric', 'accuracy')
+
+    project = Project.objects.get(pk=pk)
+    models = Model.objects.filter(project=project).order_by('training_set__set_number')
+
+    if metric == 'accuracy':
+        values = []
+        for model in models:
+            values.append({
+                'x': model.training_set.set_number,
+                'y': model.cv_accuracy
+            })
+
+        dataset = [
+            {
+                'key': 'Accuracy',
+                'values': values
+            }
+        ]
+    else:
+        labels = {str(label.pk): label.name for label in  project.labels.all()}
+        dataset = []
+        for label in labels:
+            values = []
+            for model in models:
+                current_metric = model.cv_metrics[metric][label]
+                values.append({
+                    'x':  model.training_set.set_number,
+                    'y': current_metric
+                  })
+            dataset.append({
+                'key': labels[label],
+                'values': values
+            })
+
+    return Response(dataset)
+
+
+
+@api_view(['GET'])
+def data_coded_table(request, pk):
+    project = Project.objects.get(pk=pk)
+
+    data_objs = DataLabel.objects.filter(data__project=project)
+
+    data = []
+    for d in data_objs:
+        temp = {
+            'Text': d.data.text,
+            'Label': d.label.name,
+            'Coder': d.profile.__str__()
+        }
+        data.append(temp)
+
+    return Response({'data': data})
+
+
+@api_view(['GET'])
+def data_predicted_table(request, pk):
+    project = Project.objects.get(pk=pk)
+    previous_run = project.get_current_training_set().set_number - 1
+
+    sql = """
+    SELECT d.{data_text_col}, l.{label_name_col}, dp.{pred_prob_col}
+    FROM (
+        SELECT {pred_data_id_col}, MAX({pred_prob_col}) AS max_prob
+        FROM {pred_table}
+        GROUP BY {pred_data_id_col}
+        ) as tmp
+    LEFT JOIN {pred_table} as dp
+    ON dp.{pred_data_id_col} = tmp.{pred_data_id_col} AND dp.{pred_prob_col} = tmp.max_prob
+    LEFT JOIN {label_table} as l
+    ON l.{label_pk_col} = dp.{pred_label_id_col}
+    LEFT JOIN {data_table} as d
+    ON d.{data_pk_col} = dp.{pred_data_id_col}
+    LEFT JOIN {model_table} as m
+    ON m.{model_pk_col} = dp.{pred_model_id_col}
+    LEFT JOIN {trainingset_table} as ts
+    ON ts.{trainingset_pk_col} = m.{model_trainingset_id_col}
+    WHERE ts.{trainingset_setnumber_col} = {previous_run} AND d.{data_project_id_col} = {project_pk}
+    """.format(
+            data_text_col=Data._meta.get_field('text').column,
+            label_name_col=Label._meta.get_field('name').column,
+            pred_prob_col=DataPrediction._meta.get_field('predicted_probability').column,
+            pred_data_id_col=DataPrediction._meta.get_field('data').column,
+            pred_table=DataPrediction._meta.db_table,
+            label_table=Label._meta.db_table,
+            label_pk_col=Label._meta.pk.name,
+            pred_label_id_col=DataPrediction._meta.get_field('label').column,
+            data_table=Data._meta.db_table,
+            data_pk_col=Data._meta.pk.name,
+            model_table=Model._meta.db_table,
+            model_pk_col=Model._meta.pk.name,
+            pred_model_id_col=DataPrediction._meta.get_field('model').column,
+            trainingset_table=TrainingSet._meta.db_table,
+            trainingset_pk_col=TrainingSet._meta.pk.name,
+            model_trainingset_id_col=Model._meta.get_field('training_set').column,
+            trainingset_setnumber_col=TrainingSet._meta.get_field('set_number').column,
+            previous_run=previous_run,
+            data_project_id_col=Data._meta.get_field('project').column,
+            project_pk=project.pk)
+
+    with connection.cursor() as c:
+        result = c.execute(sql)
+        data_objs = c.fetchall()
+
+    data = []
+    for d in data_objs:
+        temp = {
+            'Text': d[0],
+            'Label': d[1],
+            'Probability': d[2]
+        }
+        data.append(temp)
+
+    return Response({'data': data})
+
 
 ############################################
 #    REACT API ENDPOINTS FOR CODING VIEW   #

@@ -2,7 +2,8 @@ import random
 import redis
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_val_predict
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from sklearn.externals import joblib
 from scipy import sparse
 import os
@@ -705,7 +706,13 @@ def train_and_save_model(project):
     Y = labeled_values
     clf.fit(X, Y)
 
-    cv_scores = cross_val_score(clf, X, Y, cv=5)
+    classes = [str(c) for c in clf.classes_]
+    keys = ('precision', 'recall', 'f1')
+    cv_predicts = cross_val_predict(clf, X, Y, cv=5)
+    cv_accuracy = accuracy_score(Y, cv_predicts)
+    metrics = precision_recall_fscore_support(Y, cv_predicts)
+    metric_map = map(lambda x: dict(zip(classes, x)), metrics[:3])
+    cv_metrics = dict(zip(keys, metric_map))
 
     fpath = os.path.join(settings.MODEL_PICKLE_PATH, 'project_' + str(project.pk) + '_training_' \
          + str(current_training_set.set_number) + '.pkl')
@@ -714,8 +721,8 @@ def train_and_save_model(project):
 
     model = Model.objects.create(pickle_path=fpath, project=project,
                                  training_set=current_training_set,
-                                 cv_accuracy=cv_scores.mean(),
-                                 cv_std=cv_scores.std())
+                                 cv_accuracy=cv_accuracy,
+                                 cv_metrics=cv_metrics)
 
     return model
 
