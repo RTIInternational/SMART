@@ -13,7 +13,8 @@ test-backend:
     - cd backend
     - pip install -r requirements.txt
     - cd django
-    - py.test
+    - coverage run -m py.test
+    - coverage report -m
 
 test-frontend:
   image: node:latest

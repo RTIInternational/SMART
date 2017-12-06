@@ -9,4 +9,5 @@ while [ $n -ne 0 ]; do
     n=$?
 done
 
-py.test "$@"
+coverage run -m py.test "$@"
+coverage report -m --skip-covered
