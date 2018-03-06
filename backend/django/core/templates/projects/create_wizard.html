@@ -129,16 +129,16 @@
             {% if wizard.steps.step0 == 0 %}
             <input class="btn btn-primary" type="submit" value="Next Step"/>
             {% elif wizard.steps.step0 == 1 %}
-            <button class="btn btn-info" name="wizard_goto_step" type="submit" value="project">Info</button>
+            <button class="btn btn-info" name="wizard_goto_step" type="submit" value="project">1. Info</button>
             <input class="btn btn-primary" type="submit" value="Next Step"/>
             {% elif wizard.steps.step0 == 2 %}
-            <button class="btn btn-info" name="wizard_goto_step" type="submit" value="project">Info</button>
-            <button class="btn btn-info" name="wizard_goto_step" type="submit" value="labels">Labels</button>
+            <button class="btn btn-info" name="wizard_goto_step" type="submit" value="project">1. Info</button>
+            <button class="btn btn-info" name="wizard_goto_step" type="submit" value="labels">2. Labels</button>
             <input class="btn btn-primary" type="submit" value="Next Step"/>
             {% else %}
-            <button class="btn btn-info" name="wizard_goto_step" type="submit" value="project">Info</button>
-            <button class="btn btn-info" name="wizard_goto_step" type="submit" value="labels">Labels</button>
-            <button class="btn btn-info" name="wizard_goto_step" type="submit" value="permissions">Permissions</button>
+            <button class="btn btn-info" name="wizard_goto_step" type="submit" value="project">1. Info</button>
+            <button class="btn btn-info" name="wizard_goto_step" type="submit" value="labels">2. Labels</button>
+            <button class="btn btn-info" name="wizard_goto_step" type="submit" value="permissions">3. Permissions</button>
             <input class="btn btn-primary" type="submit" value="Submit"/>
             {% endif %}
             <p class="pull-right">Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
