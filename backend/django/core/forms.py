@@ -96,17 +96,12 @@ class ProjectPermissionsForm(forms.ModelForm):
         self.action = kwargs.pop('action', None)
         self.creator = kwargs.pop('creator', None)
         super(ProjectPermissionsForm, self).__init__(*args, **kwargs)
-
-    def clean_profile(self):
-        profile = self.cleaned_data.get('profile', False)
-        if self.action == 'create' and profile == self.profile:
-            raise ValidationError("You are the creator by default, please do not assign yourself any permissions")
-        if self.action == 'update' and profile == self.creator and self.profile != self.creator:
-            raise ValidationError("{0} is the creator, please do not assign them any permissions".format(self.creator))
-        if self.action == 'update' and profile == self.creator and self.profile == self.creator:
-            raise ValidationError("You are the creator by default, please do not assign yourself any permissions")
-
-        return profile
+        # If creator is set, then the project is being updated and we want to make sure to exclude creator
+        # If creator is not set, then project is being created and we want to make sure to exclude the current user (as they are the creator)
+        if self.creator:
+            self.fields['profile']._set_queryset(self.fields['profile'].choices.queryset.exclude(user__profile=self.creator))
+        else:
+            self.fields['profile']._set_queryset(self.fields['profile'].choices.queryset.exclude(user__profile=self.profile))
 
 
 LabelFormSet = forms.inlineformset_factory(Project, Label, form=LabelForm, min_num=2, validate_min=True, extra=0, can_delete=True)

@@ -188,7 +188,10 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             # and not previous set.
             kwargs.setdefault('queryset', self.get_form_instance(step))
 
-        if step == 'labels' or step == 'permissions':
+        if step == 'permissions':
+            # formset= form_class(**kwargs, form_kwargs=self.get_form_kwargs_special(step))
+            # form = formset[0]
+            # print(form.fields['profile'].choices)
             return form_class(**kwargs, form_kwargs=self.get_form_kwargs_special(step))
         else:
             return form_class(**kwargs)
