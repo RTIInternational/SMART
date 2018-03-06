@@ -20,7 +20,7 @@
           {{ wizard.management_form }}
 
           {% if wizard.steps.step0 == 0 %}
-            <h3>Project Info</h3>
+            <h1>Project Info</h1>
             <div class="form-group">
               <label class="control-label" for="{{ wizard.form.name.id_for_label }}">{{ wizard.form.name.label }}</label>
               <input class="form-control" id="{{ wizard.form.name.id_for_label }}" maxlength="30" name="{{ wizard.form.name.html_name }}" type="text" placeholder="{{ form.name.label }}" value="{{ form.name.value|default_if_none:'' }}"/>
@@ -32,7 +32,7 @@
               {{ wizard.form.description.errors }}
             </div>
           {% elif wizard.steps.step0 == 1 %}
-            <h3>Labels</h3>
+            <h1>Labels</h1>
             <p>You must provide the name of your labels here.  SMART <strong>requires at least two labels</strong> and the labels must be <strong>unique</strong>.</p>
             <p>If you have more than two labels use the <code>add label</code> button to add more rows to the form.  If you decide that you want to remove a label after adding it there will be a <code>remove label</code> button next to the name input.</p>
             <p>If your data file has labels in it then you must provide the exact labels here.</p>
@@ -67,7 +67,7 @@
               {% endfor %}
             </table>
           {% elif wizard.steps.step0 == 2 %}
-            <h3>Permissions</h3>
+            <h1>Permissions</h1>
             <p>You can assign special permissions to other users' profiles.</p>
             <p>Admins are able to update project description, upload additional data, control project permissions and annotate data.  Coders are able to view project details and annotate data.</p>
             <ul class="list-group">
