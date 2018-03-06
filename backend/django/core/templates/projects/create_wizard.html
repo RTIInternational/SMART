@@ -10,7 +10,7 @@
 {% endblock %}
 
 {% block content %}
-{{ wizard.non_form_errors }}
+<div class="error-messages">{{ wizard.non_form_errors }}</div>
 <div class="row">
   <div class="col-md-6 col-md-offset-3">
     <div class="card">
@@ -24,12 +24,12 @@
             <div class="form-group">
               <label class="control-label" for="{{ wizard.form.name.id_for_label }}">{{ wizard.form.name.label }}</label>
               <input class="form-control" id="{{ wizard.form.name.id_for_label }}" maxlength="30" name="{{ wizard.form.name.html_name }}" type="text" placeholder="{{ form.name.label }}" value="{{ form.name.value|default_if_none:'' }}"/>
-              {{ wizard.form.name.errors }}
+              <div class="error-messages">{{ wizard.form.name.errors }}</div>
             </div>
             <div class="form-group">
               <label class="control-label" for="{{ wizard.form.description.id_for_label }}">{{ wizard.form.description.label }}</label>
               <textarea class="form-control" id="{{ wizard.form.description.id_for_label }}" name="{{ wizard.form.description.html_name }}">{{ form.description.value|default_if_none:'' }}</textarea>
-              {{ wizard.form.description.errors }}
+              <div class="error-messages">{{ wizard.form.description.errors }}</div>
             </div>
           {% elif wizard.steps.step0 == 1 %}
             <h1>Labels</h1>
@@ -39,7 +39,7 @@
             <p>You can not update the labels for a project after the project is created.</p>
             <table class="table table-striped">
               {{ wizard.form.management_form }}
-              {{ wizard.form.non_form_errors }}
+              <div class="error-messages">{{ wizard.form.non_form_errors }}</div>
               {% for form in wizard.form %}
                 {% if forloop.first %}
                   <thead>
@@ -59,7 +59,7 @@
                             {{ hidden }}
                           {% endfor %}
                         {% endif %}
-                        {{ field.errors.as_ul }}
+                        <div class="error-messages">{{ field.errors.as_ul }}</div>
                         {{ field }}
                       </td>
                     {% endfor %}
@@ -79,7 +79,7 @@
             <p>You can update permissions after creating a project.</p>
             <table class="table table-striped">
               {{ wizard.form.management_form }}
-              {{ wizard.form.non_form_errors }}
+              <div class="error-messages">{{ wizard.form.non_form_errors }}</div>
               {% for form in wizard.form %}
                 {% if forloop.first %}
                   <thead>
@@ -99,7 +99,7 @@
                           {{ hidden }}
                         {% endfor %}
                       {% endif %}
-                      {{ field.errors.as_ul }}
+                      <div class="error-messages">{{ field.errors.as_ul }}</div>
                       {{ field }}
                     </td>
                   {% endfor %}
@@ -121,7 +121,7 @@
             <div class="form-group">
               <label class="control-label" for="{{ wizard.form.data.id_for_label }}">{{ wizard.form.data.label }}</label>
               <input class="form-control" id="{{ wizard.form.data.id_for_label }}" maxlength="30" name="{{ wizard.form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" />
-              {{ wizard.form.data.errors }}
+              <div class="error-messages">{{ wizard.form.data.errors }}</div>
             </div>
           {% endif %}
 
