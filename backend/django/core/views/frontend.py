@@ -126,9 +126,15 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         ('permissions', PermissionsFormSet),
         ('data', DataWizardForm)
     ]
+    template_list = {
+        'project': 'projects/create_wizard_overview.html',
+        'labels': 'projects/create_wizard_labels.html',
+        'permissions': 'projects/create_wizard_permissions.html',
+        'data': 'projects/create_wizard_data.html'
+    }
 
     def get_template_names(self):
-        return 'projects/create_wizard.html'
+        return self.template_list[self.steps.current]
 
     def get_form_kwargs(self, step):
         kwargs = {}

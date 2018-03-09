@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+{% load static %}
+{% load render_bundle from webpack_loader %}
+
+{% block head %}
+{{ wizard.form.media }}
+{{ form.media.css }}
+{% endblock %}
+
+{% block content %}
+<div class="error-messages">{{ wizard.non_form_errors }}</div>
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <div class="card">
+      <div class="cardface">
+        <form action="." method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          {{ wizard.management_form }}
+
+            <div>
+              <h1>Data Upload Instructions</h1>
+              <p>You must upload a data file that contains text (and optionally labels) for your project.  The file <strong>must pass the following checks</strong>:</p>
+              <ul class="list-group">
+                <li class="list-group-item"><code>.csv</code> or <code>.tsv</code> file</li>
+                <li class="list-group-item">Two columns with headers <code>Text</code> and <code>Label</code></li>
+                <li class="list-group-item">Less than 4GBs</li>
+              </ul>
+              <p>The <code>Text</code> column should have the text of your data which will be annotated by users.  The <code>Label</code> column should have any pre-existing labels for the corresponding text.  If you have no labels then this column can be blank.</p>
+              <p>SMART restricts your project to having two million unique data objects.  Any row after the two millionth will be discarded and any duplicated text that appears previously in the file will also be discarded.</p>
+            </div>
+            <div class="form-group">
+              <label class="control-label" for="{{ wizard.form.data.id_for_label }}">{{ wizard.form.data.label }}</label>
+              <input class="form-control" id="{{ wizard.form.data.id_for_label }}" maxlength="30" name="{{ wizard.form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" />
+              <div class="error-messages">{{ wizard.form.data.errors }}</div>
+            </div>
+          <div>
+            <button class="btn btn-info" name="wizard_goto_step" type="submit" value="project">1. Info</button>
+            <button class="btn btn-info" name="wizard_goto_step" type="submit" value="labels">2. Labels</button>
+            <button class="btn btn-info" name="wizard_goto_step" type="submit" value="permissions">3. Permissions</button>
+            <input class="btn btn-primary" type="submit" value="Submit"/>
+            <p class="pull-right">Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
