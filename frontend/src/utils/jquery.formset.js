@@ -9,8 +9,8 @@
  * Licensed under the New BSD License
  * See: http://www.opensource.org/licenses/bsd-license.php
  */
-import jQuery from 'jquery';
 
+/* eslint-disable no-undef */
 ;(function($) {
     $.fn.formset = function(opts)
     {

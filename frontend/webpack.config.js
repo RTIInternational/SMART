@@ -35,6 +35,13 @@ var config = {
                 })
             },
             {
+                test: /datatables\.net.*/,
+                use: {
+                    loader: 'imports-loader',
+                    options: 'define=>false'
+                }
+            },
+            {
                 test: /\.scss$/,
                 use: ExtractTextPlugin.extract({
                     fallback: "style-loader",
@@ -62,13 +69,14 @@ var config = {
                     ]
                 }),
             },
-            {          
+            {
                 test: require.resolve('jquery'),
                 use: [
                     {
                         loader: 'expose-loader',
                         options: 'jQuery'
-                    },{
+                    },
+                    {
                         loader: 'expose-loader',
                         options: '$'
                     }
@@ -119,7 +127,7 @@ var config = {
             $: 'jquery',
             jQuery: 'jquery',
             'window.jQuery': 'jquery',
-            Popper: ['popper.js', 'default'],
+            Popper: ['popper.js', 'default']
         }),
         new CleanWebpackPlugin(['dist'], {
           root: path.resolve(),
