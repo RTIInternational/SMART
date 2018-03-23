@@ -19,17 +19,22 @@
           {% csrf_token %}
           {{ wizard.management_form }}
 
-            <div>
-              <h1>Data Upload Instructions</h1>
-              <p>You must upload a data file that contains text (and optionally labels) for your project.  The file <strong>must pass the following checks</strong>:</p>
-              <ul class="list-group">
-                <li class="list-group-item"><code>.csv</code> or <code>.tsv</code> file</li>
-                <li class="list-group-item">Two columns with headers <code>Text</code> and <code>Label</code></li>
-                <li class="list-group-item">Less than 4GBs</li>
-              </ul>
-              <p>The <code>Text</code> column should have the text of your data which will be annotated by users.  The <code>Label</code> column should have any pre-existing labels for the corresponding text.  If you have no labels then this column can be blank.</p>
-              <p>SMART restricts your project to having two million unique data objects.  Any row after the two millionth will be discarded and any duplicated text that appears previously in the file will also be discarded.</p>
-            </div>
+            <h1>Data Upload Instructions</h1>
+            <h3>Description</h3>
+            <p>Time to upload your data! Please upload a data file that contains text (and optionally labels) for your project. To upload, the file <strong>must pass the following checks:</strong></p>
+            <ul class="list-group">
+              <li class="list-group-item">The file needs to have either a <code>.csv</code> or <code>.tsv</code> file extension.</li>
+              <li class="list-group-item">The file requires the data to be formatted into two columns, with header names <code>Text</code> and <code>Label</code>.</li>
+              <li class="list-group-item">The largest file size supported is 4GBs.</li>
+            </ul>
+            <p>The <code>Text</code> column should container the text you wish users to label. For example, if you are building a sentiment analysis model to predict whether a tweet is positive, negative, or neutral, the <code>Text</code> column would contain the tweets.</p>
+            <p>The <code>Label</code> colum should contain any pre-exisiting labels for the corresponding text. If none of you data contains existing labels, then this column can be left blank. Extending our sentiment analysis example, if a lead coder has already annotated some tweets as positive, negative, or neutral, this column would contain those labeled records.</p>
+            <p><i>Data Upload Notes:</i></p>
+            <ul class="list-group">
+              <li class="list-group-item">SMART restricts your project to having two million unique records.</li>
+              <li class="list-group-item">If there are multiple rows with the same Text, only one of the records will be saved.</li>
+              <li class="list-group-item">SMART will keep up to two million unique records per data set.</li>
+            </ul>
             <div class="form-group">
               <label class="control-label" for="{{ wizard.form.data.id_for_label }}">{{ wizard.form.data.label }}</label>
               <input class="form-control" id="{{ wizard.form.data.id_for_label }}" maxlength="30" name="{{ wizard.form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" />
