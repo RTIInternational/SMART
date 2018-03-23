@@ -20,10 +20,16 @@
           {{ wizard.management_form }}
 
             <h1>Labels</h1>
-            <p>You must provide the name of your labels here.  SMART <strong>requires at least two labels</strong> and the labels must be <strong>unique</strong>.</p>
-            <p>If you have more than two labels use the <code>add label</code> button to add more rows to the form.  If you decide that you want to remove a label after adding it there will be a <code>remove label</code> button next to the name input.</p>
-            <p>If your data file has labels in it then you must provide the exact labels here.</p>
-            <p>You can not update the labels for a project after the project is created.</p>
+            <h3>Description</h3>
+            <p>In the <strong>Labels</strong> section, we will create categories for labeling. These labeled observations will be used to train a classification model that predicts which of these categories a new observation is most likely to be.</p>
+            <h3>Instructions</h3>
+            <p>Please fill-in below the names of the categories you are interested in predicting.  If you have more than two labels, use the <code>add label</code> button to add more rows to the form. If you decide that you want to remove a label after addit it, use the <code>remove label</code> button to remove the label name.</p>
+            <p><i>Labeling Notes:</i></p>
+            <ul class="list-group">
+              <li class="list-group-item">SMART <strong>requires at least two category labels</strong> and the labels must be <strong>unique</strong>.</li>
+              <li class="list-group-item">If you plan on uploading a data file that contains labels, the label categories in the file must match those provided on this page.</li>
+              <li class="list-group-item">You cannot update the labels for a project after the project is created.</li>
+            </ul>
             <table class="table table-striped">
               {{ wizard.form.management_form }}
               <div class="error-messages">{{ wizard.form.non_form_errors }}</div>
