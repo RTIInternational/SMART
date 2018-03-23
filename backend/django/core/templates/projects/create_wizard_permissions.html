@@ -20,15 +20,21 @@
           {{ wizard.management_form }}
 
             <h1>Permissions</h1>
-            <p>You can assign special permissions to other users' profiles.</p>
-            <p>Admins are able to update project description, upload additional data, control project permissions and annotate data.  Coders are able to view project details and annotate data.</p>
+            <h3>Description</h3>
+            <p>To help organize your labeling projects, you can assign special permissions to other project memebers. Project members can be assigned one of two roles:</p>
             <ul class="list-group">
-              <li class="list-group-item">You are the project creator, as such you can not assign spcial permissions to yourself</li>
-              <li class="list-group-item">Each profile can only have one permission type</li>
-              <li class="list-group-item">Every row must be completely filled in with both a profile and permission.</li>
+              <li class="list-group-item"><strong>Admins</strong> are able to update the project description, upload additional data, control project permissions, and annotate data.</li>
+              <li class="list-group-item"><strong>Coders</strong> are able to view project details and annotate data.</li>
             </ul>
-            <p>You can click the <code>add permissions</code> button to add more rows to the form.  If you decide that you want to remove a permission after adding it click the <code>remove permission</code> button next to the inputs.</p>
-            <p>You can update permissions after creating a project.</p>
+            <h3>Instructions</h3>
+            <p>Please select your project members and assign their role types below. Clicking the <code>add permisssions</code> button adds more rows to the form. If you decide that you want to remove a permission after adding it, click the <code>remove permission</code> button next to the inputs to remove the permission. If an intended project member is not listed below, please check to see if they have created an account.</p>
+            <p><i>Permissions Notes:</i></p>
+            <ul class="list-group">
+              <li class="list-group-item">You (the project creator) are always assigned <strong>Admin</strong> privileges.</li>
+              <li class="list-group-item">Each user profile can only be assigned one permission type.</li>
+              <li class="list-group-item">Each row must be completely filled in with both a profile and permission.</li>
+              <li class="list-group-item">You can update permissions after creating a project</li>
+            </ul>
             <table class="table table-striped">
               {{ wizard.form.management_form }}
               <div class="error-messages">{{ wizard.form.non_form_errors }}</div>
