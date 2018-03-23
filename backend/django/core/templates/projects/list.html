@@ -3,19 +3,22 @@
 {% block content %}
 <div class="card full">
   <div class="cardface">
-    <h2>Projects</h2>
+    <h1>Projects</h1>
     <p>
         <div class="list-group">
-        {% for project in object_list %}
-          <div class="col-md-8">
-            <a href="{{ project.get_absolute_url }}" class="list-group-item">{{ project.name }}</a>
-          </div>
-          <div class="col-md-4">
-            <a href="{% url 'projects:project_code' project.pk %}" class="list-group-item">Code Project {{ project.name }}</a>
-          </div>
-        {% endfor %}
+          <table class="table table-striped">
+            <tbody>
+              {% for project in object_list %}
+              <tr>
+                <td>{{ project.name }}</td>
+                <td><a href="{{ project.get_absolute_url }}">Details</a></td>
+                <td><a href="{% url 'projects:project_code' project.pk %}">Annotate</a></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
-        <a class="btn btn-primary" href="{% url 'projects:project_create' %}">New Project</a>
+        <a class="btn btn-primary margin-top" href="{% url 'projects:project_create' %}">New Project</a>
     </p>
 
     {% if is_paginated %}

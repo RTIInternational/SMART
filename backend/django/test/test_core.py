@@ -876,6 +876,13 @@ def test_margin_sampling_fourclass():
     np.testing.assert_almost_equal(ms, 0.6)
 
 
+def test_margin_sampling_array_ordering():
+    probs = np.array([0.9, 0.3, 0.1, 0.4, 0.5])
+    probs[::-1].sort()
+
+    assert probs[0] > probs[1]
+
+
 def test_entropy_notarray():
     probs = [0.5, 0.5]
 
@@ -907,6 +914,14 @@ def test_entropy_fourclass():
     e = entropy(probs)
 
     np.testing.assert_almost_equal(e, 0.4084313719900203)
+
+
+def test_entropy_with_zero():
+    probs = np.array([0, 0.3, 0.7])
+
+    e = entropy(probs)
+
+    np.testing.assert_almost_equal(e, 0.26529499557412151)
 
 
 def test_train_and_save_model(test_project_labeled_and_tfidf, tmpdir, settings):

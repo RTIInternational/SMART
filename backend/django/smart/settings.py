@@ -187,7 +187,10 @@ class Dev(Configuration):
     CELERY_TASK_SERIALIZER = 'json'
     CELERY_RESULT_SERIALIZER = 'json'
 
-    STATICFILES_DIRS = (os.path.join(BASE_DIR, 'frontend', 'dist'), )
+    STATICFILES_DIRS = [
+        os.path.join(BASE_DIR, 'frontend', 'dist'),
+        os.path.join(BASE_DIR, 'core/data')
+    ]
 
     WEBPACK_LOADER = {
         'DEFAULT': {

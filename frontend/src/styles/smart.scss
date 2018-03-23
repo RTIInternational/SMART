@@ -124,3 +124,12 @@ main {
         border-bottom: 1px solid $table-border-color;
     }
 }
+
+.margin-top {
+    margin-top: 15px;
+}
+
+.error-messages {
+    color: red;
+    font-size: 12px;
+}

@@ -773,8 +773,10 @@ def entropy(probs):
     if not isinstance(probs, np.ndarray):
         raise ValueError('Probs should be a numpy array')
 
+    non_zero_probs = (p for p in probs if p > 0)
+
     total = 0
-    for p in probs:
+    for p in non_zero_probs:
         total += p * math.log10(p)
 
     return -total
