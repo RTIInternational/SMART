@@ -1,24 +1,60 @@
-variables:
-  POSTGRES_PASSWORD: my-secret-password
-  POSTGRES_USER: smart
-  POSTGRES_DB: smart
+stages:
+  - build
+  - setup
+  - test
+  - cleanup
 
-services:
-  - redis:3.0
-  - postgres:9.6.2
-
-test-backend:
-  image: python:3.5.3
+build:
+  tags:
+    - docker-shell
+  stage: build
   script:
-    - cd backend
-    - pip install -r requirements.txt
-    - cd django
-    - coverage run -m py.test
-    - coverage report -m
+    - cd envs/dev
+    - docker-compose build
 
-test-frontend:
-  image: node:latest
+setup:
+  tags:
+    - docker-shell
+  stage: setup
   script:
-    - cd frontend
-    - yarn
-    - yarn run test
+    - cd envs/dev
+    - docker volume create vol_smart_pgdata && docker volume create vol_smart_data
+    - docker-compose up -d
+  after_script:
+    - cd envs/dev
+    - docker-compose stop
+
+test_frontend:
+  tags:
+    - docker-shell
+  script:
+    - cd envs/dev
+    - docker-compose start
+    - docker exec -i smart_frontend bash -c "yard run test"
+  after_script:
+    - cd envs/dev
+    - docker-compose down
+
+test_backend:
+  tags:
+    - docker-shell
+  script:
+    - cd envs/dev
+    - docker-compose start
+    - docker exec -i smart_backend bash -c "coverage run -m py.test"
+    - docker exec -i smart_backend bash -c "coverage report -m"
+  after_script:
+    - cd envs/dev
+    - docker-compose down
+
+cleanup:
+  tags:
+    - docker-shell
+  stage: cleanup
+  allow_failure: true
+  script:
+    - cd envs/dev
+    - docker-compose down
+    - docker volume remove vol_smart_pgdata
+    - docker volume remove vol_smart_data
+  when: always
