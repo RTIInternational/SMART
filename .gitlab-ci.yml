@@ -33,7 +33,7 @@ test_frontend:
     - docker exec -i smart_frontend bash -c "yard run test"
   after_script:
     - cd envs/dev
-    - docker-compose down
+    - docker-compose stop
 
 test_backend:
   tags:
@@ -45,7 +45,7 @@ test_backend:
     - docker exec -i smart_backend bash -c "coverage report -m"
   after_script:
     - cd envs/dev
-    - docker-compose down
+    - docker-compose stop
 
 cleanup:
   tags:
