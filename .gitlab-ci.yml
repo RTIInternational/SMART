@@ -30,7 +30,7 @@ test_frontend:
   script:
     - cd envs/dev
     - docker-compose start
-    - docker exec -i smart_frontend bash -c "yard run test"
+    - docker exec -i smart_frontend bash -c "yarn run test"
   after_script:
     - cd envs/dev
     - docker-compose stop
