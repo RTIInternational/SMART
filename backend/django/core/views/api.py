@@ -239,6 +239,25 @@ def data_predicted_table(request, pk):
 
     return Response({'data': data})
 
+@api_view(['GET'])
+def data_unlabeled_table(request, pk):
+    project = Project.objects.get(pk=pk)
+
+    labeled_data = DataLabel.objects.filter(data__project=project)
+    labeled_ids = []
+    for d in labeled_data:
+        labeled_ids.append(d.data.id)
+
+    data_objs_all = Data.objects.filter(project=project)
+    data = []
+    for d in data_objs_all:
+        if not d.id in labeled_ids:
+            temp = {
+                'Text': d.text
+            }
+            data.append(temp)
+
+    return Response({'data': data})
 
 ############################################
 #    REACT API ENDPOINTS FOR CODING VIEW   #
