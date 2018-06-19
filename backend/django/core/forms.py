@@ -8,7 +8,14 @@ from pandas.errors import EmptyDataError, ParserError
 def clean_data_helper(data, supplied_labels):
     ALLOWED_TYPES = [
         'text/csv',
-        'text/tab-separated-values'
+        'text/tab-separated-values',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.template',
+        'application/vnd.ms-excel.sheet.macroenabled.12',
+        'application/vnd.ms-excel.template.macroenabled.12',
+        'application/vnd.ms-excel.addin.macroenabled.12',
+        'application/vnd.ms-excel.sheet.binary.macroenabled.12'
     ]
     ALLOWED_HEADER = ['Text', 'Label']
     MAX_FILE_SIZE = 4 * 1000 * 1000 * 1000
@@ -23,6 +30,10 @@ def clean_data_helper(data, supplied_labels):
             data = pd.read_csv(data, sep='\t')
         elif data.content_type == 'text/csv':
             data = pd.read_csv(data)
+        elif data.content_type.startswith('application/vnd') and data.name.endswith('.csv'):
+            data = pd.read_csv(data)
+        elif data.content_type.startswith('application/vnd') and data.name.endswith('.xlsx'):
+            data = pd.read_excel(data)
         else:
             raise ValidationError("File type is not supported.  Received {0} but only {1} are supported."\
                               .format(data.content_type, ', '.join(ALLOWED_TYPES)))
