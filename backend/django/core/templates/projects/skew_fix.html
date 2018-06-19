@@ -17,16 +17,19 @@
     <div class="row">
       <div class="col-md-6">
         <h3>Label Distribution</h3>
-        <div id="distribution_chart" style="height:300px">
+        <div id="distribution_chart_summ" style="height:300px">
           <svg class="nvd3-svg"></svg>
         </div>
       </div>
     </div>
     <div class="row">
       <p>
-        Add up the totals and put here. Also, need info about what This
-              page is for and how to do stuff ADD BUTTON LINKING BACK TO THE ADMIN PAGE
+      Below are the unlabeled data that are not in a queue. This page allows an admin to
+      manually search for and annotate data in the case of a particularly bad data skew.
       </p>
+      <br/>
+      <p>To annotate, click on a data entry below and select the label from the expanded list of
+        labels.
     </div>
     <div class="row">
       <div>
@@ -50,7 +53,8 @@
 {% block scripts_body %}
 <script>
 
-/*TEMP*/
+/*NOTE TEMP: these are copied over from the fetch_configs file in the front end
+since I couldn't get them to import.*/
 const postConfig = (postData) => {
     return (
         {
@@ -85,18 +89,14 @@ const getCookie = (name) => {
     return cookieValue;
 }
 
-
-
 /*
- *  Make ajax call to `label_distribution` route.  This will fetch data to
+ *  Make ajax call to `label_distribution by tag` route.  This will fetch data to
  *  populate the discrete multi bar chart and show the label distribution
- *  per user.
- *  NOTE: right now this is the same as the other slide, but should probably be
- *  changed.
+ *  per user. Note that this groups differently than the admin page.
  */
 $.ajax({
     method: "GET",
-    url: '/api/label_distribution/' + {{ project.pk }} + '/',
+    url: '/api/label_distribution_inverted/' + {{ project.pk }} + '/',
     success: function (response) {
         nv.addGraph(function() {
             var chart = nv.models.multiBarChart()
@@ -106,7 +106,7 @@ $.ajax({
                 .groupSpacing(0.1)
             ;
             chart.xAxis
-                .axisLabel("User")
+                .axisLabel("Label")
                 .axisLabelDistance(15)
                 .showMaxMin(false)
             ;
@@ -115,7 +115,7 @@ $.ajax({
                 .axisLabelDistance(-5)
                 .tickFormat(d3.format(',.01f'))
             ;
-            d3.select('#distribution_chart svg')
+            d3.select('#distribution_chart_summ svg')
                 .datum(response)
                 .call(chart);
             nv.utils.windowResize(chart.update);

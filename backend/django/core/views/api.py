@@ -58,6 +58,34 @@ def download_data(request, pk):
 
     return response
 
+@api_view(['GET'])
+def label_distribution_inverted(request, pk):
+    project = Project.objects.get(pk=pk)
+
+    labels = [l for l in project.labels.all()]
+
+    users = []
+    users.append(project.creator)
+    users.extend([perm.profile for perm in project.projectpermissions_set.all()])
+
+    dataset = []
+    all_counts = []
+    for u in users:
+        temp_data = {'key':u.__str__()}
+        temp_values = []
+        for l in labels:
+            label_count = DataLabel.objects.filter(profile=u, label=l).count()
+            all_counts.append(label_count)
+            temp_values.append({'x':l.name, 'y':label_count})
+        dataset.append({'key':u.__str__(), 'values':temp_values})
+
+
+    if not any(count > 0 for count in all_counts):
+        dataset = []
+
+    print(dataset)
+
+    return Response(dataset)
 
 @api_view(['GET'])
 def label_distribution(request, pk):
