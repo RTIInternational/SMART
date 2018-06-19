@@ -249,13 +249,15 @@ def data_unlabeled_table(request, pk):
     for d in labeled_data:
         labeled_ids.append(d.data.id)
 
-    stuff_in_queue = Queue.objects.filter(project=project)
-
+    stuff_in_queue = DataQueue.objects.filter(queue__project=project)
+    queued_ids = []
+    for queued in stuff_in_queue:
+        queued_ids.append(queued.data.id)
 
     data_objs_all = Data.objects.filter(project=project)
     data = []
     for d in data_objs_all:
-        if not d.id in labeled_ids:
+        if not (d.id in labeled_ids) and not(d.id in queued_ids):
             temp = {
                 'Text': d.text,
                 'ID':d.id
