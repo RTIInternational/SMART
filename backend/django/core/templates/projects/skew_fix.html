@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% load render_bundle from webpack_loader %}
+{% block title %}Skew Page{% endblock %}
+{% block heading %}Skew - {{object}}{% endblock %}
+
+{% block content %}
+<div class="card full">
+  <div class="cardface">
+    <div class="row">
+      <div class="btn-group pull-left" role="group" aria-label="Admin Controls">
+        <a class="btn btn-primary" href="{% url 'projects:project_admin' project.pk %}" role="button">
+              Back to Admin Page
+        </a>
+      </div>
+    </div>
+    <h2>{{ project.name }}</h2>
+    <div class="row">
+      <div class="col-md-6">
+        <h3>Label Distribution</h3>
+        <div id="distribution_chart" style="height:300px">
+          <svg class="nvd3-svg"></svg>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <p>
+        Add up the totals and put here. Also, need info about what This
+              page is for and how to do stuff ADD BUTTON LINKING BACK TO THE ADMIN PAGE
+      </p>
+    </div>
+    <div class="row">
+      <div>
+      </div>
+      <h3>Unlabeled</h3>
+      <table id="unlabeled_data_table" class="table table-hover table-striped table-bordered" cellspacing="0" width="100%">
+        <thead>
+          <tr>
+            <th>Text</th>
+            <th>ID</th>
+          </tr>
+        </thead>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts_body %}
+<script>
+
+/*TEMP*/
+const postConfig = (postData) => {
+    return (
+        {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(postData)
+        }
+    );
+};
+
+const getCookie = (name) => {
+    // https://docs.djangoproject.com/en/1.11/ref/csrf/#ajax
+    var cookieValue = null;
+
+    if (document.cookie && document.cookie != '') {
+        var cookies = document.cookie.split(';');
+
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+
+    return cookieValue;
+}
+
+
+
+/*
+ *  Make ajax call to `label_distribution` route.  This will fetch data to
+ *  populate the discrete multi bar chart and show the label distribution
+ *  per user.
+ *  NOTE: right now this is the same as the other slide, but should probably be
+ *  changed.
+ */
+$.ajax({
+    method: "GET",
+    url: '/api/label_distribution/' + {{ project.pk }} + '/',
+    success: function (response) {
+        nv.addGraph(function() {
+            var chart = nv.models.multiBarChart()
+                .color(["#66c2a5","#fc8d62","#8da0cb","#e78ac3","#a6d854","#ffd92f","#e5c494","#b3b3b3"])
+                .duration(300)
+                .margin({bottom: 70, left: 70})
+                .groupSpacing(0.1)
+            ;
+            chart.xAxis
+                .axisLabel("User")
+                .axisLabelDistance(15)
+                .showMaxMin(false)
+            ;
+            chart.yAxis
+                .axisLabel("Number of Data Annotated")
+                .axisLabelDistance(-5)
+                .tickFormat(d3.format(',.01f'))
+            ;
+            d3.select('#distribution_chart svg')
+                .datum(response)
+                .call(chart);
+            nv.utils.windowResize(chart.update);
+            return chart;
+        });
+    },
+    error: function (error) {
+        console.log(error);
+    }
+});
+
+$(document).ready(function() {
+    /*
+     *  Activate DataTable script to create the unlabeled data DataTable
+     */
+     var unlabeled_table = $('#unlabeled_data_table').DataTable({
+         "ajax": '/api/data_unlabeled_table/' + {{ project.pk }} + '/',
+         "columns": [
+             { "data": "Text"},
+                {"data":"ID" , "visible": false }
+         ],
+         "oLanguage": {
+             "sSearch": "Filter Text: "
+         }
+     });
+
+     function format_hidden_rows(rowData){
+       //Generate a div to append the buttons to
+       var buttonDiv = $('<div/>');
+       buttonDiv.append($('<p></p>'));
+       buttonDiv.attr('name',rowData.ID);
+       $.ajax({
+           method: 'GET',
+           url: '/api/get_labels/' + {{ project.pk }},
+           success: function (response) {
+              //For each possible label, generate a button
+               response.data.map(function(item){
+                 var button = $('<button/>',{
+                   text: item.Text,
+                   id: item.ID + "_"+buttonDiv.attr('name'),
+                   click: function()
+                   {
+                     var identifiers = this.id.split("_");
+                     var payload = {
+                         labelID: identifiers[0],
+                         labeling_time: null
+                     }
+                     var data_id = identifiers[1];
+                     var apiURL = '/api/label_skew_label/'+data_id+'/';
+
+                     fetch(apiURL, postConfig(payload))
+                             .then(response => {
+                                 if (response.ok) {
+                                     return response.json();
+                                 }
+                                 else {
+                                     const error = new Error(response.statusText)
+                                     error.response = response;
+                                     throw error;
+                                 }
+                             })
+                             .then(response => {
+                                 if ('error' in response) {
+                                     console.log(error);
+                                 }
+                                 else {
+                                   //Need to remove the row from the table
+                                     $('#unlabeled_data_table').DataTable().rows("."+data_id).remove().draw(false);
+                                 }
+                             })
+                   }
+                 });
+                 buttonDiv.children().append(button).end();
+               });
+           },
+           error: function (error) {
+               console.log(error);
+           }
+       });
+       return buttonDiv;
+     }
+
+    /*
+     *  This function fires whenever a row of the table is clicked. If it is a
+     *  outer row, it should spawn or hide the list of buttons. The child rows
+     *  also trigger this function but it should do nothing there.
+     */
+     $('#unlabeled_data_table tbody').on('click','tr',function(){
+       var tr = $(this).closest('tr');
+       var row = unlabeled_table.row(tr);
+
+       if(tr.attr("class") && (tr.attr("class").includes("odd") || tr.attr("class").includes("even")))
+       {
+         //Assign the data id as a class so we can remove this row later
+         var id = String(row.data().ID);
+         tr.addClass(id);
+         if(row.child.isShown())
+         {
+           row.child.hide();
+           tr.removeClass('shown');
+         }
+         else{
+           row.child(format_hidden_rows(row.data())).show();
+           tr.addClass('shown');
+         }
+       }
+     });
+
+});
+
+/*
+ *  Force window resize event when bootstrap tab navigation anchor is used
+ *  This is needed because nvd3 charts are incorrectly sized if they are
+ *  initially rendered while hidden.
+ */
+$(function () {
+    $(document).on('shown.bs.tab', 'a[data-toggle="tab"]', function (e) {
+        window.dispatchEvent(new Event('resize'));
+    });
+});
+</script>
+{% endblock %}
