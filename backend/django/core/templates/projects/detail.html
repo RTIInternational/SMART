@@ -64,7 +64,7 @@
                 <h4>Data</h4>
                 <ul class="list-group">
                 {% for data in project.data_set.all|slice:"5" %}
-                    <li class="list-group-item"  id="showData">{{ data.text }}</li>
+                    <li class="list-group-item showData">{{ data.text }}</li>
                 {% endfor %}
                 </ul>
             </div>
