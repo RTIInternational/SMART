@@ -7,13 +7,12 @@ describe('<Deck />', () => {
     describe('render', () => {
         it('renders properly if all props provided', () => {
             const cards = [];
-            
+
             const fn = () => {};
 
             const wrapper = shallow(
-                <Deck 
+                <Deck
                     fetchCards={fn}
-                    passCard={fn}
                     popCard={fn}
                     cards={cards}
                 />

@@ -530,6 +530,26 @@ def label_data(label, datum, profile, time):
 
     settings.REDIS.srem(redis_serialize_set(queue), redis_serialize_data(datum))
 
+def move_skipped_to_admin_queue(datum, profile, project):
+    '''
+    Remove the data from AssignedData and redis
+
+    Change the assigned queue to the admin=True one for this project
+    '''
+    with transaction.atomic():
+        #remove the data from the assignment table
+        assignment = AssignedData.objects.filter(data=datum,
+                                                profile=profile).get()
+        queue = assignment.queue
+        assignment.delete()
+        #change the queue to the admin one
+        old_id = queue.id
+        #NOTE: this takes advantage of a quirk of the queues, but might be an issue later
+        new_queue = Queue.objects.get(id = old_id + 1)
+        DataQueue.objects.filter(data=datum, queue=queue).update(queue=new_queue)
+
+    #remove the data from redis
+    settings.REDIS.srem(redis_serialize_set(queue), redis_serialize_data(datum))
 
 def get_assignments(profile, project, num_assignments):
     '''

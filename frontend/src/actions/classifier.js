@@ -4,13 +4,13 @@ import moment from 'moment';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
 
-export const PASS_CARD = 'PASS_CARD';
+//export const PASS_CARD = 'PASS_CARD';
 export const POP_CARD = 'POP_CARD';
 export const PUSH_CARD = 'PUSH_CARD';
 export const SET_MESSAGE = 'SET_MESSAGE';
 export const CLEAR_DECK = 'CLEAR_DECK';
 
-export const passCard = createAction(PASS_CARD);
+//export const passCard = createAction(PASS_CARD);
 export const popCard = createAction(POP_CARD);
 export const pushCard = createAction(PUSH_CARD);
 export const setMessage = createAction(SET_MESSAGE);
@@ -55,6 +55,35 @@ export const annotateCard = (card, labelID) => {
         labeling_time: moment().diff(card['start_time'], 'seconds') // now - start_time rounded to whole seconds
     }
     let apiURL = `/api/annotate_data/${card.text.pk}/`;
+    return dispatch => {
+        return fetch(apiURL, postConfig(payload))
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                else {
+                    const error = new Error(response.statusText)
+                    error.response = response;
+                    throw error;
+                }
+            })
+            .then(response => {
+                if ('error' in response) {
+                    dispatch(clearDeck())
+                    return dispatch(setMessage(response.error))
+                }
+                else {
+                    dispatch(popCard())
+                }
+            })
+    }
+}
+
+//skip a card and put it in the admin table
+export const passCard = (card) => {
+    let payload = {
+    }
+    let apiURL = `/api/skip_data/${card.text.pk}/`;
     return dispatch => {
         return fetch(apiURL, postConfig(payload))
             .then(response => {

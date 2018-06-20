@@ -10,7 +10,7 @@ class Deck extends React.Component {
     componentWillMount() {
         this.props.fetchCards();
     }
-    
+
     render() {
         const { message, cards, passCard, annotateCard } = this.props;
         const cardCount = cards.length;
@@ -42,11 +42,11 @@ class Deck extends React.Component {
                             {card.options.map( (opt) => (
                                 <Button onClick={() => annotateCard(card, opt['pk'])} bsStyle="primary" key={`deck-button-${opt['name']}`}>{opt['name']}</Button>
                             ))}
-                            { cardCount > 1 && 
-                                <Button onClick={passCard} bsStyle="info">Skip</Button>
+                            { cardCount > 1 &&
+                                <Button onClick={() => passCard(card)} bsStyle="info">Skip</Button>
                             }
-                            { cardCount == 1 && 
-                                <Button onClick={passCard} bsStyle="info" disabled={true}>Skip</Button>
+                            { cardCount == 1 &&
+                                <Button onClick={() => passCard(card)} bsStyle="info" disabled={true}>Skip</Button>
                             }
                         </ButtonToolbar>
                         <Clearfix />
@@ -62,7 +62,7 @@ class Deck extends React.Component {
                 </Well>
             );
         }
-        
+
         return (
             <div className="deck">
                 {deck}
