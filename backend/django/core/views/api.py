@@ -313,6 +313,31 @@ def get_labels(request, pk):
 
     return Response({'data': data})
 
+
+@api_view(['POST'])
+def label_skew_label(request, pk):
+    '''This is called when an admin manually labels a datum on the skew page. It
+    annotates a single datum with the given label, and profile with null as the time.
+
+    '''
+    datum = Data.objects.get(pk=pk)
+    project = datum.project
+    label = Label.objects.get(pk=request.data['labelID'])
+    profile = request.user.profile
+
+    current_training_set = project.get_current_training_set()
+
+    with transaction.atomic():
+        DataLabel.objects.create(data=datum,
+                                label=label,
+                                profile=profile,
+                                training_set=current_training_set,
+                                time_to_label=None
+                                )
+
+    return Response({'test':'success'})
+
+
 ############################################
 #    REACT API ENDPOINTS FOR CODING VIEW   #
 ############################################
@@ -370,30 +395,6 @@ def annotate_data(request, pk):
         response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
 
     return Response(response)
-
-
-@api_view(['POST'])
-def label_skew_label(request, pk):
-    '''This is called when an admin manually labels a datum on the skew page. It
-    annotates a single datum with the given label, and profile with null as the time.
-
-    '''
-    datum = Data.objects.get(pk=pk)
-    project = datum.project
-    label = Label.objects.get(pk=request.data['labelID'])
-    profile = request.user.profile
-
-    current_training_set = project.get_current_training_set()
-
-    with transaction.atomic():
-        DataLabel.objects.create(data=datum,
-                                label=label,
-                                profile=profile,
-                                training_set=current_training_set,
-                                time_to_label=None
-                                )
-
-    return Response({'test':'success'})
 
 
 @api_view(['GET'])
