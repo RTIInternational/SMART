@@ -84,8 +84,6 @@ def label_distribution_inverted(request, pk):
     if not any(count > 0 for count in all_counts):
         dataset = []
 
-    print(dataset)
-
     return Response(dataset)
 
 
@@ -276,14 +274,10 @@ def data_unlabeled_table(request, pk):
     project = Project.objects.get(pk=pk)
 
     labeled_data = DataLabel.objects.filter(data__project=project)
-    labeled_ids = []
-    for d in labeled_data:
-        labeled_ids.append(d.data.id)
+    labeled_ids = [d.data.id for d in labeled_data]
 
     stuff_in_queue = DataQueue.objects.filter(queue__project=project)
-    queued_ids = []
-    for queued in stuff_in_queue:
-        queued_ids.append(queued.data.id)
+    queued_ids = [queued.data.id for queued in stuff_in_queue]
 
     data_objs_all = Data.objects.filter(project=project)
     data = []

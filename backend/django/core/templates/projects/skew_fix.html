@@ -38,8 +38,8 @@
       <table id="unlabeled_data_table" class="table table-hover table-striped table-bordered" cellspacing="0" width="100%">
         <thead>
           <tr>
+            <th></th>
             <th>Text</th>
-            <th>ID</th>
           </tr>
         </thead>
       </table>
@@ -104,6 +104,7 @@ $.ajax({
                 .duration(300)
                 .margin({bottom: 70, left: 70})
                 .groupSpacing(0.1)
+                .stacked(true)
             ;
             chart.xAxis
                 .axisLabel("Label")
@@ -134,8 +135,14 @@ $(document).ready(function() {
      var unlabeled_table = $('#unlabeled_data_table').DataTable({
          "ajax": '/api/data_unlabeled_table/' + {{ project.pk }} + '/',
          "columns": [
+             {
+               "className": 'details-control',
+               "orderable": false,
+               "data": null,
+               "defaultContent": '(+)'
+             },
              { "data": "Text"},
-                {"data":"ID" , "visible": false }
+             {"data":"ID" , "visible": false }
          ],
          "oLanguage": {
              "sSearch": "Filter Text: "
@@ -203,24 +210,21 @@ $(document).ready(function() {
      *  outer row, it should spawn or hide the list of buttons. The child rows
      *  also trigger this function but it should do nothing there.
      */
-     $('#unlabeled_data_table tbody').on('click','tr',function(){
+     $('#unlabeled_data_table tbody').on('click','td.details-control',function(){
        var tr = $(this).closest('tr');
        var row = unlabeled_table.row(tr);
 
-       if(tr.attr("class") && (tr.attr("class").includes("odd") || tr.attr("class").includes("even")))
+       //Assign the data id as a class so we can remove this row later
+       var id = String(row.data().ID);
+       tr.addClass(id);
+       if(row.child.isShown())
        {
-         //Assign the data id as a class so we can remove this row later
-         var id = String(row.data().ID);
-         tr.addClass(id);
-         if(row.child.isShown())
-         {
-           row.child.hide();
-           tr.removeClass('shown');
-         }
-         else{
-           row.child(format_hidden_rows(row.data())).show();
-           tr.addClass('shown');
-         }
+         row.child.hide();
+         tr.removeClass('shown');
+       }
+       else{
+         row.child(format_hidden_rows(row.data())).show();
+         tr.addClass('shown');
        }
      });
 
