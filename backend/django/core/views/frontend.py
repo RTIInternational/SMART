@@ -63,6 +63,7 @@ class ProjectAdmin(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         return ctx
 
+
 class ProjectSkew(LoginRequiredMixin, DetailView):
     model = Project
     template_name = 'projects/skew_fix.html'

@@ -58,6 +58,7 @@ def download_data(request, pk):
 
     return response
 
+
 @api_view(['GET'])
 def label_distribution_inverted(request, pk):
     project = Project.objects.get(pk=pk)
@@ -86,6 +87,7 @@ def label_distribution_inverted(request, pk):
     print(dataset)
 
     return Response(dataset)
+
 
 @api_view(['GET'])
 def label_distribution(request, pk):
@@ -268,6 +270,7 @@ def data_predicted_table(request, pk):
 
     return Response({'data': data})
 
+
 @api_view(['GET'])
 def data_unlabeled_table(request, pk):
     project = Project.objects.get(pk=pk)
@@ -293,6 +296,7 @@ def data_unlabeled_table(request, pk):
             data.append(temp)
 
     return Response({'data': data})
+
 
 @api_view(['GET'])
 def get_labels(request, pk):
@@ -367,6 +371,7 @@ def annotate_data(request, pk):
 
     return Response(response)
 
+
 @api_view(['POST'])
 def label_skew_label(request, pk):
     '''This is called when an admin manually labels a datum on the skew page. It
@@ -389,7 +394,6 @@ def label_skew_label(request, pk):
                                 )
 
     return Response({'test':'success'})
-
 
 
 @api_view(['GET'])
