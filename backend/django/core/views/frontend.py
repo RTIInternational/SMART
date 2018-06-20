@@ -230,7 +230,8 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             num_coders = len([x for x in permissions if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True]) + 1
             q_length = util.find_queue_length(batch_size, num_coders)
 
-            queue = util.add_queue(project=proj_obj, length=q_length)
+            queue = util.add_queue(project=proj_obj, length=q_length, admin=False)
+            admin_queue = util.add_queue(project=proj_obj, length=q_length, admin=True)
 
             # Data
             f_data = data.cleaned_data['data']

@@ -247,14 +247,14 @@ def find_queue_length(batch_size, num_coders):
     return math.ceil(batch_size/num_coders) * num_coders + math.ceil(batch_size/num_coders) * (num_coders - 1)
 
 
-def add_queue(project, length, profile=None):
+def add_queue(project, length, admin, profile=None):
     '''
     Add a queue of the given length to the given project.  If a profile is provided,
     assign the queue to that profile.
 
     Return the created queue.
     '''
-    return Queue.objects.create(length=length, project=project, profile=profile)
+    return Queue.objects.create(length=length, project=project, profile=profile, admin = admin)
 
 
 def get_ordered_data(data_ids, orderby):
@@ -390,12 +390,12 @@ def pop_first_nonempty_queue(project, profile=None):
     if profile is not None:
         # Use priority to ensure we set profile queues above project queues
         # in the resulting list; break ties by pk
-        profile_queues = project.queue_set.filter(profile=profile)
+        profile_queues = project.queue_set.filter(profile=profile).filter(admin=False)
     else:
         profile_queues = Queue.objects.none()
     profile_queues = profile_queues.annotate(priority=Value(1, IntegerField()))
 
-    project_queues = (project.queue_set.filter(profile=None)
+    project_queues = (project.queue_set.filter(profile=None).filter(admin=False)
                       .annotate(priority=Value(2, IntegerField())))
 
     eligible_queue_ids = [redis_serialize_queue(queue) for queue in
@@ -466,6 +466,7 @@ def get_nonempty_queue(project, profile=None):
     if profile is not None:
         nonempty_profile_queues = (project.queue_set
                                 .filter(profile=profile)
+                                .filter(admin=False)
                                 .annotate(
                                     data_count=Count('data'))
                                 .filter(data_count__gt=0))
@@ -477,6 +478,7 @@ def get_nonempty_queue(project, profile=None):
     if first_nonempty_queue is None:
         nonempty_queues = (project.queue_set
                            .filter(profile=None)
+                           .filter(admin=False)
                            .annotate(
                                data_count=Count('data'))
                            .filter(data_count__gt=0))
@@ -670,7 +672,7 @@ def check_and_trigger_model(datum):
         return_str = 'task already running'
     elif labeled_data_count >= batch_size:
         if labels_count < project.labels.count():
-            fill_queue(project.queue_set.get(), 'random')
+            fill_queue(project.queue_set.get(admin=False), 'random')
             return_str = 'random'
         else:
             task_num = tasks.send_model_task.delay(project.pk)
