@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, ButtonToolbar, Clearfix, Well } from "react-bootstrap";
+import { Button, ButtonToolbar, Clearfix, Well, Tooltip, OverlayTrigger } from "react-bootstrap";
 
 import Card from '../Card';
 import PropTypes from 'prop-types';
@@ -7,10 +7,11 @@ import PropTypes from 'prop-types';
 const SCALE_FACTOR = 400;
 
 class Deck extends React.Component {
+
     componentWillMount() {
         this.props.fetchCards();
     }
-    
+
     render() {
         const { message, cards, passCard, annotateCard } = this.props;
         const cardCount = cards.length;
@@ -42,10 +43,18 @@ class Deck extends React.Component {
                             {card.options.map( (opt) => (
                                 <Button onClick={() => annotateCard(card, opt['pk'])} bsStyle="primary" key={`deck-button-${opt['name']}`}>{opt['name']}</Button>
                             ))}
-                            { cardCount > 1 && 
-                                <Button onClick={passCard} bsStyle="info">Skip</Button>
+                            { cardCount > 1 &&
+                                <OverlayTrigger
+                                placement = "top"
+                                overlay={
+                                  <Tooltip id="skip_tooltip">
+                                    Clicking this button will remove the card from the queue and send it to be reviewed by an administrator
+                                  </Tooltip>
+                                }>
+                                  <Button onClick={passCard} bsStyle="info">Skip</Button>
+                                </OverlayTrigger>
                             }
-                            { cardCount == 1 && 
+                            { cardCount == 1 &&
                                 <Button onClick={passCard} bsStyle="info" disabled={true}>Skip</Button>
                             }
                         </ButtonToolbar>
@@ -62,7 +71,7 @@ class Deck extends React.Component {
                 </Well>
             );
         }
-        
+
         return (
             <div className="deck">
                 {deck}
