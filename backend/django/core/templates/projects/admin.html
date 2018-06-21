@@ -57,10 +57,32 @@
                         <div class="form-group">
                             <label for="metric_select">Select the metric to appear on the chart:</label>
                             <select class="form-control" id="metric_select">
-                                <option value="accuracy">Accuracy</option>
-                                <option value="f1">F1 Score</option>
-                                <option value="precision">Precision</option>
-                                <option value="recall">Recall</option>
+                                <option value="accuracy"
+                                data-toggle="tooltip"
+                                data-placement="top"
+                                title="The percent guessed correctly by the model">
+                                Accuracy</option>
+                                <option value="f1"
+                                data-toggle="tooltip"
+                                data-placement="top"
+                                title="A common model scoring function.
+                                Formula: 2*((precision*recall)/(precision+recall))"
+                                >F1 Score</option>
+                                <option value="precision"
+                                data-toggle="tooltip"
+                                data-placement="top"
+                                title="The number of times the model tagged something with a label correctly
+                                over the total number of times the model tagged something
+                                with that label, averaged over all possible labels.
+                                Formula:  True Positives/(True Positives + False Positives)"
+                                >Precision</option>
+                                <option value="recall"
+                                data-toggle="tooltip"
+                                data-placement="top"
+                                title="The number of times the model tagged something with a label correctly
+                                over the total number of times the label appeared in the data,
+                                averaged over all possible labels.
+                                Formula:  True Positives/(True Positives + False Negatives)">Recall</option>
                             </select>
                         </div>
                         <div class="row">
