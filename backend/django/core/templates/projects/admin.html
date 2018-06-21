@@ -66,23 +66,19 @@
                                 data-toggle="tooltip"
                                 data-placement="top"
                                 title="A common model scoring function.
-                                Formula: 2*((precision*recall)/(precision+recall))"
+Formula: 2*((precision*recall)/(precision+recall))"
                                 >F1 Score</option>
                                 <option value="precision"
                                 data-toggle="tooltip"
                                 data-placement="top"
-                                title="The number of times the model tagged something with a label correctly
-                                over the total number of times the model tagged something
-                                with that label, averaged over all possible labels.
-                                Formula:  True Positives/(True Positives + False Positives)"
+                                title="The number of times the model tagged something with a label correctly over the total number of times the model tagged something with that label, averaged over all possible labels.
+Formula:  True Positives/(True Positives + False Positives)"
                                 >Precision</option>
                                 <option value="recall"
                                 data-toggle="tooltip"
                                 data-placement="top"
-                                title="The number of times the model tagged something with a label correctly
-                                over the total number of times the label appeared in the data,
-                                averaged over all possible labels.
-                                Formula:  True Positives/(True Positives + False Negatives)">Recall</option>
+                                title="The number of times the model tagged something with a label correctly over the total number of times the label appeared in the data, averaged over all possible labels.
+Formula:  True Positives/(True Positives + False Negatives)">Recall</option>
                             </select>
                         </div>
                         <div class="row">
@@ -222,6 +218,7 @@ $.ajax({
                     return d3.format(',.2f')(d);
                 })
             ;
+            chart.noData("Insufficient training data -- please code more documents");
             d3.select('#metric_chart svg')
                 .datum(response)
                 .call(chart);
