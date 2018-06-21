@@ -140,3 +140,5 @@ main {
     overflow: hidden;
     max-width: 100%;
 }
+
+#distribution_chart .nv-multiBarWithLegend .nv-y .tick line {display: none;}
