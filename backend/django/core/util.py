@@ -390,12 +390,12 @@ def pop_first_nonempty_queue(project, profile=None):
     if profile is not None:
         # Use priority to ensure we set profile queues above project queues
         # in the resulting list; break ties by pk
-        profile_queues = project.queue_set.filter(profile=profile).filter(admin=False)
+        profile_queues = project.queue_set.filter(profile=profile, admin=False)
     else:
         profile_queues = Queue.objects.none()
     profile_queues = profile_queues.annotate(priority=Value(1, IntegerField()))
 
-    project_queues = (project.queue_set.filter(profile=None).filter(admin=False)
+    project_queues = (project.queue_set.filter(profile=None, admin=False)
                       .annotate(priority=Value(2, IntegerField())))
 
     eligible_queue_ids = [redis_serialize_queue(queue) for queue in
@@ -465,8 +465,7 @@ def get_nonempty_queue(project, profile=None):
     # Only check for profile queues if we were passed a profile
     if profile is not None:
         nonempty_profile_queues = (project.queue_set
-                                .filter(profile=profile)
-                                .filter(admin=False)
+                                .filter(profile=profile, admin=False)
                                 .annotate(
                                     data_count=Count('data'))
                                 .filter(data_count__gt=0))
@@ -477,8 +476,7 @@ def get_nonempty_queue(project, profile=None):
     # If we didn't find a profile queue, check project queues
     if first_nonempty_queue is None:
         nonempty_queues = (project.queue_set
-                           .filter(profile=None)
-                           .filter(admin=False)
+                           .filter(profile=None, admin=False)
                            .annotate(
                                data_count=Count('data'))
                            .filter(data_count__gt=0))
@@ -538,14 +536,13 @@ def move_skipped_to_admin_queue(datum, profile, project):
     '''
     with transaction.atomic():
         #remove the data from the assignment table
-        assignment = AssignedData.objects.filter(data=datum,
-                                                profile=profile).get()
+        assignment = AssignedData.objects.get(data=datum,
+                                                profile=profile)
         queue = assignment.queue
         assignment.delete()
         #change the queue to the admin one
         old_id = queue.id
-        #NOTE: this takes advantage of a quirk of the queues, but might be an issue later
-        new_queue = Queue.objects.get(id = old_id + 1)
+        new_queue = Queue.objects.get(project=queue.project, admin=True)
         DataQueue.objects.filter(data=datum, queue=queue).update(queue=new_queue)
 
     #remove the data from redis

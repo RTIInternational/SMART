@@ -4,13 +4,11 @@ import moment from 'moment';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
 
-//export const PASS_CARD = 'PASS_CARD';
 export const POP_CARD = 'POP_CARD';
 export const PUSH_CARD = 'PUSH_CARD';
 export const SET_MESSAGE = 'SET_MESSAGE';
 export const CLEAR_DECK = 'CLEAR_DECK';
 
-//export const passCard = createAction(PASS_CARD);
 export const popCard = createAction(POP_CARD);
 export const pushCard = createAction(PUSH_CARD);
 export const setMessage = createAction(SET_MESSAGE);
