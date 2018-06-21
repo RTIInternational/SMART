@@ -231,10 +231,12 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             q_length = util.find_queue_length(batch_size, num_coders)
 
             queue = util.add_queue(project=proj_obj, length=q_length, admin=False)
-            admin_queue = util.add_queue(project=proj_obj, length=q_length, admin=True)
+
 
             # Data
             f_data = data.cleaned_data['data']
+            data_length = len(f_data)
+            admin_queue = util.add_queue(project=proj_obj, length=data_length, admin=True)
             upload_data(f_data, proj_obj, queue)
 
         return HttpResponseRedirect(proj_obj.get_absolute_url())
