@@ -20,7 +20,7 @@ from core.util import (redis_serialize_queue, redis_serialize_data, redis_serial
                        create_project, add_data, assign_datum,
                        add_queue, fill_queue, pop_queue,
                        init_redis, get_nonempty_queue,
-                       create_profile, label_data, pop_first_nonempty_queue,
+                       create_profile, label_data, move_skipped_to_admin_queue, pop_first_nonempty_queue,
                        get_assignments, unassign_datum,  save_data_file,
                        save_tfidf_matrix, load_tfidf_matrix,
                        train_and_save_model, predict_data,
@@ -180,7 +180,7 @@ def test_add_data_with_labels(db, test_project_labels):
 
 def test_add_queue_no_profile(test_project):
     QUEUE_LEN = 10
-    add_queue(test_project, QUEUE_LEN)
+    add_queue(test_project, QUEUE_LEN, admin = False)
     assert_obj_exists(Queue, {
         'project': test_project, 'length': QUEUE_LEN,
         'profile': None
@@ -189,7 +189,7 @@ def test_add_queue_no_profile(test_project):
 
 def test_add_queue_profile(test_project, test_profile):
     QUEUE_LEN = 10
-    add_queue(test_project, QUEUE_LEN, profile=test_profile)
+    add_queue(test_project, QUEUE_LEN, profile=test_profile, admin = False)
     assert_obj_exists(Queue, {
         'project': test_project, 'length': QUEUE_LEN,
         'profile': test_profile
@@ -246,7 +246,7 @@ def test_init_redis_empty(db, test_redis):
 
 
 def test_init_redis_one_empty_queue(db, test_project, test_redis):
-    queue = add_queue(test_project, 10)
+    queue = add_queue(test_project, 10, admin = False)
 
     test_redis.flushdb()
     init_redis()
@@ -255,7 +255,7 @@ def test_init_redis_one_empty_queue(db, test_project, test_redis):
 
 
 def test_init_redis_one_nonempty_queue(db, test_project_data, test_redis):
-    queue = add_queue(test_project_data, 10)
+    queue = add_queue(test_project_data, 10, admin = False)
     fill_queue(queue, orderby='random')
 
     test_redis.flushdb()
@@ -265,10 +265,10 @@ def test_init_redis_one_nonempty_queue(db, test_project_data, test_redis):
 
 
 def test_init_redis_multiple_queues(db, test_project_data, test_redis):
-    queue = add_queue(test_project_data, 10)
+    queue = add_queue(test_project_data, 10, admin = False)
     fill_queue(queue, orderby='random')
 
-    queue2 = add_queue(test_project_data, 10)
+    queue2 = add_queue(test_project_data, 10, admin = False)
 
     test_redis.flushdb()
     init_redis()
@@ -279,17 +279,17 @@ def test_init_redis_multiple_queues(db, test_project_data, test_redis):
 def test_init_redis_multiple_projects(db, test_project_data, test_redis, test_profile):
     # Try a mix of multiple queues in multiple projects with
     # and without data to see if everything initializes as expected.
-    p1_queue1 = add_queue(test_project_data, 10)
+    p1_queue1 = add_queue(test_project_data, 10, admin = False)
     fill_queue(p1_queue1, orderby='random')
-    p1_queue2 = add_queue(test_project_data, 10)
+    p1_queue2 = add_queue(test_project_data, 10, admin = False)
 
     project2 = create_project('test_project2', test_profile)
     project2_data = read_test_data_backend(file='./core/data/test_files/test_no_labels.csv')
 
     add_data(project2, project2_data)
-    p2_queue1 = add_queue(project2, 10)
+    p2_queue1 = add_queue(project2, 10, admin = False)
     fill_queue(p2_queue1, orderby='random')
-    p2_queue2 = add_queue(project2, 10)
+    p2_queue2 = add_queue(project2, 10, admin = False)
 
     test_redis.flushdb()
     init_redis()
@@ -298,7 +298,7 @@ def test_init_redis_multiple_projects(db, test_project_data, test_redis, test_pr
 
 
 def test_pop_empty_queue(db, test_project, test_redis):
-    queue = add_queue(test_project, 10)
+    queue = add_queue(test_project, 10, admin = False)
 
     datum = pop_queue(queue)
 
@@ -309,7 +309,7 @@ def test_pop_empty_queue(db, test_project, test_redis):
 
 def test_pop_nonempty_queue(db, test_project_data, test_redis):
     queue_len = 10
-    queue = add_queue(test_project_data, queue_len)
+    queue = add_queue(test_project_data, queue_len, admin = False)
     fill_queue(queue, orderby='random')
 
     datum = pop_queue(queue)
@@ -322,8 +322,8 @@ def test_pop_nonempty_queue(db, test_project_data, test_redis):
 
 def test_pop_only_affects_one_queue(db, test_project_data, test_redis):
     queue_len = 10
-    queue = add_queue(test_project_data, queue_len)
-    queue2 = add_queue(test_project_data, queue_len)
+    queue = add_queue(test_project_data, queue_len, admin = False)
+    queue2 = add_queue(test_project_data, queue_len, admin = False)
     fill_queue(queue, orderby='random')
     fill_queue(queue2, orderby='random')
 
@@ -341,8 +341,8 @@ def test_pop_only_affects_one_queue(db, test_project_data, test_redis):
 
 def test_get_nonempty_queue_noprofile(db, test_project_data):
     queue_len = 10
-    queue = add_queue(test_project_data, queue_len)
-    queue2 = add_queue(test_project_data, queue_len)
+    queue = add_queue(test_project_data, queue_len, admin = False)
+    queue2 = add_queue(test_project_data, queue_len, admin = False)
 
     assert get_nonempty_queue(test_project_data) is None
 
@@ -355,11 +355,11 @@ def test_get_nonempty_queue_noprofile(db, test_project_data):
 
 def test_get_nonempty_profile_queue(db, test_project_data, test_profile):
     queue_len = 10
-    queue = add_queue(test_project_data, queue_len)
+    queue = add_queue(test_project_data, queue_len, admin = False)
     profile_queue = add_queue(test_project_data, queue_len,
-                           profile=test_profile)
+                           profile=test_profile, admin = False)
     profile_queue2 = add_queue(test_project_data, queue_len,
-                            profile=test_profile)
+                            profile=test_profile, admin = False)
 
     assert get_nonempty_queue(test_project_data, profile=test_profile) is None
 
@@ -426,7 +426,7 @@ def test_pop_first_nonempty_queue_profile_queue(db, test_project_data, test_prof
 
 def test_pop_first_nonempty_queue_multiple_queues(db, test_project_data, test_queue,
                                                   test_redis):
-    test_queue2 = add_queue(test_project_data, 10)
+    test_queue2 = add_queue(test_project_data, 10, admin = False)
     fill_queue(test_queue2, orderby='random')
 
     queue, data = pop_first_nonempty_queue(test_project_data)
@@ -1190,3 +1190,16 @@ def test_check_and_trigger_queue_changes_success(setup_celery, test_project_labe
     # Assert new training set
     assert project.get_current_training_set() != initial_training_set
     assert project.get_current_training_set().set_number == initial_training_set.set_number + 1
+
+def test_skip_data(db, test_profile, test_queue, test_admin_queue, test_redis):
+    fill_queue(test_queue, orderby='random')
+    project = test_queue.project
+    datum = assign_datum(test_profile, project)
+    move_skipped_to_admin_queue(datum, test_profile, project)
+
+    # Make sure the assignment was removed
+    assert not AssignedData.objects.filter(profile=test_profile,
+                                           data=datum,
+                                           queue=test_queue).exists()
+    #make sure the item was re-assigned to the admin queue
+    assert DataQueue.objects.filter(data=datum,queue = test_admin_queue).exists()
