@@ -8,6 +8,7 @@ from django.http import HttpResponse
 from django.db.models import Max, Min, FloatField
 from django.db import connection
 from django.contrib.postgres.fields import ArrayField
+from django.utils.html import escape
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -199,7 +200,7 @@ def data_coded_table(request, pk):
     data = []
     for d in data_objs:
         temp = {
-            'Text': d.data.text,
+            'Text': escape(d.data.text),
             'Label': d.label.name,
             'Coder': d.profile.__str__()
         }
@@ -260,7 +261,7 @@ def data_predicted_table(request, pk):
     data = []
     for d in data_objs:
         temp = {
-            'Text': d[0],
+            'Text': escape(d[0]),
             'Label': d[1],
             'Probability': d[2]
         }
@@ -300,7 +301,7 @@ def get_labels(request, pk):
     data = []
     for d in labels:
         temp = {
-            'Text': d.name,
+            'Text': escape(d.name),
             'ID':d.id
         }
         data.append(temp)
