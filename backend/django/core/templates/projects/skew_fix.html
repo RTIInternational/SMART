@@ -52,43 +52,6 @@
 
 {% block scripts_body %}
 <script>
-
-/*NOTE TEMP: these are copied over from the fetch_configs file in the front end
-since I couldn't get them to import.*/
-const postConfig = (postData) => {
-    return (
-        {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(postData)
-        }
-    );
-};
-
-const getCookie = (name) => {
-    // https://docs.djangoproject.com/en/1.11/ref/csrf/#ajax
-    var cookieValue = null;
-
-    if (document.cookie && document.cookie != '') {
-        var cookies = document.cookie.split(';');
-
-        for (var i = 0; i < cookies.length; i++) {
-            var cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) == (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-
-    return cookieValue;
-}
-
 /*
  *  Make ajax call to `label_distribution by tag` route.  This will fetch data to
  *  populate the discrete multi bar chart and show the label distribution
@@ -129,6 +92,7 @@ $.ajax({
 });
 
 $(document).ready(function() {
+
     /*
      *  Activate DataTable script to create the unlabeled data DataTable
      */
@@ -154,61 +118,39 @@ $(document).ready(function() {
         }
      });
 
-     function format_hidden_rows(rowData){
-       //Generate a div to append the buttons to
-       var buttonDiv = $('<div/>');
-       buttonDiv.append($('<p></p>'));
-       buttonDiv.attr('name',rowData.ID);
-       $.ajax({
-           method: 'GET',
-           url: '/api/get_labels/' + {{ project.pk }},
-           success: function (response) {
-              //For each possible label, generate a button
-               response.data.map(function(item){
-                 var button = $('<button/>',{
-                   text: item.Text,
-                   id: item.ID + "_"+buttonDiv.attr('name'),
-                   click: function()
-                   {
-                     var identifiers = this.id.split("_");
-                     var payload = {
-                         labelID: identifiers[0],
-                         labeling_time: null
-                     }
-                     var data_id = identifiers[1];
-                     var apiURL = '/api/label_skew_label/'+data_id+'/';
+    function labelButtonClicked(event) {
+      var data_id = this.parentElement.parentElement.getAttribute('name');
+      var label_id = this.id;
+      $.ajax({
+        method: 'POST',
+        url: '/api/label_skew_label/' + data_id + '/',
+        data: {
+          labelID: label_id,
+          labeleing_time: null
+        },
+        xhrFields: {
+          withCredentials: true
+        },
+        success: function (response) {
+          //Need to remove the row from the table
+          $('#unlabeled_data_table').DataTable().rows("."+data_id).remove().draw(false);
+        },
+        error: function (error) {
+          console.log(error);
+        }
+      })
+    }
 
-                     fetch(apiURL, postConfig(payload))
-                             .then(response => {
-                                 if (response.ok) {
-                                     return response.json();
-                                 }
-                                 else {
-                                     const error = new Error(response.statusText)
-                                     error.response = response;
-                                     throw error;
-                                 }
-                             })
-                             .then(response => {
-                                 if ('error' in response) {
-                                     console.log(error);
-                                 }
-                                 else {
-                                   //Need to remove the row from the table
-                                     $('#unlabeled_data_table').DataTable().rows("."+data_id).remove().draw(false);
-                                 }
-                             })
-                   }
-                 });
-                 buttonDiv.children().append(button).end();
-               });
-           },
-           error: function (error) {
-               console.log(error);
-           }
-       });
-       return buttonDiv;
-     }
+    function format_hidden_rows(rowData){
+      var buttonDiv = '';
+      buttonDiv += '<div class="text-center" name=' + rowData.ID + '>';
+      buttonDiv += '<div class="center-block">'
+      {% for label in project.labels.all %}
+      buttonDiv += '<button type="button" class="btn btn-primary btn-spacing" id="{{ label.id }}">{{ label }}</button>';
+      {% endfor %}
+      buttonDiv += '</div></div>';
+      return buttonDiv;
+    }
 
     /*
      *  This function fires whenever a row of the table is clicked. If it is a
@@ -229,21 +171,11 @@ $(document).ready(function() {
        }
        else{
          row.child(format_hidden_rows(row.data())).show();
+         $(row.child()).find('button').click(labelButtonClicked);
          tr.addClass('shown');
        }
      });
 
-});
-
-/*
- *  Force window resize event when bootstrap tab navigation anchor is used
- *  This is needed because nvd3 charts are incorrectly sized if they are
- *  initially rendered while hidden.
- */
-$(function () {
-    $(document).on('shown.bs.tab', 'a[data-toggle="tab"]', function (e) {
-        window.dispatchEvent(new Event('resize'));
-    });
 });
 </script>
 {% endblock %}

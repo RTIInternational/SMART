@@ -309,7 +309,6 @@ def get_labels(request, pk):
 def label_skew_label(request, pk):
     '''This is called when an admin manually labels a datum on the skew page. It
     annotates a single datum with the given label, and profile with null as the time.
-
     '''
     datum = Data.objects.get(pk=pk)
     project = datum.project
