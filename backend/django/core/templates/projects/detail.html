@@ -64,10 +64,11 @@
                 <h4>Data</h4>
                 <ul class="list-group">
                 {% for data in project.data_set.all|slice:"5" %}
-                    <li class="list-group-item">{{ data.text }}</li>
+                    <li class="list-group-item showData">{{ data.text }}</li>
                 {% endfor %}
                 </ul>
             </div>
+        </div>
         <div class="row">
             <div class="col-md-12">
                 <div class="btn-group" role="group" aria-label="Project Controls">
@@ -97,7 +98,6 @@
                 {% endif %}
             </div>
         </div>
-    </div>
 </div>
 {% endblock %}
 

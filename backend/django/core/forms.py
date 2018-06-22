@@ -40,6 +40,9 @@ def clean_data_helper(data, supplied_labels):
     except ParserError:
         # If there was an error while parsing then raise invalid file error
         raise ValidationError("Unable to read file.  Please ensure it passes all the requirments")
+    except UnicodeDecodeError:
+        # Some files are not in utf-8, let's just reject those.
+        raise ValidationError("Unable to read the file.  Please ensure that the file is encoded in UTF-8.")
 
     if len(data.columns) != len(ALLOWED_HEADER):
         raise ValidationError("File has incorrect number of columns.  Received {0} but expected {1}."\
