@@ -134,21 +134,24 @@ $(document).ready(function() {
      */
      var unlabeled_table = $('#unlabeled_data_table').DataTable({
          "ajax": '/api/data_unlabeled_table/' + {{ project.pk }} + '/',
+         "order": [],
          "columns": [
              {
-               "class": 'details-control',
-               "orderable": false,
-               "data": null,
-               "defaultContent": ''
+               "className": 'details-control', "orderable": false,
+               "data": null, "defaultContent": '', "width": "5%",
+               "searchable": false,
              },
-             { "data": "Text"},
+             { "data": "Text", "width": "95%" },
              {"data":"ID" , "visible": false }
          ],
          "oLanguage": {
              "sSearch": "Filter Text: "
          },
-         "scrollY": "400px",
-         "scrollCollapse": true
+        "initComplete": function (settings, json) {
+            $this = $(this)
+            $this.css({'table-layout':'fixed'});
+            $this.find('tr td:nth-child(2)').addClass('showData');
+        }
      });
 
      function format_hidden_rows(rowData){
