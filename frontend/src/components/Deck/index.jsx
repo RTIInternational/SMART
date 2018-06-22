@@ -48,7 +48,7 @@ class Deck extends React.Component {
                                 placement = "top"
                                 overlay={
                                   <Tooltip id="skip_tooltip">
-                                    Clicking this button will remove the card from the queue and send it to be reviewed by an administrator
+                                    Clicking this button will send this document to an administrator for review
                                   </Tooltip>
                                 }>
                                   <Button onClick={passCard} bsStyle="info">Skip</Button>
