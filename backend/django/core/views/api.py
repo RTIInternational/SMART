@@ -274,21 +274,17 @@ def data_predicted_table(request, pk):
 def data_unlabeled_table(request, pk):
     project = Project.objects.get(pk=pk)
 
-    labeled_data = DataLabel.objects.filter(data__project=project)
-    labeled_ids = [d.data.id for d in labeled_data]
-
     stuff_in_queue = DataQueue.objects.filter(queue__project=project)
     queued_ids = [queued.data.id for queued in stuff_in_queue]
 
-    data_objs_all = Data.objects.filter(project=project)
+    unlabeled_data = project.data_set.filter(datalabel__isnull=True).exclude(id__in=queued_ids)
     data = []
-    for d in data_objs_all:
-        if not (d.id in labeled_ids) and not(d.id in queued_ids):
-            temp = {
-                'Text': d.text,
-                'ID':d.id
-            }
-            data.append(temp)
+    for d in unlabeled_data:
+        temp = {
+            'Text': escape(d.text),
+            'ID':d.id
+        }
+        data.append(temp)
 
     return Response({'data': data})
 
