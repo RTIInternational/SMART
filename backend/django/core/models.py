@@ -30,6 +30,12 @@ class Project(models.Model):
     description = models.TextField(blank=True)
     creator = models.ForeignKey('Profile')
 
+    #####Advanced options#####
+    #if false then uses random
+    use_active_learning = models.BooleanField(default=True)
+    #the current options are 'least confident', 'entropy', and 'margin sampling'
+    active_l_method = models.TextField(default='least confident')
+
     def get_absolute_url(self):
         return reverse('projects:project_detail', kwargs={'pk': self.pk})
 

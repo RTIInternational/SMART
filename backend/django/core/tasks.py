@@ -30,7 +30,12 @@ def send_model_task(project_pk):
         queue.length = q_length
         queue.save()
 
-    fill_queue(queue, 'least confident')
+    use_al = project.use_active_learning
+    if use_al:
+        al_method = project.active_l_method
+    else:
+        al_method = 'random'
+    fill_queue(queue, al_method)
 
 @shared_task
 def send_tfidf_creation_task(response, project_pk):
