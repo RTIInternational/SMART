@@ -34,7 +34,7 @@
     <div class="row">
       <div>
       </div>
-      <h3>Unlabeled</h3>
+      <h3>Unlabeled Data</h3>
       <table id="unlabeled_data_table" class="table table-hover table-striped table-bordered" cellspacing="0" width="100%">
         <thead>
           <tr>
@@ -52,46 +52,76 @@
 
 {% block scripts_body %}
 <script>
+// Create variables needed for nvd3 chart manipulation
 var chart;
 var charData;
-/*
- *  Make ajax call to `label_distribution by tag` route.  This will fetch data to
- *  populate the discrete multi bar chart and show the label distribution
- *  per user. Note that this groups differently than the admin page.
+var labelData;
+
+/* Synchornous ajax call that sets the value of labelData to the data returned
+ * from the label_distribution_inverted api call
  */
-$.ajax({
-  method: "GET",
-  url: '/api/label_distribution_inverted/' + {{ project.pk }} + '/',
-  success: function (response) {
-    nv.addGraph(function() {
-      chart = nv.models.multiBarChart()
-        .color(["#66c2a5","#fc8d62","#8da0cb","#e78ac3","#a6d854","#ffd92f","#e5c494","#b3b3b3"])
-        .duration(300)
-        .margin({bottom: 70, left: 70})
-        .groupSpacing(0.1)
-        .stacked(true)
-      ;
-      chart.xAxis
-        .axisLabel("Label")
-        .axisLabelDistance(15)
-        .showMaxMin(false)
-      ;
-      chart.yAxis
-        .axisLabel("Number of Data Annotated")
-        .axisLabelDistance(-5)
-        .tickFormat(d3.format(',.01f'))
-      ;
-      chartData = d3.select('#distribution_chart_summ svg')
-        .datum(response);
-      chartData.transition().duration(500).call(chart);
-      nv.utils.windowResize(chart.update);
-      return chart;
-    });
-  },
-  error: function (error) {
-    console.log(error);
-  }
-});
+function get_data() {
+  return $.ajax({
+    method: "GET",
+    url: '/api/label_distribution_inverted/' + {{ project.pk }} + '/',
+    async: false,
+    success: function (response) {
+      labelData = response;
+    },
+    error: function (error) {
+      console.log(error);
+    }
+  });
+}
+
+/* Function that updates the nvd3 chart by call get_data and then transitioning
+ * the chartData variable
+ */
+function update_chart() {
+  get_data();
+
+  chartData.datum(labelData).transition().duration(500).call(chart);
+};
+
+/* Function that fires when a labelButton is clicked. This gets the label id
+ * calls the label_skew_label api, removes the labeled data from the table,
+ * and updates the label distribution chart
+ */
+function labelButtonClicked(event) {
+  var data_id = this.parentElement.parentElement.getAttribute('name');
+  var label_id = this.id;
+  $.ajax({
+    method: 'POST',
+    url: '/api/label_skew_label/' + data_id + '/',
+    data: {
+      labelID: label_id,
+      labeleing_time: null
+    },
+    xhrFields: {
+      withCredentials: true
+    },
+    success: function (response) {
+      //Need to remove the row from the table
+      $('#unlabeled_data_table').DataTable().rows("."+data_id).remove().draw(false);
+      update_chart();
+    },
+    error: function (error) {
+      console.log(error);
+    }
+  });
+}
+
+/* Function that formats the child rows of the unlabled data table */
+function format_hidden_rows(rowData){
+  var buttonDiv = '';
+  buttonDiv += '<div class="text-center" name=' + rowData.ID + '>';
+  buttonDiv += '<div class="center-block">'
+  {% for label in project.labels.all %}
+  buttonDiv += '<button type="button" class="btn btn-primary btn-spacing" id="{{ label.id }}">{{ label }}</button>';
+  {% endfor %}
+  buttonDiv += '</div></div>';
+  return buttonDiv;
+}
 
 $(document).ready(function() {
   /*
@@ -119,40 +149,6 @@ $(document).ready(function() {
     }
    });
 
-  function labelButtonClicked(event) {
-    var data_id = this.parentElement.parentElement.getAttribute('name');
-    var label_id = this.id;
-    $.ajax({
-      method: 'POST',
-      url: '/api/label_skew_label/' + data_id + '/',
-      data: {
-        labelID: label_id,
-        labeleing_time: null
-      },
-      xhrFields: {
-        withCredentials: true
-      },
-      success: function (response) {
-        //Need to remove the row from the table
-        $('#unlabeled_data_table').DataTable().rows("."+data_id).remove().draw(false);
-      },
-      error: function (error) {
-        console.log(error);
-      }
-    })
-  }
-
-  function format_hidden_rows(rowData){
-    var buttonDiv = '';
-    buttonDiv += '<div class="text-center" name=' + rowData.ID + '>';
-    buttonDiv += '<div class="center-block">'
-    {% for label in project.labels.all %}
-    buttonDiv += '<button type="button" class="btn btn-primary btn-spacing" id="{{ label.id }}">{{ label }}</button>';
-    {% endfor %}
-    buttonDiv += '</div></div>';
-    return buttonDiv;
-  }
-
   /*
    *  This function fires whenever a row of the table is clicked. If it is a
    *  outer row, it should spawn or hide the list of buttons. The child rows
@@ -175,6 +171,35 @@ $(document).ready(function() {
       $(row.child()).find('button').click(labelButtonClicked);
       tr.addClass('shown');
     }
+  });
+
+  /* Create the label chart */
+  nv.addGraph(function() {
+    chart = nv.models.multiBarChart()
+      .color(["#66c2a5","#fc8d62","#8da0cb","#e78ac3","#a6d854","#ffd92f","#e5c494","#b3b3b3"])
+      .duration(300)
+      .margin({bottom: 70, left: 70})
+      .groupSpacing(0.1)
+      .stacked(true)
+    ;
+    chart.xAxis
+      .axisLabel("Label")
+      .axisLabelDistance(15)
+      .showMaxMin(false)
+    ;
+    chart.yAxis
+      .axisLabel("Number of Data Annotated")
+      .axisLabelDistance(-5)
+      .tickFormat(d3.format(',.01f'))
+    ;
+
+    get_data();
+
+    chartData = d3.select('#distribution_chart_summ svg').datum(labelData);
+    chartData.transition().duration(500).call(chart);
+    nv.utils.windowResize(chart.update);
+
+    return chart;
   });
 
 });
