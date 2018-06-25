@@ -670,9 +670,7 @@ def check_and_trigger_model(datum):
         return_str = 'task already running'
     elif labeled_data_count >= batch_size:
         if labels_count < project.labels.count():
-            #Get the new element by the batch method
-            fill_method = project.active_l_method
-            fill_queue(project.queue_set.get(), fill_method)
+            fill_queue(project.queue_set.get(), 'random')
             return_str = 'random'
         else:
             task_num = tasks.send_model_task.delay(project.pk)
