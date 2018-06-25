@@ -137,7 +137,7 @@ class AdvancedWizardForm(forms.ModelForm):
     use_active_learning = forms.BooleanField(initial=True)
     active_l_choices = (
     ("least confident","By Uncertainty using Least Confident"),
-    ("margin","By Uncertainty using the Margin"),
+    ("margin sampling","By Uncertainty using the Margin"),
     ("entropy","By Uncertainty using Entropy")
     )
 
