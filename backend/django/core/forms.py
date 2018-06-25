@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from .models import Project, ProjectPermissions, Label
 import pandas as pd
 from pandas.errors import EmptyDataError, ParserError
-
+from django.forms.widgets import RadioSelect
 
 def clean_data_helper(data, supplied_labels):
     ALLOWED_TYPES = [
@@ -92,6 +92,8 @@ class ProjectUpdateForm(forms.ModelForm):
             return clean_data_helper(data, labels)
 
 
+
+
 class LabelForm(forms.ModelForm):
     class Meta:
         model = Label
@@ -127,6 +129,28 @@ class ProjectWizardForm(forms.ModelForm):
         model = Project
         fields = ['name', 'description']
 
+class AdvancedWizardForm(forms.ModelForm):
+    class Meta:
+        model = Project
+        fields = ['use_active_learning', 'active_l_method']
+
+    use_active_learning = forms.BooleanField(initial=True)
+    active_l_choices = (
+    ("least confident","By Uncertainty using Least Confident"),
+    ("margin","By Uncertainty using the Margin"),
+    ("entropy","By Uncertainty using Entropy")
+    )
+
+    use_active_learning = forms.BooleanField(initial=True, required=False)
+    active_l_method = forms.ChoiceField(widget=RadioSelect(),
+    choices=active_l_choices, initial="least confident", required=False)
+
+    def clean(self):
+        use_active_learning = self.cleaned_data.get("use_active_learning")
+        #if they are not using active learning, the selection method is random
+        if not use_active_learning:
+            self.cleaned_data['active_l_method'] = 'random'
+        return self.cleaned_data
 
 class DataWizardForm(forms.Form):
     data = forms.FileField()

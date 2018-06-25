@@ -20,7 +20,7 @@ from core.models import (Profile, Project, ProjectPermissions, Model, Data, Labe
                          DataLabel, DataPrediction, Queue, DataQueue, AssignedData,
                          TrainingSet)
 from core.forms import (ProjectUpdateForm, PermissionsFormSet, LabelFormSet,
-                        ProjectWizardForm, DataWizardForm)
+                        ProjectWizardForm, DataWizardForm, AdvancedWizardForm)
 from core.serializers import DataSerializer
 from core.templatetags import project_extras
 import core.util as util
@@ -124,12 +124,14 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         ('project', ProjectWizardForm),
         ('labels', LabelFormSet),
         ('permissions', PermissionsFormSet),
+        ('advanced', AdvancedWizardForm),
         ('data', DataWizardForm)
     ]
     template_list = {
         'project': 'projects/create_wizard_overview.html',
         'labels': 'projects/create_wizard_labels.html',
         'permissions': 'projects/create_wizard_permissions.html',
+        'advanced':'projects/create_wizard_advanced.html',
         'data': 'projects/create_wizard_data.html'
     }
 
@@ -163,6 +165,8 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             prefix = 'label_set'
         if step == 'permissions':
             prefix = 'permission_set'
+        if step == 'advanced':
+            prefix = 'advanced'
 
         return prefix
 
@@ -177,6 +181,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         if step is None:
             step = self.steps.current
         form_class = self.form_list[step]
+
         # prepare the kwargs for the form instance.
         kwargs = self.get_form_kwargs(step)
         kwargs.update({
@@ -206,12 +211,19 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         proj = form_dict['project']
         labels = form_dict['labels']
         permissions = form_dict['permissions']
+        advanced = form_dict['advanced']
+
         data = form_dict['data']
 
         with transaction.atomic():
             # Project
             proj_obj = proj.save(commit=False)
+            advanced_data = advanced.cleaned_data
+
             proj_obj.creator = self.request.user.profile
+            # Advanced Options
+            proj_obj.use_active_learning = advanced_data["use_active_learning"]
+            proj_obj.active_l_method = advanced_data["active_l_method"]
             proj_obj.save()
 
             # Training Set
