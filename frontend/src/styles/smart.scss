@@ -4,7 +4,6 @@
 header {
     @include border($attribute: border-top, $size: 8px, $color: $primary-color-dark);
     @include flexbox;
-    @include justify-content(space-between);
     @include align-items(center);
 
     height: 64px;
@@ -139,4 +138,13 @@ main {
     text-overflow: ellipsis;
     overflow: hidden;
     max-width: 100%;
+}
+
+#top_menu_button {
+    margin-left: 15px;
+    font-weight: 900;
+}
+
+#user_buttons{
+    margin-left: 15px;
 }
