@@ -5,7 +5,7 @@ import Deck from '../Deck';
 
 const Smart = ({fetchCards, annotateCard, passCard, popCard, cards, message }) => {
   var progress = 0;
-  if(cards.length > 0)
+  if(!(cards === undefined) && cards.length > 0)
   {
       progress = (cards[0].id/cards[cards.length-1].id) * 100;
   }
