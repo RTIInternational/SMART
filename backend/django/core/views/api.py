@@ -268,6 +268,29 @@ def get_card_deck(request, pk):
 
     return Response({'labels': LabelSerializer(labels, many=True).data, 'data': DataSerializer(data, many=True).data})
 
+@api_view(['POST'])
+def skip_data(request, pk):
+    """Take a datum that is in the assigneddata queue for that user
+    and place it in the admin queue. Remove it from the
+    assignedData queue.
+
+    Args:
+        request: The POST request
+        pk: Primary key of the data
+    Returns:
+        {}
+    """
+    data = Data.objects.get(pk=pk)
+    profile = request.user.profile
+    project = data.project
+    response = {}
+
+    # Make sure coder still has permissions before labeling data
+    if project_extras.proj_permission_level(project, profile) > 0:
+        util.move_skipped_to_admin_queue(data, profile, project)
+    else:
+        response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
+    return Response(response)
 
 @api_view(['POST'])
 def annotate_data(request, pk):
