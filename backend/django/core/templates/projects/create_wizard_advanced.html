@@ -23,7 +23,7 @@
             <div class = "choose_al_or_not">
             {{ wizard.form.use_active_learning }} Use Active Learning to select data to label
             </div>
-            {% for radio in wizard.form.active_l_method %}
+            {% for radio in wizard.form.learning_method %}
             <div class="choose_method" id={{radio.value}}>
               {{radio}}
             </div>

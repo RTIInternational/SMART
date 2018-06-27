@@ -132,24 +132,22 @@ class ProjectWizardForm(forms.ModelForm):
 class AdvancedWizardForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ['use_active_learning', 'active_l_method']
-
-    use_active_learning = forms.BooleanField(initial=True)
-    active_l_choices = (
-    ("least confident","By Uncertainty using Least Confident"),
-    ("margin sampling","By Uncertainty using the Margin"),
-    ("entropy","By Uncertainty using Entropy")
-    )
+        fields = ['learning_method']
 
     use_active_learning = forms.BooleanField(initial=True, required=False)
-    active_l_method = forms.ChoiceField(widget=RadioSelect(),
-    choices=active_l_choices, initial="least confident", required=False)
+    active_l_choices = Project.ACTIVE_L_CHOICES
+    #remove random from the options
+    active_l_choices = active_l_choices[:len(active_l_choices) - 1]
+    learning_method = forms.ChoiceField(
+        widget=RadioSelect(), choices=active_l_choices,
+        initial="least confident", required=False
+    )
 
     def clean(self):
         use_active_learning = self.cleaned_data.get("use_active_learning")
         #if they are not using active learning, the selection method is random
         if not use_active_learning:
-            self.cleaned_data['active_l_method'] = 'random'
+            self.cleaned_data['learning_method'] = 'random'
         return self.cleaned_data
 
 class DataWizardForm(forms.Form):

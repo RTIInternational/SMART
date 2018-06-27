@@ -222,8 +222,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
             proj_obj.creator = self.request.user.profile
             # Advanced Options
-            proj_obj.use_active_learning = advanced_data["use_active_learning"]
-            proj_obj.active_l_method = advanced_data["active_l_method"]
+            proj_obj.learning_method = advanced_data["learning_method"]
             proj_obj.save()
 
             # Training Set

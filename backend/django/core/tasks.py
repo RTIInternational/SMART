@@ -30,11 +30,7 @@ def send_model_task(project_pk):
         queue.length = q_length
         queue.save()
 
-    use_al = project.use_active_learning
-    if use_al:
-        al_method = project.active_l_method
-    else:
-        al_method = 'random'
+    al_method = project.learning_method
     fill_queue(queue, al_method)
 
 @shared_task
