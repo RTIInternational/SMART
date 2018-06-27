@@ -20,14 +20,18 @@
           {{ wizard.management_form }}
 
             <h1>Advanced Settings</h1>
-            <div class = "choose_al_or_not">
-            {{ wizard.form.use_active_learning }} Use Active Learning to select data to label
+            <div class="form-group">
+              <div class = "choose_al_or_not">
+              {{ wizard.form.use_active_learning }} Use Active Learning to select data to label
+              </div>
+              <div id="choose_method_box">
+                {% for radio in wizard.form.learning_method %}
+                <div class="choose_method" id={{radio.value}}>
+                  {{radio}}
+                </div>
+                {% endfor %}
+              </div>
             </div>
-            {% for radio in wizard.form.learning_method %}
-            <div class="choose_method" id={{radio.value}}>
-              {{radio}}
-            </div>
-            {% endfor %}
 
           <div>
             <button class="btn btn-info" name="wizard_goto_step" type="submit" value="project">1. Info</button>
