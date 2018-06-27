@@ -140,12 +140,15 @@ $(document).ready(function() {
       {"data":"ID" , "visible": false }
     ],
     "oLanguage": {
-      "sSearch": "Filter Text: "
+      "sSearch": "Filter Text: ",
+      "sEmptyTable": "No unlabeled data available. Check the annotate page for the final batch."
     },
     "initComplete": function (settings, json) {
       $this = $(this)
       $this.css({'table-layout':'fixed'});
-      $this.find('tr td:nth-child(2)').addClass('showData');
+    },
+    "rowCallback": function (row, data) {
+      $('td:nth-child(2)',row).addClass('showData');
     }
    });
 
@@ -161,15 +164,18 @@ $(document).ready(function() {
     //Assign the data id as a class so we can remove this row later
     var id = String(row.data().ID);
     tr.addClass(id);
+    var columns = tr.children()
     if(row.child.isShown())
     {
       row.child.hide();
       tr.removeClass('shown');
+      columns.addClass('showData');
     }
     else{
       row.child(format_hidden_rows(row.data())).show();
       $(row.child()).find('button').click(labelButtonClicked);
       tr.addClass('shown');
+      columns.removeClass('showData');
     }
   });
 
@@ -192,7 +198,7 @@ $(document).ready(function() {
       .axisLabelDistance(-5)
       .tickFormat(d3.format(',.01f'))
     ;
-
+    chart.noData("Insufficient labeled data -- please code more documents");
     get_data();
 
     chartData = d3.select('#distribution_chart_summ svg').datum(labelData);
