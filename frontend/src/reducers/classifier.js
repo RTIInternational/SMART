@@ -2,7 +2,7 @@ import { handleActions } from 'redux-actions';
 import update from 'immutability-helper';
 import moment from 'moment';
 
-import { PASS_CARD, POP_CARD, PUSH_CARD, SET_MESSAGE, CLEAR_DECK } from '../actions/classifier'
+import { POP_CARD, PUSH_CARD, SET_MESSAGE, CLEAR_DECK } from '../actions/classifier'
 
 const initialState = {
     cards: [],

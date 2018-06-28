@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, ButtonToolbar, Clearfix, Well } from "react-bootstrap";
+import { Button, ButtonToolbar, Clearfix, Well, Tooltip, OverlayTrigger } from "react-bootstrap";
 
 import Card from '../Card';
 import PropTypes from 'prop-types';
@@ -7,6 +7,7 @@ import PropTypes from 'prop-types';
 const SCALE_FACTOR = 400;
 
 class Deck extends React.Component {
+
     componentWillMount() {
         this.props.fetchCards();
     }
@@ -42,7 +43,15 @@ class Deck extends React.Component {
                             {card.options.map( (opt) => (
                                 <Button onClick={() => annotateCard(card, opt['pk'])} bsStyle="primary" key={`deck-button-${opt['name']}`}>{opt['name']}</Button>
                             ))}
-                            <Button onClick={() => passCard(card)} bsStyle="info">Skip</Button>
+                            <OverlayTrigger
+                            placement = "top"
+                            overlay={
+                              <Tooltip id="skip_tooltip">
+                                Clicking this button will send this document to an administrator for review
+                              </Tooltip>
+                            }>
+                              <Button onClick={() => passCard(card)} bsStyle="info">Skip</Button>
+                            </OverlayTrigger>
                         </ButtonToolbar>
                         <Clearfix />
                     </Card>
