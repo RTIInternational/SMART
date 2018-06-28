@@ -8,9 +8,11 @@ from django.http import HttpResponse
 from django.db.models import Max, Min, FloatField
 from django.db import connection
 from django.contrib.postgres.fields import ArrayField
+from django.utils.html import escape
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from django.db import transaction
 
 import csv
 import io
@@ -56,6 +58,34 @@ def download_data(request, pk):
     response['Content-Disposition'] = 'attachment;'
 
     return response
+
+
+@api_view(['GET'])
+def label_distribution_inverted(request, pk):
+    project = Project.objects.get(pk=pk)
+
+    labels = [l for l in project.labels.all()]
+
+    users = []
+    users.append(project.creator)
+    users.extend([perm.profile for perm in project.projectpermissions_set.all()])
+
+    dataset = []
+    all_counts = []
+    for u in users:
+        temp_data = {'key':u.__str__()}
+        temp_values = []
+        for l in labels:
+            label_count = DataLabel.objects.filter(profile=u, label=l).count()
+            all_counts.append(label_count)
+            temp_values.append({'x':l.name, 'y':label_count})
+        dataset.append({'key':u.__str__(), 'values':temp_values})
+
+
+    if not any(count > 0 for count in all_counts):
+        dataset = []
+
+    return Response(dataset)
 
 
 @api_view(['GET'])
@@ -170,7 +200,7 @@ def data_coded_table(request, pk):
     data = []
     for d in data_objs:
         temp = {
-            'Text': d.data.text,
+            'Text': escape(d.data.text),
             'Label': d.label.name,
             'Coder': d.profile.__str__()
         }
@@ -231,13 +261,71 @@ def data_predicted_table(request, pk):
     data = []
     for d in data_objs:
         temp = {
-            'Text': d[0],
+            'Text': escape(d[0]),
             'Label': d[1],
             'Probability': d[2]
         }
         data.append(temp)
 
     return Response({'data': data})
+
+
+@api_view(['GET'])
+def data_unlabeled_table(request, pk):
+    project = Project.objects.get(pk=pk)
+
+    stuff_in_queue = DataQueue.objects.filter(queue__project=project)
+    queued_ids = [queued.data.id for queued in stuff_in_queue]
+
+    unlabeled_data = project.data_set.filter(datalabel__isnull=True).exclude(id__in=queued_ids)
+    data = []
+    for d in unlabeled_data:
+        temp = {
+            'Text': escape(d.text),
+            'ID':d.id
+        }
+        data.append(temp)
+
+    return Response({'data': data})
+
+
+@api_view(['GET'])
+def get_labels(request, pk):
+    project = Project.objects.get(pk=pk)
+
+    labels = Label.objects.filter(project=project)
+    data = []
+    for d in labels:
+        temp = {
+            'Text': escape(d.name),
+            'ID':d.id
+        }
+        data.append(temp)
+
+    return Response({'data': data})
+
+
+@api_view(['POST'])
+def label_skew_label(request, pk):
+    '''This is called when an admin manually labels a datum on the skew page. It
+    annotates a single datum with the given label, and profile with null as the time.
+    '''
+    datum = Data.objects.get(pk=pk)
+    project = datum.project
+    label = Label.objects.get(pk=request.data['labelID'])
+    profile = request.user.profile
+
+    current_training_set = project.get_current_training_set()
+
+    with transaction.atomic():
+        DataLabel.objects.create(data=datum,
+                                label=label,
+                                profile=profile,
+                                training_set=current_training_set,
+                                time_to_label=None
+                                )
+
+    return Response({'test':'success'})
 
 
 ############################################
@@ -320,6 +408,7 @@ def annotate_data(request, pk):
         response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
 
     return Response(response)
+
 
 @api_view(['GET'])
 def leave_coding_page(request):

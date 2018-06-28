@@ -141,6 +141,25 @@ main {
     max-width: 100%;
 }
 
+td.details-control {
+    background: url('../images/details_open.png') no-repeat center center;
+    cursor: pointer;
+}
+
+tr.shown td.details-control {
+    background: url('../images/details_close.png') no-repeat center center;
+}
+
+table.dataTable tbody td.no-padding {
+    padding: 0;
+}
+
+.btn-spacing {
+    margin-left: 8px;
+}
+
+#distribution_chart_summ .nv-multiBarWithLegend .nv-y .tick line {display: none;}
+
 #choose_method_box{
     margin-left: 30px;
     margin-bottom: 5px;
@@ -150,3 +169,4 @@ main {
 .choose_method{
     margin-left: 5px;
 }
+
