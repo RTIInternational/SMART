@@ -126,6 +126,7 @@ class DataUncertainty(models.Model):
 class Queue(models.Model):
     profile = models.ForeignKey('Profile', blank=True, null=True)
     project = models.ForeignKey('Project')
+    admin = models.BooleanField(default=False)
     length = models.IntegerField()
     data = models.ManyToManyField(
         'Data', related_name='queues', through='DataQueue'
