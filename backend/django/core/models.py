@@ -33,10 +33,10 @@ class Project(models.Model):
     #####Advanced options#####
     #the current options are 'random', 'least confident', 'entropy', and 'margin sampling'
     ACTIVE_L_CHOICES = [
-    ("least confident","By Uncertainty using Least Confident"),
-    ("margin sampling","By Uncertainty using the Margin"),
-    ("entropy","By Uncertainty using Entropy"),
-    ("random","Randomly (No Active Learning)")
+        ("least confident","By Uncertainty using Least Confident"),
+        ("margin sampling","By Uncertainty using the Margin"),
+        ("entropy","By Uncertainty using Entropy"),
+        ("random","Randomly (No Active Learning)")
     ]
     learning_method = models.CharField(max_length = 15, default='least confident', choices=ACTIVE_L_CHOICES)
 

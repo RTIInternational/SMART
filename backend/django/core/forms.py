@@ -5,6 +5,8 @@ import pandas as pd
 from pandas.errors import EmptyDataError, ParserError
 from django.forms.widgets import RadioSelect
 import copy
+
+
 def clean_data_helper(data, supplied_labels):
     ALLOWED_TYPES = [
         'text/csv',
@@ -19,7 +21,6 @@ def clean_data_helper(data, supplied_labels):
     ]
     ALLOWED_HEADER = ['Text', 'Label']
     MAX_FILE_SIZE = 4 * 1000 * 1000 * 1000
-
 
     if data.size > MAX_FILE_SIZE:
         raise ValidationError("File is too large.  Received {0} but max size is {1}."\
@@ -92,8 +93,6 @@ class ProjectUpdateForm(forms.ModelForm):
             return clean_data_helper(data, labels)
 
 
-
-
 class LabelForm(forms.ModelForm):
     class Meta:
         model = Label
@@ -129,6 +128,7 @@ class ProjectWizardForm(forms.ModelForm):
         model = Project
         fields = ['name', 'description']
 
+
 class AdvancedWizardForm(forms.ModelForm):
     class Meta:
         model = Project
@@ -149,6 +149,7 @@ class AdvancedWizardForm(forms.ModelForm):
         if not use_active_learning:
             self.cleaned_data['learning_method'] = 'random'
         return self.cleaned_data
+
 
 class DataWizardForm(forms.Form):
     data = forms.FileField()
