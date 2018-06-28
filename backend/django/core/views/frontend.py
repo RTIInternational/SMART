@@ -20,7 +20,7 @@ from core.models import (Profile, Project, ProjectPermissions, Model, Data, Labe
                          DataLabel, DataPrediction, Queue, DataQueue, AssignedData,
                          TrainingSet)
 from core.forms import (ProjectUpdateForm, PermissionsFormSet, LabelFormSet,
-                        ProjectWizardForm, DataWizardForm)
+                        ProjectWizardForm, DataWizardForm, AdvancedWizardForm)
 from core.serializers import DataSerializer
 from core.templatetags import project_extras
 import core.util as util
@@ -62,6 +62,18 @@ class ProjectAdmin(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         ctx['project'] = Project.objects.get(pk=self.kwargs['pk'])
 
         return ctx
+
+
+class ProjectSkew(LoginRequiredMixin, DetailView):
+    model = Project
+    template_name = 'projects/skew_fix.html'
+    permission_denied_message = 'You must be an Admin or Project Creator to access the Admin page.'
+    raise_exception = True
+
+    def test_func(self):
+        project = Project.objects.get(pk=self.kwargs['pk'])
+
+        return project_extras.proj_permission_level(project, self.request.user.profile) >= 2
 
 
 class ProjectList(LoginRequiredMixin, ListView):
@@ -124,12 +136,14 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         ('project', ProjectWizardForm),
         ('labels', LabelFormSet),
         ('permissions', PermissionsFormSet),
+        ('advanced', AdvancedWizardForm),
         ('data', DataWizardForm)
     ]
     template_list = {
         'project': 'projects/create_wizard_overview.html',
         'labels': 'projects/create_wizard_labels.html',
         'permissions': 'projects/create_wizard_permissions.html',
+        'advanced':'projects/create_wizard_advanced.html',
         'data': 'projects/create_wizard_data.html'
     }
 
@@ -163,6 +177,8 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             prefix = 'label_set'
         if step == 'permissions':
             prefix = 'permission_set'
+        if step == 'advanced':
+            prefix = 'advanced'
 
         return prefix
 
@@ -177,6 +193,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         if step is None:
             step = self.steps.current
         form_class = self.form_list[step]
+
         # prepare the kwargs for the form instance.
         kwargs = self.get_form_kwargs(step)
         kwargs.update({
@@ -206,12 +223,18 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         proj = form_dict['project']
         labels = form_dict['labels']
         permissions = form_dict['permissions']
+        advanced = form_dict['advanced']
+
         data = form_dict['data']
 
         with transaction.atomic():
             # Project
             proj_obj = proj.save(commit=False)
+            advanced_data = advanced.cleaned_data
+
             proj_obj.creator = self.request.user.profile
+            # Advanced Options
+            proj_obj.learning_method = advanced_data["learning_method"]
             proj_obj.save()
 
             # Training Set
@@ -230,10 +253,13 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             num_coders = len([x for x in permissions if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True]) + 1
             q_length = util.find_queue_length(batch_size, num_coders)
 
-            queue = util.add_queue(project=proj_obj, length=q_length)
+            queue = util.add_queue(project=proj_obj, length=q_length, admin=False)
+
 
             # Data
             f_data = data.cleaned_data['data']
+            data_length = len(f_data)
+            admin_queue = util.add_queue(project=proj_obj, length=data_length, admin=True)
             upload_data(f_data, proj_obj, queue)
 
         return HttpResponseRedirect(proj_obj.get_absolute_url())

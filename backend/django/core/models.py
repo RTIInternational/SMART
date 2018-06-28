@@ -30,6 +30,16 @@ class Project(models.Model):
     description = models.TextField(blank=True)
     creator = models.ForeignKey('Profile')
 
+    #####Advanced options#####
+    #the current options are 'random', 'least confident', 'entropy', and 'margin sampling'
+    ACTIVE_L_CHOICES = [
+        ("least confident","By Uncertainty using Least Confident"),
+        ("margin sampling","By Uncertainty using the Margin"),
+        ("entropy","By Uncertainty using Entropy"),
+        ("random","Randomly (No Active Learning)")
+    ]
+    learning_method = models.CharField(max_length = 15, default='least confident', choices=ACTIVE_L_CHOICES)
+
     def get_absolute_url(self):
         return reverse('projects:project_detail', kwargs={'pk': self.pk})
 
@@ -116,6 +126,7 @@ class DataUncertainty(models.Model):
 class Queue(models.Model):
     profile = models.ForeignKey('Profile', blank=True, null=True)
     project = models.ForeignKey('Project')
+    admin = models.BooleanField(default=False)
     length = models.IntegerField()
     data = models.ManyToManyField(
         'Data', related_name='queues', through='DataQueue'

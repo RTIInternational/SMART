@@ -1,4 +1,4 @@
-const getCookie = (name) => {
+export const getCookie = (name) => {
     // https://docs.djangoproject.com/en/1.11/ref/csrf/#ajax
     var cookieValue = null;
 

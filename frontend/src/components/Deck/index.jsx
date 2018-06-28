@@ -43,20 +43,15 @@ class Deck extends React.Component {
                             {card.options.map( (opt) => (
                                 <Button onClick={() => annotateCard(card, opt['pk'])} bsStyle="primary" key={`deck-button-${opt['name']}`}>{opt['name']}</Button>
                             ))}
-                            { cardCount > 1 &&
-                                <OverlayTrigger
-                                placement = "top"
-                                overlay={
-                                  <Tooltip id="skip_tooltip">
-                                    Clicking this button will send this document to an administrator for review
-                                  </Tooltip>
-                                }>
-                                  <Button onClick={passCard} bsStyle="info">Skip</Button>
-                                </OverlayTrigger>
-                            }
-                            { cardCount == 1 &&
-                                <Button onClick={passCard} bsStyle="info" disabled={true}>Skip</Button>
-                            }
+                            <OverlayTrigger
+                            placement = "top"
+                            overlay={
+                              <Tooltip id="skip_tooltip">
+                                Clicking this button will send this document to an administrator for review
+                              </Tooltip>
+                            }>
+                              <Button onClick={() => passCard(card)} bsStyle="info">Skip</Button>
+                            </OverlayTrigger>
                         </ButtonToolbar>
                         <Clearfix />
                     </Card>

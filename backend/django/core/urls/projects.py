@@ -9,4 +9,5 @@ urlpatterns = [
     url(r'^projects/(?P<pk>\d+)/delete/$', frontend.ProjectDelete.as_view(), name='project_delete'),
     url(r'^projects/(?P<pk>\d+)/code/$', frontend.ProjectCode.as_view(), name='project_code'),
     url(r'^projects/(?P<pk>\d+)/admin/$', frontend.ProjectAdmin.as_view(), name='project_admin'),
+    url(r'^projects/(?P<pk>\d+)/skew/$', frontend.ProjectSkew.as_view(), name='project_skew'),
 ]

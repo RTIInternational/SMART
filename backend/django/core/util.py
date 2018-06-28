@@ -247,14 +247,14 @@ def find_queue_length(batch_size, num_coders):
     return math.ceil(batch_size/num_coders) * num_coders + math.ceil(batch_size/num_coders) * (num_coders - 1)
 
 
-def add_queue(project, length, profile=None):
+def add_queue(project, length, admin, profile=None):
     '''
     Add a queue of the given length to the given project.  If a profile is provided,
     assign the queue to that profile.
 
     Return the created queue.
     '''
-    return Queue.objects.create(length=length, project=project, profile=profile)
+    return Queue.objects.create(length=length, project=project, profile=profile, admin = admin)
 
 
 def get_ordered_data(data_ids, orderby):
@@ -390,12 +390,12 @@ def pop_first_nonempty_queue(project, profile=None):
     if profile is not None:
         # Use priority to ensure we set profile queues above project queues
         # in the resulting list; break ties by pk
-        profile_queues = project.queue_set.filter(profile=profile)
+        profile_queues = project.queue_set.filter(profile=profile, admin=False)
     else:
         profile_queues = Queue.objects.none()
     profile_queues = profile_queues.annotate(priority=Value(1, IntegerField()))
 
-    project_queues = (project.queue_set.filter(profile=None)
+    project_queues = (project.queue_set.filter(profile=None, admin=False)
                       .annotate(priority=Value(2, IntegerField())))
 
     eligible_queue_ids = [redis_serialize_queue(queue) for queue in
@@ -465,7 +465,7 @@ def get_nonempty_queue(project, profile=None):
     # Only check for profile queues if we were passed a profile
     if profile is not None:
         nonempty_profile_queues = (project.queue_set
-                                .filter(profile=profile)
+                                .filter(profile=profile, admin=False)
                                 .annotate(
                                     data_count=Count('data'))
                                 .filter(data_count__gt=0))
@@ -476,7 +476,7 @@ def get_nonempty_queue(project, profile=None):
     # If we didn't find a profile queue, check project queues
     if first_nonempty_queue is None:
         nonempty_queues = (project.queue_set
-                           .filter(profile=None)
+                           .filter(profile=None, admin=False)
                            .annotate(
                                data_count=Count('data'))
                            .filter(data_count__gt=0))
@@ -528,6 +528,25 @@ def label_data(label, datum, profile, time):
 
     settings.REDIS.srem(redis_serialize_set(queue), redis_serialize_data(datum))
 
+def move_skipped_to_admin_queue(datum, profile, project):
+    '''
+    Remove the data from AssignedData and redis
+
+    Change the assigned queue to the admin=True one for this project
+    '''
+    with transaction.atomic():
+        #remove the data from the assignment table
+        assignment = AssignedData.objects.get(data=datum,
+                                                profile=profile)
+        queue = assignment.queue
+        assignment.delete()
+        #change the queue to the admin one
+        old_id = queue.id
+        new_queue = Queue.objects.get(project=queue.project, admin=True)
+        DataQueue.objects.filter(data=datum, queue=queue).update(queue=new_queue)
+
+    #remove the data from redis
+    settings.REDIS.srem(redis_serialize_set(queue), redis_serialize_data(datum))
 
 def get_assignments(profile, project, num_assignments):
     '''
@@ -670,7 +689,7 @@ def check_and_trigger_model(datum):
         return_str = 'task already running'
     elif labeled_data_count >= batch_size:
         if labels_count < project.labels.count():
-            fill_queue(project.queue_set.get(), 'random')
+            fill_queue(project.queue_set.get(admin=False), 'random')
             return_str = 'random'
         else:
             task_num = tasks.send_model_task.delay(project.pk)

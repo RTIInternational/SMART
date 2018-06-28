@@ -16,6 +16,9 @@
                 <li class="nav-item">
                     <a data-toggle="tab" href="#model" class="nav-link">Active Learning Model</a>
                 </li>
+                <li class="nav-item">
+                    <a data-toggle="tab" href="#annotate" class="nav-link">Admin Annotation</a>
+                </li>
             </ul>
         </div>
         <div class="tab-content">
@@ -33,6 +36,9 @@
                             <svg class="nvd3-svg"></svg>
                         </div>
                     </div>
+                    <a class="btn btn-info" href="{% url 'projects:project_skew' project.pk %}" role="button">
+                        Fix Skew
+                    </a>
                 </div>
                 <hr>
                 <div class="row">
@@ -95,6 +101,11 @@
                             </thead>
                         </table>
                     </div>
+                </div>
+            </div>
+            <div id="annotate" class="tab-pane fade in">
+                <div class="row">
+                  <p>Placeholder for skipped/disagreed upon data cards</p>
                 </div>
             </div>
         </div>
@@ -282,13 +293,18 @@ $(document).ready(function() {
     $('#labeled_data_table').DataTable({
         "ajax": '/api/data_coded_table/' + {{ project.pk }} + '/',
         "columns": [
-            { "data": "Text" },
-            { "data": "Label", "searchable": false },
-            { "data": "Coder", "searchable": false }
+            { "data": "Text", "width": "70%"},
+            { "data": "Label", "searchable": false, "width": "15%" },
+            { "data": "Coder", "searchable": false, "width": "15%" }
         ],
         "oLanguage": {
             "sSearch": "Filter Text: ",
             "sEmptyTable": "Insufficient labeled data -- please code more documents"
+        },
+        "initComplete": function (settings, json) {
+            $this = $(this)
+            $this.css({'table-layout':'fixed'});
+            $this.find('tr td:first-child').addClass('showData');
         }
     });
 
@@ -298,18 +314,24 @@ $(document).ready(function() {
     $('#predicted_data_table').DataTable({
         "ajax": '/api/data_predicted_table/' + {{ project.pk }} + '/',
         "columns": [
-            { "data": "Text" },
+            { "data": "Text", "width": "70%" },
             { "data": "Probability",
               "searchable": false,
+              "width": "15%",
               "render": function (data, type, row) {
                 return d3.format('.2%')(data);
               },
             },
-            { "data": "Label", "searchable": false }
+            { "data": "Label", "searchable": false, "width": "15%" }
         ],
         "oLanguage": {
             "sSearch": "Filter Text: ",
             "sEmptyTable": "Insufficient training data -- please code more documents"
+        },
+        "initComplete": function (settings, json) {
+            $this = $(this)
+            $this.css({'table-layout':'fixed'});
+            $this.find('tr td:first-child').addClass('showData');
         }
     });
 
@@ -317,7 +339,6 @@ $(document).ready(function() {
        $('[data-toggle="tooltip"]').tooltip()
     });
 });
-
 
 /*
  *  Force window resize event when bootstrap tab navigation anchor is used

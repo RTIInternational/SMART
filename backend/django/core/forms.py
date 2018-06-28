@@ -3,6 +3,8 @@ from django.core.exceptions import ValidationError
 from .models import Project, ProjectPermissions, Label
 import pandas as pd
 from pandas.errors import EmptyDataError, ParserError
+from django.forms.widgets import RadioSelect
+import copy
 
 
 def clean_data_helper(data, supplied_labels):
@@ -19,7 +21,6 @@ def clean_data_helper(data, supplied_labels):
     ]
     ALLOWED_HEADER = ['Text', 'Label']
     MAX_FILE_SIZE = 4 * 1000 * 1000 * 1000
-
 
     if data.size > MAX_FILE_SIZE:
         raise ValidationError("File is too large.  Received {0} but max size is {1}."\
@@ -126,6 +127,28 @@ class ProjectWizardForm(forms.ModelForm):
     class Meta:
         model = Project
         fields = ['name', 'description']
+
+
+class AdvancedWizardForm(forms.ModelForm):
+    class Meta:
+        model = Project
+        fields = ['learning_method']
+
+    use_active_learning = forms.BooleanField(initial=True, required=False)
+    active_l_choices = copy.deepcopy(Project.ACTIVE_L_CHOICES)
+    #remove random from the options
+    active_l_choices.remove(("random","Randomly (No Active Learning)"))
+    learning_method = forms.ChoiceField(
+        widget=RadioSelect(), choices=active_l_choices,
+        initial="least confident", required=False
+    )
+
+    def clean(self):
+        use_active_learning = self.cleaned_data.get("use_active_learning")
+        #if they are not using active learning, the selection method is random
+        if not use_active_learning:
+            self.cleaned_data['learning_method'] = 'random'
+        return self.cleaned_data
 
 
 class DataWizardForm(forms.Form):

@@ -82,14 +82,22 @@ def test_queue(db, test_project_data):
     A queue containing data from the test project, with length set to
     the global len.
     '''
-    return add_queue(test_project_data, TEST_QUEUE_LEN)
+    return add_queue(test_project_data, TEST_QUEUE_LEN, admin=False)
+
+@pytest.fixture
+def test_admin_queue(db, test_project_data):
+    '''
+    A queue containing data from the test project, with length set to
+    the global len.
+    '''
+    return add_queue(test_project_data, TEST_QUEUE_LEN, admin=True)
 
 @pytest.fixture
 def test_profile_queue(db, test_profile, test_project_data):
     '''
     A queue with test data, associated with the first test profile.
     '''
-    return add_queue(test_project_data, TEST_QUEUE_LEN, profile=test_profile)
+    return add_queue(test_project_data, TEST_QUEUE_LEN, profile=test_profile, admin=False)
 
 @pytest.fixture
 def test_profile_queue2(db, test_profile2, test_project_data):
@@ -97,7 +105,7 @@ def test_profile_queue2(db, test_profile2, test_project_data):
     A queue with test data, associated with an additional test profile.
     Useful for tests requiring multiple profiles/queues on the same project.
     '''
-    return add_queue(test_project_data, TEST_QUEUE_LEN, profile=test_profile2)
+    return add_queue(test_project_data, TEST_QUEUE_LEN, profile=test_profile2, admin = False)
 
 @pytest.fixture
 def test_tfidf_matrix(test_project_data):
