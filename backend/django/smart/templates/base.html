@@ -21,9 +21,9 @@
             <div id="top_menu_button">
               {% if project.pk %}
               <div class="dropdown">
-                <a  class="dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                Project <span class="caret" id="project_dropdown"></span>
-              </a>
+                <button type="button" id="project_dropdown" class="dropdown-toggle btn btn-link" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Project <span class="caret" ></span>
+              </button>
                 <ul class="dropdown-menu">
                   <li id="project_link"><a class="dropdown-item" href="{% url 'projects:project_list' %}">Projects</a></li>
                   <li><a class="dropdown-item" href="{{ project.get_absolute_url }}">Details</a></li>
