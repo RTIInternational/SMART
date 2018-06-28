@@ -263,6 +263,9 @@ $.ajax({
               +"particular category in the test set.  Formula:  "
               +"True Positives/(True Positives + False Negatives)")
             }
+            $(function () {
+              $('[data-toggle="tooltip"]').tooltip()
+            });
         });
     },
     error: function (error) {
@@ -308,6 +311,10 @@ $(document).ready(function() {
             "sSearch": "Filter Text: ",
             "sEmptyTable": "Insufficient training data -- please code more documents"
         }
+    });
+
+    $(function () {
+       $('[data-toggle="tooltip"]').tooltip()
     });
 });
 
