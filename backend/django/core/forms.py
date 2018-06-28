@@ -4,7 +4,7 @@ from .models import Project, ProjectPermissions, Label
 import pandas as pd
 from pandas.errors import EmptyDataError, ParserError
 from django.forms.widgets import RadioSelect
-
+import copy
 def clean_data_helper(data, supplied_labels):
     ALLOWED_TYPES = [
         'text/csv',
@@ -135,9 +135,9 @@ class AdvancedWizardForm(forms.ModelForm):
         fields = ['learning_method']
 
     use_active_learning = forms.BooleanField(initial=True, required=False)
-    active_l_choices = Project.ACTIVE_L_CHOICES
+    active_l_choices = copy.deepcopy(Project.ACTIVE_L_CHOICES)
     #remove random from the options
-    active_l_choices = active_l_choices[:len(active_l_choices) - 1]
+    active_l_choices.remove(("random","Randomly (No Active Learning)"))
     learning_method = forms.ChoiceField(
         widget=RadioSelect(), choices=active_l_choices,
         initial="least confident", required=False
