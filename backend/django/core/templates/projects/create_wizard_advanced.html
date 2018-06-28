@@ -21,7 +21,7 @@
 
             <h1>Advanced Settings</h1>
             <div class="form-group">
-              <div class = "choose_al_or_not">
+              <div class="choose_al_or_not">
               {{ wizard.form.use_active_learning }} Use Active Learning to select data to label
               </div>
               <div id="choose_method_box">
@@ -49,15 +49,14 @@
 
 {% block scripts_body %}
 <script type="text/javascript">
-
-var conditional_field = $("div.choose_method");
-conditional_field.show();
+var methods_box = $("div#choose_method_box");
+methods_box.show();
 
 $('input#id_advanced-use_active_learning').change(function(){
   if ($(this).prop('checked') == true) {
-        conditional_field.show();
+        methods_box.show();
     } else {
-        conditional_field.hide();
+        methods_box.hide();
     }
 });
 </script>
