@@ -11,6 +11,7 @@ const Smart = ({fetchCards, annotateCard, passCard, popCard, cards, message }) =
   }
   return(
     <div>
+      <ProgressBar now={progress}/>
       <Deck
           fetchCards={fetchCards}
           annotateCard={annotateCard}
@@ -19,8 +20,6 @@ const Smart = ({fetchCards, annotateCard, passCard, popCard, cards, message }) =
           cards={cards}
           message={message}
       />
-      <br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
-      <ProgressBar now={progress}/>
     </div>
     );
 }
