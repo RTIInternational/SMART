@@ -14,7 +14,7 @@ def send_model_task(project_pk):
     from core.util import train_and_save_model, predict_data, fill_queue, find_queue_length
 
     project = Project.objects.get(pk=project_pk)
-    queue = project.queue_set.get()
+    queue = project.queue_set.get(admin=False)
 
     model = train_and_save_model(project)
     predictions = predict_data(project, model)
@@ -30,7 +30,8 @@ def send_model_task(project_pk):
         queue.length = q_length
         queue.save()
 
-    fill_queue(queue, 'least confident')
+    al_method = project.learning_method
+    fill_queue(queue, al_method)
 
 @shared_task
 def send_tfidf_creation_task(response, project_pk):

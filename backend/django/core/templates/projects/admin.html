@@ -16,6 +16,9 @@
                 <li class="nav-item">
                     <a data-toggle="tab" href="#model" class="nav-link">Active Learning Model</a>
                 </li>
+                <li class="nav-item">
+                    <a data-toggle="tab" href="#annotate" class="nav-link">Admin Annotation</a>
+                </li>
             </ul>
         </div>
         <div class="tab-content">
@@ -33,6 +36,9 @@
                             <svg class="nvd3-svg"></svg>
                         </div>
                     </div>
+                    <a class="btn btn-info" href="{% url 'projects:project_skew' project.pk %}" role="button">
+                        Fix Skew
+                    </a>
                 </div>
                 <hr>
                 <div class="row">
@@ -53,14 +59,23 @@
             <div id="model" class="tab-pane fade in">
                 <div class="row">
                     <div class="col-md-12">
-                        <h3>Model Metrics</h3>
+                        <h3 id="model_metrics">Model Metrics: Accuracy
+                          <span id="model_metric_icon"
+                          data-toggle="tooltip"
+                          class="glyphicon glyphicon-question-sign model_question_tooltip"
+                          title="The percent guessed correctly by the model."></span>
+                        </h3>
                         <div class="form-group">
                             <label for="metric_select">Select the metric to appear on the chart:</label>
                             <select class="form-control" id="metric_select">
-                                <option value="accuracy">Accuracy</option>
-                                <option value="f1">F1 Score</option>
-                                <option value="precision">Precision</option>
-                                <option value="recall">Recall</option>
+                                <option class = "metric_option" value="accuracy">
+                                Accuracy</option>
+                                <option class = "metric_option" value="f1"
+                                >F1 Score</option>
+                                <option class = "metric_option" value="precision"
+                                >Precision</option>
+                                <option class = "metric_option" value="recall"
+                                >Recall</option>
                             </select>
                         </div>
                         <div class="row">
@@ -86,6 +101,11 @@
                             </thead>
                         </table>
                     </div>
+                </div>
+            </div>
+            <div id="annotate" class="tab-pane fade in">
+                <div class="row">
+                  <p>Placeholder for skipped/disagreed upon data cards</p>
                 </div>
             </div>
         </div>
@@ -122,6 +142,7 @@ $.ajax({
                 .axisLabelDistance(-5)
                 .tickFormat(d3.format(',.01f'))
             ;
+            chart.noData("Insufficient labeled data -- please code more documents");
             d3.select('#distribution_chart svg')
                 .datum(response)
                 .call(chart);
@@ -161,6 +182,7 @@ $.ajax({
                 .axisLabelDistance(-5)
                 .tickFormat(d3.format(','))
             ;
+            chart.noData("Insufficient labeled data -- please code more documents");
             d3.select('#timer_chart svg')
                 .datum(response.data)
                 .call(chart);
@@ -200,6 +222,7 @@ $.ajax({
                     return d3.format(',.2f')(d);
                 })
             ;
+            chart.noData("Insufficient training data -- please code more documents");
             d3.select('#metric_chart svg')
                 .datum(response)
                 .call(chart);
@@ -218,6 +241,42 @@ $.ajax({
                     console.log(error);
                 }
             });
+            var choice = $(this).val();
+            var children = $("#model_metrics").children();
+            if(choice === "accuracy")
+            {
+              $("#model_metrics").text("Model Metrics: Accuracy ");
+              $("#model_metrics").append(children);
+              $("#model_metric_icon").attr("title","The percent guessed correctly by the model.")
+            }
+            else if(choice === "f1")
+            {
+              $("#model_metrics").text("Model Metrics: F1 Score ");
+              $("#model_metrics").append(children);
+              $("#model_metric_icon").attr("title","A common model evaluation "
+              +"metric with a similar interpretation to accuracy but penalizes "
+              +"for poor precision or recall. This is an important consideration"
+              +" when predicting rare classes. Formula: 2*((Precision * Recall)/(Precision + Recall))")
+            }
+            else if(choice === "precision")
+            {
+              $("#model_metrics").text("Model Metrics: Precision ");
+              $("#model_metrics").append(children);
+              $("#model_metric_icon").attr("title","Indicates how precise the"
+              +" active learning model is at correctly predicting the category"
+              +" in the test set. Formula:  True Positives/(True Positives + False Positives)")
+            }
+            else {
+              $("#model_metrics").text("Model Metrics: Recall ");
+              $("#model_metrics").append(children);
+              $("#model_metric_icon").attr("title","Indicates how comprehensive"
+              +" the active learning model is at identifying documents of a "
+              +"particular category in the test set.  Formula:  "
+              +"True Positives/(True Positives + False Negatives)")
+            }
+            $(function () {
+              $('[data-toggle="tooltip"]').tooltip()
+            });
         });
     },
     error: function (error) {
@@ -234,12 +293,18 @@ $(document).ready(function() {
     $('#labeled_data_table').DataTable({
         "ajax": '/api/data_coded_table/' + {{ project.pk }} + '/',
         "columns": [
-            { "data": "Text" },
-            { "data": "Label", "searchable": false },
-            { "data": "Coder", "searchable": false }
+            { "data": "Text", "width": "70%"},
+            { "data": "Label", "searchable": false, "width": "15%" },
+            { "data": "Coder", "searchable": false, "width": "15%" }
         ],
         "oLanguage": {
-            "sSearch": "Filter Text: "
+            "sSearch": "Filter Text: ",
+            "sEmptyTable": "Insufficient labeled data -- please code more documents"
+        },
+        "initComplete": function (settings, json) {
+            $this = $(this)
+            $this.css({'table-layout':'fixed'});
+            $this.find('tr td:first-child').addClass('showData');
         }
     });
 
@@ -249,21 +314,31 @@ $(document).ready(function() {
     $('#predicted_data_table').DataTable({
         "ajax": '/api/data_predicted_table/' + {{ project.pk }} + '/',
         "columns": [
-            { "data": "Text" },
+            { "data": "Text", "width": "70%" },
             { "data": "Probability",
               "searchable": false,
+              "width": "15%",
               "render": function (data, type, row) {
                 return d3.format('.2%')(data);
               },
             },
-            { "data": "Label", "searchable": false }
+            { "data": "Label", "searchable": false, "width": "15%" }
         ],
         "oLanguage": {
-            "sSearch": "Filter Text: "
+            "sSearch": "Filter Text: ",
+            "sEmptyTable": "Insufficient training data -- please code more documents"
+        },
+        "initComplete": function (settings, json) {
+            $this = $(this)
+            $this.css({'table-layout':'fixed'});
+            $this.find('tr td:first-child').addClass('showData');
         }
     });
-});
 
+    $(function () {
+       $('[data-toggle="tooltip"]').tooltip()
+    });
+});
 
 /*
  *  Force window resize event when bootstrap tab navigation anchor is used

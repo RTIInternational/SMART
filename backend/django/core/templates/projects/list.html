@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-
 {% block content %}
 <div class="card full">
   <div class="cardface">
@@ -13,6 +12,12 @@
                 <td>{{ project.name }}</td>
                 <td><a href="{{ project.get_absolute_url }}">Details</a></td>
                 <td><a href="{% url 'projects:project_code' project.pk %}">Annotate</a></td>
+                <td><a href="{% url 'projects:project_admin' project.pk %}">Admin Dashboard</a></td>
+                {% if project.labeled_data_count > 0 %}
+                <td><a class="download_btn" name="{{ project.pk }}" onclick="download_data({{project.pk}})">Download Labeled Data</a></td>
+                {% else %}
+                <td><p>No Labeled Data to Download</p></td>
+                {% endif %}
               </tr>
               {% endfor %}
             </tbody>
@@ -38,4 +43,36 @@
     {% endif %}
   </div>
 </div>
+{% endblock %}
+
+{% block scripts_body %}
+<script>
+/*
+ *  When download button is pressed request the csv file, add the data as a blob
+ *  to a new anchor element, and trigger a click event on that anchor element
+ *  to prompt the download file popup
+ *  NOTE: this function is also in detail.html, but edited to work for multiple
+ *  buttons on the same page
+ */
+function download_data(pk)
+{
+    xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+        var a, today;
+        if (xhttp.readyState === 4 && xhttp.status === 200) {
+            a = document.createElement('a');
+            a.href = window.URL.createObjectURL(xhttp.response);
+            today = new Date();
+            a.download = "project_" + String(pk) + '_labels_' + today.toDateString().split(" ").join("_") + ".csv";
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            return a.click();
+        }
+    };
+    xhttp.open("GET", "/api/download_data/" + String(pk) + "/", true);
+    xhttp.setRequestHeader("Content-Type", "application/json");
+    xhttp.responseType = 'blob';
+    xhttp.send();
+}
+</script>
 {% endblock %}

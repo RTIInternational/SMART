@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+{% load static %}
+{% load render_bundle from webpack_loader %}
+
+{% block head %}
+{{ wizard.form.media }}
+{{ form.media.css }}
+{% endblock %}
+
+{% block content %}
+<div class="error-messages">{{ wizard.non_form_errors }}</div>
+<div class="row">
+  <div class="col-md-8 col-md-offset-2">
+    <div class="card">
+      <div class="cardface">
+        <form action="." method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          {{ wizard.management_form }}
+
+            <h1>Advanced Settings</h1>
+            <div class="form-group">
+              <div class="choose_al_or_not">
+              {{ wizard.form.use_active_learning }} Use Active Learning to select data to label
+              </div>
+              <div id="choose_method_box">
+                {% for radio in wizard.form.learning_method %}
+                <div class="choose_method" id={{radio.value}}>
+                  {{radio}}
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+
+          <div>
+            <button class="btn btn-info" name="wizard_goto_step" type="submit" value="project">1. Info</button>
+            <button class="btn btn-info" name="wizard_goto_step" type="submit" value="labels">2. Labels</button>
+            <button class="btn btn-info" name="wizard_goto_step" type="submit" value="permissions">3. Permissions</button>
+            <input class="btn btn-primary" type="submit" value="Next Step"/>
+            <p class="pull-right">Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts_body %}
+<script type="text/javascript">
+var methods_box = $("div#choose_method_box");
+methods_box.show();
+
+$('input#id_advanced-use_active_learning').change(function(){
+  if ($(this).prop('checked') == true) {
+        methods_box.show();
+    } else {
+        methods_box.hide();
+    }
+});
+</script>
+{% endblock %}

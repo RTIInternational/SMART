@@ -2,7 +2,7 @@ import { handleActions } from 'redux-actions';
 import update from 'immutability-helper';
 import moment from 'moment';
 
-import { PASS_CARD, POP_CARD, PUSH_CARD, SET_MESSAGE, CLEAR_DECK } from '../actions/classifier'
+import { POP_CARD, PUSH_CARD, SET_MESSAGE, CLEAR_DECK } from '../actions/classifier'
 
 const initialState = {
     cards: [],
@@ -10,16 +10,6 @@ const initialState = {
 };
 
 const classifier = handleActions({
-    [PASS_CARD]: (state) => {
-        // Pass on the first card by moving it to the end
-        return update(state, { cards: { $apply: (arr) => {
-            const elem0 = arr[0];
-            // Set the start time of the new top card to the current time
-            arr[1]['start_time'] = moment();
-            let poppedArr = update(arr, { $splice: [[0, 1]] });
-            return update(poppedArr, { $push: [elem0] });
-        }}});
-    },
     [POP_CARD]: (state) => {
         // Set the start time of the new top card to the current time
         if (state.cards.length > 1) {
