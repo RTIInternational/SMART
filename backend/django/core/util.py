@@ -158,7 +158,7 @@ def sync_redis_objects(queue, orderby):
     """Given a DataQueue sync the redis set with the DataQueue and then update
         the redis queue with the appropriate new ordered data.
     """
-    ORDERBY_OPTIONS = ['random', 'least confident', 'margin sampling', 'entropy']
+    ORDERBY_OPTIONS = ['random', 'least confident', 'margin sampling', 'entropy', 'qbc']
     if orderby not in ORDERBY_OPTIONS:
         raise ValueError('orderby parameter must be one of the following: ' +
                          ' '.join(ORDERBY_OPTIONS))
@@ -268,11 +268,11 @@ def get_ordered_data(data_ids, orderby):
     Args:
         data_ids: List of data_ids
         orderby: String of order by options. ["random", "least confident",
-            "margin sampling", "entropy"]
+            "margin sampling", "entropy", "qbc"]
     Returns:
         Query set of ordered data objects
     """
-    ORDERBY_OPTIONS = ['random', 'least confident', 'margin sampling', 'entropy']
+    ORDERBY_OPTIONS = ['random', 'least confident', 'margin sampling', 'entropy', 'qbc']
     if orderby not in ORDERBY_OPTIONS:
         raise ValueError('orderby parameter must be one of the following: ' +
                          ' '.join(ORDERBY_OPTIONS))
@@ -287,7 +287,8 @@ def get_ordered_data(data_ids, orderby):
         return data_objs.annotate(min_margin_sampling=Min('datauncertainty__margin_sampling')).order_by('min_margin_sampling')
     elif orderby == 'entropy':
         return data_objs.annotate(max_entropy=Max('datauncertainty__entropy')).order_by('-max_entropy')
-
+    elif orderby == 'qbc':
+        return data_objs.annotate(max_qbc=Max('datauncertainty__qbc')).order_by('-max_qbc')
 
 def fill_queue(queue, orderby):
     '''
@@ -305,6 +306,7 @@ def fill_queue(queue, orderby):
         'least confident': 'uncertainty.least_confident DESC',
         'margin sampling': 'uncertainty.margin_sampling ASC',
         'entropy': 'uncertainty.entropy DESC',
+        'qbc': 'uncertainty.qbc DESC'
     }
     if orderby not in ORDERBY_VALUE.keys():
         raise ValueError('orderby parameter must be one of the following: ' +
@@ -800,6 +802,65 @@ def entropy(probs):
 
     return -total
 
+def get_entropy(row):
+    '''
+    This function finds the entropy for a particular row over all possible classes and assignements by the committee
+    Args:
+        param row: a row of one element per assignment from a member of the committee
+    return: the disagreement for that row
+    '''
+    # For each unlabeled element get the entropy -sum( votes_class_i/C * log(votes_class_i/C))
+    class_votes = row.value_counts().to_dict()
+    total = 0
+    for c in class_votes:
+        total += (class_votes[c]/len(row))*math.log10(class_votes[c]/len(row))
+    return -1 * total
+
+def train_and_apply_committee(project, unlabeled_X, com_size = 5):
+    """Given a project where query by committee is the metric, reads in
+    the training data and trains a bagged set of classifiers. Calculates
+    the disagreement between the models for each unlabeled instance.
+    Args:
+        project: Project object
+    Returns: an array of the disagreement scores for each datum
+    """
+    clf = LogisticRegression(class_weight='balanced', solver='lbfgs', multi_class='multinomial')
+    tf_idf = load_tfidf_matrix(project.pk).A
+    current_training_set = project.get_current_training_set()
+
+    # In order to train need X (tf-idf vector) and Y (label) for every labeled datum
+    # Order both X and Y by df_idx to ensure the tf-idf vector corresponds to the correct
+    # label
+    labeled_data = DataLabel.objects.filter(data__project=project)
+    labeled_values = list(labeled_data.values_list('label', flat=True).order_by('data__df_idx'))
+    labeled_indices = list(labeled_data.values_list('data__df_idx', flat=True).order_by('data__df_idx'))
+
+    X = pd.DataFrame(tf_idf[labeled_indices])
+    Y = pd.DataFrame(labeled_values)
+    predictions = []
+    for i in range(com_size):
+        #get a subset of the training data
+        good_sample = False
+        while not good_sample:
+            train_indices = np.random.choice(X.shape[0],size=int(0.75*X.shape[0]))
+            temp_x = X.iloc[np.ravel(train_indices)]
+            temp_y = Y.iloc[np.ravel(train_indices)]
+            num_classes = len(temp_y[temp_y.columns.tolist()[0]].unique())
+            if num_classes > 1: #NOTE: should this be stricter?
+                good_sample = True
+        #train the classifier on that subset
+        clf_log = LogisticRegression(class_weight='balanced', solver='lbfgs')
+        clf_log.fit(temp_x, temp_y.unstack())
+        #have the classifier predict the unlabeled data
+        y_pred = clf_log.predict(unlabeled_X)
+        predictions.append(np.reshape(y_pred,(len(y_pred),1)))
+
+
+    all_predictions = np.concatenate(predictions, axis=1)
+    scores = pd.DataFrame(all_predictions).apply(get_entropy, axis=1)
+
+    return scores
+
 
 def predict_data(project, model):
     """Given a project and its model, predict any unlabeled data and create
@@ -824,10 +885,19 @@ def predict_data(project, model):
     X = tf_idf[unlabeled_indices]
     predictions = clf.predict_proba(X)
 
+    if project.learning_method == "qbc":
+        qbc_predictions = train_and_apply_committee(project,X)
+
     label_obj = [Label.objects.get(pk=label) for label in clf.classes_]
 
     bulk_predictions = []
+    counter = 0
     for datum, prediction in zip(unlabeled_data, predictions):
+        if project.learning_method == "qbc":
+            qbc_score = float(qbc_predictions.iloc[counter])
+        else:
+            qbc_score = 0
+        counter += 1
         # each prediction is an array of probabilities.  Each index in that array
         # corresponds to the label of the same index in clf.classes_
         for p, label in zip(prediction, label_obj):
@@ -844,7 +914,8 @@ def predict_data(project, model):
                                        model=model,
                                        least_confident=lc,
                                        margin_sampling=ms,
-                                       entropy=e)
+                                       entropy=e,
+                                       qbc = qbc_score)
 
     prediction_objs = DataPrediction.objects.bulk_create(bulk_predictions)
 

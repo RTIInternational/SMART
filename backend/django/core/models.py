@@ -36,7 +36,8 @@ class Project(models.Model):
         ("least confident","By Uncertainty using Least Confident"),
         ("margin sampling","By Uncertainty using the Margin"),
         ("entropy","By Uncertainty using Entropy"),
-        ("random","Randomly (No Active Learning)")
+        ("random","Randomly (No Active Learning)"),
+        ("qbc","Query by Committee (using bagging)")
     ]
     learning_method = models.CharField(max_length = 15, default='least confident', choices=ACTIVE_L_CHOICES)
 
@@ -122,6 +123,7 @@ class DataUncertainty(models.Model):
     least_confident = models.FloatField()
     margin_sampling = models.FloatField()
     entropy = models.FloatField()
+    qbc = models.FloatField(default=0.0)
 
 class Queue(models.Model):
     profile = models.ForeignKey('Profile', blank=True, null=True)
