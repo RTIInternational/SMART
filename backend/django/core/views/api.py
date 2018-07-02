@@ -424,6 +424,7 @@ def skip_data(request, pk):
     data = Data.objects.get(pk=pk)
     profile = request.user.profile
     project = data.project
+    queue = project.queue_set.get(admin=False)
     response = {}
 
     # Make sure coder still has permissions before labeling data
@@ -431,6 +432,8 @@ def skip_data(request, pk):
         util.move_skipped_to_admin_queue(data, profile, project)
     else:
         response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
+
+    util.fill_queue(queue,project.learning_method)
     return Response(response)
 
 @api_view(['POST'])
