@@ -5,6 +5,7 @@ import pandas as pd
 from pandas.errors import EmptyDataError, ParserError
 from django.forms.widgets import RadioSelect
 import copy
+from io import StringIO
 
 
 def clean_data_helper(data, supplied_labels):
@@ -22,15 +23,18 @@ def clean_data_helper(data, supplied_labels):
     ALLOWED_HEADER = ['Text', 'Label']
     MAX_FILE_SIZE = 4 * 1000 * 1000 * 1000
 
+
     if data.size > MAX_FILE_SIZE:
         raise ValidationError("File is too large.  Received {0} but max size is {1}."\
                               .format(data.size, MAX_FILE_SIZE))
 
     try:
         if data.content_type == 'text/tab-separated-values':
-            data = pd.read_csv(data, sep='\t')
+            all_data = data.read().decode('utf8','ignore')
+            data = pd.read_csv(StringIO(all_data), sep='\t').dropna(axis = 0, how="all")
         elif data.content_type == 'text/csv':
-            data = pd.read_csv(data)
+            all_data = data.read().decode('utf8','ignore')
+            data = pd.read_csv(StringIO(all_data)).dropna(axis = 0, how="all")
         elif data.content_type.startswith('application/vnd') and data.name.endswith('.csv'):
             data = pd.read_csv(data)
         elif data.content_type.startswith('application/vnd') and data.name.endswith('.xlsx'):
