@@ -5,13 +5,17 @@ import Deck from '../Deck';
 
 const Smart = ({fetchCards, annotateCard, passCard, popCard, cards, message }) => {
   var progress = 0;
+  var start_card = 0;
+  var num_cards = 0;
   if(!(cards === undefined) && cards.length > 0)
   {
+      num_cards = cards[cards.length-1].id + 1;
+      start_card = cards[0].id + 1;
       progress = (cards[0].id/cards[cards.length-1].id) * 100;
   }
   return(
     <div>
-      <ProgressBar now={progress}/>
+      <ProgressBar now={progress} label={start_card.toString()+" out of "+num_cards.toString()}/>
       <Deck
           fetchCards={fetchCards}
           annotateCard={annotateCard}
