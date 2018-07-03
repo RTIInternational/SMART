@@ -4,7 +4,7 @@ import { ProgressBar } from "react-bootstrap";
 import Deck from '../Deck';
 
 const Smart = ({fetchCards, annotateCard, passCard, popCard, cards, message }) => {
-  var progress = 0;
+  var progress = 100;
   var start_card = 0;
   var num_cards = 0;
   if(!(cards === undefined) && cards.length > 0)
@@ -15,7 +15,12 @@ const Smart = ({fetchCards, annotateCard, passCard, popCard, cards, message }) =
   }
   return(
     <div>
-      <ProgressBar now={progress} label={start_card.toString()+" out of "+num_cards.toString()}/>
+      <ProgressBar >
+        <ProgressBar
+        style={{minWidth: 60}}
+        label={start_card.toString()+" out of "+num_cards.toString()}
+        now={progress}/>
+      </ProgressBar>
       <Deck
           fetchCards={fetchCards}
           annotateCard={annotateCard}
