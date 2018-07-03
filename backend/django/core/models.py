@@ -84,8 +84,6 @@ class Data(models.Model):
     hash = models.CharField(max_length=128)
     project = models.ForeignKey('Project')
     df_idx = models.IntegerField()
-    #Is the data being used for inter-rater reliability
-    irr = models.BooleanField(default=False)
 
     def __str__(self):
         return self.text

@@ -297,18 +297,10 @@ def data_admin_table(request, pk):
 
     data = []
     for d in data_objs:
-        if d.data.irr:
-            temp = {
-                'Reason': "irr",
-                'Text': d.data.text,
-                'ID': d.data.id
-            }
-        else:
-            temp = {
-                'Reason': "skipped",
-                'Text': d.data.text,
-                'ID': d.data.id
-            }
+        temp = {
+            'Text': d.data.text,
+            'ID': d.data.id
+        }
         data.append(temp)
 
     return Response({'data': data})

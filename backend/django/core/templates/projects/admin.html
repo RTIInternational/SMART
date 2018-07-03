@@ -109,7 +109,6 @@
                         <table id="admin_data_table" class="table table-hover table-striped table-bordered" cellspacing="0" width="100%">
                             <thead>
                               <tr>
-                                <th>Reason</th>
                                 <th>Text</th>
                               </tr>
                             </thead>
@@ -124,7 +123,6 @@
 {% endblock %}
 
 {% block scripts_body %}
-<script src = "https://cdn.datatables.net/responsive/2.2.3/js/dataTables.responsive.min.js"></script>
 <script>
 /*
  *  Make ajax call to `label_distribution` route.  This will fetch data to
@@ -391,8 +389,7 @@ $(document).ready(function() {
     var admin_table = $('#admin_data_table').DataTable({
         "ajax": '/api/data_admin_table/' + {{ project.pk }} + '/',
         "columns": [
-          { "data": "Reason", "searchable": false, "width": "5%" },
-            { "data": "Text", "width": "95%"},
+            { "data": "Text"},
             {"data":"ID" , "visible": false }
         ],
         "oLanguage": {
@@ -400,16 +397,6 @@ $(document).ready(function() {
             "sEmptyTable": "No skipped or IRR data"
         },
         "lengthMenu": [[1,5,10,25,50,100,-1],[1,5,10,25,50,100,"All"]],
-        "rowCallback": function (row, data) {
-          if(data.Reason == "irr")
-          {
-            $('td:nth-child(1)',row).addClass('irr_datum');
-          }
-          else {
-            $('td:nth-child(1)',row).addClass('skipped_datum');
-          }
-
-        }
     });
 
     admin_table.on('draw',function(){
