@@ -13,7 +13,7 @@ class Deck extends React.Component {
     }
 
     render() {
-        const { message, cards, passCard, annotateCard } = this.props;
+        const { message, cards, passCard, annotateCard, getHistory } = this.props;
         const cardCount = cards.length;
 
         let deck;
@@ -41,7 +41,7 @@ class Deck extends React.Component {
                         </p>
                         <ButtonToolbar bsClass="btn-toolbar pull-right">
                             {card.options.map( (opt) => (
-                                <Button onClick={() => annotateCard(card, opt['pk'])} bsStyle="primary" key={`deck-button-${opt['name']}`}>{opt['name']}</Button>
+                                <Button onClick={() => {annotateCard(card, opt['pk'])}} bsStyle="primary" key={`deck-button-${opt['name']}`}>{opt['name']}</Button>
                             ))}
                             <OverlayTrigger
                             placement = "top"
@@ -81,7 +81,8 @@ Deck.propTypes = {
     passCard: PropTypes.func.isRequired,
     popCard: PropTypes.func.isRequired,
     cards: PropTypes.arrayOf(PropTypes.object),
-    message: PropTypes.string
+    message: PropTypes.string,
+    getHistory: PropTypes.func.isRequired
 };
 
 export default Deck;

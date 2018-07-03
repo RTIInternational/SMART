@@ -19,6 +19,8 @@ import io
 import math
 import random
 import pandas as pd
+from django.utils import timezone
+
 from postgres_stats.aggregates import Percentile
 
 from core.serializers import (ProfileSerializer, AuthUserGroupSerializer,
@@ -322,7 +324,8 @@ def label_skew_label(request, pk):
                                 label=label,
                                 profile=profile,
                                 training_set=current_training_set,
-                                time_to_label=None
+                                time_to_label=None,
+                                timestamp = timezone.now()
                                 )
 
     return Response({'test':'success'})
@@ -355,6 +358,32 @@ def get_card_deck(request, pk):
     labels = Label.objects.all().filter(project=project)
 
     return Response({'labels': LabelSerializer(labels, many=True).data, 'data': DataSerializer(data, many=True).data})
+
+@api_view(['GET'])
+def get_label_history(request, pk):
+    """Grab items previously labeled by this user
+    and send it to the frontend react app.
+
+    Args:
+        request: The request to the endpoint
+        pk: Primary key of project
+    Returns:
+        labels: The project labels
+        data: DataLabel objects where that user was the one to label them
+    """
+    profile = request.user.profile
+    project = Project.objects.get(pk=pk)
+
+    labels = Label.objects.all().filter(project=project)
+    data = DataLabel.objects.filter(profile=profile, data__project = pk, label__in=labels)
+
+    results = []
+    for d in data:
+        temp_dict = {"data":d.data.text, "id": d.data.id,"label":d.label.name,"labelID": d.label.id ,"timestamp":d.timestamp}
+        results.append(temp_dict)
+
+    return Response({'labels': LabelSerializer(labels, many=True).data,
+     'data': results})
 
 @api_view(['POST'])
 def skip_data(request, pk):
@@ -404,6 +433,33 @@ def annotate_data(request, pk):
         util.label_data(label, data, profile, labeling_time)
 
         util.check_and_trigger_model(data)
+    else:
+        response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
+
+    return Response(response)
+
+@api_view(['POST'])
+def modify_label(request, pk):
+    """Take a single datum with a label and change the label in the DataLabel table
+    Args:
+        request: The POST request
+        pk: Primary key of the data
+    Returns:
+        {}
+    """
+    data = Data.objects.get(pk=pk)
+    profile = request.user.profile
+    response = {}
+
+    # Make sure coder still has permissions before labeling data
+    if project_extras.proj_permission_level(data.project, profile) > 0:
+        label = Label.objects.get(pk=request.data['labelID'])
+        old_label = Label.objects.get(pk=request.data['oldLabelID'])
+        with transaction.atomic():
+            DataLabel.objects.filter(data=data, label=old_label).update(label=label,
+            time_to_label=0, timestamp=timezone.now())
+
+
     else:
         response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
 

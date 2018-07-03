@@ -45,7 +45,7 @@ class DataSerializer(serializers.ModelSerializer):
 class DataLabelSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = DataLabel
-        fields = ('data', 'profile', 'label')
+        fields = ('data', 'profile', 'label', 'timestamp')
 
 class DataPredictionSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:

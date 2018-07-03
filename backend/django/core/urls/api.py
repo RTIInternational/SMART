@@ -18,7 +18,9 @@ api_router.register(r'assigned_data', api.AssignedDataViewSet)
 urlpatterns = [
     url(r'^', include(api_router.urls)),
     url(r'^get_card_deck/(?P<pk>\d+)/$', api.get_card_deck),
+    url(r'^get_label_history/(?P<pk>\d+)/$', api.get_label_history),
     url(r'^annotate_data/(?P<pk>\d+)/$', api.annotate_data),
+    url(r'^modify_label/(?P<pk>\d+)/$', api.modify_label),
     url(r'^label_skew_label/(?P<pk>\d+)/$', api.label_skew_label),
     url(r'^skip_data/(?P<pk>\d+)/$', api.skip_data),
     url(r'^leave_coding_page/$', api.leave_coding_page),

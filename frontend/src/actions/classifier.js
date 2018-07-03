@@ -3,6 +3,7 @@ import 'whatwg-fetch';
 import moment from 'moment';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
+import { getHistory } from './history';
 
 export const POP_CARD = 'POP_CARD';
 export const PUSH_CARD = 'PUSH_CARD';
@@ -35,6 +36,7 @@ export const fetchCards = (projectID) => {
                 if ('error' in response) return dispatch(setMessage(response.error));
 
                 for (let i = 0; i < response.data.length; i++) {
+
                     const card = {
                         id: i,
                         options: response.labels,
@@ -47,7 +49,7 @@ export const fetchCards = (projectID) => {
     }
 };
 
-export const annotateCard = (card, labelID) => {
+export const annotateCard = (card, labelID, projectID) => {
     let payload = {
         labelID: labelID,
         labeling_time: moment().diff(card['start_time'], 'seconds') // now - start_time rounded to whole seconds
@@ -72,6 +74,7 @@ export const annotateCard = (card, labelID) => {
                 }
                 else {
                     dispatch(popCard())
+                    dispatch(getHistory(projectID))
                 }
             })
     }
