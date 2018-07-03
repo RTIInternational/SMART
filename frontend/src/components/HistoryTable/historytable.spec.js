@@ -16,6 +16,7 @@ describe('<HistoryTable />', () => {
                   history_data={data}
                   labels={labels}
                   changeLabel = {fn}
+                  changeToSkip= {fn}
                 />
             );
         });

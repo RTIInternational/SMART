@@ -21,6 +21,7 @@ urlpatterns = [
     url(r'^get_label_history/(?P<pk>\d+)/$', api.get_label_history),
     url(r'^annotate_data/(?P<pk>\d+)/$', api.annotate_data),
     url(r'^modify_label/(?P<pk>\d+)/$', api.modify_label),
+    url(r'^modify_label_to_skip/(?P<pk>\d+)/$', api.modify_label_to_skip),
     url(r'^label_skew_label/(?P<pk>\d+)/$', api.label_skew_label),
     url(r'^skip_data/(?P<pk>\d+)/$', api.skip_data),
     url(r'^leave_coding_page/$', api.leave_coding_page),

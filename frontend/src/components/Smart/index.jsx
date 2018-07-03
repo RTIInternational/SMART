@@ -7,8 +7,9 @@ import HistoryTable from '../HistoryTable';
 
 const Smart = ({fetchCards, annotateCard,
   passCard, popCard, cards, message,
-  getHistory, history_data, labels, changeLabel}) => (
-    <Tabs defaultActiveKey={1}>
+  getHistory, history_data, labels, changeLabel,
+  changeToSkip}) => (
+    <Tabs defaultActiveKey={1} id="data_tabs">
       <Tab eventKey={1} title="Annotate Data">
         <Deck
             fetchCards={fetchCards}
@@ -26,6 +27,7 @@ const Smart = ({fetchCards, annotateCard,
           history_data={history_data}
           labels={labels}
           changeLabel={changeLabel}
+          changeToSkip={changeToSkip}
         />
       </Tab>
     </Tabs>

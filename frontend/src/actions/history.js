@@ -79,3 +79,32 @@ export const changeLabel = (dataID, oldLabelID, labelID, projectID) => {
           })
   }
 };
+
+export const changeToSkip = (dataID, oldLabelID, projectID) => {
+  let payload = {
+    dataID: dataID,
+    oldLabelID: oldLabelID,
+  }
+  let apiURL = `/api/modify_label_to_skip/${dataID}/`;
+  return dispatch => {
+      return fetch(apiURL, postConfig(payload))
+          .then(response => {
+              if (response.ok) {
+                  return response.json();
+              }
+              else {
+                  const error = new Error(response.statusText)
+                  error.response = response;
+                  throw error;
+              }
+          })
+          .then(response => {
+              if ('error' in response) {
+                  return dispatch(setMessage(response.error))
+              }
+              else {
+                  dispatch(getHistory(projectID))
+              }
+          })
+  }
+};

@@ -379,7 +379,15 @@ def get_label_history(request, pk):
 
     results = []
     for d in data:
-        temp_dict = {"data":d.data.text, "id": d.data.id,"label":d.label.name,"labelID": d.label.id ,"timestamp":d.timestamp}
+        if d.timestamp.minute < 10:
+            minute = "0" + str(d.timestamp.minute)
+        else:
+            minute = str(d.timestamp.minute)
+        new_timestamp = str(d.timestamp.date()) + ", " + str(d.timestamp.hour)\
+        + ":" + minute + "." + str(d.timestamp.second)
+        temp_dict = {"data":d.data.text,
+        "id": d.data.id,"label":d.label.name,
+        "labelID": d.label.id ,"timestamp":new_timestamp}
         results.append(temp_dict)
 
     return Response({'labels': LabelSerializer(labels, many=True).data,
@@ -465,6 +473,39 @@ def modify_label(request, pk):
 
     return Response(response)
 
+@api_view(['POST'])
+def modify_label_to_skip(request, pk):
+    """Take a datum that is in the assigneddata queue for that user
+    and place it in the admin queue. Remove it from the
+    assignedData queue.
+
+    Args:
+        request: The POST request
+        pk: Primary key of the data
+    Returns:
+        {}
+    """
+    data = Data.objects.get(pk=pk)
+    profile = request.user.profile
+    response = {}
+
+    # Make sure coder still has permissions before labeling data
+    if project_extras.proj_permission_level(data.project, profile) > 0:
+        old_label = Label.objects.get(pk=request.data['oldLabelID'])
+        with transaction.atomic():
+            DataLabel.objects.filter(data=data, label=old_label).delete()
+
+    project = data.project
+
+    queue = Queue.objects.get(project=project, admin=True)
+
+    # Make sure coder still has permissions before labeling data
+    if project_extras.proj_permission_level(project, profile) > 0:
+        with transaction.atomic():
+            DataQueue.objects.create(data=data, queue=queue)
+    else:
+        response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
+    return Response(response)
 
 @api_view(['GET'])
 def leave_coding_page(request):

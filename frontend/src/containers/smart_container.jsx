@@ -2,7 +2,7 @@ import React from 'react';
 import { connect } from 'react-redux';
 
 import { fetchCards, annotateCard, passCard, popCard } from '../actions/classifier';
-import { getHistory, changeLabel } from '../actions/history'
+import { getHistory, changeLabel, changeToSkip } from '../actions/history'
 
 import Smart from '../components/Smart';
 
@@ -37,7 +37,10 @@ const mapDispatchToProps = (dispatch) => {
             dispatch(getHistory(PROJECT_ID))
         },
         changeLabel: (dataID, oldLabelID ,labelID) => {
-            dispatch(changeLabel(dataID, oldLabelID,labelID, PROJECT_ID))
+            dispatch(changeLabel(dataID, oldLabelID, labelID, PROJECT_ID))
+        },
+        changeToSkip: (dataID, oldLabelID) => {
+            dispatch(changeToSkip(dataID, oldLabelID, PROJECT_ID))
         },
     };
 };
