@@ -292,17 +292,8 @@ def data_unlabeled_table(request, pk):
 @api_view(['GET'])
 def get_labels(request, pk):
     project = Project.objects.get(pk=pk)
-
     labels = Label.objects.filter(project=project)
-    data = []
-    for d in labels:
-        temp = {
-            'Text': escape(d.name),
-            'ID':d.id
-        }
-        data.append(temp)
-
-    return Response({'data': data})
+    return Response({'labels': LabelSerializer(labels, many=True).data})
 
 
 @api_view(['POST'])

@@ -35,7 +35,7 @@ class CoreModelSerializer(serializers.HyperlinkedModelSerializer):
 class LabelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Label
-        fields = ('pk', 'name', 'project')
+        fields = ('pk', 'name', 'project', 'description')
 
 class DataSerializer(serializers.ModelSerializer):
     class Meta:

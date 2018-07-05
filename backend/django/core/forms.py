@@ -99,6 +99,7 @@ class LabelForm(forms.ModelForm):
         fields = '__all__'
 
     name = forms.CharField()
+    description = forms.CharField()
 
 
 class ProjectPermissionsForm(forms.ModelForm):

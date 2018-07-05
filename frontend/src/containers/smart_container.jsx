@@ -1,18 +1,19 @@
 import React from 'react';
 import { connect } from 'react-redux';
 
-import { fetchCards, annotateCard, passCard, popCard } from '../actions/classifier';
+import { fetchCards, annotateCard, passCard, popCard, getLabels } from '../actions/classifier';
 
 import Smart from '../components/Smart';
 
-const PROJECT_ID = window.PROJECT_ID
+const PROJECT_ID = window.PROJECT_ID;
 
 const SmartContainer = (props) => <Smart {...props} />;
 
 const mapStateToProps = (state) => {
     return {
         cards: state.classifier.cards,
-        message: state.classifier.message
+        message: state.classifier.message,
+        labels: state.classifier.labels
     };
 };
 
@@ -30,6 +31,9 @@ const mapDispatchToProps = (dispatch) => {
         popCard: () => {
             dispatch(popCard())
         },
+        getLabels: () => {
+          dispatch(getLabels(PROJECT_ID))
+        }
     };
 };
 

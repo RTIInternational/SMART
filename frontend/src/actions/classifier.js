@@ -8,12 +8,13 @@ export const POP_CARD = 'POP_CARD';
 export const PUSH_CARD = 'PUSH_CARD';
 export const SET_MESSAGE = 'SET_MESSAGE';
 export const CLEAR_DECK = 'CLEAR_DECK';
+export const SET_LABELS = 'SET_LABELS';
 
 export const popCard = createAction(POP_CARD);
 export const pushCard = createAction(PUSH_CARD);
 export const setMessage = createAction(SET_MESSAGE);
 export const clearDeck = createAction(CLEAR_DECK);
-
+export const setLabels = createAction(SET_LABELS);
 
 // Create cards by reading from a queue
 export const fetchCards = (projectID) => {
@@ -104,4 +105,27 @@ export const passCard = (card) => {
                 }
             })
     }
-}
+};
+
+export const getLabels = (projectID) => {
+    let apiURL = `/api/get_labels/${projectID}/`;
+    return dispatch => {
+        return fetch(apiURL, getConfig())
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                else {
+                    const error = new Error(response.statusText)
+                    error.response = response;
+                    throw error;
+                }
+            })
+            .then(response => {
+              // If error was in the response then set that message
+              if ('error' in response) return dispatch(setMessage(response.error));
+              dispatch(setLabels(response.labels));
+            })
+            .catch(err => console.log("Error: ", err));
+    }
+};
