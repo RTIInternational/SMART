@@ -3,6 +3,7 @@ import 'whatwg-fetch';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
 import {setMessage} from './classifier'
+import { getLabelCounts } from './adminTables'
 export const SET_HIST_DATA = 'SET_HIST_DATA';
 export const SET_LABELS = 'SET_LABELS';
 
@@ -75,6 +76,7 @@ export const changeLabel = (dataID, oldLabelID, labelID, projectID) => {
               }
               else {
                   dispatch(getHistory(projectID))
+                  dispatch(getLabelCounts(projectID))
               }
           })
   }

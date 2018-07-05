@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-
 {% load render_bundle from webpack_loader %}
 
 {% block content %}
@@ -9,6 +8,7 @@
 {% block scripts_body %}
   <script type="text/javascript">
     window.PROJECT_ID = {{ pk }};
+    window.ADMIN = {{admin}};
     window.onbeforeunload = function (e) {
        $.ajax({
          type: 'GET',

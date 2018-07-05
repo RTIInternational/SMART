@@ -38,15 +38,20 @@ class HistoryTable extends React.Component {
 
 
   render() {
-  const {getHistory, history_data, labels, changeLabel, changeToSkip} = this.props;
+  const {history_data, labels, changeLabel, changeToSkip} = this.props;
   return (
     <div>
+    <h3>Instructions</h3>
+    <p>This page allows a coder to change past labels.</p>
+    <p>To annotate, click on a data entry below and select the label from the expanded list of labels. The chart will then update with the new label and current timestamp </p>
+    <p><strong>NOTE:</strong> Data labels that are changed on this page will not effect past model accuracy or data selected by active learning in the past. The training data will only be updated for the next run of the model</p>
       <ReactTable
-        data={this.props.history_data[0]}
+        data={history_data[0]}
         columns={columns}
         SubComponent={row => {
           return (
             <div>
+            <p>{row.row.data}</p>
             {labels[0].map( (label) => (
               <Button key={label.id.toString() + "_" + row.row.id.toString()}
               onClick={() => changeLabel(row.row.id,row.row.old_label_id,label.id)}>{label.name}</Button>

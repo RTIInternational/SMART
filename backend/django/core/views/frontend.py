@@ -40,8 +40,13 @@ class ProjectCode(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         ctx = super(ProjectCode, self).get_context_data(**kwargs)
-
+        project = Project.objects.get(pk=self.kwargs['pk'])
         ctx['pk'] = self.kwargs['pk']
+        admin = project_extras.proj_permission_level(project, self.request.user.profile) > 1
+        if admin:
+            ctx['admin'] = "true"
+        else:
+            ctx['admin'] = "false"
 
         return ctx
 

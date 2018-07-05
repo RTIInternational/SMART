@@ -4,6 +4,7 @@ import moment from 'moment';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
 import { getHistory } from './history';
+import { getLabelCounts } from './adminTables';
 
 export const POP_CARD = 'POP_CARD';
 export const PUSH_CARD = 'PUSH_CARD';
@@ -75,6 +76,7 @@ export const annotateCard = (card, labelID, projectID) => {
                 else {
                     dispatch(popCard())
                     dispatch(getHistory(projectID))
+                    dispatch(getLabelCounts(projectID))
                 }
             })
     }
