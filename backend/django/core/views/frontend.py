@@ -69,18 +69,6 @@ class ProjectAdmin(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         return ctx
 
 
-class ProjectSkew(LoginRequiredMixin, DetailView):
-    model = Project
-    template_name = 'projects/skew_fix.html'
-    permission_denied_message = 'You must be an Admin or Project Creator to access the Admin page.'
-    raise_exception = True
-
-    def test_func(self):
-        project = Project.objects.get(pk=self.kwargs['pk'])
-
-        return project_extras.proj_permission_level(project, self.request.user.profile) >= 2
-
-
 class ProjectList(LoginRequiredMixin, ListView):
     model = Project
     template_name = 'projects/list.html'
