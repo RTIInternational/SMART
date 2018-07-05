@@ -6,7 +6,8 @@ import { POP_CARD, PUSH_CARD, SET_MESSAGE, CLEAR_DECK, SET_LABELS } from '../act
 
 const initialState = {
     cards: [],
-    message: ''
+    message: '',
+    labels: []
 };
 
 const classifier = handleActions({

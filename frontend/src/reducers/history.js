@@ -4,8 +4,7 @@ import update from 'immutability-helper';
 import { SET_HIST_DATA } from '../actions/history'
 
 const initialState = {
-    history_data: [],
-    labels: []
+    history_data: []
 };
 
 const history = handleActions({

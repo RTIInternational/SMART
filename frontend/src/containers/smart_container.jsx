@@ -15,7 +15,7 @@ const mapStateToProps = (state) => {
         cards: state.classifier.cards,
         message: state.classifier.message,
         history_data: state.history.history_data,
-        labels: state.history.labels,
+        labels: state.classifier.labels,
         unlabeled_data: state.adminTables.unlabeled_data,
         label_counts: state.adminTables.label_counts
     };
