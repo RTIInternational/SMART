@@ -10,12 +10,13 @@ export const POP_CARD = 'POP_CARD';
 export const PUSH_CARD = 'PUSH_CARD';
 export const SET_MESSAGE = 'SET_MESSAGE';
 export const CLEAR_DECK = 'CLEAR_DECK';
+export const SET_LABELS = 'SET_LABELS';
 
 export const popCard = createAction(POP_CARD);
 export const pushCard = createAction(PUSH_CARD);
 export const setMessage = createAction(SET_MESSAGE);
 export const clearDeck = createAction(CLEAR_DECK);
-
+export const setLabels = createAction(SET_LABELS);
 
 // Create cards by reading from a queue
 export const fetchCards = (projectID) => {

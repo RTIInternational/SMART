@@ -2,13 +2,11 @@ import { createAction } from 'redux-actions';
 import 'whatwg-fetch';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
-import {setMessage} from './classifier'
+import {setMessage, setLabels} from './classifier'
 import { getLabelCounts } from './adminTables'
 export const SET_HIST_DATA = 'SET_HIST_DATA';
-export const SET_LABELS = 'SET_LABELS';
-
 export const set_hist_data = createAction(SET_HIST_DATA);
-export const set_labels = createAction(SET_LABELS);
+
 //Get the data for the history table
 export const getHistory = (projectID) => {
   let apiURL = `/api/get_label_history/${projectID}/`;
@@ -32,7 +30,7 @@ export const getHistory = (projectID) => {
                 const label = {"id":response.labels[i].pk, "name":response.labels[i].name};
                 all_labels.push(label);
             }
-            dispatch(set_labels(all_labels));
+            dispatch(setLabels(all_labels));
             var all_data = [];
             for (let i = 0; i < response.data.length; i++) {
                 const row = {
