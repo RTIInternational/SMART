@@ -87,6 +87,7 @@ class ProjectUpdateForm(forms.ModelForm):
     name = forms.CharField()
     description = forms.CharField(required=False)
     data = forms.FileField(required=False)
+    cb_data = forms.FileField(required=False)
 
     def __init__(self, *args, **kwargs):
         self.project_labels = kwargs.pop('labels', None)
@@ -95,8 +96,12 @@ class ProjectUpdateForm(forms.ModelForm):
     def clean_data(self):
         data = self.cleaned_data.get('data', False)
         labels = self.project_labels
+        cb_data = self.cleaned_data.get('cb_data',False)
         if data:
             return clean_data_helper(data, labels)
+        if cb_data:
+            return cleanCodebookDataHelper(cb_data)
+
 
 
 class LabelForm(forms.ModelForm):

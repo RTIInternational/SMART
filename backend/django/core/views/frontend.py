@@ -322,6 +322,16 @@ class ProjectUpdate(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
                 f_data = form.cleaned_data.get('data', False)
                 if isinstance(f_data, pd.DataFrame):
                     upload_data(f_data, self.object)
+
+                # CodeBook
+                cb_data = form.cleaned_data.get('cb_data',False)
+                if cb_data != "":
+                    cb_filepath = util.save_codebook_file(cb_data, self.object.pk)
+                else:
+                    cb_filepath = ""
+                self.object.codebook_file = cb_filepath
+                self.object.save()
+
                 return redirect(self.get_success_url())
             else:
                 return self.render_to_response(context)
