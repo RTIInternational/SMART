@@ -101,6 +101,13 @@ class LabelForm(forms.ModelForm):
     name = forms.CharField()
     description = forms.CharField()
 
+'''class LabelUpdateForm(forms.ModelForm):
+    class Meta:
+        model = Label
+        fields = ['description']
+    description = forms.CharField()
+    def __init__(self, *args, **kwargs):
+        super(LabelUpdateForm, self).__init__(*args, **kwargs)'''
 
 class ProjectPermissionsForm(forms.ModelForm):
     class Meta:
@@ -121,6 +128,7 @@ class ProjectPermissionsForm(forms.ModelForm):
 
 
 LabelFormSet = forms.inlineformset_factory(Project, Label, form=LabelForm, min_num=2, validate_min=True, extra=0, can_delete=True)
+#LabelUpdateFormSet = forms.inlineformset_factory(Project, Label, form=LabelUpdateForm, extra=0, can_delete=False)
 PermissionsFormSet = forms.inlineformset_factory(Project, ProjectPermissions, form=ProjectPermissionsForm, extra=1, can_delete=True)
 
 
@@ -135,7 +143,7 @@ class AdvancedWizardForm(forms.ModelForm):
         model = Project
         fields = ['learning_method']
 
-    use_active_learning = forms.BooleanField(initial=True, required=False)
+    use_active_learning = forms.BooleanField(initial=False, required=False)
     active_l_choices = copy.deepcopy(Project.ACTIVE_L_CHOICES)
     #remove random from the options
     active_l_choices.remove(("random","Randomly (No Active Learning)"))

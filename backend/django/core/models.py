@@ -29,7 +29,7 @@ class Project(models.Model):
     name = models.TextField()
     description = models.TextField(blank=True)
     creator = models.ForeignKey('Profile')
-
+    codebook_file = models.TextField(default='')
     #####Advanced options#####
     #the current options are 'random', 'least confident', 'entropy', and 'margin sampling'
     ACTIVE_L_CHOICES = [
