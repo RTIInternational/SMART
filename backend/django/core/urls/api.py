@@ -23,6 +23,7 @@ urlpatterns = [
     url(r'^skip_data/(?P<pk>\d+)/$', api.skip_data),
     url(r'^leave_coding_page/$', api.leave_coding_page),
     url(r'^download_data/(?P<pk>\d+)/$', api.download_data),
+    url(r'^download_codebook/(?P<pk>\d+)/$', api.download_codebook),
     url(r'^label_distribution/(?P<pk>\d+)/$', api.label_distribution),
     url(r'^label_distribution_inverted/(?P<pk>\d+)/$', api.label_distribution_inverted),
     url(r'^label_timing/(?P<pk>\d+)/$', api.label_timing),

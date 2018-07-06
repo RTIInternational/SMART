@@ -16,6 +16,7 @@ from django.db import transaction
 
 import csv
 import io
+import os
 import math
 import random
 import pandas as pd
@@ -59,6 +60,19 @@ def download_data(request, pk):
 
     return response
 
+@api_view(['GET'])
+def download_codebook(request, pk):
+    """Given the project id, get the codebook file
+    """
+    fpath = os.path.join(settings.CODEBOOK_FILE_PATH, 'project_' + str(pk) + '_codebook.pdf')
+    if os.path.isfile(fpath):
+        with open(fpath,"rb") as file:
+            codebook = file.read()
+            response = HttpResponse(codebook, content_type='application/pdf')
+            response['Content-Disposition'] = 'attachment;'
+            return response
+    else:
+        raise ValueError('There was no codebook for the project: ' + str(project_pk))
 
 @api_view(['GET'])
 def label_distribution_inverted(request, pk):
@@ -148,7 +162,6 @@ def label_timing(request, pk):
             dataset.append(temp)
 
     return Response({'data': dataset, 'yDomain': yDomain})
-
 
 @api_view(['GET'])
 def model_metrics(request, pk):

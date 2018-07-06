@@ -84,6 +84,9 @@
                     </a>
                     {% endif %}
                 </div>
+                {% if project.codebook_file != "" %}
+                <a class="btn btn-primary" id="download_cb_btn">Download CodeBook</a>
+                {% endif %}
                 {% if project|proj_permission_level:request.user.profile > 1 %}
                 <div class="btn-group pull-right" role="group" aria-label="Admin Controls">
                     {% if project.labeled_data_count > 0 %}
@@ -127,5 +130,31 @@ $("#download_btn").on("click", function() {
     xhttp.responseType = 'blob';
     xhttp.send();
 });
+
+/*
+ *  When download button is pressed request the pdf file, add the data as a blob
+ *  to a new anchor element, and trigger a click event on that anchor element
+ *  to prompt the download file popup
+ */
+$("#download_cb_btn").on("click", function() {
+    xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+        var a, today;
+        if (xhttp.readyState === 4 && xhttp.status === 200) {
+            a = document.createElement('a');
+            a.href = window.URL.createObjectURL(xhttp.response);
+            a.download = "project_" + {{ project.pk }} + "_codebook.pdf";
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            return a.click();
+        }
+    };
+    xhttp.open("GET", "/api/download_codebook/" + {{ project.pk }} + "/", true);
+    xhttp.setRequestHeader("Content-Type", "application/json");
+    xhttp.responseType = 'blob';
+    xhttp.send();
+});
+
+
 </script>
 {% endblock %}

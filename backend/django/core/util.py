@@ -617,6 +617,15 @@ def save_data_file(df, project_pk):
 
     return fpath
 
+def save_codebook_file(data, project_pk):
+    """Given the django data file, save it as the codebook for that project
+    make sure to overwrite any project that is already there/
+
+    """
+    fpath = os.path.join(settings.CODEBOOK_FILE_PATH, 'project_' + str(project_pk) + '_codebook.pdf')
+    with open(fpath, "wb") as outputFile:
+        outputFile.write(data.read())
+    return fpath
 
 def create_tfidf_matrix(data, max_df=0.95, min_df=0.05):
     """Create a TF-IDF matrix. Make sure to order the data by df_idx so that we

@@ -4,5 +4,5 @@ RUN apt-get update && apt-get install -y netcat-traditional
 WORKDIR /code
 ADD ./requirements.txt /code/requirements.txt
 RUN pip install --use-wheel -r requirements.txt
-RUN mkdir -p /data/data_files /data/tf_idf /data/model_pickles
+RUN mkdir -p /data/data_files /data/tf_idf /data/model_pickles /data/code_books
 EXPOSE 8000

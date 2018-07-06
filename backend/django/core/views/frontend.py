@@ -14,13 +14,15 @@ from formtools.wizard.storage import get_storage
 
 import pandas as pd
 import math
+import os
 from celery import chord
 
 from core.models import (Profile, Project, ProjectPermissions, Model, Data, Label,
                          DataLabel, DataPrediction, Queue, DataQueue, AssignedData,
                          TrainingSet)
 from core.forms import (ProjectUpdateForm, PermissionsFormSet, LabelFormSet,
-                        ProjectWizardForm, DataWizardForm, AdvancedWizardForm)
+                        ProjectWizardForm, DataWizardForm, AdvancedWizardForm,
+                        CodeBookWizardForm)
 from core.serializers import DataSerializer
 from core.templatetags import project_extras
 import core.util as util
@@ -129,7 +131,6 @@ def upload_data(form_data, project, queue=None):
           tasks.send_check_and_trigger_model_task.si(project.pk)
     ).apply_async()
 
-
 class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
     file_storage = FileSystemStorage(location=settings.DATA_DIR)
     form_list = [
@@ -137,6 +138,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         ('labels', LabelFormSet),
         ('permissions', PermissionsFormSet),
         ('advanced', AdvancedWizardForm),
+        ('codebook', CodeBookWizardForm),
         ('data', DataWizardForm)
     ]
     template_list = {
@@ -144,6 +146,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         'labels': 'projects/create_wizard_labels.html',
         'permissions': 'projects/create_wizard_permissions.html',
         'advanced':'projects/create_wizard_advanced.html',
+        'codebook':'projects/create_wizard_codebook.html',
         'data': 'projects/create_wizard_data.html'
     }
 
@@ -224,8 +227,8 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         labels = form_dict['labels']
         permissions = form_dict['permissions']
         advanced = form_dict['advanced']
-
         data = form_dict['data']
+        codebook_data = form_dict['codebook']
 
         with transaction.atomic():
             # Project
@@ -234,6 +237,16 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
             proj_obj.creator = self.request.user.profile
             # Advanced Options
+            proj_obj.save()
+            proj_pk = proj_obj.pk
+            # Save the codebook file
+
+            cb_data =  codebook_data.cleaned_data['data']
+            if cb_data != "":
+                cb_filepath = util.save_codebook_file(cb_data, proj_pk)
+            else:
+                cb_filepath = ""
+            proj_obj.codebook_file = cb_filepath
             proj_obj.learning_method = advanced_data["learning_method"]
             proj_obj.save()
 

@@ -163,6 +163,7 @@ class Dev(Configuration):
     TF_IDF_PATH = os.path.join(DATA_DIR, 'tf_idf')
     MODEL_PICKLE_PATH = os.path.join(DATA_DIR, 'model_pickles')
     PROJECT_FILE_PATH = os.path.join(DATA_DIR, 'data_files')
+    CODEBOOK_FILE_PATH = os.path.join(DATA_DIR, 'code_books')
 
     AUTH_USER_MODEL = 'auth.User'
 

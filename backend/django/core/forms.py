@@ -7,6 +7,7 @@ from django.forms.widgets import RadioSelect
 import copy
 
 
+
 def clean_data_helper(data, supplied_labels):
     ALLOWED_TYPES = [
         'text/csv',
@@ -72,6 +73,11 @@ def clean_data_helper(data, supplied_labels):
 
     return data
 
+def cleanCodebookDataHelper(data):
+    if not (data.content_type == "application/pdf"):
+        raise ValidationError("File type is not supported. Please upload a PDF.")
+    return data
+
 
 class ProjectUpdateForm(forms.ModelForm):
     class Meta:
@@ -99,15 +105,7 @@ class LabelForm(forms.ModelForm):
         fields = '__all__'
 
     name = forms.CharField()
-    description = forms.CharField()
-
-'''class LabelUpdateForm(forms.ModelForm):
-    class Meta:
-        model = Label
-        fields = ['description']
-    description = forms.CharField()
-    def __init__(self, *args, **kwargs):
-        super(LabelUpdateForm, self).__init__(*args, **kwargs)'''
+    description = forms.CharField(required=False, initial="")
 
 class ProjectPermissionsForm(forms.ModelForm):
     class Meta:
@@ -128,9 +126,7 @@ class ProjectPermissionsForm(forms.ModelForm):
 
 
 LabelFormSet = forms.inlineformset_factory(Project, Label, form=LabelForm, min_num=2, validate_min=True, extra=0, can_delete=True)
-#LabelUpdateFormSet = forms.inlineformset_factory(Project, Label, form=LabelUpdateForm, extra=0, can_delete=False)
 PermissionsFormSet = forms.inlineformset_factory(Project, ProjectPermissions, form=ProjectPermissionsForm, extra=1, can_delete=True)
-
 
 class ProjectWizardForm(forms.ModelForm):
     class Meta:
@@ -171,3 +167,16 @@ class DataWizardForm(forms.Form):
         data = self.cleaned_data.get('data', False)
         labels = self.supplied_labels
         return clean_data_helper(data, labels)
+
+class CodeBookWizardForm(forms.Form):
+    data = forms.FileField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(CodeBookWizardForm, self).__init__(*args, **kwargs)
+
+    def clean_data(self):
+        data = self.cleaned_data.get('data', False)
+        if data:
+            return cleanCodebookDataHelper(data)
+        else:
+            return ""
