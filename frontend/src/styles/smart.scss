@@ -4,7 +4,6 @@
 header {
     @include border($attribute: border-top, $size: 8px, $color: $primary-color-dark);
     @include flexbox;
-    @include justify-content(space-between);
     @include align-items(center);
 
     height: 64px;
@@ -13,6 +12,10 @@ header {
     background: $primary-color;
 
     box-shadow: $box-shadow;
+
+    a:focus, a:hover, a:active {
+        text-decoration-color: white;
+    }
 
     h1 {
         color: $primary-color-text;
@@ -163,12 +166,39 @@ table.dataTable tbody td.no-padding {
     display: none;
 }
 
-#choose_method_box{
+#choose_method_box {
     margin-left: 30px;
     margin-bottom: 5px;
     border: 1px solid lightgrey;
 }
 
-.choose_method{
+.choose_method {
     margin-left: 5px;
+}
+
+.margin-left {
+    margin-left: 15px;
+}
+
+.btn-link {
+    color: white;
+}
+
+.btn-link:hover, .btn-link:focus {
+    color: white;
+}
+
+.download_btn {
+    cursor: pointer;
+}
+
+.dropdown-divider {
+    height: 0;
+    margin: 0.5rem 0;
+    overflow: hidden;
+    border-top: 1px solid #E9ECEF;
+}
+
+#user_buttons {
+    margin-left: auto;
 }

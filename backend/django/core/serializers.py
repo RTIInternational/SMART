@@ -56,7 +56,7 @@ class QueueSerializer(serializers.HyperlinkedModelSerializer):
     data = serializers.StringRelatedField(many=True)
     class Meta:
         model = Queue
-        fields = ('profile', 'project', 'length', 'data')
+        fields = ('profile', 'project','admin' ,'length', 'data')
 
 class AssignedDataSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:

@@ -1,5 +1,5 @@
 {% load render_bundle from webpack_loader %}
-
+{% load project_extras %}
 <!doctype html>
 <html lang="en">
     <head>
@@ -18,16 +18,37 @@
         <header>
             <a href="/"><h1>SMART</h1></a>
             {% if user.is_authenticated %}
-            <div class="btn-group">
-                <a class="btn btn-primary" href="{% url 'projects:project_list' %}">Projects</a>
-                <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                {{ user }} <span class="caret"></span>
+            <div class="margin-left">
+              {% if project.pk %}
+              <div class="dropdown">
+                <button type="button" class="dropdown-toggle btn btn-link" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  Project <span class="caret" ></span>
                 </button>
-                <ul class="dropdown-menu dropdown-menu-right">
-                    <li><a href="{% url 'account_email' %}">Manage Emails</a></li>
-                    <li><a href="{% url 'account_change_password' %}">Manage Password</a></li>
-                    <li><a href="{% url 'account_logout' %}">Logout</a></li>
+                <ul class="dropdown-menu">
+                  <li><a class="dropdown-item" href="{% url 'projects:project_list' %}">Projects</a></li>
+                  <div class="dropdown-divider"></div>
+                  <li><a class="dropdown-item" href="{{ project.get_absolute_url }}">Details</a></li>
+                  <li><a class="dropdown-item" href="{% url 'projects:project_code' project.pk %}">Annotate</a></li>
+                  {% if project|proj_permission_level:request.user.profile > 1 %}
+                    <li><a class="dropdown-item" href="{% url 'projects:project_admin' project.pk %}">Admin</a></li>
+                  {% endif %}
                 </ul>
+              </div>
+              {% else %}
+              <a role="button" class="btn btn-link" href="/">Projects</a>
+              {% endif %}
+            </div>
+            <div id="user_buttons" class="btn-group">
+                <div class="dropdown">
+                  <button type="button" class="btn btn-link dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    {{ user }} <span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-right">
+                      <li><a href="{% url 'account_email' %}">Manage Emails</a></li>
+                      <li><a href="{% url 'account_change_password' %}">Manage Password</a></li>
+                      <li><a href="{% url 'account_logout' %}">Logout</a></li>
+                  </ul>
+                </div>
             </div>
             {% endif %}
         </header>
