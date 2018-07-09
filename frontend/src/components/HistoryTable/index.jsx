@@ -11,7 +11,11 @@ const columns = [
   },
   {
     Header: "Data",
-    accessor: "data"
+    accessor: "data",
+    filterMethod: (filter, row) => {
+      const id = filter.pivotId || filter.id;
+      return row[id] !== undefined ? String(row[id]).toLowerCase().includes(filter.value.toLowerCase()) : true
+    }
   },
   {
     Header: "Old Label",
@@ -54,9 +58,13 @@ class HistoryTable extends React.Component {
             <p>{row.row.data}</p>
             {labels[0].map( (label) => (
               <Button key={label.id.toString() + "_" + row.row.id.toString()}
-              onClick={() => changeLabel(row.row.id,row.row.old_label_id,label.id)}>{label.name}</Button>
+              onClick={() => changeLabel(row.row.id,row.row.old_label_id,label.id)}
+              bsStyle="primary"
+              >{label.name}</Button>
             ))}
-            <Button onClick={() => changeToSkip(row.row.id,row.row.old_label_id)}>Skip</Button>
+            <Button onClick={() => changeToSkip(row.row.id,row.row.old_label_id)}
+            bsStyle="info"
+            >Skip</Button>
             </div>
           );
         }}

@@ -1,7 +1,7 @@
 import { handleActions } from 'redux-actions';
 import update from 'immutability-helper';
 
-import { SET_UNLABELED_DATA, SET_LABEL_COUNTS } from '../actions/adminTables'
+import { SET_UNLABELED_DATA, SET_LABEL_COUNTS, SET_ADMIN_DATA } from '../actions/adminTables'
 
 const initialState = {
     unlabeled_data: [],
@@ -14,6 +14,9 @@ const adminTables = handleActions({
   },
   [SET_LABEL_COUNTS]: (state, action) => {
     return update(state, {label_counts: { $set: [action.payload] } } )
+  },
+  [SET_ADMIN_DATA]: (state, action) => {
+    return update(state, {admin_data: { $set: [action.payload] } } )
   }
 }, initialState);
 

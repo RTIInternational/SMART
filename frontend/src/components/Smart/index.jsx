@@ -5,13 +5,15 @@ import { Tabs, Tab, ProgressBar } from "react-bootstrap";
 import Deck from '../Deck';
 import HistoryTable from '../HistoryTable';
 import Skew from '../Skew';
+import AdminTable from '../AdminTable';
 const ADMIN = window.ADMIN
 
 const Smart = ({fetchCards, annotateCard,
   passCard, popCard, cards, message,
   getHistory, history_data, labels, changeLabel,
   changeToSkip, getUnlabeled, unlabeled_data,
-  skewLabel, getLabelCounts, label_counts}) => {
+  skewLabel, getLabelCounts, label_counts, getAdmin,
+  admin_data, adminLabel}) => {
     var progress = 100;
     var start_card = 0;
     var num_cards = 0;
@@ -66,6 +68,16 @@ const Smart = ({fetchCards, annotateCard,
             />
           </div>
         </Tab>
+        <Tab eventKey={4} disabled={!ADMIN} title="Skipped Cards" className="full card">
+          <div className="cardface">
+            <AdminTable
+            getAdmin={getAdmin}
+            admin_data={admin_data}
+            labels={labels}
+            adminLabel={adminLabel}
+            />
+          </div>
+        </Tab>
       </Tabs>
   );
 }
@@ -75,7 +87,8 @@ Smart.propTypes = {
     message: PropTypes.string,
     history_data: PropTypes.arrayOf(PropTypes.object),
     labels: PropTypes.arrayOf(PropTypes.object),
-    label_counts: PropTypes.arrayOf(PropTypes.object)
+    label_counts: PropTypes.arrayOf(PropTypes.object),
+    admin_data: PropTypes.arrayOf(PropTypes.object)
 };
 
 export default Smart;

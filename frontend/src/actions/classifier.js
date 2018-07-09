@@ -4,7 +4,7 @@ import moment from 'moment';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
 import { getHistory } from './history';
-import { getLabelCounts } from './adminTables';
+import { getLabelCounts, getAdmin } from './adminTables';
 
 export const POP_CARD = 'POP_CARD';
 export const PUSH_CARD = 'PUSH_CARD';
@@ -84,7 +84,7 @@ export const annotateCard = (card, labelID, projectID) => {
 }
 
 //skip a card and put it in the admin table
-export const passCard = (card) => {
+export const passCard = (card, projectID) => {
     let payload = {
     }
     let apiURL = `/api/skip_data/${card.text.pk}/`;
@@ -107,6 +107,7 @@ export const passCard = (card) => {
                 }
                 else {
                     dispatch(popCard())
+                    dispatch(getAdmin(projectID))
                 }
             })
     }

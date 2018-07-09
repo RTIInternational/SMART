@@ -2,8 +2,8 @@ import { createAction } from 'redux-actions';
 import 'whatwg-fetch';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
-import {setMessage, setLabels} from './classifier'
-import { getLabelCounts } from './adminTables'
+import { setMessage, setLabels } from './classifier';
+import { getLabelCounts, getAdmin } from './adminTables';
 export const SET_HIST_DATA = 'SET_HIST_DATA';
 export const set_hist_data = createAction(SET_HIST_DATA);
 
@@ -104,6 +104,7 @@ export const changeToSkip = (dataID, oldLabelID, projectID) => {
               }
               else {
                   dispatch(getHistory(projectID))
+                  dispatch(getAdmin(projectID))
               }
           })
   }

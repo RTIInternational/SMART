@@ -3,10 +3,10 @@ import { connect } from 'react-redux';
 
 import { fetchCards, annotateCard, passCard, popCard } from '../actions/classifier';
 import { getHistory, changeLabel, changeToSkip } from '../actions/history';
-import { getUnlabeled, skewLabel, getLabelCounts } from '../actions/adminTables';
+import { getUnlabeled, skewLabel, getLabelCounts, adminLabel, getAdmin } from '../actions/adminTables';
 import Smart from '../components/Smart';
 
-const PROJECT_ID = window.PROJECT_ID
+const PROJECT_ID = window.PROJECT_ID;
 
 const SmartContainer = (props) => <Smart {...props} />;
 
@@ -17,7 +17,8 @@ const mapStateToProps = (state) => {
         history_data: state.history.history_data,
         labels: state.classifier.labels,
         unlabeled_data: state.adminTables.unlabeled_data,
-        label_counts: state.adminTables.label_counts
+        label_counts: state.adminTables.label_counts,
+        admin_data: state.adminTables.admin_data
     };
 };
 
@@ -30,7 +31,7 @@ const mapDispatchToProps = (dispatch) => {
             dispatch(annotateCard(dataID, labelID, PROJECT_ID))
         },
         passCard: (dataID) => {
-            dispatch(passCard(dataID))
+            dispatch(passCard(dataID, PROJECT_ID))
         },
         popCard: () => {
             dispatch(popCard())
@@ -52,6 +53,12 @@ const mapDispatchToProps = (dispatch) => {
         },
         getLabelCounts: () => {
             dispatch(getLabelCounts(PROJECT_ID))
+        },
+        adminLabel: (dataID, labelID) => {
+            dispatch(adminLabel(dataID, labelID, PROJECT_ID))
+        },
+        getAdmin: () => {
+            dispatch(getAdmin(PROJECT_ID))
         }
     };
 };
