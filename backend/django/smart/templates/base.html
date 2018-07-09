@@ -29,14 +29,8 @@
                   <div class="dropdown-divider"></div>
                   <li><a class="dropdown-item" href="{{ project.get_absolute_url }}">Details</a></li>
                   <li><a class="dropdown-item" href="{% url 'projects:project_code' project.pk %}">Annotate</a></li>
-                  {% if project.creator == user.profile %}
+                  {% if project|proj_permission_level:request.user.profile > 1 %}
                     <li><a class="dropdown-item" href="{% url 'projects:project_admin' project.pk %}">Admin</a></li>
-                  {% else %}
-                    {% for perm in project.projectpermissions_set.all %}
-                      {% if perm.profile == user.profile or perm.permission == "ADMIN" %}
-                      <li><a class="dropdown-item" href="{% url 'projects:project_admin' project.pk %}">Admin</a></li>
-                      {% endif %}
-                    {% endfor %}
                   {% endif %}
                 </ul>
               </div>
