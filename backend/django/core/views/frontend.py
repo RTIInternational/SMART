@@ -47,6 +47,7 @@ class ProjectCode(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             ctx['admin'] = "true"
         else:
             ctx['admin'] = "false"
+        ctx['project'] = Project.objects.get(pk=self.kwargs['pk'])
 
         return ctx
 

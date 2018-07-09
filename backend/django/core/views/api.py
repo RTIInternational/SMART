@@ -290,6 +290,23 @@ def data_unlabeled_table(request, pk):
 
     return Response({'data': data})
 
+@api_view(['GET'])
+def data_admin_table(request, pk):
+    project = Project.objects.get(pk=pk)
+    queue = Queue.objects.filter(project=project,admin=True)
+
+    data_objs = DataQueue.objects.filter(queue=queue)
+
+    data = []
+    for d in data_objs:
+        temp = {
+            'Text': d.data.text,
+            'ID': d.data.id
+        }
+        data.append(temp)
+
+    return Response({'data': data})
+
 
 @api_view(['GET'])
 def get_labels(request, pk):
@@ -328,6 +345,35 @@ def label_skew_label(request, pk):
                                 timestamp = timezone.now()
                                 )
 
+    return Response({'test':'success'})
+
+@api_view(['POST'])
+def label_admin_label(request, pk):
+    '''This is called when an admin manually labels a datum on the admin
+    annotation page. It labels a single datum with the given label and profile,
+    with null as the time.
+    It also removes the data from the admin queue.
+    '''
+    datum = Data.objects.get(pk=pk)
+    project = datum.project
+    label = Label.objects.get(pk=request.data['labelID'])
+    profile = request.user.profile
+
+    current_training_set = project.get_current_training_set()
+
+    with transaction.atomic():
+        queue = project.queue_set.get(admin=True)
+        DataLabel.objects.create(data=datum,
+                                label=label,
+                                profile=profile,
+                                training_set=current_training_set,
+                                time_to_label=None,
+                                timestamp=timezone.now()
+                                )
+
+        DataQueue.objects.filter(data=datum, queue=queue).delete()
+
+    util.check_and_trigger_model(datum)
     return Response({'test':'success'})
 
 
@@ -379,12 +425,15 @@ def get_label_history(request, pk):
 
     results = []
     for d in data:
-        if d.timestamp.minute < 10:
-            minute = "0" + str(d.timestamp.minute)
+        if d.timestamp:
+            if d.timestamp.minute < 10:
+                minute = "0" + str(d.timestamp.minute)
+            else:
+                minute = str(d.timestamp.minute)
+            new_timestamp = str(d.timestamp.date()) + ", " + str(d.timestamp.hour)\
+            + ":" + minute + "." + str(d.timestamp.second)
         else:
-            minute = str(d.timestamp.minute)
-        new_timestamp = str(d.timestamp.date()) + ", " + str(d.timestamp.hour)\
-        + ":" + minute + "." + str(d.timestamp.second)
+            new_timestamp = "None"
         temp_dict = {"data":d.data.text,
         "id": d.data.id,"label":d.label.name,
         "labelID": d.label.id ,"timestamp":new_timestamp}
@@ -408,6 +457,7 @@ def skip_data(request, pk):
     data = Data.objects.get(pk=pk)
     profile = request.user.profile
     project = data.project
+    queue = project.queue_set.get(admin=False)
     response = {}
 
     # Make sure coder still has permissions before labeling data
@@ -415,6 +465,8 @@ def skip_data(request, pk):
         util.move_skipped_to_admin_queue(data, profile, project)
     else:
         response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
+
+    util.fill_queue(queue,project.learning_method)
     return Response(response)
 
 @api_view(['POST'])
