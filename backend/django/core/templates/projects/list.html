@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load project_extras %}
 {% block content %}
 <div class="card full">
   <div class="cardface">
@@ -12,11 +13,13 @@
                 <td>{{ project.name }}</td>
                 <td><a href="{{ project.get_absolute_url }}">Details</a></td>
                 <td><a href="{% url 'projects:project_code' project.pk %}">Annotate</a></td>
+                {% if project|proj_permission_level:request.user.profile > 1 %}
                 <td><a href="{% url 'projects:project_admin' project.pk %}">Admin Dashboard</a></td>
-                {% if project.labeled_data_count > 0 %}
-                <td><a class="download_btn" name="{{ project.pk }}" onclick="download_data({{project.pk}})">Download Labeled Data</a></td>
-                {% else %}
-                <td><p>No Labeled Data to Download</p></td>
+                  {% if project.labeled_data_count > 0 %}
+                  <td><a class="download_btn" name="{{ project.pk }}" onclick="download_data({{project.pk}})">Download Labeled Data</a></td>
+                  {% else %}
+                  <td><p>No Labeled Data to Download</p></td>
+                  {% endif %}
                 {% endif %}
               </tr>
               {% endfor %}
