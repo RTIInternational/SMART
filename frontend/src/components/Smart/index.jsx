@@ -24,7 +24,7 @@ const Smart = ({fetchCards, annotateCard,
         label = start_card.toString()+" out of "+num_cards.toString();
     }
     return (
-      <Tabs defaultActiveKey={1} id="data_tabs">
+      <Tabs defaultActiveKey={1} id="data_tabs" >
         <Tab eventKey={1} title="Annotate Data">
           <ProgressBar >
             <ProgressBar
@@ -43,7 +43,8 @@ const Smart = ({fetchCards, annotateCard,
               getHistory={getHistory}
           />
         </Tab>
-        <Tab eventKey={2} title="History">
+        <Tab eventKey={2} title="History" className="full card">
+          <div className="cardface">
           <HistoryTable
             getHistory={getHistory}
             history_data={history_data}
@@ -51,16 +52,19 @@ const Smart = ({fetchCards, annotateCard,
             changeLabel={changeLabel}
             changeToSkip={changeToSkip}
           />
+          </div>
         </Tab>
-        <Tab eventKey={3} disabled={!ADMIN} title="Fix Skew">
-          <Skew
-          getUnlabeled={getUnlabeled}
-          unlabeled_data={unlabeled_data}
-          labels={labels}
-          skewLabel={skewLabel}
-          getLabelCounts={getLabelCounts}
-          label_counts={label_counts}
-          />
+        <Tab eventKey={3} disabled={!ADMIN} title="Fix Skew" className="full card">
+          <div className="cardface">
+            <Skew
+            getUnlabeled={getUnlabeled}
+            unlabeled_data={unlabeled_data}
+            labels={labels}
+            skewLabel={skewLabel}
+            getLabelCounts={getLabelCounts}
+            label_counts={label_counts}
+            />
+          </div>
         </Tab>
       </Tabs>
   );
