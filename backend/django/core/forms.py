@@ -144,7 +144,7 @@ class AdvancedWizardForm(forms.ModelForm):
         model = Project
         fields = ['learning_method']
 
-    use_active_learning = forms.BooleanField(initial=False, required=False)
+    use_active_learning = forms.BooleanField(initial=True, required=False)
     active_l_choices = copy.deepcopy(Project.ACTIVE_L_CHOICES)
     #remove random from the options
     active_l_choices.remove(("random","Randomly (No Active Learning)"))
