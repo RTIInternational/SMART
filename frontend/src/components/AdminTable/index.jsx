@@ -13,8 +13,13 @@ const columns = [
     Header: "Data",
     accessor: "data",
     filterMethod: (filter, row) => {
-      const id = filter.pivotId || filter.id;
-      return row[id] !== undefined ? String(row[id]).toLowerCase().includes(filter.value.toLowerCase()) : true
+      if(String(row["data"]).toLowerCase().includes(filter.value.toLowerCase()))
+      {
+        return true;
+      }
+      else {
+        return false;
+      }
     }
   }
 ];
@@ -28,7 +33,7 @@ class AdminTable extends React.Component {
 
   render() {
   const {admin_data, labels, adminLabel} = this.props;
-  if(admin_data)
+  if(admin_data && admin_data.length > 0)
   {
     var table_data = admin_data[0];
   }
@@ -36,11 +41,22 @@ class AdminTable extends React.Component {
     table_data = [];
   }
 
+  if(labels && labels.length > 0)
+  {
+    var label_list = labels[0];
+  }
+  else {
+    label_list = [];
+  }
+
   var expanded = {}
   for(var i = 0; i < table_data.length; i++)
   {
     expanded[i] = true;
   }
+
+
+
   return (
     <div>
     <h3>Instructions</h3>
@@ -56,7 +72,7 @@ class AdminTable extends React.Component {
           return (
             <div>
             <p>{row.row.data}</p>
-            {labels[0].map( (label) => (
+            {label_list.map( (label) => (
               <Button key={label.id.toString() + "_" + row.row.id.toString()}
               onClick={() => adminLabel(row.row.id,label.id)}
               bsStyle="primary"

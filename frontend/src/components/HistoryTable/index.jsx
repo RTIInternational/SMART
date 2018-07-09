@@ -13,8 +13,13 @@ const columns = [
     Header: "Data",
     accessor: "data",
     filterMethod: (filter, row) => {
-      const id = filter.pivotId || filter.id;
-      return row[id] !== undefined ? String(row[id]).toLowerCase().includes(filter.value.toLowerCase()) : true
+      if(String(row["data"]).toLowerCase().includes(filter.value.toLowerCase()))
+      {
+        return true;
+      }
+      else {
+        return false;
+      }
     }
   },
   {
