@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from .models import Project, ProjectPermissions, Label
 import pandas as pd
 from pandas.errors import EmptyDataError, ParserError
-from django.forms.widgets import RadioSelect
+from django.forms.widgets import RadioSelect, Textarea
 import copy
 
 
@@ -110,7 +110,7 @@ class LabelForm(forms.ModelForm):
         fields = '__all__'
 
     name = forms.CharField()
-    description = forms.CharField(required=False, initial="")
+    description = forms.CharField(required=False, initial="", widget=Textarea())
 
 class ProjectPermissionsForm(forms.ModelForm):
     class Meta:

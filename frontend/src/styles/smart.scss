@@ -202,3 +202,13 @@ table.dataTable tbody td.no-padding {
 #user_buttons {
     margin-left: auto;
 }
+
+.no_word_wrap {
+    white-space: pre-line !important;
+    word-wrap: break-word;
+}
+
+.label_table {
+    height: 300px;
+    overflow: scroll;
+}

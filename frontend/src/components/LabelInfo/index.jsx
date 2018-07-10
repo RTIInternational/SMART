@@ -11,11 +11,31 @@ const label_columns = [
   },
   {
     Header: "Label",
-    accessor: "name"
+    accessor: "name",
+    filterMethod: (filter, row) => {
+      if(String(row["name"]).toLowerCase().includes(filter.value.toLowerCase()))
+      {
+        return true;
+      }
+      else {
+        return false;
+      }
+    }
   },
   {
     Header: "Description",
-    accessor: "description"
+    accessor: "description",
+    className: "no_word_wrap",
+    filterMethod: (filter, row) => {
+      if(String(row["description"]).toLowerCase().includes(filter.value.toLowerCase()))
+      {
+        return true;
+      }
+      else {
+        return false;
+      }
+    }
+
   }
 ];
 
@@ -53,8 +73,9 @@ class LabelInfo extends React.Component {
         <ReactTable
           data={labels[0]}
           columns={label_columns}
-          filterable={false}
+          filterable={true}
           minRows={2}
+          className="label_table"
         />
       </div>
     )
