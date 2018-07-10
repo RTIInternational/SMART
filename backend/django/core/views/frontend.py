@@ -42,6 +42,7 @@ class ProjectCode(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         ctx = super(ProjectCode, self).get_context_data(**kwargs)
 
         ctx['pk'] = self.kwargs['pk']
+        ctx['project'] = Project.objects.get(pk=self.kwargs['pk'])
 
         return ctx
 

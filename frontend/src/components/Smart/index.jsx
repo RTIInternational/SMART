@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Button, ButtonToolbar, Clearfix, Well, Tooltip, OverlayTrigger } from "react-bootstrap";
+import { Button, ButtonToolbar, Clearfix, Well, Tooltip, OverlayTrigger, ProgressBar } from "react-bootstrap";
 import Card from '../Card';
 class Smart extends React.Component {
 
@@ -9,9 +9,20 @@ class Smart extends React.Component {
   }
 
   render(){
-    const { message, cards, passCard, annotateCard } = this.props;
-    const cardCount = cards.length;
-    if (cardCount > 0) {
+    const { message, cards, passCard, annotateCard, fetchCards } = this.props;
+
+    var progress = 100;
+    var start_card = 0;
+    var num_cards = 0;
+    var label = "Complete";
+    if(!(cards === undefined) && cards.length > 0)
+    {
+        num_cards = cards[cards.length-1].id + 1;
+        start_card = cards[0].id + 1;
+        progress = (cards[0].id/cards[cards.length-1].id) * 100;
+        label = start_card.toString()+" out of "+num_cards.toString();
+    }
+    if (!(cards === undefined) && cards.length > 0) {
       var card = (
       <Card className="full" key={cards[0].id}>
           <h2>Card {cards[0].id + 1}</h2>
@@ -46,6 +57,12 @@ class Smart extends React.Component {
 
     return (
         <div className="deck">
+          <ProgressBar >
+            <ProgressBar
+            style={{minWidth: 60}}
+            label={label}
+            now={progress}/>
+          </ProgressBar>
             {card}
         </div>
     );
