@@ -72,7 +72,7 @@ def download_codebook(request, pk):
             response['Content-Disposition'] = 'attachment;'
             return response
     else:
-        raise ValueError('There was no codebook for the project: ' + str(project_pk))
+        raise ValueError('There was no codebook for the project: ' + str(pk))
 
 @api_view(['GET'])
 def label_distribution_inverted(request, pk):

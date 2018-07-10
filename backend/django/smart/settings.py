@@ -190,7 +190,8 @@ class Dev(Configuration):
 
     STATICFILES_DIRS = [
         os.path.join(BASE_DIR, 'frontend', 'dist'),
-        os.path.join(BASE_DIR, 'core/data')
+        os.path.join(BASE_DIR, 'core/data'),
+         '/data/code_books/',
     ]
 
     WEBPACK_LOADER = {

@@ -3,8 +3,23 @@ import PropTypes from 'prop-types';
 import { ProgressBar } from "react-bootstrap";
 import Deck from '../Deck';
 import LabelInfo from '../LabelInfo';
+import { Button, Modal } from "react-bootstrap";
+import PDF from 'react-pdf-js';
+const CODEBOOK_URL = window.CODEBOOK_URL;
 
-const Smart = ({fetchCards, annotateCard, passCard, popCard, cards, message, labels, getLabels }) => {
+function getPDF(){
+  if(CODEBOOK_URL != "")
+  {
+    return (<PDF file={CODEBOOK_URL} page={1}/>);
+  }
+  else {
+    return (<p>No Codebook</p>);
+  }
+}
+
+const Smart = ({fetchCards, annotateCard,
+  passCard, popCard, cards, message,
+  labels, getLabels}) => {
   var progress = 100;
   var start_card = 0;
   var num_cards = 0;
@@ -25,6 +40,7 @@ const Smart = ({fetchCards, annotateCard, passCard, popCard, cards, message, lab
         label={label}
         now={progress}/>
       </ProgressBar>
+      {getPDF()}
       <LabelInfo
         getLabels={getLabels}
         labels={labels}

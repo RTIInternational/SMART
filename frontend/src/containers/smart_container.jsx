@@ -1,7 +1,7 @@
 import React from 'react';
 import { connect } from 'react-redux';
 
-import { fetchCards, annotateCard, passCard, popCard, getLabels } from '../actions/classifier';
+import { fetchCards, annotateCard, passCard, popCard, getLabels} from '../actions/classifier';
 
 import Smart from '../components/Smart';
 
