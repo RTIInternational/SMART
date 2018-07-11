@@ -12,9 +12,7 @@
     {% if project.codebook_file == '' %}
     window.CODEBOOK_URL = ""
     {% else %}
-    {% with 'project_'|add:pk|add:'_codebook.pdf' as pdf_static %}
-      window.CODEBOOK_URL = "{% static pdf_static %}"
-    {% endwith %}
+    window.CODEBOOK_URL = "{% static project.codebook_file %}"
     {% endif %}
     window.onbeforeunload = function (e) {
        $.ajax({

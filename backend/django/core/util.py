@@ -11,6 +11,7 @@ import math
 import numpy as np
 import hashlib
 import pandas as pd
+
 # https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
 # Disable warning for false positive warning that should only trigger on chained assignment
 pd.options.mode.chained_assignment = None  # default='warn'
@@ -19,6 +20,7 @@ from celery.result import AsyncResult
 from django.db import transaction, connection
 from django.db.models import Count, Value, IntegerField, F, Max, Min
 from django.db.utils import ProgrammingError
+from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.conf import settings
 
@@ -622,10 +624,11 @@ def save_codebook_file(data, project_pk):
     make sure to overwrite any project that is already there/
 
     """
-    fpath = os.path.join(settings.CODEBOOK_FILE_PATH, 'project_' + str(project_pk) + '_codebook.pdf')
+    date = timezone.now().strftime('%m_%d_%y__%H_%M_%S')
+    fpath = os.path.join(settings.CODEBOOK_FILE_PATH, 'project_' + str(project_pk) + '_codebook'+date+'.pdf')
     with open(fpath, "wb") as outputFile:
         outputFile.write(data.read())
-    return fpath
+    return fpath.replace("/data/code_books/","")
 
 def create_tfidf_matrix(data, max_df=0.95, min_df=0.05):
     """Create a TF-IDF matrix. Make sure to order the data by df_idx so that we
