@@ -3,6 +3,7 @@
 {% load i18n %}
 {% load static %}
 {% load render_bundle from webpack_loader %}
+{% load progress_bar %}
 
 {% block head %}
 {{ wizard.form.media }}
@@ -14,9 +15,11 @@
 <div class="row">
   <div class="col-md-8 col-md-offset-2">
     <div class="card">
+      {% progress_bar_media %}
       <div class="cardface">
         <form action="." method="post" enctype="multipart/form-data">
           {% csrf_token %}
+
           {{ wizard.management_form }}
 
             <h1>Data Upload Instructions</h1>
@@ -48,6 +51,7 @@
             <input class="btn btn-primary" type="submit" value="Submit"/>
             <p class="pull-right">Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
           </div>
+          {% progress_bar %}
         </form>
         <hr>
         <p>An example dataset can be downloaded from <a href="{% static 'example.csv' %}">here</a>.</p>
