@@ -31,6 +31,12 @@
                 </div>
                 {% endfor %}
               </div>
+              <div id="use_default_size">
+                Use default size (10 times the number of labels): {{ wizard.form.use_default_batch_size}}
+              </div>
+              <div id="choose_batch_size">
+                Batch size (must be between 10 and 1000): {{ wizard.form.batch_size}}
+              </div>
             </div>
 
           <div>
@@ -52,11 +58,22 @@
 var methods_box = $("div#choose_method_box");
 methods_box.show();
 
+var batch_field = $('#choose_batch_size');
+batch_field.hide();
+
 $('input#id_advanced-use_active_learning').change(function(){
   if ($(this).prop('checked') == true) {
         methods_box.show();
     } else {
         methods_box.hide();
+    }
+});
+
+$('input#id_advanced-use_default_batch_size').change(function(){
+  if ($(this).prop('checked') == true) {
+        batch_field.hide();
+    } else {
+        batch_field.show();
     }
 });
 </script>

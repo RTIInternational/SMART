@@ -396,7 +396,7 @@ def get_card_deck(request, pk):
     project = Project.objects.get(pk=pk)
 
     # Calculate queue parameters
-    batch_size = len(project.labels.all()) * 10
+    batch_size = project.batch_size
     num_coders = len(project.projectpermissions_set.all()) + 1
     coder_size = math.ceil(batch_size / num_coders)
 

@@ -691,7 +691,7 @@ def check_and_trigger_model(datum):
     """
     project = datum.project
     current_training_set = project.get_current_training_set()
-    batch_size = project.labels.count() * 10
+    batch_size = project.batch_size
     labeled_data = DataLabel.objects.filter(data__project=project,
                                             training_set=current_training_set)
     labeled_data_count = labeled_data.count()

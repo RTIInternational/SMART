@@ -30,6 +30,7 @@ class Project(models.Model):
     description = models.TextField(blank=True)
     creator = models.ForeignKey('Profile')
     codebook_file = models.TextField(default='')
+    batch_size = models.IntegerField(default=30)
     #####Advanced options#####
     #the current options are 'random', 'least confident', 'entropy', and 'margin sampling'
     ACTIVE_L_CHOICES = [

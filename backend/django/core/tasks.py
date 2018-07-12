@@ -22,7 +22,7 @@ def send_model_task(project_pk):
                                set_number=project.get_current_training_set().set_number+1)
 
     # Determine if queue size has changed (num_coders changed) and re-fill queue
-    batch_size = len(project.labels.all()) * 10
+    batch_size = project.batch_size
     num_coders = len(project.projectpermissions_set.all()) + 1
     q_length = find_queue_length(batch_size, num_coders)
 

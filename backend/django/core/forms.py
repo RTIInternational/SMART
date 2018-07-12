@@ -142,7 +142,7 @@ class ProjectWizardForm(forms.ModelForm):
 class AdvancedWizardForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ['learning_method']
+        fields = ['learning_method', 'batch_size']
 
     use_active_learning = forms.BooleanField(initial=True, required=False)
     active_l_choices = copy.deepcopy(Project.ACTIVE_L_CHOICES)
@@ -152,12 +152,18 @@ class AdvancedWizardForm(forms.ModelForm):
         widget=RadioSelect(), choices=active_l_choices,
         initial="least confident", required=False
     )
+    use_default_batch_size = forms.BooleanField(initial=True, required=False)
+    batch_size = forms.IntegerField(initial=30, min_value=10, max_value=1000)
 
     def clean(self):
         use_active_learning = self.cleaned_data.get("use_active_learning")
+        use_default_batch_size = self.cleaned_data.get("use_default_batch_size")
         #if they are not using active learning, the selection method is random
         if not use_active_learning:
             self.cleaned_data['learning_method'] = 'random'
+
+        if use_default_batch_size:
+            self.cleaned_data['batch_size'] = 0
         return self.cleaned_data
 
 

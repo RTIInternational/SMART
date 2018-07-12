@@ -248,6 +248,12 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             else:
                 cb_filepath = ""
             proj_obj.codebook_file = cb_filepath
+            if advanced_data["batch_size"] == 0:
+                batch_size = 10 * len([x for x in labels if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True])
+            else:
+                batch_size = advanced_data["batch_size"]
+
+            proj_obj.batch_size = batch_size
             proj_obj.learning_method = advanced_data["learning_method"]
             proj_obj.save()
 
@@ -263,7 +269,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             permissions.save()
 
             # Queue
-            batch_size = 10 * len([x for x in labels if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True])
+
             num_coders = len([x for x in permissions if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True]) + 1
             q_length = util.find_queue_length(batch_size, num_coders)
 
