@@ -32,12 +32,18 @@ import core.util as util
 from core.pagination import SmartPagination
 from core.templatetags import project_extras
 
-
 ############################################
 #        FRONTEND USER API ENDPOINTS       #
 ############################################
 @api_view(['GET'])
 def download_data(request, pk):
+    """This function gets the labeled data and makes it available for download
+    Args:
+        request: The POST request
+        pk: Primary key of the project
+    Returns:
+        an HttpResponse containing the requested data
+    """
     data_objs = Data.objects.filter(project=pk)
 
     data = []
@@ -59,9 +65,18 @@ def download_data(request, pk):
 
     return response
 
-
 @api_view(['GET'])
 def label_distribution_inverted(request, pk):
+    """This function finds and returns the number of each label. The format
+    is more focussed on showing the total amount of each label then the user
+    label distribution, so the data is inverted from the function below.
+    This is used by a graph on the front end admin page.
+    Args:
+        request: The POST request
+        pk: Primary key of the project
+    Returns:
+        a dictionary of the amount each label has been used
+    """
     project = Project.objects.get(pk=pk)
 
     labels = [l for l in project.labels.all()]
@@ -90,6 +105,14 @@ def label_distribution_inverted(request, pk):
 
 @api_view(['GET'])
 def label_distribution(request, pk):
+    """This function finds and returns the number of each label per user.
+    This is used by a graph on the front end admin page.
+    Args:
+        request: The POST request
+        pk: Primary key of the project
+    Returns:
+        a dictionary of the amount of labels per person per type
+    """
     project = Project.objects.get(pk=pk)
 
     labels = [l for l in project.labels.all()]
@@ -117,6 +140,14 @@ def label_distribution(request, pk):
 
 @api_view(['GET'])
 def label_timing(request, pk):
+    """This function finds and returns the requested label time metrics. This is
+    used by the graphs on the admin page to show how long each labeler is taking.
+    Args:
+        request: The POST request
+        pk: Primary key of the project
+    Returns:
+        a dictionary of label timing information.
+    """
     project = Project.objects.get(pk=pk)
 
     users = []
@@ -152,6 +183,14 @@ def label_timing(request, pk):
 
 @api_view(['GET'])
 def model_metrics(request, pk):
+    """This function finds and returns the requested metrics. This is
+    used by the graphs on the front end admin page.
+    Args:
+        request: The POST request
+        pk: Primary key of the project
+    Returns:
+        a dictionary of model metric information
+    """
     metric = request.GET.get('metric', 'accuracy')
 
     project = Project.objects.get(pk=pk)
@@ -193,6 +232,14 @@ def model_metrics(request, pk):
 
 @api_view(['GET'])
 def data_coded_table(request, pk):
+    """This returns the labeled data
+
+    Args:
+        request: The POST request
+        pk: Primary key of the project
+    Returns:
+        data: a list of data information
+    """
     project = Project.objects.get(pk=pk)
 
     data_objs = DataLabel.objects.filter(data__project=project)
@@ -211,6 +258,14 @@ def data_coded_table(request, pk):
 
 @api_view(['GET'])
 def data_predicted_table(request, pk):
+    """This returns the predictions for the unlabeled data
+
+    Args:
+        request: The POST request
+        pk: Primary key of the project
+    Returns:
+        data: a list of data information
+    """
     project = Project.objects.get(pk=pk)
     previous_run = project.get_current_training_set().set_number - 1
 
@@ -272,6 +327,14 @@ def data_predicted_table(request, pk):
 
 @api_view(['GET'])
 def data_unlabeled_table(request, pk):
+    """This returns the unlebeled data not in a queue for the skew table
+
+    Args:
+        request: The POST request
+        pk: Primary key of the project
+    Returns:
+        data: a list of data information
+    """
     project = Project.objects.get(pk=pk)
 
     stuff_in_queue = DataQueue.objects.filter(queue__project=project)
@@ -290,6 +353,14 @@ def data_unlabeled_table(request, pk):
 
 @api_view(['GET'])
 def data_admin_table(request, pk):
+    """This returns the elements in the admin queue for annotation
+
+    Args:
+        request: The POST request
+        pk: Primary key of the project
+    Returns:
+        data: a list of data information
+    """
     project = Project.objects.get(pk=pk)
     queue = Queue.objects.filter(project=project,admin=True)
 
@@ -308,6 +379,14 @@ def data_admin_table(request, pk):
 
 @api_view(['GET'])
 def get_labels(request, pk):
+    """This is called by the React frontend to get a dictionary of the labels
+
+    Args:
+        request: The POST request
+        pk: Primary key of the data
+    Returns:
+        data: a dictionary of the label text and ID's
+    """
     project = Project.objects.get(pk=pk)
 
     labels = Label.objects.filter(project=project)
@@ -324,9 +403,15 @@ def get_labels(request, pk):
 
 @api_view(['POST'])
 def label_skew_label(request, pk):
-    '''This is called when an admin manually labels a datum on the skew page. It
+    """This is called when an admin manually labels a datum on the skew page. It
     annotates a single datum with the given label, and profile with null as the time.
-    '''
+    Args:
+        request: The request to the endpoint
+        pk: Primary key of data
+    Returns:
+        {}
+    """
+
     datum = Data.objects.get(pk=pk)
     project = datum.project
     label = Label.objects.get(pk=request.data['labelID'])
@@ -346,11 +431,16 @@ def label_skew_label(request, pk):
 
 @api_view(['POST'])
 def label_admin_label(request, pk):
-    '''This is called when an admin manually labels a datum on the admin
+    """This is called when an admin manually labels a datum on the admin
     annotation page. It labels a single datum with the given label and profile,
     with null as the time.
-    It also removes the data from the admin queue.
-    '''
+
+    Args:
+        request: The POST request
+        pk: Primary key of the data
+    Returns:
+        {}
+    """
     datum = Data.objects.get(pk=pk)
     project = datum.project
     label = Label.objects.get(pk=request.data['labelID'])

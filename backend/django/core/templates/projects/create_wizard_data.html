@@ -4,7 +4,6 @@
 {% load static %}
 {% load render_bundle from webpack_loader %}
 {% load progress_bar %}
-
 {% block head %}
 {{ wizard.form.media }}
 {{ form.media.css }}
@@ -17,7 +16,7 @@
     <div class="card">
       {% progress_bar_media %}
       <div class="cardface">
-        <form action="." method="post" enctype="multipart/form-data">
+        <form action="." method="post" enctype="multipart/form-data" onsubmit="addASpinner()">
           {% csrf_token %}
 
           {{ wizard.management_form }}
@@ -52,6 +51,8 @@
             <p class="pull-right">Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
           </div>
           {% progress_bar %}
+          <div id="second_progress">
+          </div>
         </form>
         <hr>
         <p>An example dataset can be downloaded from <a href="{% static 'example.csv' %}">here</a>.</p>
@@ -59,4 +60,16 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts_body %}
+<script type="text/javascript">
+var progress = $("#second_progress")
+function addASpinner()
+{
+  progress.addClass("loader")
+  console.log("Yay!")
+}
+
+</script>
 {% endblock %}

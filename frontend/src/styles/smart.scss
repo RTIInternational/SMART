@@ -202,3 +202,20 @@ table.dataTable tbody td.no-padding {
 #user_buttons {
     margin-left: auto;
 }
+
+.loader {
+    border: 16px solid #F3F3F3; /* Light grey */
+    border-top: 16px solid #3498DB; /* Blue */
+    border-radius: 50%;
+    width: 120px;
+    height: 120px;
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+
+    0% { transform: rotate(0deg); }
+
+    100% { transform: rotate(360deg); }
+    
+}
