@@ -46,11 +46,20 @@
                 <h5><strong>No Description Available</strong></h5>
                 {% endif %}
             </div>
+            <div class="col-md-8">
+                <h4>Advanced settings</h4>
+                <p>Selection Algorithm: {{ project.learning_method }}</p>
+                <p>Batch Size: {{ project.batch_size }}</p>
+            </div>
             <div class="col-md-4">
                 <h4>Labels</h4>
                 <ul class="list-group">
                 {% for label in project.labels.all %}
+                    {% if label.description == '' %}
                     <li class="list-group-item">{{ label.name }}</li>
+                    {% else %}
+                    <li class="list-group-item">{{ label.name }}: {{ label.description }}</li>
+                    {% endif %}
                 {% endfor %}
                 </ul>
             </div>
