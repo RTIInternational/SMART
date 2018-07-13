@@ -106,6 +106,16 @@ class DataLabel(models.Model):
     time_to_label = models.IntegerField(null=True)
     timestamp = models.DateTimeField(null=True, default= None)
 
+class LabelChangeLog(models.Model):
+    class Meta:
+        unique_together = (('data', 'profile'))
+    project = models.ForeignKey('Project')
+    data = models.ForeignKey('Data')
+    profile = models.ForeignKey('Profile')
+    old_label = models.TextField()
+    new_label = models.TextField()
+    change_timestamp = models.DateTimeField(null=True, default= None)
+
 class DataPrediction(models.Model):
     class Meta:
         unique_together = (('data', 'model', 'label'))

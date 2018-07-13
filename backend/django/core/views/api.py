@@ -27,9 +27,11 @@ from core.serializers import (ProfileSerializer, AuthUserGroupSerializer,
                               AuthUserSerializer, ProjectSerializer,
                               CoreModelSerializer, LabelSerializer, DataSerializer,
                               DataLabelSerializer, DataPredictionSerializer,
-                              QueueSerializer, AssignedDataSerializer)
+                              QueueSerializer, AssignedDataSerializer,
+                              LabelChangeLogSerializer)
 from core.models import (Profile, Project, Model, Data, Label, DataLabel,
-                         DataPrediction, Queue, DataQueue, AssignedData, TrainingSet)
+                         DataPrediction, Queue, DataQueue, AssignedData, TrainingSet,
+                         LabelChangeLog)
 import core.util as util
 from core.pagination import SmartPagination
 from core.templatetags import project_extras
@@ -206,6 +208,36 @@ def data_coded_table(request, pk):
             'Label': d.label.name,
             'Coder': d.profile.__str__()
         }
+        data.append(temp)
+
+    return Response({'data': data})
+
+@api_view(['GET'])
+def data_change_log_table(request, pk):
+    project = Project.objects.get(pk=pk)
+
+    data_objs = LabelChangeLog.objects.filter(project=project)
+
+    data = []
+    for d in data_objs:
+        if d.change_timestamp:
+            if d.change_timestamp.minute < 10:
+                minute = "0" + str(d.change_timestamp.minute)
+            else:
+                minute = str(d.change_timestamp.minute)
+            new_timestamp = str(d.change_timestamp.date()) + ", " + str(d.change_timestamp.hour)\
+            + ":" + minute + "." + str(d.change_timestamp.second)
+        else:
+            new_timestamp = "None"
+
+        temp = {
+            'Text': escape(d.data.text),
+            'Coder': escape(d.profile.user),
+            'Old Label': d.old_label,
+            'New Label': d.new_label,
+            'Timestamp': new_timestamp
+        }
+
         data.append(temp)
 
     return Response({'data': data})
@@ -510,6 +542,7 @@ def modify_label(request, pk):
     data = Data.objects.get(pk=pk)
     profile = request.user.profile
     response = {}
+    project = data.project
 
     # Make sure coder still has permissions before labeling data
     if project_extras.proj_permission_level(data.project, profile) > 0:
@@ -518,6 +551,11 @@ def modify_label(request, pk):
         with transaction.atomic():
             DataLabel.objects.filter(data=data, label=old_label).update(label=label,
             time_to_label=0, timestamp=timezone.now())
+
+            LabelChangeLog.objects.create(project=project, data=data, profile=profile,
+            old_label=old_label.name, new_label = label.name, change_timestamp = timezone.now() )
+
+
 
 
     else:
@@ -540,21 +578,17 @@ def modify_label_to_skip(request, pk):
     data = Data.objects.get(pk=pk)
     profile = request.user.profile
     response = {}
-
+    project = data.project
+    old_label = Label.objects.get(pk=request.data['oldLabelID'])
+    queue = Queue.objects.get(project=project, admin=True)
     # Make sure coder still has permissions before labeling data
     if project_extras.proj_permission_level(data.project, profile) > 0:
-        old_label = Label.objects.get(pk=request.data['oldLabelID'])
+
         with transaction.atomic():
             DataLabel.objects.filter(data=data, label=old_label).delete()
-
-    project = data.project
-
-    queue = Queue.objects.get(project=project, admin=True)
-
-    # Make sure coder still has permissions before labeling data
-    if project_extras.proj_permission_level(project, profile) > 0:
-        with transaction.atomic():
             DataQueue.objects.create(data=data, queue=queue)
+            LabelChangeLog.objects.create(project=project, data=data, profile=profile,
+            old_label=old_label.name, new_label = "skip", change_timestamp = timezone.now())
     else:
         response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
     return Response(response)

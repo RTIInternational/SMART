@@ -34,6 +34,7 @@ urlpatterns = [
     url(r'^data_predicted_table/(?P<pk>\d+)/$', api.data_predicted_table),
     url(r'^data_unlabeled_table/(?P<pk>\d+)/$', api.data_unlabeled_table),
     url(r'^data_admin_table/(?P<pk>\d+)/$', api.data_admin_table),
+    url(r'^data_change_log_table/(?P<pk>\d+)/$', api.data_change_log_table),
     url(r'^get_labels/(?P<pk>\d+)/$', api.get_labels),
     url(r'^model_metrics/(?P<pk>\d+)/$', api.model_metrics),
 ]

@@ -49,6 +49,23 @@
                         </table>
                     </div>
                 </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <h3>Change Label Table</h3>
+                        <table id="label_changes_data_table" class="table table-hover table-striped table-bordered" cellspacing="0" width="100%">
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th>Text</th>
+                                    <th>Coder</th>
+                                    <th>Old Label</th>
+                                    <th>New Label</th>
+                                    <th>Timestamp</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
             </div>
             <div id="model" class="tab-pane fade in">
                 <div class="row">
@@ -329,10 +346,52 @@ $(document).ready(function() {
         }
     });
 
+    /*
+     *  Activate DataTable script to create the labeled data DataTable
+     */
+    var change_history_table = $('#label_changes_data_table').DataTable({
+        "ajax": '/api/data_change_log_table/' + {{ project.pk }} + '/',
+        "columns": [
+            {
+              "className": 'details-control', "orderable": false,
+              "data": null, "defaultContent": '', "width": "5%",
+              "searchable": false,
+            },
+
+            { "data": "Text", "width": "60%", "className": "showData"},
+            { "data": "Coder", "searchable": true, "width": "10%" },
+            { "data": "Old Label", "searchable": true, "width": "10%" },
+            { "data": "New Label", "searchable": true, "width": "10%" },
+            { "data": "Timestamp", "searchable": false, "width": "10%" }
+
+        ],
+        "oLanguage": {
+            "sSearch": "Filter Text: ",
+            "sEmptyTable": "No label changes to display"
+        },
+        "initComplete": function (settings, json) {
+            $this = $(this)
+            $this.css({'table-layout':'fixed'});
+            var columns = $this.find('tr').children()
+            columns.addClass('showData');
+        },
+        "rowCallback": function (row, data) {
+          $('td:nth-child(1)',row).addClass('showData');
+          $('td:nth-child(5)',row).addClass('showData');
+        }
+    });
+
 
     $(function () {
        $('[data-toggle="tooltip"]').tooltip()
     });
+
+    $('#label_changes_data_table tbody').on('click','td.details-control',function(){
+        var tr = $(this).closest('tr');
+        var row = change_history_table.row(tr);
+        var columns = tr.children()
+        columns.toggleClass('showData');
+      });
 
 });
 
