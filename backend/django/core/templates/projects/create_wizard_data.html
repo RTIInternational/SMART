@@ -53,6 +53,7 @@
           {% progress_bar %}
           <div id="second_progress">
           </div>
+          <p id="loading_text"></p>
         </form>
         <hr>
         <p>An example dataset can be downloaded from <a href="{% static 'example.csv' %}">here</a>.</p>
@@ -64,11 +65,23 @@
 
 {% block scripts_body %}
 <script type="text/javascript">
-var progress = $("#second_progress")
 function addASpinner()
 {
-  progress.addClass("loader")
-  console.log("Yay!")
+  $('#loading_text').html("Please wait. Uploading data...")
+  var refreshID = setInterval(function(){
+    var progress = $('#progressBar').attr('value')
+    if(progress >= 100)
+    {
+      //update the loading message and create the spinner
+      $("#second_progress").addClass("loader")
+      $('#loading_text').html("Please wait. Processing data...")
+      clearInterval(refreshID);
+    }
+  },300)
+  //after 30 seconds, update the message
+  setTimeout(function(){
+    $('#loading_text').html("STILL Processing data...")
+  },30000)
 }
 
 </script>
