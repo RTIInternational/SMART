@@ -4,6 +4,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_predict
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.externals import joblib
 from scipy import sparse
 import os
@@ -838,23 +839,15 @@ def train_and_apply_committee(project, unlabeled_X, com_size = 5):
     X = pd.DataFrame(tf_idf[labeled_indices])
     Y = pd.DataFrame(labeled_values)
     predictions = []
-    for i in range(com_size):
-        #get a subset of the training data
-        good_sample = False
-        while not good_sample:
-            train_indices = np.random.choice(X.shape[0],size=int(0.75*X.shape[0]))
-            temp_x = X.iloc[np.ravel(train_indices)]
-            temp_y = Y.iloc[np.ravel(train_indices)]
-            num_classes = len(temp_y[temp_y.columns.tolist()[0]].unique())
-            if num_classes > 1: #NOTE: should this be stricter?
-                good_sample = True
-        #train the classifier on that subset
+    stratefied_shuffle_split = StratifiedShuffleSplit(n_splits = com_size, train_size=0.75, test_size = 0.25)
+    for train_index, test_index in stratefied_shuffle_split.split(X,Y):
+        temp_x = X.iloc[train_index]
+        temp_y = Y.iloc[train_index]
         clf_log = LogisticRegression(class_weight='balanced', solver='lbfgs')
         clf_log.fit(temp_x, temp_y.unstack())
         #have the classifier predict the unlabeled data
         y_pred = clf_log.predict(unlabeled_X)
         predictions.append(np.reshape(y_pred,(len(y_pred),1)))
-
 
     all_predictions = np.concatenate(predictions, axis=1)
     scores = pd.DataFrame(all_predictions).apply(get_entropy, axis=1)
