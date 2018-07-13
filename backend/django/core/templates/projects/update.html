@@ -106,6 +106,28 @@
                             </tr>
                         {% endfor %}
                     </table>
+                    <h1>Label Descriptions</h1>
+                    <p>This section lets you update your label descriptions.</p>
+                    <table class="table">
+                      {{ label_descriptions.management_form }}
+                      {{ label_descriptions.non_form_errors }}
+                      <thead>
+                        <th>Label</th>
+                        <th>Description</th>
+                      </thead>
+                      <tbody>
+                      {% for form in label_descriptions.forms %}
+                      <tr>
+                      {% for field in form.hidden_fields %}
+                          {{ field }}
+                      {% endfor %}
+                      {% for field in form.visible_fields %}
+                          <td>{{ field }}</td>
+                      {% endfor %}
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                    </table>
                     <div class="form-group">
                         <button class="btn btn-primary" type="submit">Submit</button>
                     </div>

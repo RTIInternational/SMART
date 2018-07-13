@@ -64,7 +64,8 @@ def download_data(request, pk):
 def download_codebook(request, pk):
     """Given the project id, get the codebook file
     """
-    fpath = os.path.join(settings.CODEBOOK_FILE_PATH, 'project_' + str(pk) + '_codebook.pdf')
+    project = Project.objects.get(pk=pk)
+    fpath = os.path.join(settings.CODEBOOK_FILE_PATH, project.codebook_file)
     if os.path.isfile(fpath):
         with open(fpath,"rb") as file:
             codebook = file.read()

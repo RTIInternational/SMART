@@ -22,7 +22,7 @@ from core.models import (Profile, Project, ProjectPermissions, Model, Data, Labe
                          TrainingSet)
 from core.forms import (ProjectUpdateForm, PermissionsFormSet, LabelFormSet,
                         ProjectWizardForm, DataWizardForm, AdvancedWizardForm,
-                        CodeBookWizardForm)
+                        CodeBookWizardForm, LabelDescriptionFormSet)
 from core.serializers import DataSerializer
 from core.templatetags import project_extras
 import core.util as util
@@ -308,14 +308,17 @@ class ProjectUpdate(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         data = super(ProjectUpdate, self).get_context_data(**kwargs)
         if self.request.POST:
             data['permissions'] = PermissionsFormSet(self.request.POST, instance=data['project'], prefix='permissions_set', form_kwargs={'action': 'update', 'creator':data['project'].creator, 'profile': self.request.user.profile})
+            data['label_descriptions'] = LabelDescriptionFormSet(self.request.POST, instance=data['project'], prefix='label_descriptions_set', form_kwargs={'action': 'update'})
         else:
             data['num_data'] = Data.objects.filter(project=data['project']).count()
             data['permissions'] = PermissionsFormSet(instance=data['project'], prefix='permissions_set', form_kwargs={'action': 'update', 'creator':data['project'].creator, 'profile': self.request.user.profile})
+            data['label_descriptions'] = LabelDescriptionFormSet(instance=data['project'], prefix='label_descriptions_set', form_kwargs={'action': 'update'})
         return data
 
     def form_valid(self, form):
         context = self.get_context_data()
         permissions = context['permissions']
+        labels = context["label_descriptions"]
         with transaction.atomic():
             if permissions.is_valid():
                 self.object = form.save()
@@ -332,12 +335,13 @@ class ProjectUpdate(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
                 # CodeBook
                 cb_data = form.cleaned_data.get('cb_data',False)
-                if cb_data != "":
+                if cb_data and cb_data != "":
                     cb_filepath = util.save_codebook_file(cb_data, self.object.pk)
-                else:
-                    cb_filepath = ""
-                self.object.codebook_file = cb_filepath
-                self.object.save()
+                    self.object.codebook_file = cb_filepath
+                    self.object.save()
+
+                labels.instance = self.object
+                labels.save()
 
                 return redirect(self.get_success_url())
             else:

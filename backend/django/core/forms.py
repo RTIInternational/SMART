@@ -112,6 +112,20 @@ class LabelForm(forms.ModelForm):
     name = forms.CharField()
     description = forms.CharField(required=False, initial="", widget=Textarea())
 
+class LabelDescriptionForm(forms.ModelForm):
+    class Meta:
+        model = Label
+        fields = ['name','description']
+
+    name = forms.CharField(disabled=True)
+    description = forms.CharField(required=False, widget=Textarea())
+
+    def __init__(self, *args, **kwargs):
+        self.action = kwargs.pop('action', None)
+        super(LabelDescriptionForm, self).__init__(*args, **kwargs)
+
+
+
 class ProjectPermissionsForm(forms.ModelForm):
     class Meta:
         model = ProjectPermissions
@@ -131,6 +145,7 @@ class ProjectPermissionsForm(forms.ModelForm):
 
 
 LabelFormSet = forms.inlineformset_factory(Project, Label, form=LabelForm, min_num=2, validate_min=True, extra=0, can_delete=True)
+LabelDescriptionFormSet = forms.inlineformset_factory(Project, Label, form=LabelDescriptionForm, can_delete=False, extra=0)
 PermissionsFormSet = forms.inlineformset_factory(Project, ProjectPermissions, form=ProjectPermissionsForm, extra=1, can_delete=True)
 
 class ProjectWizardForm(forms.ModelForm):
