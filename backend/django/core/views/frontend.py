@@ -255,6 +255,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
             proj_obj.batch_size = batch_size
             proj_obj.learning_method = advanced_data["learning_method"]
+            proj_obj.classifier = advanced_data["classifier"]
             proj_obj.save()
 
             # Training Set

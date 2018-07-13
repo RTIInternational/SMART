@@ -157,7 +157,7 @@ class ProjectWizardForm(forms.ModelForm):
 class AdvancedWizardForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ['learning_method', 'batch_size']
+        fields = ['learning_method', 'batch_size', 'classifier']
 
     use_active_learning = forms.BooleanField(initial=True, required=False)
     active_l_choices = copy.deepcopy(Project.ACTIVE_L_CHOICES)
@@ -169,6 +169,11 @@ class AdvancedWizardForm(forms.ModelForm):
     )
     use_default_batch_size = forms.BooleanField(initial=True, required=False)
     batch_size = forms.IntegerField(initial=30, min_value=10, max_value=1000)
+
+    classifier = forms.ChoiceField(
+        widget=RadioSelect(), choices=Project.CLASSIFIER_CHOICES,
+        initial="logistic_regression", required=False
+    )
 
     def clean(self):
         use_active_learning = self.cleaned_data.get("use_active_learning")

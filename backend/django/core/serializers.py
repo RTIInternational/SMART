@@ -25,7 +25,7 @@ class ProjectSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ('name','labels','learning_method')
+        fields = ('name','labels','learning_method', 'classifier')
 
 class CoreModelSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:

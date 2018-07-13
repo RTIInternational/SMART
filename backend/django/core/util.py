@@ -2,6 +2,9 @@ import random
 import redis
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.naive_bayes import GaussianNB
 from sklearn.model_selection import cross_val_predict
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from sklearn.externals import joblib
@@ -722,7 +725,16 @@ def train_and_save_model(project):
     Returns:
         model: A model object
     """
-    clf = LogisticRegression(class_weight='balanced', solver='lbfgs', multi_class='multinomial')
+    if project.classifier == "logistic_regression":
+        clf = LogisticRegression(class_weight='balanced', solver='lbfgs', multi_class='multinomial')
+    elif project.classifier == "svm":
+        clf = SVC(probability=True)
+    elif project.classifier == "random_forest":
+        clf = RandomForestClassifier()
+    elif project.classifier == "gnb":
+        clf = GaussianNB()
+    else:
+        raise ValueError('There was no valid classifier for project: ' + str(project_pk))
     tf_idf = load_tfidf_matrix(project.pk).A
     current_training_set = project.get_current_training_set()
 
