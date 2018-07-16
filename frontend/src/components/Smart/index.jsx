@@ -1,19 +1,26 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Tabs, Tab, ProgressBar } from "react-bootstrap";
-
-import Deck from '../Deck';
+import { Button, ButtonToolbar, Clearfix,
+   Well, Tooltip, OverlayTrigger,
+   ProgressBar, Tabs, Tab } from "react-bootstrap";
+import Card from '../Card';
 import HistoryTable from '../HistoryTable';
 import Skew from '../Skew';
 import AdminTable from '../AdminTable';
 const ADMIN = window.ADMIN
+class Smart extends React.Component {
 
-const Smart = ({fetchCards, annotateCard,
-  passCard, popCard, cards, message,
-  getHistory, history_data, labels, changeLabel,
-  changeToSkip, getUnlabeled, unlabeled_data,
-  skewLabel, getLabelCounts, label_counts, getAdmin,
-  admin_data, adminLabel}) => {
+  componentWillMount() {
+      this.props.fetchCards();
+  }
+
+  render(){
+    const { message, cards, passCard, annotateCard, fetchCards,
+    popCard, history_data, getHistory, labels, changeLabel,
+    changeToSkip, getUnlabeled, unlabeled_data,
+    skewLabel, getLabelCounts, label_counts, getAdmin, admin_data,
+    adminLabel} = this.props;
+
     var progress = 100;
     var start_card = 0;
     var num_cards = 0;
@@ -25,25 +32,54 @@ const Smart = ({fetchCards, annotateCard,
         progress = (cards[0].id/cards[cards.length-1].id) * 100;
         label = start_card.toString()+" out of "+num_cards.toString();
     }
+    if (!(cards === undefined) && cards.length > 0) {
+      var card = (
+      <Card className="full" key={cards[0].id}>
+          <h2>Card {cards[0].id + 1}</h2>
+          <p>
+              { cards[0].text['text'] }
+          </p>
+          <ButtonToolbar bsClass="btn-toolbar pull-right">
+              {cards[0].options.map( (opt) => (
+                  <Button onClick={() => annotateCard(cards[0], opt['pk'])}
+                  bsStyle="primary"
+                  key={`deck-button-${opt['name']}`}>{opt['name']}</Button>
+              ))}
+              <OverlayTrigger
+              placement = "top"
+              overlay={
+                <Tooltip id="skip_tooltip">
+                  Clicking this button will send this document to an administrator for review
+                </Tooltip>
+              }>
+                <Button onClick={() => passCard(cards[0])}
+                bsStyle="info">Skip</Button>
+              </OverlayTrigger>
+          </ButtonToolbar>
+          <Clearfix />
+      </Card>);
+    }
+    else {
+        let blankDeckMessage = (message) ? message : "No more data to label at this time. Please check back later";
+        card = (
+            <Well bsSize="large">
+                { blankDeckMessage }
+            </Well>
+        );
+    }
+
     return (
       <Tabs defaultActiveKey={1} id="data_tabs" >
         <Tab eventKey={1} title="Annotate Data">
+        <div className="deck">
           <ProgressBar >
             <ProgressBar
             style={{minWidth: 60}}
             label={label}
             now={progress}/>
           </ProgressBar>
-
-          <Deck
-              fetchCards={fetchCards}
-              annotateCard={annotateCard}
-              passCard={passCard}
-              popCard={popCard}
-              cards={cards}
-              message={message}
-              getHistory={getHistory}
-          />
+            {card}
+        </div>
         </Tab>
         <Tab eventKey={2} title="History" className="full card">
           <div className="cardface">
@@ -79,16 +115,30 @@ const Smart = ({fetchCards, annotateCard,
           </div>
         </Tab>
       </Tabs>
-  );
-}
+    );
 
+  };
+}
 Smart.propTypes = {
     cards: PropTypes.arrayOf(PropTypes.object),
     message: PropTypes.string,
     history_data: PropTypes.arrayOf(PropTypes.object),
+    getHistory: PropTypes.func.isRequired,
     labels: PropTypes.arrayOf(PropTypes.object),
+    changeLabel: PropTypes.func.isRequired,
+    changeToSkip: PropTypes.func.isRequired,
+    getUnlabeled: PropTypes.func.isRequired,
+    unlabeled_data: PropTypes.arrayOf(PropTypes.object),
     label_counts: PropTypes.arrayOf(PropTypes.object),
-    admin_data: PropTypes.arrayOf(PropTypes.object)
+    skewLabel: PropTypes.func.isRequired,
+    getLabelCounts: PropTypes.func.isRequired,
+    getAdmin: PropTypes.func.isRequired,
+    admin_data: PropTypes.arrayOf(PropTypes.object),
+    adminLabel: PropTypes.func.isRequired,
+    fetchCards: PropTypes.func.isRequired,
+    annotateCard: PropTypes.func.isRequired,
+    passCard: PropTypes.func.isRequired,
+    popCard: PropTypes.func.isRequired,
 };
 
 export default Smart;
