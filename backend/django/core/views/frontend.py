@@ -159,7 +159,8 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         if step == 'data':
             temp = []
             for label in self.get_cleaned_data_for_step('labels'):
-                temp.append(label['name'])
+                if 'name' in label.keys():
+                    temp.append(label['name'])
             kwargs['labels'] = temp
         return kwargs
 

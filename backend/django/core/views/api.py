@@ -40,13 +40,14 @@ from core.templatetags import project_extras
 @api_view(['GET'])
 def download_data(request, pk):
     data_objs = Data.objects.filter(project=pk)
-
+    project_labels = Label.objects.filter(project=pk)
     data = []
-    for d in data_objs:
-        if d.datalabel_set.count() >= 1:
+    for label in project_labels:
+        labeled_data = DataLabel.objects.filter(label=label)
+        for d in labeled_data:
             temp = {}
-            temp['Text'] = d.text
-            temp['Label'] = d.datalabel_set.first().label.name
+            temp['Text'] = d.data.text
+            temp['Label'] = label.name
             data.append(temp)
 
     buffer = io.StringIO()
