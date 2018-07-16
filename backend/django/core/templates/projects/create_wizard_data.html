@@ -13,6 +13,19 @@
 <div class="error-messages">{{ wizard.non_form_errors }}</div>
 <div class="row">
   <div class="col-md-8 col-md-offset-2">
+    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">Loading</h5>
+          </div>
+          <div class="modal-body">
+            <div id="second_progress"></div>
+            <p id="loading_text"></p>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="card">
       {% progress_bar_media %}
       <div class="cardface">
@@ -47,20 +60,20 @@
             <button class="btn btn-info" name="wizard_goto_step" type="submit" value="labels">2. Labels</button>
             <button class="btn btn-info" name="wizard_goto_step" type="submit" value="permissions">3. Permissions</button>
             <button class="btn btn-info" name="wizard_goto_step" type="submit" value="advanced">4. Advanced</button>
-            <input class="btn btn-primary" type="submit" value="Submit"/>
+            <input class="btn btn-primary" type="submit" value="Submit" data-toggle="modal" data-target="#exampleModal"/>
             <p class="pull-right">Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
           </div>
-          {% progress_bar %}
-          <div id="second_progress">
-          </div>
-          <p id="loading_text"></p>
+
         </form>
         <hr>
         <p>An example dataset can be downloaded from <a href="{% static 'example.csv' %}">here</a>.</p>
       </div>
+
     </div>
   </div>
+{% progress_bar %}
 </div>
+
 {% endblock %}
 
 {% block scripts_body %}
@@ -68,12 +81,12 @@
 function addASpinner()
 {
   $('#loading_text').html("Please wait. Uploading data...")
+  $("#second_progress").addClass("loader")
   var refreshID = setInterval(function(){
     var progress = $('#progressBar').attr('value')
     if(progress >= 100)
     {
-      //update the loading message and create the spinner
-      $("#second_progress").addClass("loader")
+      //update the loading message
       $('#loading_text').html("Please wait. Processing data...")
       clearInterval(refreshID);
     }
@@ -81,7 +94,7 @@ function addASpinner()
   //after 30 seconds, update the message
   setTimeout(function(){
     $('#loading_text').html("STILL Processing data...")
-  },30000)
+  },10000)
 }
 
 </script>

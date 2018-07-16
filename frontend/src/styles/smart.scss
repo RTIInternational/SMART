@@ -219,3 +219,11 @@ table.dataTable tbody td.no-padding {
     100% { transform: rotate(360deg); }
 
 }
+
+#progressBar {
+    visibility: hidden;
+}
+
+.modal-content {
+    z-index: auto;
+}
