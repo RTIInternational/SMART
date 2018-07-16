@@ -32,12 +32,14 @@ import core.util as util
 from core.pagination import SmartPagination
 from core.templatetags import project_extras
 
+
 ############################################
 #        FRONTEND USER API ENDPOINTS       #
 ############################################
 @api_view(['GET'])
 def download_data(request, pk):
     """This function gets the labeled data and makes it available for download
+
     Args:
         request: The POST request
         pk: Primary key of the project
@@ -65,12 +67,14 @@ def download_data(request, pk):
 
     return response
 
+
 @api_view(['GET'])
 def label_distribution_inverted(request, pk):
     """This function finds and returns the number of each label. The format
     is more focussed on showing the total amount of each label then the user
     label distribution, so the data is inverted from the function below.
     This is used by a graph on the front end admin page.
+
     Args:
         request: The POST request
         pk: Primary key of the project
@@ -107,6 +111,7 @@ def label_distribution_inverted(request, pk):
 def label_distribution(request, pk):
     """This function finds and returns the number of each label per user.
     This is used by a graph on the front end admin page.
+
     Args:
         request: The POST request
         pk: Primary key of the project
@@ -142,6 +147,7 @@ def label_distribution(request, pk):
 def label_timing(request, pk):
     """This function finds and returns the requested label time metrics. This is
     used by the graphs on the admin page to show how long each labeler is taking.
+
     Args:
         request: The POST request
         pk: Primary key of the project
@@ -185,6 +191,7 @@ def label_timing(request, pk):
 def model_metrics(request, pk):
     """This function finds and returns the requested metrics. This is
     used by the graphs on the front end admin page.
+
     Args:
         request: The POST request
         pk: Primary key of the project
@@ -405,6 +412,7 @@ def get_labels(request, pk):
 def label_skew_label(request, pk):
     """This is called when an admin manually labels a datum on the skew page. It
     annotates a single datum with the given label, and profile with null as the time.
+
     Args:
         request: The request to the endpoint
         pk: Primary key of data
@@ -428,6 +436,7 @@ def label_skew_label(request, pk):
                                 )
 
     return Response({'test':'success'})
+
 
 @api_view(['POST'])
 def label_admin_label(request, pk):
@@ -466,7 +475,6 @@ def label_admin_label(request, pk):
 ############################################
 #    REACT API ENDPOINTS FOR CODING VIEW   #
 ############################################
-
 @api_view(['GET'])
 def get_card_deck(request, pk):
     """Grab data using get_assignments and send it to the frontend react app.
