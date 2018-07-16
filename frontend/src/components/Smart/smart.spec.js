@@ -5,8 +5,20 @@ import Smart from './index';
 
 describe('<Smart />', () => {
     describe('render', () => {
-        it('renders properly', () => {
-            const wrapper = shallow(<Smart />);
+        it('renders properly if all props provided', () => {
+            const fn = () => {};
+            const data = [];
+            const message = "";
+            const wrapper = shallow(
+              <Smart
+                fetchCards = {fn}
+                annotateCard = {fn}
+                passCard =  {fn}
+                popCard = {fn}
+                cards =  {data}
+                message = {message}
+              />
+            );
         });
     });
 });
