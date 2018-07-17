@@ -3,28 +3,6 @@ import PropTypes from 'prop-types';
 import ReactTable from 'react-table';
 import {Button} from "react-bootstrap";
 
-const columns = [
-  {
-    Header: "id",
-    accessor: "id",
-    show: false
-  },
-  {
-    Header: "Data",
-    accessor: "data",
-    filterMethod: (filter, row) => {
-      if(String(row["data"]).toLowerCase().includes(filter.value.toLowerCase()))
-      {
-        return true;
-      }
-      else {
-        return false;
-      }
-    }
-  }
-];
-
-
 class AdminTable extends React.Component {
 
   componentWillMount() {
@@ -33,6 +11,33 @@ class AdminTable extends React.Component {
 
   render() {
   const {admin_data, labels, adminLabel} = this.props;
+
+  const columns = [
+    {
+      Header: "id",
+      accessor: "id",
+      show: false
+    },
+    {
+      Header: "Unlabeled Data",
+      accessor: "data",
+      Cell: row => (
+        <div>
+          <p id="admin_text">{row.row.data}</p>
+          <div id="admin_buttons">
+          {labels[0].map( (label) => (
+            <Button key={label.id.toString() + "_" + row.row.id.toString()}
+            onClick={() => adminLabel(row.row.id,label.id)}
+            bsStyle="primary"
+            >{label.name}</Button>
+          ))}
+          </div>
+        </div>
+      )
+    }
+  ];
+
+
   if(admin_data && admin_data.length > 0)
   {
     var table_data = admin_data[0];
@@ -67,21 +72,7 @@ class AdminTable extends React.Component {
         pageSizeOptions={[1,5,10,20,30,50,100]}
         defaultPageSize={1}
         expanded={expanded}
-        SubComponent={
-          row => {
-          return (
-            <div>
-            <p>{row.row.data}</p>
-            {label_list.map( (label) => (
-              <Button key={label.id.toString() + "_" + row.row.id.toString()}
-              onClick={() => adminLabel(row.row.id,label.id)}
-              bsStyle="primary"
-              >{label.name}</Button>
-            ))}
-            </div>
-          );
-        }}
-        filterable={true}
+        filterable={false}
       />
     </div>
   );

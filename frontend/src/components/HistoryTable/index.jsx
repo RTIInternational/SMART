@@ -24,7 +24,8 @@ const columns = [
   },
   {
     Header: "Old Label",
-    accessor: "old_label"
+    accessor: "old_label",
+    width: 100
   },
   {
     Header: "Old Label ID",
@@ -34,7 +35,8 @@ const columns = [
   {
     Header: "Date/Time",
     accessor: "timestamp",
-    id: "timestamp"
+    id: "timestamp",
+    width: 150
   }
 ];
 
@@ -63,7 +65,12 @@ class HistoryTable extends React.Component {
             <p>{row.row.data}</p>
             {labels[0].map( (label) => (
               <Button key={label.id.toString() + "_" + row.row.id.toString()}
-              onClick={() => changeLabel(row.row.id,row.row.old_label_id,label.id)}
+              onClick={() => {
+                if(!(row.row.old_label_id === label.id))
+                {
+                  changeLabel(row.row.id,row.row.old_label_id,label.id)
+                }
+              }}
               bsStyle="primary"
               >{label.name}</Button>
             ))}

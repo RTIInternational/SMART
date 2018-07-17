@@ -5,7 +5,26 @@ import { Button, Panel, Table } from "react-bootstrap";
 import NVD3Chart from "react-nvd3";
 import d3 from 'd3';
 
-
+const columns = [
+  {
+    Header: "id",
+    accessor: "id",
+    show: false
+  },
+  {
+    Header: "Unlabeled Data",
+    accessor: "data",
+    filterMethod: (filter, row) => {
+      if(String(row["data"]).toLowerCase().includes(filter.value.toLowerCase()))
+      {
+        return true;
+      }
+      else {
+        return false;
+      }
+    }
+  }
+];
 
 class Skew extends React.Component {
   constructor(props)
@@ -24,37 +43,7 @@ class Skew extends React.Component {
 
   const {unlabeled_data, labels, skewLabel, label_counts} = this.props;
 
-  const columns = [
-    {
-      Header: "id",
-      accessor: "id",
-      show: false
-    },
-    {
-      Header: "Unlabeled Data",
-      accessor: "data",
-      filterMethod: (filter, row) => {
-        if(String(row["data"]).toLowerCase().includes(filter.value.toLowerCase()))
-        {
-          return true;
-        }
-        else {
-          return false;
-        }
-      },
-      Cell: row => (
-        <div>
-        <p id="skew_text">{row.row.data}</p>
-        {labels[0].map( (label) => (
-          <Button key={label.id.toString() + "_" + row.row.id.toString()}
-          onClick={() => skewLabel(row.row.id,label.id)}
-          bsStyle="primary"
-          >{label.name}</Button>
-        ))}
-        </div>
-      )
-    }
-  ];
+
 
   var label_data = [];
   if(label_counts.length > 0)
@@ -104,6 +93,21 @@ class Skew extends React.Component {
                 data={unlabeled_data[0]}
                 columns={columns}
                 filterable={true}
+                SubComponent={row => {
+                  return (
+                    <div>
+                      <p id="skew_text">{row.row.data}</p>
+                      <div id="skew_buttons">
+                      {labels[0].map( (label) => (
+                        <Button key={label.id.toString() + "_" + row.row.id.toString()}
+                        onClick={() => skewLabel(row.row.id,label.id)}
+                        bsStyle="primary"
+                        >{label.name}</Button>
+                      ))}
+                      </div>
+                    </div>
+                  );
+                }}
               />
             </td>
           </tr>

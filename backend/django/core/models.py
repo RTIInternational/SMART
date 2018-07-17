@@ -107,8 +107,6 @@ class DataLabel(models.Model):
     timestamp = models.DateTimeField(null=True, default= None)
 
 class LabelChangeLog(models.Model):
-    class Meta:
-        unique_together = (('data', 'profile'))
     project = models.ForeignKey('Project')
     data = models.ForeignKey('Data')
     profile = models.ForeignKey('Profile')
