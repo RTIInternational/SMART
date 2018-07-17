@@ -588,7 +588,7 @@ def skip_data(request, pk):
     data = Data.objects.get(pk=pk)
     profile = request.user.profile
     project = data.project
-    queue = project.queue_set.get(admin=False)
+    queue = project.queue_set.get(admin=False, irr=False)
     response = {}
 
     # Make sure coder still has permissions before labeling data
@@ -679,7 +679,7 @@ def modify_label_to_skip(request, pk):
     response = {}
     project = data.project
     old_label = Label.objects.get(pk=request.data['oldLabelID'])
-    queue = Queue.objects.get(project=project, admin=True)
+    queue = Queue.objects.get(project=project, admin=True, irr=False)
     # Make sure coder still has permissions before labeling data
     if project_extras.proj_permission_level(data.project, profile) > 0:
 

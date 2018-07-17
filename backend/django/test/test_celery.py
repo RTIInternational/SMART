@@ -80,7 +80,7 @@ def test_tfidf_creation_task(test_project_data, tmpdir, settings):
 def test_model_task_redis_no_dupes_data_left_in_queue(test_project_labeled_and_tfidf, test_queue, test_redis, tmpdir, settings):
     project = test_project_labeled_and_tfidf
     initial_training_set = project.get_current_training_set().set_number
-    queue = project.queue_set.get(admin=False)
+    queue = project.queue_set.get(admin=False, irr=False)
     queue.length = 40
     queue.save()
 
@@ -108,7 +108,7 @@ def test_model_task_redis_no_dupes_data_unassign_assigned_data(test_project_labe
     ProjectPermissions.objects.create(profile=person2, project=project, permission='CODER')
     ProjectPermissions.objects.create(profile=person3, project=project, permission='CODER')
     initial_training_set = project.get_current_training_set().set_number
-    queue = project.queue_set.get(admin=False)
+    queue = project.queue_set.get(admin=False, irr=False)
     queue.length = 40
     queue.save()
 

@@ -1166,7 +1166,7 @@ def test_check_and_trigger_queue_changes_success(setup_celery, test_project_labe
                                                    labelers=None).count() * project.labels.count()
 
     # Assert queue filled and redis sycned
-    q = project.queue_set.get(admin=False)
+    q = project.queue_set.get(admin=False, irr=False)
     assert q.data.count() == q.length
     assert_redis_matches_db(test_redis)
 

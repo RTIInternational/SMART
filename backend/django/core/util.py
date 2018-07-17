@@ -391,12 +391,12 @@ def pop_first_nonempty_queue(project, profile=None):
     if profile is not None:
         # Use priority to ensure we set profile queues above project queues
         # in the resulting list; break ties by pk
-        profile_queues = project.queue_set.filter(profile=profile, admin=False)
+        profile_queues = project.queue_set.filter(profile=profile, admin=False, irr=False)
     else:
         profile_queues = Queue.objects.none()
     profile_queues = profile_queues.annotate(priority=Value(1, IntegerField()))
 
-    project_queues = (project.queue_set.filter(profile=None, admin=False)
+    project_queues = (project.queue_set.filter(profile=None, admin=False, irr=False)
                       .annotate(priority=Value(2, IntegerField())))
 
     eligible_queue_ids = [redis_serialize_queue(queue) for queue in
@@ -544,7 +544,7 @@ def move_skipped_to_admin_queue(datum, profile, project):
         assignment.delete()
         #change the queue to the admin one
         old_id = queue.id
-        new_queue = Queue.objects.get(project=queue.project, admin=True)
+        new_queue = Queue.objects.get(project=queue.project, admin=True, irr=False)
         DataQueue.objects.filter(data=datum, queue=queue).update(queue=new_queue)
 
     #remove the data from redis
@@ -691,7 +691,7 @@ def check_and_trigger_model(datum):
         return_str = 'task already running'
     elif labeled_data_count >= batch_size:
         if labels_count < project.labels.count():
-            fill_queue(project.queue_set.get(admin=False), 'random')
+            fill_queue(project.queue_set.get(admin=False, irr=False), 'random')
             return_str = 'random'
         else:
             task_num = tasks.send_model_task.delay(project.pk)
