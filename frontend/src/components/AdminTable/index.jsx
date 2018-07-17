@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import ReactTable from 'react-table';
-import {Button} from "react-bootstrap";
+import {Button, ButtonToolbar} from "react-bootstrap";
 
 class AdminTable extends React.Component {
 
@@ -25,12 +25,14 @@ class AdminTable extends React.Component {
         <div>
           <p id="admin_text">{row.row.data}</p>
           <div id="admin_buttons">
-          {labels[0].map( (label) => (
-            <Button key={label.id.toString() + "_" + row.row.id.toString()}
-            onClick={() => adminLabel(row.row.id,label.id)}
-            bsStyle="primary"
-            >{label.name}</Button>
-          ))}
+          <ButtonToolbar bsClass="btn-toolbar pull-right">
+            {labels[0].map( (label) => (
+              <Button key={label.id.toString() + "_" + row.row.id.toString()}
+              onClick={() => adminLabel(row.row.id,label.id)}
+              bsStyle="primary"
+              >{label.name}</Button>
+            ))}
+          </ButtonToolbar>
           </div>
         </div>
       )

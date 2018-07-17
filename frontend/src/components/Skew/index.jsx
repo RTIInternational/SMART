@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import ReactTable from 'react-table';
-import { Button, Panel, Table } from "react-bootstrap";
+import { Button, ButtonToolbar, Panel, Table } from "react-bootstrap";
 import NVD3Chart from "react-nvd3";
 import d3 from 'd3';
 
@@ -88,15 +88,17 @@ class Skew extends React.Component {
         filterable={true}
         SubComponent={row => {
           return (
-            <div>
+            <div className="sub-row">
               <p id="skew_text">{row.row.data}</p>
               <div id="skew_buttons">
-              {labels[0].map( (label) => (
-                <Button key={label.id.toString() + "_" + row.row.id.toString()}
-                onClick={() => skewLabel(row.row.id,label.id)}
-                bsStyle="primary"
-                >{label.name}</Button>
-              ))}
+                <ButtonToolbar bsClass="btn-toolbar pull-right">
+                  {labels[0].map( (label) => (
+                    <Button key={label.id.toString() + "_" + row.row.id.toString()}
+                    onClick={() => skewLabel(row.row.id,label.id)}
+                    bsStyle="primary"
+                    >{label.name}</Button>
+                  ))}
+                </ButtonToolbar>
               </div>
             </div>
           );

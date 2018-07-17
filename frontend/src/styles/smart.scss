@@ -211,16 +211,6 @@ table.dataTable tbody td.no-padding {
     white-space: normal;
 }
 
-#admin_buttons {
-    margin: auto;
-    width: 50%;
-}
-
-#skew_buttons {
-    margin: auto;
-    width: 50%;
-}
-
 li.disabled {
     visibility: hidden;
 }
@@ -280,4 +270,9 @@ li.disabled {
 
 #loading_text {
     margin-left: -45px;
+}
+
+.sub-row {
+    border-top: 2px solid #EFEFEF;
+    margin: 0px 15px 10px;
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import ReactTable from 'react-table';
-import {Button} from "react-bootstrap";
+import {Button, ButtonToolbar} from "react-bootstrap";
 
 const columns = [
   {
@@ -61,22 +61,24 @@ class HistoryTable extends React.Component {
         columns={columns}
         SubComponent={row => {
           return (
-            <div>
-            <p>{row.row.data}</p>
-            {labels[0].map( (label) => (
-              <Button key={label.id.toString() + "_" + row.row.id.toString()}
-              onClick={() => {
-                if(!(row.row.old_label_id === label.id))
-                {
-                  changeLabel(row.row.id,row.row.old_label_id,label.id)
-                }
-              }}
-              bsStyle="primary"
-              >{label.name}</Button>
-            ))}
-            <Button onClick={() => changeToSkip(row.row.id,row.row.old_label_id)}
-            bsStyle="info"
-            >Skip</Button>
+            <div className="sub-row">
+              <p>{row.row.data}</p>
+              <ButtonToolbar bsClass="btn-toolbar pull-right">
+                {labels[0].map( (label) => (
+                  <Button key={label.id.toString() + "_" + row.row.id.toString()}
+                  onClick={() => {
+                    if(!(row.row.old_label_id === label.id))
+                    {
+                      changeLabel(row.row.id,row.row.old_label_id,label.id)
+                    }
+                  }}
+                  bsStyle="primary"
+                  >{label.name}</Button>
+                ))}
+                <Button onClick={() => changeToSkip(row.row.id,row.row.old_label_id)}
+                bsStyle="info"
+                >Skip</Button>
+              </ButtonToolbar>
             </div>
           );
         }}
