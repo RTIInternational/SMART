@@ -74,21 +74,21 @@
 <script type="text/javascript">
 function addASpinner()
 {
-  $('.overlay').show()
-  $('#loading_text').html("Please wait. Uploading data...")
-  $("#second_progress").addClass("loader")
+  $('.overlay').show();
+  $('#loading_text').html("Please wait. Uploading data...");
+  $("#second_progress").addClass("loader");
   var refreshID = setInterval(function(){
-    var progress = $('#progressBar').attr('value')
-    if(progress >= 100)
-    {
+    var progress = $('#progressBar').attr('value');
+    if(progress >= 100) {
       //update the loading message
-      $('#loading_text').html("Please wait. Processing data...")
+      $('#loading_text').html("Please wait. Processing data...");
       clearInterval(refreshID);
     }
-  },300)
+  },300);
+
   //after 30 seconds, update the message
   setTimeout(function(){
-    $('#loading_text').html("STILL Processing data...")
+    $('#loading_text').html("STILL Processing data...");
   },10000)
 }
 

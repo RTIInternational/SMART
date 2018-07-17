@@ -91,9 +91,9 @@ class Dev(Configuration):
     # upload handlers
     # https://github.com/ouhouhsami/django-progressbarupload
     FILE_UPLOAD_HANDLERS = (
-    "progressbarupload.uploadhandler.ProgressBarUploadHandler",
-    "django.core.files.uploadhandler.MemoryFileUploadHandler",
-    "django.core.files.uploadhandler.TemporaryFileUploadHandler",
+        "progressbarupload.uploadhandler.ProgressBarUploadHandler",
+        "django.core.files.uploadhandler.MemoryFileUploadHandler",
+        "django.core.files.uploadhandler.TemporaryFileUploadHandler",
     )
     PROGRESSBARUPLOAD_INCLUDE_JQUERY = True
 
