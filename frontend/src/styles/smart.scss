@@ -203,6 +203,18 @@ table.dataTable tbody td.no-padding {
     margin-left: auto;
 }
 
+.progress {
+    margin-top: 15px;
+}
+
+#admin_text {
+    white-space: normal;
+}
+
+li.disabled {
+    visibility: hidden;
+}
+
 .loader {
     border: 8px solid #F3F3F3; /* Light grey */
     border-top: 8px solid #3498DB; /* Blue */
@@ -217,7 +229,6 @@ table.dataTable tbody td.no-padding {
     0% { transform: rotate(0deg); }
 
     100% { transform: rotate(360deg); }
-
 }
 
 #progressBar {
@@ -259,4 +270,9 @@ table.dataTable tbody td.no-padding {
 
 #loading_text {
     margin-left: -45px;
+}
+
+.sub-row {
+    border-top: 2px solid #EFEFEF;
+    margin: 0px 15px 10px;
 }

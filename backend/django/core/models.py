@@ -97,7 +97,6 @@ class Label(models.Model):
         unique_together = (('name', 'project'))
     name = models.TextField()
     project = models.ForeignKey('Project', related_name='labels', on_delete=models.CASCADE)
-
     def __str__(self):
         return self.name
 
@@ -109,6 +108,15 @@ class DataLabel(models.Model):
     label = models.ForeignKey('Label')
     training_set = models.ForeignKey('TrainingSet')
     time_to_label = models.IntegerField(null=True)
+    timestamp = models.DateTimeField(null=True, default= None)
+
+class LabelChangeLog(models.Model):
+    project = models.ForeignKey('Project')
+    data = models.ForeignKey('Data')
+    profile = models.ForeignKey('Profile')
+    old_label = models.TextField()
+    new_label = models.TextField()
+    change_timestamp = models.DateTimeField(null=True, default= None)
 
 class DataPrediction(models.Model):
     class Meta:
