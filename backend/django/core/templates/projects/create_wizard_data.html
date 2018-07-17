@@ -10,22 +10,16 @@
 {% endblock %}
 
 {% block content %}
+<div class="overlay">
+  <div class="overlay_contents">
+    <div id="second_progress"></div>
+    <p id="loading_text"></p>
+  </div>
+</div>
 <div class="error-messages">{{ wizard.non_form_errors }}</div>
 <div class="row">
   <div class="col-md-8 col-md-offset-2">
-    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="exampleModalLabel">Loading</h5>
-          </div>
-          <div class="modal-body">
-            <div id="second_progress"></div>
-            <p id="loading_text"></p>
-          </div>
-        </div>
-      </div>
-    </div>
+
     <div class="card">
       {% progress_bar_media %}
       <div class="cardface">
@@ -60,7 +54,7 @@
             <button class="btn btn-info" name="wizard_goto_step" type="submit" value="labels">2. Labels</button>
             <button class="btn btn-info" name="wizard_goto_step" type="submit" value="permissions">3. Permissions</button>
             <button class="btn btn-info" name="wizard_goto_step" type="submit" value="advanced">4. Advanced</button>
-            <input class="btn btn-primary" type="submit" value="Submit" data-toggle="modal" data-target="#exampleModal"/>
+            <input class="btn btn-primary" type="submit" value="Submit" />
             <p class="pull-right">Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
           </div>
 
@@ -80,6 +74,7 @@
 <script type="text/javascript">
 function addASpinner()
 {
+  $('.overlay').show()
   $('#loading_text').html("Please wait. Uploading data...")
   $("#second_progress").addClass("loader")
   var refreshID = setInterval(function(){
