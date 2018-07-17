@@ -3,17 +3,20 @@ import 'whatwg-fetch';
 import moment from 'moment';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
+import { getHistory } from './history';
+import { getLabelCounts, getAdmin } from './adminTables';
 
 export const POP_CARD = 'POP_CARD';
 export const PUSH_CARD = 'PUSH_CARD';
 export const SET_MESSAGE = 'SET_MESSAGE';
 export const CLEAR_DECK = 'CLEAR_DECK';
+export const SET_LABELS = 'SET_LABELS';
 
 export const popCard = createAction(POP_CARD);
 export const pushCard = createAction(PUSH_CARD);
 export const setMessage = createAction(SET_MESSAGE);
 export const clearDeck = createAction(CLEAR_DECK);
-
+export const setLabels = createAction(SET_LABELS);
 
 // Create cards by reading from a queue
 export const fetchCards = (projectID) => {
@@ -35,6 +38,7 @@ export const fetchCards = (projectID) => {
                 if ('error' in response) return dispatch(setMessage(response.error));
 
                 for (let i = 0; i < response.data.length; i++) {
+
                     const card = {
                         id: i,
                         options: response.labels,
@@ -47,7 +51,7 @@ export const fetchCards = (projectID) => {
     }
 };
 
-export const annotateCard = (card, labelID) => {
+export const annotateCard = (card, labelID, projectID) => {
     let payload = {
         labelID: labelID,
         labeling_time: moment().diff(card['start_time'], 'seconds') // now - start_time rounded to whole seconds
@@ -72,13 +76,15 @@ export const annotateCard = (card, labelID) => {
                 }
                 else {
                     dispatch(popCard())
+                    dispatch(getHistory(projectID))
+                    dispatch(getLabelCounts(projectID))
                 }
             })
     }
 }
 
 //skip a card and put it in the admin table
-export const passCard = (card) => {
+export const passCard = (card, projectID) => {
     let payload = {
     }
     let apiURL = `/api/skip_data/${card.text.pk}/`;
@@ -101,6 +107,7 @@ export const passCard = (card) => {
                 }
                 else {
                     dispatch(popCard())
+                    dispatch(getAdmin(projectID))
                 }
             })
     }
