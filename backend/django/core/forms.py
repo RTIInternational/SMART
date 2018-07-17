@@ -134,7 +134,7 @@ class ProjectWizardForm(forms.ModelForm):
 class AdvancedWizardForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ['learning_method']
+        fields = ['learning_method','percentage_irr','num_users_irr']
 
     use_active_learning = forms.BooleanField(initial=True, required=False)
     active_l_choices = copy.deepcopy(Project.ACTIVE_L_CHOICES)
@@ -144,6 +144,8 @@ class AdvancedWizardForm(forms.ModelForm):
         widget=RadioSelect(), choices=active_l_choices,
         initial="least confident", required=False
     )
+    percentage_irr = forms.IntegerField(initial=10, min_value=0, max_value=100)
+    num_users_irr = forms.IntegerField(initial=2, min_value=2)
 
     def clean(self):
         use_active_learning = self.cleaned_data.get("use_active_learning")

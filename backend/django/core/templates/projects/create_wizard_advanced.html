@@ -31,6 +31,19 @@
                 </div>
                 {% endfor %}
               </div>
+              <div id="IRR options">
+                <h2>Inter-rater Reliability (IRR) Options</h2>
+                <p>Under IRR, a certain percentage of the data is labeled by
+                  multiple coders. The project admin can then examine the
+                  consistency of the labels across different coders. The options
+                  below allow you to set what percentage of the data is coded
+                  multiple times, and how many coders must code data designated
+                  for IRR before it is analyzed.
+                </p>
+                Percent of batch marked IRR (must be between 0 and 100):{{ wizard.form.percentage_irr }}%
+                <br />
+                Number of coders needed (minimum of 2): {{ wizard.form.num_users_irr }}
+              </div>
             </div>
 
           <div>

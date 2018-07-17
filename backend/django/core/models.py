@@ -5,6 +5,7 @@ from django.urls import reverse
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.postgres.fields import JSONField
+from django.core.validators import MaxValueValidator, MinValueValidator
 
 class Profile(models.Model):
     # Link to the auth user, since we're basically just extending it
@@ -29,6 +30,8 @@ class Project(models.Model):
     name = models.TextField()
     description = models.TextField(blank=True)
     creator = models.ForeignKey('Profile')
+    percentage_irr = models.IntegerField(default=10, validators=[MinValueValidator(0), MaxValueValidator(100)])
+    num_users_irr = models.IntegerField(default=2, validators=[MinValueValidator(2)])
 
     #####Advanced options#####
     #the current options are 'random', 'least confident', 'entropy', and 'margin sampling'
@@ -84,6 +87,7 @@ class Data(models.Model):
     hash = models.CharField(max_length=128)
     project = models.ForeignKey('Project')
     df_idx = models.IntegerField()
+    irr_ind = models.BooleanField(default=False)
 
     def __str__(self):
         return self.text
@@ -127,6 +131,7 @@ class Queue(models.Model):
     profile = models.ForeignKey('Profile', blank=True, null=True)
     project = models.ForeignKey('Project')
     admin = models.BooleanField(default=False)
+    irr = models.BooleanField(default=False)
     length = models.IntegerField()
     data = models.ManyToManyField(
         'Data', related_name='queues', through='DataQueue'

@@ -247,14 +247,14 @@ def find_queue_length(batch_size, num_coders):
     return math.ceil(batch_size/num_coders) * num_coders + math.ceil(batch_size/num_coders) * (num_coders - 1)
 
 
-def add_queue(project, length, admin, profile=None):
+def add_queue(project, length, admin = False, irr = False, profile=None):
     '''
     Add a queue of the given length to the given project.  If a profile is provided,
     assign the queue to that profile.
 
     Return the created queue.
     '''
-    return Queue.objects.create(length=length, project=project, profile=profile, admin = admin)
+    return Queue.objects.create(length=length, project=project, profile=profile, admin = admin, irr=irr)
 
 
 def get_ordered_data(data_ids, orderby):

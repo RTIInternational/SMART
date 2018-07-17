@@ -237,6 +237,8 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             proj_obj.creator = self.request.user.profile
             # Advanced Options
             proj_obj.learning_method = advanced_data["learning_method"]
+            proj_obj.percentage_irr = advanced_data["percentage_irr"]
+            proj_obj.num_users_irr = advanced_data["num_users_irr"]
             proj_obj.save()
 
             # Training Set
@@ -255,13 +257,14 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             num_coders = len([x for x in permissions if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True]) + 1
             q_length = util.find_queue_length(batch_size, num_coders)
 
-            queue = util.add_queue(project=proj_obj, length=q_length, admin=False)
+            queue = util.add_queue(project=proj_obj, length=q_length)
 
 
             # Data
             f_data = data.cleaned_data['data']
             data_length = len(f_data)
-            admin_queue = util.add_queue(project=proj_obj, length=data_length, admin=True)
+            admin_queue = util.add_queue(project=proj_obj, length=data_length, admin=True, irr=False)
+            irr_queue = util.add_queue(project=proj_obj, length=data_length, admin=False, irr=True)
             upload_data(f_data, proj_obj, queue)
 
         return HttpResponseRedirect(proj_obj.get_absolute_url())
