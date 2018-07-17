@@ -57,62 +57,51 @@ class Skew extends React.Component {
       <p>This page allows an admin to manually search for and annotate data in the case of a particularly bad data skew.</p>
       <p>To the left is a chart that shows the distribution of labels in the project. Below is all of the unlabeled data that are not in a queue.</p>
       <p>To annotate, click on a data entry below and select the label from the expanded list of labels. As you label data the chart to the left will update.</p>
-      <Table>
-        <tbody>
-          <tr>
-            <td className="col-md-5">
-              <Panel>
-
-                <NVD3Chart
-                id="labelCounts"
-                type="multiBarChart"
-                datum={label_data}
-                duration={300}
-                groupSpacing={0.1}
-                stacked={true}
-                yAxis={{
-                  axisLabel: "Number of Data Annotated",
-                  axisLabelDistance: -5,
-                  tickFormat: d3.format(',.01f')
-                }}
-                xAxis={{
-                  axisLabel: "Label",
-                  axisLabelDistance: 15,
-                  showMaxMin: false
-                }}
-                noData="Insufficient labeled data -- please code more documents"
-                margin={{
-                  bottom: 20,
-                  left: 70
-                }}
-                />
-              </Panel>
-            </td>
-            <td>
-              <ReactTable
-                data={unlabeled_data[0]}
-                columns={columns}
-                filterable={true}
-                SubComponent={row => {
-                  return (
-                    <div>
-                      <p id="skew_text">{row.row.data}</p>
-                      <div id="skew_buttons">
-                      {labels[0].map( (label) => (
-                        <Button key={label.id.toString() + "_" + row.row.id.toString()}
-                        onClick={() => skewLabel(row.row.id,label.id)}
-                        bsStyle="primary"
-                        >{label.name}</Button>
-                      ))}
-                      </div>
-                    </div>
-                  );
-                }}
-              />
-            </td>
-          </tr>
-        </tbody>
-      </Table>
+      <Panel>
+        <NVD3Chart
+        id="labelCounts"
+        type="multiBarChart"
+        datum={label_data}
+        duration={300}
+        groupSpacing={0.1}
+        stacked={true}
+        yAxis={{
+          axisLabel: "Number of Data Annotated",
+          axisLabelDistance: -5,
+          tickFormat: d3.format(',.01f')
+        }}
+        xAxis={{
+          axisLabel: "Label",
+          axisLabelDistance: 15,
+          showMaxMin: false
+        }}
+        noData="Insufficient labeled data -- please code more documents"
+        margin={{
+          bottom: 20,
+          left: 70
+        }}
+        />
+      </Panel>
+      <ReactTable
+        data={unlabeled_data[0]}
+        columns={columns}
+        filterable={true}
+        SubComponent={row => {
+          return (
+            <div>
+              <p id="skew_text">{row.row.data}</p>
+              <div id="skew_buttons">
+              {labels[0].map( (label) => (
+                <Button key={label.id.toString() + "_" + row.row.id.toString()}
+                onClick={() => skewLabel(row.row.id,label.id)}
+                bsStyle="primary"
+                >{label.name}</Button>
+              ))}
+              </div>
+            </div>
+          );
+        }}
+      />
     </div>
   )
   }

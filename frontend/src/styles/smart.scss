@@ -220,3 +220,7 @@ table.dataTable tbody td.no-padding {
     margin: auto;
     width: 50%;
 }
+
+li.disabled {
+    visibility: hidden;
+}
