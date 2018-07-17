@@ -17,6 +17,7 @@ api_router.register(r'assigned_data', api.AssignedDataViewSet)
 
 urlpatterns = [
     url(r'^', include(api_router.urls)),
+    url(r'^progressbarupload/', include('progressbarupload.urls')),
     url(r'^get_card_deck/(?P<pk>\d+)/$', api.get_card_deck),
     url(r'^get_label_history/(?P<pk>\d+)/$', api.get_label_history),
     url(r'^annotate_data/(?P<pk>\d+)/$', api.annotate_data),
