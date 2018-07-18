@@ -29,7 +29,7 @@ from django.conf import settings
 
 from core.models import (Project, Data, Queue, DataQueue, Profile, Label,
                          AssignedData, DataLabel, Model, DataPrediction,
-                         DataUncertainty, TrainingSet, IRRLog)
+                         DataUncertainty, TrainingSet)
 from core import tasks
 
 

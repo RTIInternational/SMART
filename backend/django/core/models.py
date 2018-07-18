@@ -108,13 +108,6 @@ class Label(models.Model):
     def __str__(self):
         return self.name
 
-class IRRLog(models.Model):
-    class Meta:
-        unique_together = (('data','profile'))
-    data = models.ForeignKey('Data')
-    profile = models.ForeignKey('Profile')
-    label = models.ForeignKey('Label')
-
 class DataLabel(models.Model):
     class Meta:
         unique_together = (('data', 'profile'))
