@@ -320,12 +320,8 @@ def fill_queue(queue, orderby,  irr_queue = None, irr_percent = 10, batch_size =
     }
 
     eligible_data = Data.objects.filter(**data_filters)
-
     cte_sql, cte_params = eligible_data.query.sql_with_params()
-    sample_size_sql, sample_size_params = (Queue.objects.filter(pk=queue.pk)
-                                            .annotate(sample_size=F('length') - Count('data'))
-                                            .values('sample_size')
-                                            .query.sql_with_params())
+
 
     if orderby == 'random':
         join_clause = ''
@@ -351,35 +347,8 @@ def fill_queue(queue, orderby,  irr_queue = None, irr_percent = 10, batch_size =
             model_project_id_col=Model._meta.get_field('project').column,
             project_id=queue.project.pk)
 
-    sql = """
-    WITH eligible_data AS (
-        {cte_sql}
-    )
-    INSERT INTO {dataqueue_table}
-       ({dataqueue_data_id_col}, {dataqueue_queue_id_col})
-    SELECT
-        eligible_data.{data_pk_col},
-        {queue_id}
-    FROM
-        eligible_data
-    {join_clause}
-    ORDER BY
-        {orderby_value}
-    LIMIT ({sample_size_sql});
-    """.format(
-        cte_sql=cte_sql,
-        dataqueue_table=DataQueue._meta.db_table,
-        dataqueue_data_id_col=DataQueue._meta.get_field('data').column,
-        dataqueue_queue_id_col=DataQueue._meta.get_field('queue').column,
-        data_pk_col=Data._meta.pk.name,
-        queue_id=queue.pk,
-        join_clause=join_clause,
-        orderby_value=ORDERBY_VALUE[orderby],
-        sample_size_sql=sample_size_sql)
 
-    with connection.cursor() as c:
-        c.execute(sql, (*cte_params, *sample_size_params))
-
+    #First get the IRR data, then remove it from eligible data to avoid overlap
     if irr_queue:
         #if the irr queue is given, want to fill it with a given percent of
         #the batch size
@@ -435,11 +404,55 @@ def fill_queue(queue, orderby,  irr_queue = None, irr_percent = 10, batch_size =
 
         sync_redis_objects(irr_queue, orderby)
 
+        #get new eligible data by filtering out what was just chosen
+        data_filters = {
+            'project': queue.project,
+            'labelers': None,
+            'queues': None,
+            'irr_ind':False
+        }
+        eligible_data = Data.objects.filter(**data_filters)
+        cte_sql, cte_params = eligible_data.query.sql_with_params()
+
+    #get the remaining space in the normal queue
+    sample_size_sql, sample_size_params = (Queue.objects.filter(pk=queue.pk)
+                                            .annotate(sample_size=F('length') - Count('data'))
+                                            .values('sample_size')
+                                            .query.sql_with_params())
+
+    sql = """
+    WITH eligible_data AS (
+        {cte_sql}
+    )
+    INSERT INTO {dataqueue_table}
+       ({dataqueue_data_id_col}, {dataqueue_queue_id_col})
+    SELECT
+        eligible_data.{data_pk_col},
+        {queue_id}
+    FROM
+        eligible_data
+    {join_clause}
+    ORDER BY
+        {orderby_value}
+    LIMIT ({sample_size_sql});
+    """.format(
+        cte_sql=cte_sql,
+        dataqueue_table=DataQueue._meta.db_table,
+        dataqueue_data_id_col=DataQueue._meta.get_field('data').column,
+        dataqueue_queue_id_col=DataQueue._meta.get_field('queue').column,
+        data_pk_col=Data._meta.pk.name,
+        queue_id=queue.pk,
+        join_clause=join_clause,
+        orderby_value=ORDERBY_VALUE[orderby],
+        sample_size_sql=sample_size_sql)
+
+    with connection.cursor() as c:
+        c.execute(sql, (*cte_params, *sample_size_params))
 
     sync_redis_objects(queue, orderby)
 
 
-def pop_first_nonempty_queue(project, profile=None):
+def pop_first_nonempty_queue(project, profile=None, admin=False, irr=False):
     '''
     Determine which queues are eligible to be popped (and in what order)
     and pass them into redis to have the first nonempty one popped.
@@ -449,18 +462,37 @@ def pop_first_nonempty_queue(project, profile=None):
     if profile is not None:
         # Use priority to ensure we set profile queues above project queues
         # in the resulting list; break ties by pk
-        profile_queues = project.queue_set.filter(profile=profile, admin=False, irr=False)
+        profile_queues = project.queue_set.filter(profile=profile, admin=admin, irr=irr)
     else:
         profile_queues = Queue.objects.none()
     profile_queues = profile_queues.annotate(priority=Value(1, IntegerField()))
 
-    project_queues = (project.queue_set.filter(profile=None, admin=False, irr=False)
+    project_queues = (project.queue_set.filter(profile=None, admin=admin, irr=irr)
                       .annotate(priority=Value(2, IntegerField())))
 
     eligible_queue_ids = [redis_serialize_queue(queue) for queue in
                           (profile_queues.union(project_queues)
                            .order_by('priority', 'pk'))]
 
+
+    if irr:
+        #######NEED TO SORT THE QUEUE SO THE LABELED STUFF IS AT THE BOTTOM#######
+        for queue in eligible_queue_ids:
+            queue_id = int(queue.replace("queue:",""))
+
+            #first get the assigned data that was already labeled, or data already assigned
+            labeled_irr_data = DataLabel.objects.filter(profile=profile).values_list('data',flat=True)
+            assigned_data = AssignedData.objects.filter(profile=profile, queue=queue_id).values_list('data',flat=True)
+            assigned_unlabeled = DataQueue.objects.filter(queue=queue_id).exclude(data__in=labeled_irr_data).exclude(data__in=assigned_data)
+
+            #if there are no elements, return none
+            if len(assigned_unlabeled) == 0:
+                return (None, None)
+            else:
+                #else, get the first element off the group and return it
+                datum = Data.objects.get(pk=assigned_unlabeled[0].data.pk)
+                queue_obj = Queue.objects.get(pk=queue_id)
+                return (queue_obj, datum)
     if len(eligible_queue_ids) == 0:
         return (None, None)
 
@@ -546,20 +578,23 @@ def get_nonempty_queue(project, profile=None):
     return first_nonempty_queue
 
 
-def assign_datum(profile, project):
+def assign_datum(profile, project, irr=False):
     '''
     Given a profile and project, figure out which queue to pull from;
     then pop a datum off that queue and assign it to the profile.
     '''
     with transaction.atomic():
-        queue, datum = pop_first_nonempty_queue(project, profile=profile)
-
+        queue, datum = pop_first_nonempty_queue(project, profile=profile, irr=irr)
         if datum is None:
             return None
         else:
-            AssignedData.objects.create(data=datum, profile=profile,
+            num_labeled = DataLabel.objects.filter(data=datum, profile=profile).count()
+            if num_labeled == 0:
+                AssignedData.objects.create(data=datum, profile=profile,
                                         queue=queue)
-            return datum
+                return datum
+            else:
+                return None
 
 
 def label_data(label, datum, profile, time):
@@ -569,6 +604,8 @@ def label_data(label, datum, profile, time):
     Remove datum from DataQueue and its assocaited redis set.
     '''
     current_training_set = datum.project.get_current_training_set()
+
+    irr_data = datum.irr_ind
 
     with transaction.atomic():
         DataLabel.objects.create(data=datum,
@@ -584,9 +621,11 @@ def label_data(label, datum, profile, time):
                                                 profile=profile).get()
         queue = assignment.queue
         assignment.delete()
-        DataQueue.objects.filter(data=datum, queue=queue).delete()
 
-    settings.REDIS.srem(redis_serialize_set(queue), redis_serialize_data(datum))
+        if not irr_data:
+            DataQueue.objects.filter(data=datum, queue=queue).delete()
+    if not irr_data:
+        settings.REDIS.srem(redis_serialize_set(queue), redis_serialize_data(datum))
 
 def move_skipped_to_admin_queue(datum, profile, project):
     '''
@@ -622,8 +661,19 @@ def get_assignments(profile, project, num_assignments):
         return [assignment.data for assignment in existing_assignments[:num_assignments]]
     else:
         data = []
+        more_irr = True
         for i in range(num_assignments):
-            assigned_datum = assign_datum(profile, project)
+
+            #first try to get any IRR data
+            if more_irr:
+                assigned_datum = assign_datum(profile, project, irr=True)
+                if assigned_datum is None:
+                    #no irr data found
+                    more_irr = False
+                    assigned_datum = assign_datum(profile, project)
+            else:
+                #get normal data
+                assigned_datum = assign_datum(profile, project)
             if assigned_datum is None:
                 break
             data.append(assigned_datum)
@@ -741,7 +791,8 @@ def check_and_trigger_model(datum):
     current_training_set = project.get_current_training_set()
     batch_size = project.labels.count() * 10
     labeled_data = DataLabel.objects.filter(data__project=project,
-                                            training_set=current_training_set)
+                                            training_set=current_training_set,
+                                            data__irr_ind = False)
     labeled_data_count = labeled_data.count()
     labels_count = labeled_data.distinct('label').count()
 
