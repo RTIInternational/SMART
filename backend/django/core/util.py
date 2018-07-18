@@ -14,7 +14,7 @@ import math
 import numpy as np
 import hashlib
 import pandas as pd
-
+from django.utils import timezone
 # https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
 # Disable warning for false positive warning that should only trigger on chained assignment
 pd.options.mode.chained_assignment = None  # default='warn'
@@ -521,7 +521,8 @@ def label_data(label, datum, profile, time):
                                 label=label,
                                 profile=profile,
                                 training_set=current_training_set,
-                                time_to_label=time
+                                time_to_label=time,
+                                timestamp = timezone.now()
                                 )
         # There's a unique constraint on data/profile, so this is
         # guaranteed to return one object

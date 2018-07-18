@@ -17,8 +17,12 @@ api_router.register(r'assigned_data', api.AssignedDataViewSet)
 
 urlpatterns = [
     url(r'^', include(api_router.urls)),
+    url(r'^progressbarupload/', include('progressbarupload.urls')),
     url(r'^get_card_deck/(?P<pk>\d+)/$', api.get_card_deck),
+    url(r'^get_label_history/(?P<pk>\d+)/$', api.get_label_history),
     url(r'^annotate_data/(?P<pk>\d+)/$', api.annotate_data),
+    url(r'^modify_label/(?P<pk>\d+)/$', api.modify_label),
+    url(r'^modify_label_to_skip/(?P<pk>\d+)/$', api.modify_label_to_skip),
     url(r'^label_skew_label/(?P<pk>\d+)/$', api.label_skew_label),
     url(r'^label_admin_label/(?P<pk>\d+)/$', api.label_admin_label),
     url(r'^skip_data/(?P<pk>\d+)/$', api.skip_data),
@@ -32,6 +36,6 @@ urlpatterns = [
     url(r'^data_predicted_table/(?P<pk>\d+)/$', api.data_predicted_table),
     url(r'^data_unlabeled_table/(?P<pk>\d+)/$', api.data_unlabeled_table),
     url(r'^data_admin_table/(?P<pk>\d+)/$', api.data_admin_table),
-    url(r'^get_labels/(?P<pk>\d+)/$', api.get_labels),
+    url(r'^data_change_log_table/(?P<pk>\d+)/$', api.data_change_log_table),
     url(r'^model_metrics/(?P<pk>\d+)/$', api.model_metrics),
 ]

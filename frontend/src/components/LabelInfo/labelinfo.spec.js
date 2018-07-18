@@ -7,12 +7,8 @@ describe('<LabelInfo />', () => {
     describe('render', () => {
         it('renders properly if all props provided', () => {
             const labels = [];
-
-            const fn = () => {};
-
             const wrapper = shallow(
                 <LabelInfo
-                    getLabels={fn}
                     labels={labels}
                 />
             );

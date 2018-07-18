@@ -16,9 +16,6 @@
                 <li class="nav-item">
                     <a data-toggle="tab" href="#model" class="nav-link">Active Learning Model</a>
                 </li>
-                <li class="nav-item">
-                    <a data-toggle="tab" href="#annotate" class="nav-link">Admin Annotation</a>
-                </li>
             </ul>
         </div>
         <div class="tab-content">
@@ -36,9 +33,6 @@
                             <svg class="nvd3-svg"></svg>
                         </div>
                     </div>
-                    <a class="btn btn-info" href="{% url 'projects:project_skew' project.pk %}" role="button">
-                        Fix Skew
-                    </a>
                 </div>
                 <hr>
                 <div class="row">
@@ -98,19 +92,6 @@
                                     <th>Predicted Probability</th>
                                     <th>Predicted Label</th>
                                 </tr>
-                            </thead>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            <div id="annotate" class="tab-pane fade in">
-                <div class="row margin-top">
-                    <div class="col-md-12">
-                        <table id="admin_data_table" class="table table-hover table-striped table-bordered" cellspacing="0" width="100%">
-                            <thead>
-                              <tr>
-                                <th>Text</th>
-                              </tr>
                             </thead>
                         </table>
                     </div>
@@ -224,6 +205,7 @@ $.ajax({
             chart.xAxis
                 .axisLabel("Run ID")
             ;
+
             chart.yAxis
                 .axisLabel('Metric')
                 .tickFormat(function(d) {
@@ -292,45 +274,6 @@ $.ajax({
     }
 });
 
-/* Function that fires when a labelButton is clicked. This gets the label id
- * calls the admin labeling api, removes the labeled data from the table,
- * removes it from the admin queue, and updates the label distribution chart
- */
-function labelButtonClicked(event) {
-  var data_id = this.parentElement.parentElement.getAttribute('name');
-  var label_id = this.id;
-  $.ajax({
-    method: 'POST',
-    url: '/api/label_admin_label/' + data_id + '/',
-    data: {
-      labelID: label_id,
-      labeling_time: null
-    },
-    xhrFields: {
-      withCredentials: true
-    },
-    success: function (response) {
-      //Need to remove the row from the table
-      $('#admin_data_table').DataTable().rows("."+data_id).remove().draw(false);
-    },
-    error: function (error) {
-      console.log(error);
-    }
-  });
-}
-
-/* Function that formats the child rows of the unlabled data table */
-function format_hidden_rows(rowData){
-  var buttonDiv = '';
-  buttonDiv += '<div class="text-center" name=' + rowData.ID + '>';
-  buttonDiv += '<div class="center-block">'
-  {% for label in project.labels.all %}
-  buttonDiv += '<button type="button" class="btn btn-primary btn-spacing" id="{{ label.id }}">{{ label }}</button>';
-  {% endfor %}
-  buttonDiv += '</div></div>';
-  return buttonDiv;
-}
-
 $(document).ready(function() {
     /*
      *  Activate DataTable script to create the labeled data DataTable
@@ -385,31 +328,6 @@ $(document).ready(function() {
           $('td:nth-child(1)',row).addClass('showData');
         }
     });
-
-    var admin_table = $('#admin_data_table').DataTable({
-        "ajax": '/api/data_admin_table/' + {{ project.pk }} + '/',
-        "columns": [
-            { "data": "Text"},
-            {"data":"ID" , "visible": false }
-        ],
-        "oLanguage": {
-            "sSearch": "Filter Text: ",
-            "sEmptyTable": "No skipped data"
-        },
-        "lengthMenu": [[1,5,10,25,50,100,-1],[1,5,10,25,50,100,"All"]],
-    });
-
-    admin_table.on('draw',function(){
-      $('#admin_data_table').DataTable().rows().every(function(){
-        var tr = $(this.node());
-        this.child(format_hidden_rows(this.data())).show();
-        var id = String(this.data().ID);
-        $(this.node()).addClass(id);
-        $(this.node()).addClass('shown');
-        $(this.child()).find('button').click(labelButtonClicked);
-      });
-    });
-
 
     $(function () {
        $('[data-toggle="tooltip"]').tooltip()

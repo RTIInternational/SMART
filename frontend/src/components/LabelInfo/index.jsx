@@ -49,10 +49,6 @@ class LabelInfo extends React.Component {
     this.toggleLabel = this.toggleLabel.bind(this);
   }
 
-  componentWillMount() {
-      this.props.getLabels();
-  }
-
   toggleLabel(){ this.setState({labels_open: !this.state.labels_open})};
 
   render() {
@@ -71,9 +67,9 @@ class LabelInfo extends React.Component {
         <Glyphicon glyph="minus"/> Label Guide
         </Button>
         <ReactTable
-          data={labels[0]}
+          data={labels}
           columns={label_columns}
-          filterable={true}
+          filterable={false}
           minRows={2}
           className="label_table"
         />
@@ -97,7 +93,6 @@ class LabelInfo extends React.Component {
 
 
 LabelInfo.propTypes = {
-  getLabels: PropTypes.func.isRequired,
   labels: PropTypes.arrayOf(PropTypes.object)
 };
 
