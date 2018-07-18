@@ -51,7 +51,7 @@ def seed_project(creator, name, description, data_file, label_list, perm_list):
     admin_queue = add_queue(project=project,length=data_length, admin=True)
     irr_queue = add_queue(project=project,length=data_length, irr=True)
     data_objs = add_data(project, f_data)
-    fill_queue(queue, orderby='random')
+    fill_queue(queue, irr_queue = irr_queue, orderby='random', batch_size = batch_size)
     save_data_file(f_data, project.pk)
 
     tasks.send_tfidf_creation_task.apply(args=[DataSerializer(data_objs, many=True).data, project.pk])

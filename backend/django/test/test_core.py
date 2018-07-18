@@ -1065,7 +1065,7 @@ def test_check_and_trigger_lt_batch_labeled(setup_celery, test_project_data, tes
 
 
 def test_check_and_trigger_batched_success(setup_celery, test_project_labeled_and_tfidf,
-                                           test_queue, test_redis, tmpdir, settings):
+                                           test_queue, test_irr_queue, test_redis, tmpdir, settings):
     project = test_project_labeled_and_tfidf
     initial_training_set = project.get_current_training_set()
     initial_queue_size = test_queue.length
@@ -1134,7 +1134,7 @@ def test_check_and_trigger_batched_onlyone_label(setup_celery, test_project_data
 
 
 def test_check_and_trigger_queue_changes_success(setup_celery, test_project_labeled_and_tfidf,
-                                           test_queue, test_redis, tmpdir, settings, test_profile2):
+                                           test_queue, test_irr_queue, test_redis, tmpdir, settings, test_profile2):
     project = test_project_labeled_and_tfidf
     initial_training_set = project.get_current_training_set()
     initial_queue_size = test_queue.length

@@ -15,6 +15,7 @@ def send_model_task(project_pk):
 
     project = Project.objects.get(pk=project_pk)
     queue = project.queue_set.get(admin=False, irr=False)
+    irr_queue = project.queue_set.get(admin=False, irr=True)
 
     model = train_and_save_model(project)
     predictions = predict_data(project, model)
@@ -31,7 +32,7 @@ def send_model_task(project_pk):
         queue.save()
 
     al_method = project.learning_method
-    fill_queue(queue, al_method)
+    fill_queue(queue, irr_queue = irr_queue, orderby = al_method, irr_percent = project.percentage_irr, batch_size = batch_size)
 
 @shared_task
 def send_tfidf_creation_task(response, project_pk):

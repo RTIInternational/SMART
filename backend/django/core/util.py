@@ -290,7 +290,7 @@ def get_ordered_data(data_ids, orderby):
         return data_objs.annotate(max_entropy=Max('datauncertainty__entropy')).order_by('-max_entropy')
 
 
-def fill_queue(queue, orderby):
+def fill_queue(queue, orderby,  irr_queue = None, irr_percent = 10, batch_size = 30 ):
     '''
     Fill a queue with unlabeled, unassigned data randomly selected from
     the queue's project. The queue doesn't need to be empty.
@@ -300,6 +300,8 @@ def fill_queue(queue, orderby):
 
     Takes an orderby arguement to fill the qeuue based on uncertainty sampling if
     the project has a trained model
+
+    Fill the IRR queue with the given percentage of values
     '''
     ORDERBY_VALUE = {
         'random': 'random()',
@@ -377,6 +379,62 @@ def fill_queue(queue, orderby):
 
     with connection.cursor() as c:
         c.execute(sql, (*cte_params, *sample_size_params))
+
+    if irr_queue:
+        #if the irr queue is given, want to fill it with a given percent of
+        #the batch size
+        num_irr = math.ceil(batch_size * (irr_percent/100))
+        num_elements = len(DataQueue.objects.filter(queue=irr_queue))
+
+        queue_size = irr_queue.length
+        if queue_size - num_elements < num_irr:
+            irr_sample_size_sql, irr_sample_size_params = (Queue.objects.filter(pk=irr_queue.pk)
+                                                .annotate(sample_size=F('length') - Count('data'))
+                                                .values('sample_size')
+                                                .query.sql_with_params())
+        else:
+            irr_sample_size_sql, irr_sample_size_params = (Queue.objects.filter(pk=irr_queue.pk)
+                                                .annotate(sample_size=Value(num_irr, IntegerField()))
+                                                .values('sample_size')
+                                                .query.sql_with_params())
+        irr_sql = """
+        WITH eligible_data AS (
+            {cte_sql}
+        )
+        INSERT INTO {dataqueue_table}
+           ({dataqueue_data_id_col}, {dataqueue_queue_id_col})
+        SELECT
+            eligible_data.{data_pk_col},
+            {queue_id}
+        FROM
+            eligible_data
+        {join_clause}
+        ORDER BY
+            {orderby_value}
+        LIMIT ({sample_size_sql});
+        """.format(
+            cte_sql=cte_sql,
+            dataqueue_table=DataQueue._meta.db_table,
+            dataqueue_data_id_col=DataQueue._meta.get_field('data').column,
+            dataqueue_queue_id_col=DataQueue._meta.get_field('queue').column,
+            data_pk_col=Data._meta.pk.name,
+            queue_id=irr_queue.pk,
+            join_clause=join_clause,
+            orderby_value=ORDERBY_VALUE[orderby],
+            sample_size_sql=irr_sample_size_sql)
+
+        with connection.cursor() as c:
+            c.execute(irr_sql, (*cte_params, *irr_sample_size_params))
+
+        with transaction.atomic():
+            irr_data = DataQueue.objects.filter(queue=irr_queue.pk)
+            data_ids = []
+            for d in irr_data:
+                data_ids.append(d.data.df_idx)
+            Data.objects.filter(df_idx__in=data_ids).update(irr_ind=True)
+
+        sync_redis_objects(irr_queue, orderby)
+
 
     sync_redis_objects(queue, orderby)
 
@@ -691,7 +749,8 @@ def check_and_trigger_model(datum):
         return_str = 'task already running'
     elif labeled_data_count >= batch_size:
         if labels_count < project.labels.count():
-            fill_queue(project.queue_set.get(admin=False, irr=False), 'random')
+            queue = project.queue_set.get(admin=False, irr=False)
+            fill_queue(queue = queue, orderby = 'random')
             return_str = 'random'
         else:
             task_num = tasks.send_model_task.delay(project.pk)

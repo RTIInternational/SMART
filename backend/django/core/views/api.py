@@ -597,7 +597,7 @@ def skip_data(request, pk):
     else:
         response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
 
-    util.fill_queue(queue,project.learning_method)
+    util.fill_queue(queue = queue,orderby = project.learning_method)
     return Response(response)
 
 @api_view(['POST'])

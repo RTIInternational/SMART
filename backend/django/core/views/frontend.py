@@ -100,7 +100,7 @@ class ProjectDetail(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         return project_extras.proj_permission_level(project, self.request.user.profile) > 0
 
 
-def upload_data(form_data, project, queue=None):
+def upload_data(form_data, project, queue=None, irr_queue=None, batch_size = 30):
     """Perform data upload given validated form_data.
 
     1. Add data to database
@@ -111,7 +111,7 @@ def upload_data(form_data, project, queue=None):
     """
     data_objs = util.add_data(project, form_data)
     if queue:
-        util.fill_queue(queue, orderby='random')
+        util.fill_queue(queue=queue, irr_queue=irr_queue, orderby='random', irr_percent = project.percentage_irr, batch_size = batch_size)
     util.save_data_file(form_data, project.pk)
 
     # Since User can upload Labeled Data and this data is added to current training_set
@@ -258,7 +258,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             data_length = len(f_data)
             admin_queue = util.add_queue(project=proj_obj, length=data_length, admin=True, irr=False)
             irr_queue = util.add_queue(project=proj_obj, length=data_length, admin=False, irr=True)
-            upload_data(f_data, proj_obj, queue)
+            upload_data(f_data, proj_obj, queue, irr_queue, batch_size)
 
         return HttpResponseRedirect(proj_obj.get_absolute_url())
 
