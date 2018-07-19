@@ -483,7 +483,8 @@ def pop_first_nonempty_queue(project, profile=None, admin=False, irr=False):
             #first get the assigned data that was already labeled, or data already assigned
             labeled_irr_data = DataLabel.objects.filter(profile=profile).values_list('data',flat=True)
             assigned_data = AssignedData.objects.filter(profile=profile, queue=queue_id).values_list('data',flat=True)
-            assigned_unlabeled = DataQueue.objects.filter(queue=queue_id).exclude(data__in=labeled_irr_data).exclude(data__in=assigned_data)
+            skipped_data = IRRLog.objects.filter(profile=profile,label__isnull=True).values_list('data',flat=True)
+            assigned_unlabeled = DataQueue.objects.filter(queue=queue_id).exclude(data__in=labeled_irr_data).exclude(data__in=assigned_data).exclude(data__in=skipped_data)
 
             #if there are no elements, return none
             if len(assigned_unlabeled) == 0:
@@ -636,12 +637,13 @@ def process_irr_label(data, label):
     '''
     #get the number of labels for that data in the project
     labeled = DataLabel.objects.filter(data=data)
+    skipped = IRRLog.objects.filter(label__isnull=True, data=data)
     project = data.project
     current_training_set = project.get_current_training_set()
 
     admin_queue = Queue.objects.get(project=project, admin=True, irr=False)
-    #if there are >= labels than the project calls for
-    if labeled.count() >= project.num_users_irr:
+    #if there are >= labels or skips than the project calls for
+    if (labeled.count() + skipped.count()) >= project.num_users_irr:
         #add all labels to IRRLog
         history_list = [IRRLog(data=data,
                                profile=d.profile,
@@ -657,7 +659,7 @@ def process_irr_label(data, label):
 
 
             #check if the labels agree
-            if len(set(labels)) == 1:
+            if len(set(labels)) == 1 and skipped.count() == 0:
                 #the data is no longer seen as irr (so it can be in the training set)
                 Data.objects.filter(pk=data.pk).update(irr_ind=False)
                 agree = True

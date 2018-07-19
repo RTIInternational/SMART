@@ -574,7 +574,7 @@ def get_label_history(request, pk):
         "labelID": d.label.id ,"timestamp":new_timestamp, "edit": "yes"}
         results.append(temp_dict)
 
-    data_irr = IRRLog.objects.filter(profile=profile, data__project = pk)
+    data_irr = IRRLog.objects.filter(profile=profile, data__project = pk, label__isnull=False)
 
     for d in data_irr:
         #if the data was labeled by that person (they were the admin), don't add
@@ -617,13 +617,18 @@ def skip_data(request, pk):
     queue = project.queue_set.get(admin=False, irr=False)
     response = {}
 
-    # Make sure coder still has permissions before labeling data
-    if project_extras.proj_permission_level(project, profile) > 0:
-        util.move_skipped_to_admin_queue(data, profile, project)
+    if data.irr_ind:
+        #log the data and check IRR but don't put in admin queue yet
+        IRRLog.objects.create(data=data, profile=profile, label = None, timestamp = timezone.now())
+        util.process_irr_label(data, None)
     else:
-        response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
+        # Make sure coder still has permissions before labeling data
+        if project_extras.proj_permission_level(project, profile) > 0:
+            util.move_skipped_to_admin_queue(data, profile, project)
+        else:
+            response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
 
-    util.fill_queue(queue = queue,orderby = project.learning_method)
+        util.fill_queue(queue = queue,orderby = project.learning_method)
     return Response(response)
 
 @api_view(['POST'])
@@ -640,14 +645,16 @@ def annotate_data(request, pk):
         {}
     """
     data = Data.objects.get(pk=pk)
+    project = data.project
     profile = request.user.profile
     response = {}
     label = Label.objects.get(pk=request.data['labelID'])
     labeling_time = request.data['labeling_time']
-    #For the sake of extra IRR people, if the data is in the irr history,
-    #then add this label to history as well.
+
     num_history = IRRLog.objects.filter(data=data).count()
-    if num_history > 0:
+    #if the IRR history has more than the needed number of labels , it is
+    #already processed so just add this label to the history.
+    if num_history >= project.num_users_irr:
         IRRLog.objects.create(data=data, profile=profile, label=label, timestamp = timezone.now())
     else:
         # Make sure coder still has permissions before labeling data
@@ -716,7 +723,12 @@ def modify_label_to_skip(request, pk):
 
         with transaction.atomic():
             DataLabel.objects.filter(data=data, label=old_label).delete()
-            DataQueue.objects.create(data=data, queue=queue)
+            if data.irr_ind:
+                #if it was irr, add it to the log
+                IRRLog.objects.create(data=data, profile=profile, label = None, timestamp = timezone.now())
+            else:
+                #if it's not irr, add it to the admin queue immediately
+                DataQueue.objects.create(data=data, queue=queue)
             LabelChangeLog.objects.create(project=project, data=data, profile=profile,
             old_label=old_label.name, new_label = "skip", change_timestamp = timezone.now())
     else:

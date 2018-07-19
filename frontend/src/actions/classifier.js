@@ -110,6 +110,7 @@ export const passCard = (card, projectID) => {
                 else {
                     dispatch(popCard())
                     dispatch(getAdmin(projectID))
+                    dispatch(getHistory(projectID))
                 }
             })
     }

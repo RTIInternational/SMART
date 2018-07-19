@@ -105,7 +105,7 @@ class IRRLog(models.Model):
         unique_together = (('data', 'profile'))
     data = models.ForeignKey('Data')
     profile = models.ForeignKey('Profile')
-    label = models.ForeignKey('Label')
+    label = models.ForeignKey('Label', null=True)
     timestamp = models.DateTimeField(null=True, default= None)
 
 class DataLabel(models.Model):
