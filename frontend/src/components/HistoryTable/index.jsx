@@ -5,6 +5,11 @@ import {Button, ButtonToolbar} from "react-bootstrap";
 
 const columns = [
   {
+    Header: "edit",
+    accessor: "edit",
+    show: false
+  },
+  {
     Header: "id",
     accessor: "id",
     show: false
@@ -60,27 +65,38 @@ class HistoryTable extends React.Component {
         data={history_data[0]}
         columns={columns}
         SubComponent={row => {
-          return (
-            <div className="sub-row">
-              <p>{row.row.data}</p>
-              <ButtonToolbar bsClass="btn-toolbar pull-right">
-                {labels[0].map( (label) => (
-                  <Button key={label.id.toString() + "_" + row.row.id.toString()}
-                  onClick={() => {
-                    if(!(row.row.old_label_id === label.id))
-                    {
-                      changeLabel(row.row.id,row.row.old_label_id,label.id)
-                    }
-                  }}
-                  bsStyle="primary"
-                  >{label.name}</Button>
-                ))}
-                <Button onClick={() => changeToSkip(row.row.id,row.row.old_label_id)}
-                bsStyle="info"
-                >Skip</Button>
-              </ButtonToolbar>
-            </div>
-          );
+          if(row.row.edit === "yes")
+          {
+            return (
+              <div className="sub-row">
+                <p>{row.row.data}</p>
+                <ButtonToolbar bsClass="btn-toolbar pull-right">
+                  {labels[0].map( (label) => (
+                    <Button key={label.id.toString() + "_" + row.row.id.toString()}
+                    onClick={() => {
+                      if(!(row.row.old_label_id === label.id))
+                      {
+                        changeLabel(row.row.id,row.row.old_label_id,label.id)
+                      }
+                    }}
+                    bsStyle="primary"
+                    >{label.name}</Button>
+                  ))}
+                  <Button onClick={() => changeToSkip(row.row.id,row.row.old_label_id)}
+                  bsStyle="info"
+                  >Skip</Button>
+                </ButtonToolbar>
+              </div>
+            );
+          }
+          else {
+            return (
+              <div className="sub-row">
+                <p>{row.row.data}</p>
+                <p id="irr_history_message">Note: This is Inter-rater Reliability data and is not editable.</p>
+              </div>
+            );
+          }
         }}
         filterable={true}
         defaultSorted={[{

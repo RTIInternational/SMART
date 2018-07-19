@@ -624,6 +624,8 @@ def label_data(label, datum, profile, time):
 
         if not irr_data:
             DataQueue.objects.filter(data=datum, queue=queue).delete()
+        else:
+            process_irr_label(datum,label)
     if not irr_data:
         settings.REDIS.srem(redis_serialize_set(queue), redis_serialize_data(datum))
 
@@ -651,7 +653,7 @@ def process_irr_label(data, label):
             #remove all labels from DataLabel and save in list
             labels = list(labeled.values_list('label', flat=True))
 
-            DataLabel.objects.filter(label__in=labels).delete()
+            DataLabel.objects.filter(data=data).delete()
 
             #the data is no longer seen as irr (so it can be in the training set)
 

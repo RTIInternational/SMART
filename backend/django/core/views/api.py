@@ -87,9 +87,7 @@ def label_distribution_inverted(request, pk):
         a dictionary of the amount each label has been used
     """
     project = Project.objects.get(pk=pk)
-
     labels = [l for l in project.labels.all()]
-
     users = []
     users.append(project.creator)
     users.extend([perm.profile for perm in project.projectpermissions_set.all()])
@@ -124,9 +122,7 @@ def label_distribution(request, pk):
         a dictionary of the amount of labels per person per type
     """
     project = Project.objects.get(pk=pk)
-
     labels = [l for l in project.labels.all()]
-
     users = []
     users.append(project.creator)
     users.extend([perm.profile for perm in project.projectpermissions_set.all()])
@@ -176,7 +172,6 @@ def label_timing(request, pk):
         if result['quartiles']:
             if result['quartiles'][4] > yDomain:
                 yDomain = result['quartiles'][4] + 10
-
             temp = {
                 'label': u.__str__(),
                 'values': {
@@ -196,7 +191,6 @@ def label_timing(request, pk):
 def model_metrics(request, pk):
     """This function finds and returns the requested metrics. This is
     used by the graphs on the front end admin page.
-
     Args:
         request: The POST request
         pk: Primary key of the project
@@ -245,7 +239,6 @@ def model_metrics(request, pk):
 @api_view(['GET'])
 def data_coded_table(request, pk):
     """This returns the labeled data
-
     Args:
         request: The POST request
         pk: Primary key of the project
@@ -269,10 +262,16 @@ def data_coded_table(request, pk):
 
 @api_view(['GET'])
 def data_change_log_table(request, pk):
+    """This returns the data of the label change log for visualization in a
+    table
+    Args:
+        request: The POST request
+        pk: Primary key of the project
+    Returns:
+        data: a list of data information
+    """
     project = Project.objects.get(pk=pk)
-
     data_objs = LabelChangeLog.objects.filter(project=project)
-
     data = []
     for d in data_objs:
         if d.change_timestamp:
@@ -294,9 +293,7 @@ def data_change_log_table(request, pk):
         }
 
         data.append(temp)
-
     return Response({'data': data})
-
 
 @api_view(['GET'])
 def data_predicted_table(request, pk):
@@ -468,8 +465,7 @@ def label_skew_label(request, pk):
                                 profile=profile,
                                 training_set=current_training_set,
                                 time_to_label=None,
-                                timestamp = timezone.now()
-                                )
+                                timestamp = timezone.now())
 
     return Response({'test':'success'})
 
@@ -500,8 +496,7 @@ def label_admin_label(request, pk):
                                 profile=profile,
                                 training_set=current_training_set,
                                 time_to_label=None,
-                                timestamp=timezone.now()
-                                )
+                                timestamp=timezone.now())
 
         DataQueue.objects.filter(data=datum, queue=queue).delete()
 
@@ -554,8 +549,10 @@ def get_label_history(request, pk):
     labels = Label.objects.all().filter(project=project)
     data = DataLabel.objects.filter(profile=profile, data__project = pk, label__in=labels)
 
+    data_list = []
     results = []
     for d in data:
+        data_list.append(d.data.id)
         if d.timestamp:
             if d.timestamp.minute < 10:
                 minute = "0" + str(d.timestamp.minute)
@@ -567,7 +564,29 @@ def get_label_history(request, pk):
             new_timestamp = "None"
         temp_dict = {"data":d.data.text,
         "id": d.data.id,"label":d.label.name,
-        "labelID": d.label.id ,"timestamp":new_timestamp}
+        "labelID": d.label.id ,"timestamp":new_timestamp, "edit": "yes"}
+        results.append(temp_dict)
+
+    data_irr = IRRLog.objects.filter(profile=profile, data__project = pk)
+
+    for d in data_irr:
+        #if the data was labeled by that person (they were the admin), don't add
+        #it twice
+        if d.data.id in data_list:
+            continue
+
+        if d.timestamp:
+            if d.timestamp.minute < 10:
+                minute = "0" + str(d.timestamp.minute)
+            else:
+                minute = str(d.timestamp.minute)
+            new_timestamp = str(d.timestamp.date()) + ", " + str(d.timestamp.hour)\
+            + ":" + minute + "." + str(d.timestamp.second)
+        else:
+            new_timestamp = "None"
+        temp_dict = {"data":d.data.text,
+        "id": d.data.id,"label":d.label.name,
+        "labelID": d.label.id ,"timestamp":new_timestamp, "edit":"no"}
         results.append(temp_dict)
 
     return Response({'labels': LabelSerializer(labels, many=True).data,
@@ -661,11 +680,7 @@ def modify_label(request, pk):
             time_to_label=0, timestamp=timezone.now())
 
             LabelChangeLog.objects.create(project=project, data=data, profile=profile,
-            old_label=old_label.name, new_label = label.name, change_timestamp = timezone.now() )
-
-
-
-
+            old_label=old_label.name, new_label = label.name, change_timestamp = timezone.now())
     else:
         response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
 
