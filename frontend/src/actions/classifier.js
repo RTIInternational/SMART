@@ -78,6 +78,8 @@ export const annotateCard = (card, labelID, projectID) => {
                     dispatch(popCard())
                     dispatch(getHistory(projectID))
                     dispatch(getLabelCounts(projectID))
+                    //call getAdmin in case of a irr data
+                    dispatch(getAdmin(projectID))
                 }
             })
     }

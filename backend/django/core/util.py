@@ -25,7 +25,7 @@ from django.conf import settings
 
 from core.models import (Project, Data, Queue, DataQueue, Profile, Label,
                          AssignedData, DataLabel, Model, DataPrediction,
-                         DataUncertainty, TrainingSet)
+                         DataUncertainty, TrainingSet, IRRLog)
 from core import tasks
 
 
@@ -626,6 +626,60 @@ def label_data(label, datum, profile, time):
             DataQueue.objects.filter(data=datum, queue=queue).delete()
     if not irr_data:
         settings.REDIS.srem(redis_serialize_set(queue), redis_serialize_data(datum))
+
+def process_irr_label(data, label):
+    '''
+    This function checks if an irr datum has been labeled by enough people. if
+    it has, then it will attempt to resolve the labels and record the irr history
+    '''
+    #get the number of labels for that data in the project
+    labeled = DataLabel.objects.filter(data=data)
+    project = data.project
+    current_training_set = project.get_current_training_set()
+
+    admin_queue = Queue.objects.get(project=project, admin=True, irr=False)
+    #if there are >= labels than the project calls for
+    if labeled.count() >= project.num_users_irr:
+        #add all labels to IRRLog
+        history_list = [IRRLog(data=data,
+                               profile=d.profile,
+                               label=d.label,
+                               timestamp=d.timestamp) for d in labeled]
+        with transaction.atomic():
+            IRRLog.objects.bulk_create(history_list)
+
+            #remove all labels from DataLabel and save in list
+            labels = list(labeled.values_list('label', flat=True))
+
+            DataLabel.objects.filter(label__in=labels).delete()
+
+            #the data is no longer seen as irr (so it can be in the training set)
+
+            Data.objects.filter(pk=data.pk).update(irr_ind=False)
+            #check if the labels agree
+            if len(set(labels)) == 1:
+                agree = True
+                #if they do, add a new element to dataLabel with one label
+                #by creator and remove from the irr queue
+                DataLabel.objects.create(data=data,
+                                         profile=project.creator,
+                                         label=label,
+                                         training_set = current_training_set,
+                                         time_to_label=None,
+                                         timestamp=timezone.now())
+                DataQueue.objects.filter(data=data).delete()
+            else:
+                agree = False
+                #if they don't, update the data into the admin queue
+                DataQueue.objects.filter(data=data).update(queue=admin_queue)
+
+        #update redis to reflect the queue changes
+        irr_queue = Queue.objects.get(project=project, admin=False, irr=True)
+        settings.REDIS.srem(redis_serialize_set(irr_queue), redis_serialize_data(data))
+
+        if not agree:
+            settings.REDIS.sadd(redis_serialize_set(admin_queue), redis_serialize_data(data))
+
 
 def move_skipped_to_admin_queue(datum, profile, project):
     '''

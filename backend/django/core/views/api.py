@@ -31,7 +31,7 @@ from core.serializers import (ProfileSerializer, AuthUserGroupSerializer,
                               LabelChangeLogSerializer)
 from core.models import (Profile, Project, Model, Data, Label, DataLabel,
                          DataPrediction, Queue, DataQueue, AssignedData, TrainingSet,
-                         LabelChangeLog)
+                         LabelChangeLog, IRRLog)
 import core.util as util
 from core.pagination import SmartPagination
 from core.templatetags import project_extras
@@ -616,16 +616,25 @@ def annotate_data(request, pk):
     data = Data.objects.get(pk=pk)
     profile = request.user.profile
     response = {}
-
-    # Make sure coder still has permissions before labeling data
-    if project_extras.proj_permission_level(data.project, profile) > 0:
-        label = Label.objects.get(pk=request.data['labelID'])
-        labeling_time = request.data['labeling_time']
-        util.label_data(label, data, profile, labeling_time)
-
-        util.check_and_trigger_model(data)
+    label = Label.objects.get(pk=request.data['labelID'])
+    labeling_time = request.data['labeling_time']
+    #For the sake of extra IRR people, if the data is in the irr history,
+    #then add this label to history as well.
+    num_history = IRRLog.objects.filter(data=data).count()
+    if num_history > 0:
+        IRRLog.objects.create(data=data, profile=profile, label=label, timestamp = timezone.now())
     else:
-        response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
+        # Make sure coder still has permissions before labeling data
+        if project_extras.proj_permission_level(data.project, profile) > 0:
+            util.label_data(label, data, profile, labeling_time)
+            if data.irr_ind:
+                #if it is reliability data, run processing step
+                util.process_irr_label(data, label)
+            util.check_and_trigger_model(data)
+
+
+        else:
+            response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
 
     return Response(response)
 
