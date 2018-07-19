@@ -409,7 +409,8 @@ def data_admin_table(request, pk):
     for d in data_objs:
         temp = {
             'Text': d.data.text,
-            'ID': d.data.id
+            'ID': d.data.id,
+            'IRR': str(d.data.irr_ind)
         }
         data.append(temp)
 
@@ -500,6 +501,10 @@ def label_admin_label(request, pk):
 
         DataQueue.objects.filter(data=datum, queue=queue).delete()
 
+        #make sure the data is no longer irr
+        if datum.irr_ind:
+            Data.objects.filter(pk=datum.pk).update(irr_ind=False)
+
     util.check_and_trigger_model(datum)
     return Response({'test':'success'})
 
@@ -527,6 +532,8 @@ def get_card_deck(request, pk):
     coder_size = math.ceil(batch_size / num_coders)
 
     data = util.get_assignments(profile, project, coder_size)
+    #shuffle so the irr is not all at the front
+    random.shuffle(data)
     labels = Label.objects.all().filter(project=project)
 
     return Response({'labels': LabelSerializer(labels, many=True).data, 'data': DataSerializer(data, many=True).data})

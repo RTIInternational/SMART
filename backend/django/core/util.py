@@ -655,11 +655,11 @@ def process_irr_label(data, label):
 
             DataLabel.objects.filter(data=data).delete()
 
-            #the data is no longer seen as irr (so it can be in the training set)
 
-            Data.objects.filter(pk=data.pk).update(irr_ind=False)
             #check if the labels agree
             if len(set(labels)) == 1:
+                #the data is no longer seen as irr (so it can be in the training set)
+                Data.objects.filter(pk=data.pk).update(irr_ind=False)
                 agree = True
                 #if they do, add a new element to dataLabel with one label
                 #by creator and remove from the irr queue

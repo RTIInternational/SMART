@@ -41,6 +41,12 @@ class AdminTable extends React.Component {
       show: false
     },
     {
+      Header: "IRR",
+      accessor: "irr",
+      show: true,
+      width: 50
+    },
+    {
       Header: "Unlabeled Data",
       accessor: "data",
       Cell: row => (
