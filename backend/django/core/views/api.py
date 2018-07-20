@@ -13,12 +13,17 @@ from rest_framework import viewsets, permissions
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.db import transaction
+from itertools import combinations
 
 import csv
 import io
 import math
 import random
 import pandas as pd
+import numpy as np
+
+from nltk.metrics.agreement import AnnotationTask
+
 from django.utils import timezone
 
 from postgres_stats.aggregates import Percentile
@@ -31,7 +36,7 @@ from core.serializers import (ProfileSerializer, AuthUserGroupSerializer,
                               LabelChangeLogSerializer)
 from core.models import (Profile, Project, Model, Data, Label, DataLabel,
                          DataPrediction, Queue, DataQueue, AssignedData, TrainingSet,
-                         LabelChangeLog, IRRLog)
+                         LabelChangeLog, IRRLog, ProjectPermissions)
 import core.util as util
 from core.pagination import SmartPagination
 from core.templatetags import project_extras
@@ -559,6 +564,10 @@ def get_label_history(request, pk):
     data_list = []
     results = []
     for d in data:
+        #if it is not labeled irr but is in the log, the data is resolved IRR,
+        if not d.data.irr_ind and len(IRRLog.objects.filter(data=d.data)) > 0:
+            continue
+
         data_list.append(d.data.id)
         if d.timestamp:
             if d.timestamp.minute < 10:
@@ -598,6 +607,74 @@ def get_label_history(request, pk):
 
     return Response({'labels': LabelSerializer(labels, many=True).data,
      'data': results})
+
+@api_view(['GET'])
+def get_irr_metrics(request, pk):
+    """This function takes the current coded IRR and calculates several
+    reliability metrics
+
+    Args:
+        request: The POST request
+        pk: Primary key of the project
+    Returns:
+        {}
+    """
+
+    #need to take the IRRLog and pull out exactly the max_labelers amount
+    #of labels for each datum
+    all_data = []
+    project = Project.objects.get(pk=pk)
+    if project.num_users_irr > 2:
+        kappa, perc_agreement = util.fleiss_kappa(project)
+    else:
+        kappa, perc_agreement = util.cohens_kappa(project)
+
+    return Response({'kappa':kappa, 'percent agreement':perc_agreement})
+
+@api_view(['GET'])
+def perc_agree_table(request,pk):
+    '''
+    Finds the toal overal percent irr data agreed upon as well
+    as the percent agreement between each pair of coders
+
+    '''
+    project = Project.objects.get(pk=pk)
+    irr_data = set(IRRLog.objects.values_list('data', flat=True))
+    user_list = [str(Profile.objects.get(pk=x)) for x in list(ProjectPermissions.objects.filter(project=project).values_list('profile',flat=True))]
+    user_list.append(str(project.creator))
+    #get all possible pairs of users
+    user_combinations = combinations(user_list,r=2)
+    data_choices = []
+
+
+    for d in irr_data:
+        d_log = IRRLog.objects.filter(data=d,data__project=project)
+        labels = list(set(d_log.values_list('label',flat=True)))
+        #get the percent agreement between the users  = (num agree)/size_data
+        if d_log.count() < 2:
+            #don't use this datum, it isn't processed yet
+            continue
+        temp_dict = {}
+        for d in d_log:
+            if d.label == None:
+                name = "skip"
+            else:
+                name = d.label.name
+            temp_dict[str(d.profile)] = name
+        data_choices.append(temp_dict)
+
+    choice_frame = pd.DataFrame(data_choices)
+
+    user_agree = []
+    for pair in user_combinations:
+        #fill the na's so if they are both na they aren't equal
+        p_agree = np.sum(np.equal(choice_frame[pair[0]].fillna("p"),choice_frame[pair[1]].fillna("q")))
+
+        #get the total number they both edited
+        p_total = len(choice_frame[[pair[0],pair[1]]].dropna(axis=0))
+        user_agree.append({"First Coder":pair[0],"Second Coder":pair[1],"Percent Agreement":p_agree/p_total})
+
+    return Response({'data':user_agree})
 
 @api_view(['POST'])
 def skip_data(request, pk):

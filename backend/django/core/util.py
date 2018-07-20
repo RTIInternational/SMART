@@ -11,7 +11,9 @@ import math
 import numpy as np
 import hashlib
 import pandas as pd
+from collections import defaultdict
 from django.utils import timezone
+
 # https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
 # Disable warning for false positive warning that should only trigger on chained assignment
 pd.options.mode.chained_assignment = None  # default='warn'
@@ -25,7 +27,7 @@ from django.conf import settings
 
 from core.models import (Project, Data, Queue, DataQueue, Profile, Label,
                          AssignedData, DataLabel, Model, DataPrediction,
-                         DataUncertainty, TrainingSet, IRRLog)
+                         DataUncertainty, TrainingSet, IRRLog, ProjectPermissions)
 from core import tasks
 
 
@@ -684,6 +686,157 @@ def process_irr_label(data, label):
         if not agree:
             settings.REDIS.sadd(redis_serialize_set(admin_queue), redis_serialize_data(data))
 
+
+
+def cohens_kappa(project):
+    '''
+    Takes in the irr log data and calculates cohen's kappa
+    NOTE: this should only be used if the num_users_irr = 2
+    https://onlinecourses.science.psu.edu/stat509/node/162/
+    https://en.wikipedia.org/wiki/Cohen%27s_kappa
+    '''
+    irr_data = set(IRRLog.objects.values_list('data', flat=True))
+
+    agree = 0
+    rater1_labels = defaultdict(int)
+    rater2_labels = defaultdict(int)
+    num_data = 0
+    for d in irr_data:
+        d_log = IRRLog.objects.filter(data=d,data__project=project)
+        labels = list(set(d_log.values_list('label',flat=True)))
+        #get the percent agreement between the users  = (num agree)/size_data
+        if d_log.count() < 2:
+            #don't use this datum, it isn't processed yet
+            continue
+        num_data += 1
+        if len(labels) == 1:
+            if labels[0] != None:
+                agree += 1
+        if d_log[0].label == None:
+            label1 = "skip"
+        else:
+            label1 = d_log[0].label.name
+        rater1_labels[label1] += 1
+
+        if d_log[1].label == None:
+            label2 = "skip"
+        else:
+            label2 = d_log[1].label.name
+        rater2_labels[label2] += 1
+    if num_data == 0:
+        #there is no irr data, so just return bad values
+        return "no irr data processed", "no irr data processed"
+
+    label_list = list(Label.objects.filter(project=project).values_list('name',flat=True))
+    label_list.append("skip")
+
+    p_o = agree / num_data
+    p_e = 0
+    for label in label_list:
+        p_e += rater1_labels[label]*rater2_labels[label]
+    p_e *= (1/(num_data**2))
+
+    kappa = (p_o - p_e)/(1 - p_e)
+    return kappa, p_o
+
+def fleiss_kappa(project):
+    '''
+    Takes in the irr log data and calculates fleiss's kappa
+    Code modified from:
+    https://gist.github.com/skylander86/65c442356377367e27e79ef1fed4adee
+    Equations from: https://en.wikipedia.org/wiki/Fleiss%27_kappa
+    '''
+    irr_data = set(IRRLog.objects.values_list('data', flat=True))
+
+
+    label_list = list(Label.objects.filter(project=project).values_list('name',flat=True))
+    label_list.append(None)
+    #number of labels in the project +1 for skipping
+    k = len(label_list)
+    #n is the number of labelers
+    n = project.num_users_irr
+    agree = 0
+    data_label_dict = []
+    for d in irr_data:
+        d_data_log = IRRLog.objects.filter(data=d,data__project=project)
+
+        if d_data_log.count() < n:
+            #don't use this datum, it isn't processed yet
+            continue
+        elif d_data_log.count() > n:
+            #grab only the first few elements if there were extra labelers
+            d_data_log = d_data_log[:n]
+        labels = list(set(d_data_log.values_list('label',flat=True)))
+        #accumulate the percent agreement
+        if len(labels) == 1:
+            if labels[0] != None:
+                agree += 1
+
+        label_count_dict = {}
+        for l in label_list:
+            if l == None:
+                l_label = "skip"
+            else:
+                l_label = str(l)
+            label_count_dict[l_label] = len(d_data_log.filter(label__name = l))
+
+        data_label_dict.append(label_count_dict)
+    #N is the number of data points
+    N = len(label_count_dict)
+
+    M = np.asarray(pd.DataFrame(data_label_dict))
+
+    pj_const = 1 / (N*n)
+    pj_s = pj_const * np.sum(M,axis=0)
+
+    pi_const = 1/(n*(n-1))
+    pi_s = pi_const * (np.sum(np.multiply(M,M),axis=1) - n)
+
+    p_bar = np.sum(pi_s)* (1/N)
+    p_bar_e = np.sum(np.multiply(pj_s,pj_s))
+
+    kappa = (p_bar - p_bar_e)/(1 - p_bar_e)
+
+    return kappa, agree/N
+
+def irr_heatmap(project):
+    '''
+    Takes in the irrlog and formats the data to be usable in the irr heatmap
+
+    '''
+    #get the list of users and labels for this project
+    user_list = list(ProjectPermissions.objects.filter(project=project).values_list('profile__user',flat=True))
+    user_list.append(project.creator.pk)
+    label_list = list(Label.objects.filter(project=project).values_list('name',flat=True))
+    label_list.append("Skip")
+
+    irr_data = set(IRRLog.objects.values_list('data', flat=True))
+
+
+    #Initialize the dictionary of dictionaries to use for the heatmap later
+    user_label_counts = {}
+    for user1 in user_list:
+        for user2 in user_list:
+            user_label_counts[str(user1)+"_"+str(user2)] = {}
+            for label1 in label_list:
+                user_label_counts[str(user1)+"_"+str(user2)][str(label1)] = {}
+                for label2 in label_list:
+                    user_label_counts[str(user1)+"_"+str(user2)][str(label1)][str(label2)] = 0
+
+    for data_id in irr_data:
+        data_log_list = IRRLog.objects.filter(data=data_id,data__project=project)
+        small_user_list = data_log_list.values_list('profile__user',flat=True)
+        for user1 in small_user_list:
+            for user2 in small_user_list:
+                user_combo = str(user1)+"_"+str(user2)
+                label1 = data_log_list.get(profile__pk = user1).label
+                label2 = data_log_list.get(profile__pk = user2).label
+                user_label_counts[user_combo][str(label1).replace("None","Skip")][str(label2).replace("None","Skip")] +=1
+    #turn the results into a dataframe for each pair of users
+    for user_combo in user_label_counts:
+        user_label_counts[user_combo] = pd.DataFrame(user_label_counts[user_combo])
+        #NOTE: need to normalize the dataframe between 0 and 1
+        print(user_label_counts[user_combo])
 
 def move_skipped_to_admin_queue(datum, profile, project):
     '''

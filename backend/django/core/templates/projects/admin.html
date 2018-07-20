@@ -16,6 +16,9 @@
                 <li class="nav-item">
                     <a data-toggle="tab" href="#model" class="nav-link">Active Learning Model</a>
                 </li>
+                <li class="nav-item">
+                    <a data-toggle="tab" href="#irr_tab" class="nav-link">IRR</a>
+                </li>
             </ul>
         </div>
         <div class="tab-content">
@@ -91,6 +94,24 @@
                                     <th>Text</th>
                                     <th>Predicted Probability</th>
                                     <th>Predicted Label</th>
+                                </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div id="irr_tab" class="tab-pane fade in">
+                <div class="row">
+                    <div class="col-md-12">
+                        <h3>IRR Metrics</h3>
+                        <p id="kappa"></p>
+                        <p id="percent_agree"></p>
+                        <table id="pairwise_perc_agreement_table" class="table table-hover table-striped table-bordered" cellspacing="0" width="100%">
+                            <thead>
+                                <tr>
+                                    <th>First Coder</th>
+                                    <th>Second Coder</th>
+                                    <th>Percent Agreement</th>
                                 </tr>
                             </thead>
                         </table>
@@ -184,6 +205,21 @@ $.ajax({
     }
 });
 
+/*
+ *  Make ajax call to `get_irr_metrics` route.  This will fetch the
+ *  common irr metrics to be displayed for the user
+ */
+$.ajax({
+    method: "GET",
+    url: '/api/get_irr_metrics/' + {{ project.pk }} + '/',
+    success: function (response) {
+        $('#kappa').text("Kappa: "+response.kappa.toString());
+        $('#percent_agree').text("Percent Overall Agreement: "+response['percent agreement'].toString());
+    },
+    error: function (error) {
+        console.log(error);
+    }
+});
 
 /*
  *  Make ajax call to `model_metrics` route.  This will fetch data to populate
@@ -274,6 +310,7 @@ $.ajax({
     }
 });
 
+
 $(document).ready(function() {
     /*
      *  Activate DataTable script to create the labeled data DataTable
@@ -326,6 +363,25 @@ $(document).ready(function() {
         },
         "rowCallback": function (row, data) {
           $('td:nth-child(1)',row).addClass('showData');
+        }
+    });
+
+    /*
+     *  Activate DataTable script to create the labeled data DataTable
+     */
+    $('#pairwise_perc_agreement_table').DataTable({
+        "ajax": '/api/perc_agree_table/' + {{ project.pk }} + '/',
+        "columns": [
+            { "data": "First Coder", "searchable": false},
+            { "data": "Second Coder", "searchable": false},
+            { "data": "Percent Agreement", "searchable": false}
+        ],
+        "oLanguage": {
+            "sEmptyTable": "No irr data processed"
+        },
+        "initComplete": function (settings, json) {
+            $this = $(this)
+            $this.css({'table-layout':'fixed'});
         }
     });
 
