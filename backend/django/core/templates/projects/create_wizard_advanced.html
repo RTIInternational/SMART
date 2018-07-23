@@ -69,10 +69,23 @@
 {% block scripts_body %}
 <script type="text/javascript">
 var methods_box = $("div#choose_method_box");
-methods_box.show();
-
 var batch_field = $('#choose_batch_size');
-batch_field.hide();
+if ($('input#id_advanced-use_active_learning').prop('checked') == true)
+{
+    methods_box.show();
+}
+else {
+    methods_box.hide();
+}
+
+if ($('input#id_advanced-use_default_batch_size').prop('checked') == true)
+{
+    batch_field.hide();
+}
+else
+{
+    batch_field.show();
+}
 
 $('input#id_advanced-use_active_learning').change(function(){
   if ($(this).prop('checked') == true) {
