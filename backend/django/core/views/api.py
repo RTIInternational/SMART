@@ -22,7 +22,6 @@ import random
 import pandas as pd
 import numpy as np
 
-from nltk.metrics.agreement import AnnotationTask
 
 from django.utils import timezone
 
@@ -628,6 +627,9 @@ def get_irr_metrics(request, pk):
         kappa, perc_agreement = util.fleiss_kappa(project)
     else:
         kappa, perc_agreement = util.cohens_kappa(project)
+
+    ##NOTE: # TEMP:
+    util.irr_heatmap(project)
 
     return Response({'kappa':kappa, 'percent agreement':perc_agreement})
 
