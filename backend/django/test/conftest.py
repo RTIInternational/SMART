@@ -54,6 +54,13 @@ def test_project(db, test_profile):
     return create_project('test_project', test_profile)
 
 @pytest.fixture
+def test_project_no_irr(db, test_profile):
+    '''
+    This fixture only creates the test project without any data.
+    '''
+    return create_project('test_project', test_profile, 0, 2)
+
+@pytest.fixture
 def test_project_data(db, test_project):
     '''
     Creates the test project and adds test data to it.

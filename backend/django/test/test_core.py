@@ -1092,7 +1092,7 @@ def test_check_and_trigger_batched_success(setup_celery, test_project_labeled_an
                                                    labelers=None).count() * project.labels.count()
 
     # Assert queue filled and redis sycned
-    assert test_queue.data.count() == test_queue.length
+    assert (test_queue.data.count() + test_irr_queue.data.count()) == test_queue.length
     assert_redis_matches_db(test_redis)
     assert test_queue.length == initial_queue_size
 
@@ -1106,7 +1106,8 @@ def test_check_and_trigger_batched_success(setup_celery, test_project_labeled_an
         })
         assert datum.datauncertainty_set.get().least_confident <= previous_lc
         previous_lc = datum.datauncertainty_set.get().least_confident
-    assert DataQueue.objects.filter(queue=test_queue).count() == TEST_QUEUE_LEN
+    assert (DataQueue.objects.filter(queue=test_queue).count() +
+            DataQueue.objects.filter(queue=test_irr_queue).count()) == TEST_QUEUE_LEN
 
     # Assert new training set
     assert project.get_current_training_set() != initial_training_set
@@ -1166,11 +1167,13 @@ def test_check_and_trigger_queue_changes_success(setup_celery, test_project_labe
                                                    labelers=None).count() * project.labels.count()
 
     # Assert queue filled and redis sycned
+    batch_size = len(project.labels.all()) * 10
     q = project.queue_set.get(admin=False, irr=False)
-    assert q.data.count() == q.length
+    q_irr = project.queue_set.get(admin=False, irr=True)
+    assert (q.data.count() + q_irr.data.count()) == batch_size
     assert_redis_matches_db(test_redis)
 
-    batch_size = len(project.labels.all()) * 10
+
     num_coders = len(project.projectpermissions_set.all()) + 1
     new_queue_length = find_queue_length(batch_size, num_coders)
     assert q.length == new_queue_length
@@ -1185,7 +1188,8 @@ def test_check_and_trigger_queue_changes_success(setup_celery, test_project_labe
         })
         assert datum.datauncertainty_set.get().least_confident <= previous_lc
         previous_lc = datum.datauncertainty_set.get().least_confident
-    assert DataQueue.objects.filter(queue=test_queue).count() == new_queue_length
+    assert (DataQueue.objects.filter(queue=test_queue).count() +
+            DataQueue.objects.filter(queue=test_irr_queue).count()) == batch_size
 
     # Assert new training set
     assert project.get_current_training_set() != initial_training_set

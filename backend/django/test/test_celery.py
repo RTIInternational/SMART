@@ -41,8 +41,8 @@ def test_model_task(test_project_labeled_and_tfidf, test_queue, test_irr_queue, 
     assert len(predictions) == Data.objects.filter(project=project,
                                                    labelers=None).count() * project.labels.count()
 
-    # Assert queue filled and redis sycned
-    assert test_queue.data.count() == test_queue.length
+    # Assert bothe queues are filled and redis sycned
+    assert (test_queue.data.count() + test_irr_queue.data.count()) == test_queue.length
     assert_redis_matches_db(test_redis)
 
     # Assert queue correct size

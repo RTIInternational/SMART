@@ -700,6 +700,7 @@ def skip_data(request, pk):
         #log the data and check IRR but don't put in admin queue yet
         IRRLog.objects.create(data=data, profile=profile, label = None, timestamp = timezone.now())
         util.process_irr_label(data, None)
+
     else:
         # Make sure coder still has permissions before labeling data
         if project_extras.proj_permission_level(project, profile) > 0:
@@ -707,7 +708,11 @@ def skip_data(request, pk):
         else:
             response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
 
-        util.fill_queue(queue = queue,orderby = project.learning_method)
+    #for all data, check if we need to refill queue
+    if project_extras.proj_permission_level(project, profile) > 0:
+        util.check_and_trigger_model(data, profile)
+    else:
+        response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
     return Response(response)
 
 @api_view(['POST'])
@@ -735,6 +740,7 @@ def annotate_data(request, pk):
     #already processed so just add this label to the history.
     if num_history >= project.num_users_irr:
         IRRLog.objects.create(data=data, profile=profile, label=label, timestamp = timezone.now())
+
     else:
         # Make sure coder still has permissions before labeling data
         if project_extras.proj_permission_level(data.project, profile) > 0:
@@ -742,12 +748,16 @@ def annotate_data(request, pk):
             if data.irr_ind:
                 #if it is reliability data, run processing step
                 util.process_irr_label(data, label)
-            util.check_and_trigger_model(data)
 
 
         else:
             response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
 
+    #for all data, check if we need to refill queue
+    if project_extras.proj_permission_level(project, profile) > 0:
+        util.check_and_trigger_model(data, profile)
+    else:
+        response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
     return Response(response)
 
 @api_view(['POST'])

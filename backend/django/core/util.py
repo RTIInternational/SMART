@@ -5,6 +5,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_predict
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from sklearn.externals import joblib
+
 from scipy import sparse
 import os
 import math
@@ -185,11 +186,16 @@ def sync_redis_objects(queue, orderby):
             settings.REDIS.rpush(redis_serialize_queue(queue), *ordered_data_ids)
 
 
-def create_project(name, creator):
+def create_project(name, creator, percentage_irr=None,num_users_irr=None):
     '''
     Create a project with the given name and creator.
     '''
-    proj = Project.objects.create(name=name, creator=creator)
+    if not percentage_irr:
+        proj = Project.objects.create(name=name, creator=creator)
+    else:
+        proj = Project.objects.create(name=name, creator=creator,
+                                      percentage_irr = percentage_irr,
+                                      num_users_irr = num_users_irr)
     training_set = TrainingSet.objects.create(project=proj, set_number=0)
 
     return proj
@@ -305,6 +311,7 @@ def fill_queue(queue, orderby,  irr_queue = None, irr_percent = 10, batch_size =
 
     Fill the IRR queue with the given percentage of values
     '''
+
     ORDERBY_VALUE = {
         'random': 'random()',
         'least confident': 'uncertainty.least_confident DESC',
@@ -318,7 +325,8 @@ def fill_queue(queue, orderby,  irr_queue = None, irr_percent = 10, batch_size =
     data_filters = {
         'project': queue.project,
         'labelers': None,
-        'queues': None
+        'queues': None,
+        'irr_ind': False
     }
 
     eligible_data = Data.objects.filter(**data_filters)
@@ -407,20 +415,25 @@ def fill_queue(queue, orderby,  irr_queue = None, irr_percent = 10, batch_size =
         sync_redis_objects(irr_queue, orderby)
 
         #get new eligible data by filtering out what was just chosen
-        data_filters = {
-            'project': queue.project,
-            'labelers': None,
-            'queues': None,
-            'irr_ind':False
-        }
         eligible_data = Data.objects.filter(**data_filters)
         cte_sql, cte_params = eligible_data.query.sql_with_params()
 
     #get the remaining space in the normal queue
-    sample_size_sql, sample_size_params = (Queue.objects.filter(pk=queue.pk)
-                                            .annotate(sample_size=F('length') - Count('data'))
-                                            .values('sample_size')
-                                            .query.sql_with_params())
+    normal_element_size = math.ceil(batch_size * ((100 - irr_percent)/100))
+    num_non_irr = len(DataQueue.objects.filter(queue=queue))
+    queue_size = queue.length
+    #if there is not much space or we are not filling the irr queue, just
+    #fill the normal queue to the top
+    if (queue_size - num_non_irr < normal_element_size) or not(irr_queue):
+        sample_size_sql, sample_size_params = (Queue.objects.filter(pk=queue.pk)
+                                                .annotate(sample_size=F('length') - Count('data'))
+                                                .values('sample_size')
+                                                .query.sql_with_params())
+    else:
+        sample_size_sql, sample_size_params = (Queue.objects.filter(pk=queue.pk)
+                                                .annotate(sample_size=Value(normal_element_size, IntegerField()))
+                                                .values('sample_size')
+                                                .query.sql_with_params())
 
     sql = """
     WITH eligible_data AS (
@@ -832,11 +845,20 @@ def irr_heatmap(project):
                 label1 = data_log_list.get(profile__pk = user1).label
                 label2 = data_log_list.get(profile__pk = user2).label
                 user_label_counts[user_combo][str(label1).replace("None","Skip")][str(label2).replace("None","Skip")] +=1
+
+
     #turn the results into a dataframe for each pair of users
+    end_data = {}
     for user_combo in user_label_counts:
-        user_label_counts[user_combo] = pd.DataFrame(user_label_counts[user_combo])
-        #NOTE: need to normalize the dataframe between 0 and 1
-        print(user_label_counts[user_combo])
+        end_data_list = []
+        for label1 in user_label_counts[user_combo]:
+            for label2 in user_label_counts[user_combo][label1]:
+                end_data_list.append({"label1":label1,"label2":label2,"count":user_label_counts[user_combo][label1][label2]})
+        #need to normalize the dataframe between 0 and 1
+        end_data_frame = pd.DataFrame(end_data_list)
+
+        end_data[user_combo] = end_data_list
+
 
 def move_skipped_to_admin_queue(datum, profile, project):
     '''
@@ -988,13 +1010,13 @@ def load_tfidf_matrix(project_pk):
         raise ValueError('There was no tfidf matrix found for project: ' + str(project_pk))
 
 
-def check_and_trigger_model(datum):
+def check_and_trigger_model(datum, profile=None):
     """Given a recently assigned datum check if the project it belong to needs
        its model ran.  It the model needs to be run, start the model run and
        create a new project current_training_set
 
     Args:
-        datum: Recently assigne Data object
+        datum: Data object (may or may not be labeled)
     Returns:
         return_str: String to represent which path the function took
     """
@@ -1006,6 +1028,28 @@ def check_and_trigger_model(datum):
                                             data__irr_ind = False)
     labeled_data_count = labeled_data.count()
     labels_count = labeled_data.distinct('label').count()
+
+    #if both the normal and irr queue are empty or the user
+    #has labeled all of the irr
+    if profile:
+        queue = Queue.objects.get(project=project,irr=False,admin=False)
+        irr_queue = Queue.objects.get(project=project,irr=True,admin=False)
+        queue_count = DataQueue.objects.filter(queue=queue).count()
+        #get the number of items that the profile has not labeled/skipped in irr
+        irr_data = DataQueue.objects.filter(queue=irr_queue)
+        irr_count = 0
+        for d in irr_data:
+            #if they have already labeled it
+            if len(DataLabel.objects.filter(data=d.data,profile=profile)) > 0:
+                continue
+            #if they skipped it
+            if len(IRRLog.objects.filter(data=d.data,profile=profile)) > 0:
+                continue
+            irr_count += 1
+    else:
+        #this data was not labeled, so there isn't a profile attached
+        queue_count = 1
+        irr_count = 1
 
     if current_training_set.celery_task_id != '':
         return_str = 'task already running'
@@ -1019,8 +1063,26 @@ def check_and_trigger_model(datum):
             current_training_set.celery_task_id = task_num
             current_training_set.save()
             return_str = 'model running'
+    elif (irr_count == 0) and (queue_count == 0):
+        #check if the user has any unlabeled stuff left. If not,
+        #we need to refil the queue
+
+        #if there is a model, use the orderby of the project, otherwise random
+        if len(Model.objects.filter(project=project)) > 0:
+            fill_queue(queue=queue, orderby = project.learning_method,
+                       irr_queue = irr_queue, irr_percent = project.percentage_irr,
+                       batch_size = len(project.labels.all()) * 10 )
+            return_str = project.learning_method
+        else:
+            fill_queue(queue=queue, orderby = 'random',
+                       irr_queue = irr_queue, irr_percent = project.percentage_irr,
+                       batch_size = len(project.labels.all()) * 10 )
+            return_str = 'random'
     else:
         return_str = 'no trigger'
+
+
+
 
     return return_str
 
