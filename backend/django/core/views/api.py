@@ -628,20 +628,27 @@ def get_irr_metrics(request, pk):
     else:
         kappa, perc_agreement = util.cohens_kappa(project)
 
-    ##NOTE: # TEMP:
-    util.irr_heatmap(project)
+    if not isinstance(kappa,str):
+        kappa = round(kappa,3)
+    if not isinstance(perc_agreement,str):
+        perc_agreement = round(perc_agreement,3)
+
 
     return Response({'kappa':kappa, 'percent agreement':perc_agreement})
 
 @api_view(['GET'])
 def perc_agree_table(request,pk):
     '''
-    Finds the toal overal percent irr data agreed upon as well
+    Finds the total overal percent irr data agreed upon as well
     as the percent agreement between each pair of coders
 
     '''
     project = Project.objects.get(pk=pk)
-    irr_data = set(IRRLog.objects.values_list('data', flat=True))
+    irr_data = set(IRRLog.objects.filter(data__project=project).values_list('data', flat=True))
+    if len(irr_data) == 0:
+        return Response({'data':[]})
+
+
     user_list = [str(Profile.objects.get(pk=x)) for x in list(ProjectPermissions.objects.filter(project=project).values_list('profile',flat=True))]
     user_list.append(str(project.creator))
     #get all possible pairs of users
@@ -674,9 +681,39 @@ def perc_agree_table(request,pk):
 
         #get the total number they both edited
         p_total = len(choice_frame[[pair[0],pair[1]]].dropna(axis=0))
-        user_agree.append({"First Coder":pair[0],"Second Coder":pair[1],"Percent Agreement":p_agree/p_total})
+        if p_total > 0:
+            user_agree.append({"First Coder":pair[0],"Second Coder":pair[1],"Percent Agreement":round(p_agree/p_total,3)})
+        else:
+            user_agree.append({"First Coder":pair[0],"Second Coder":pair[1],"Percent Agreement":"No samples"})
 
     return Response({'data':user_agree})
+
+@api_view(['GET'])
+def heat_map_data(request,pk):
+    '''
+    Calculates the data for the heat map of irr data and returns the
+    correct one for the pair of coders given
+
+    Args:
+        request: the GET request with the pk of the two users
+        pk: the Primary key of the project
+    Returns:
+        a list of dictionaries of form {label1, label2, count}
+
+    '''
+    project = Project.objects.get(pk=pk)
+    heatmap_data = util.irr_heatmap_data(project)
+    labels = list(Label.objects.all().filter(project=project).values_list('name',flat=True))
+    labels.append("Skip")
+    coders = []
+    profiles = ProjectPermissions.objects.filter(project=project)
+    coders.append({'name':str(project.creator),'pk':project.creator.pk})
+    for p in profiles:
+        coders.append({'name':str(p.profile), 'pk':p.profile.pk})
+
+
+    return Response({'data':heatmap_data, 'labels':labels , "coders":coders})
+
 
 @api_view(['POST'])
 def skip_data(request, pk):

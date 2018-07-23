@@ -26,6 +26,7 @@ urlpatterns = [
     url(r'^label_skew_label/(?P<pk>\d+)/$', api.label_skew_label),
     url(r'^label_admin_label/(?P<pk>\d+)/$', api.label_admin_label),
     url(r'^get_irr_metrics/(?P<pk>\d+)/$', api.get_irr_metrics),
+    url(r'^heat_map_data/(?P<pk>\d+)/$', api.heat_map_data),
     url(r'^perc_agree_table/(?P<pk>\d+)/$', api.perc_agree_table),
     url(r'^skip_data/(?P<pk>\d+)/$', api.skip_data),
     url(r'^leave_coding_page/$', api.leave_coding_page),

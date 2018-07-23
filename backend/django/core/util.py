@@ -5,7 +5,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_predict
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from sklearn.externals import joblib
-
 from scipy import sparse
 import os
 import math
@@ -797,6 +796,10 @@ def fleiss_kappa(project):
     #N is the number of data points
     N = len(label_count_dict)
 
+    if N == 0:
+        #there is no irr data, so just return bad values
+        return "no irr data processed", "no irr data processed"
+
     M = np.asarray(pd.DataFrame(data_label_dict))
 
     pj_const = 1 / (N*n)
@@ -812,7 +815,7 @@ def fleiss_kappa(project):
 
     return kappa, agree/N
 
-def irr_heatmap(project):
+def irr_heatmap_data(project):
     '''
     Takes in the irrlog and formats the data to be usable in the irr heatmap
 
@@ -837,6 +840,7 @@ def irr_heatmap(project):
                     user_label_counts[str(user1)+"_"+str(user2)][str(label1)][str(label2)] = 0
 
     for data_id in irr_data:
+        #iterate over the data and count up labels
         data_log_list = IRRLog.objects.filter(data=data_id,data__project=project)
         small_user_list = data_log_list.values_list('profile__user',flat=True)
         for user1 in small_user_list:
@@ -845,19 +849,16 @@ def irr_heatmap(project):
                 label1 = data_log_list.get(profile__pk = user1).label
                 label2 = data_log_list.get(profile__pk = user2).label
                 user_label_counts[user_combo][str(label1).replace("None","Skip")][str(label2).replace("None","Skip")] +=1
-
-
-    #turn the results into a dataframe for each pair of users
+    #get the results in the final format needed for the graph
     end_data = {}
     for user_combo in user_label_counts:
         end_data_list = []
         for label1 in user_label_counts[user_combo]:
             for label2 in user_label_counts[user_combo][label1]:
                 end_data_list.append({"label1":label1,"label2":label2,"count":user_label_counts[user_combo][label1][label2]})
-        #need to normalize the dataframe between 0 and 1
-        end_data_frame = pd.DataFrame(end_data_list)
-
         end_data[user_combo] = end_data_list
+
+    return end_data
 
 
 def move_skipped_to_admin_queue(datum, profile, project):

@@ -276,3 +276,7 @@ li.disabled {
     border-top: 2px solid #EFEFEF;
     margin: 0px 15px 10px;
 }
+
+#heatmap_chart {
+    overflow: auto;
+}
