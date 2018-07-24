@@ -74,21 +74,6 @@ def download_data(request, pk):
     return response
 
 @api_view(['GET'])
-def download_codebook(request, pk):
-    """Given the project id, get the codebook file
-    """
-    project = Project.objects.get(pk=pk)
-    fpath = os.path.join(settings.CODEBOOK_FILE_PATH, project.codebook_file)
-    if os.path.isfile(fpath):
-        with open(fpath,"rb") as file:
-            codebook = file.read()
-            response = HttpResponse(codebook, content_type='application/pdf')
-            response['Content-Disposition'] = 'attachment;'
-            return response
-    else:
-        raise ValueError('There was no codebook for the project: ' + str(pk))
-
-@api_view(['GET'])
 def label_distribution_inverted(request, pk):
     """This function finds and returns the number of each label. The format
     is more focussed on showing the total amount of each label then the user

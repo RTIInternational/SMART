@@ -9,7 +9,6 @@ import Skew from '../Skew';
 import AdminTable from '../AdminTable';
 const ADMIN = window.ADMIN;
 import LabelInfo from '../LabelInfo';
-import PDF from 'react-pdf-js';
 const CODEBOOK_URL = window.CODEBOOK_URL;
 class Smart extends React.Component {
 
@@ -17,59 +16,16 @@ class Smart extends React.Component {
     super(props);
     this.getPDF = this.getPDF.bind(this);
     this.toggleCodebook = this.toggleCodebook.bind(this);
-    this.nextPage = this.nextPage.bind(this);
-    this.prevPage = this.prevPage.bind(this);
-    this.onDocumentComplete = this.onDocumentComplete.bind(this);
-    this.getPagination = this.getPagination.bind(this);
     this.state = {
-      codebook_open: false,
-      codebook_page: 1,
-      num_codebook_pages: 0
+      codebook_open: false
     }
-  }
-
-  //This function runs when the PDF is loaded to get the number of pages
-  onDocumentComplete(pages){
-    this.setState({num_codebook_pages: pages});
   }
 
   //This opens/closes the codebook module
   toggleCodebook(){
-    this.setState({codebook_open: !this.state.codebook_open,
-    codebook_page: 1});
+    this.setState({codebook_open: !this.state.codebook_open});
   }
 
-  //This changes the page of the codebook
-  nextPage(){
-    this.setState({codebook_page: this.state.codebook_page + 1});
-  }
-
-  //This changes the page of the codebook
-  prevPage(){
-    this.setState({codebook_page: this.state.codebook_page - 1});
-  }
-
-  //This returns the previous and next buttons for the codebook
-  getPagination()
-  {
-    var nextButton = false;
-    var prevButton = false;
-    if(!(this.state.codebook_page === this.state.num_codebook_pages))
-    {
-      nextButton = true;
-    }
-    if(!(this.state.codebook_page === 1))
-    {
-      prevButton = true;
-    }
-
-    return (
-      <ButtonGroup>
-        <Button onClick={this.prevPage} disabled={!prevButton}>Previous Page</Button>
-        <Button onClick={this.nextPage} disabled={!nextButton}>Next Page</Button>
-      </ButtonGroup>
-    );
-  }
 
   //This renders the PDF in the modal if one exists for the project
   getPDF()
@@ -84,11 +40,13 @@ class Smart extends React.Component {
               <Modal.Title>Codebook</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-              <PDF
-              file={CODEBOOK_URL}
-              onDocumentComplete={this.onDocumentComplete}
-              page={this.state.codebook_page}/>
-              {this.getPagination()}
+            <embed
+                type="application/pdf"
+                src={CODEBOOK_URL}
+                id="pdf_document"
+                width="100%"
+                height="100%"
+            />
             </Modal.Body>
           </Modal>
         </div>
