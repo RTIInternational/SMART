@@ -330,3 +330,14 @@ table#permission_table .detail_button:after {
 table#permission_table .detail_button.collapsed:after {
     content: '\e080';
 }
+
+.panel-heading .accordion-toggle:after {
+    font-family: Glyphicons Halflings;  /* essential for enabling glyphicon */
+    content: '\e114';    /* adjust as needed, taken from bootstrap.css */
+    float: right;        /* adjust as needed */
+    color: grey;         /* adjust as needed */
+}
+
+.panel-heading .accordion-toggle.collapsed:after {
+    content: '\e080';    /* adjust as needed, taken from bootstrap.css */
+}

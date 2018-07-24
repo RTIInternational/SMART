@@ -4,199 +4,187 @@
 {% load static %}
 {% block content %}
 <div class="card full">
-    <div class="cardface">
-        <div class="row">
-            <div class="col-md-12">
-                <h2>{{ project.name }}</h2>
-                <p>Created By: {{ project.creator }}</p>
+  <div class="cardface">
+    <div class="row">
+      <div class="col-md-12">
+        <h2>{{ project.name }}</h2>
+        <p>Created By: {{ project.creator }}</p>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h5 class="panel-title">
+              <a data-toggle="collapse" href="#description-panel" class="accordion-toggle collapsed">
+                Description
+              </a>
+            </h5>
+          </div>
+          <div id="description-panel" class="panel-collapse collapse">
+            <div class="panel-body">
+              {% if project.description %}
+              <p>{{ project.description }}</p>
+              {% else %}
+              <h5><strong>No Description Available</strong></h5>
+              {% endif %}
             </div>
+          </div>
         </div>
-        <div class="row">
-          <div id="accordian">
-            <table class="table" id="permission_table">
-              <tr>
-                <td colspan="2">
-                  <div class="card">
-                    <div class="card-header" id="heading_description">
-                        <button class="btn btn-link collapsed detail_button" data-toggle="collapse" data-target="#collapse_description" aria-expanded="true" aria-controls="collapse_description">
-                          <h5>
-                            Description
-                          </h5>
-                        </button>
-                    </div>
-                  <div id="collapse_description" class="collapse" aria-labelledby="heading_description" data-parent="#accordion">
-                    <div class="card-body detail_card">
-                      {% if project.description %}
-                      <p>{{ project.description }}</p>
-                      {% else %}
-                      <h5><strong>No Description Available</strong></h5>
-                      {% endif %}
-                    </div>
-                  </div>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <div class="card">
-                  <div class="card-header" id="heading_admin">
-                    <h5 class="mb-0">
-                      <button class="btn btn-link collapsed detail_button" data-toggle="collapse" data-target="#collapse_admin" aria-expanded="true" aria-controls="collapse_admin">
-                        <h5>
-                          Admin(s)
-                        </h5>
-                      </button>
-                    </h5>
-                  </div>
-                  <div id="collapse_admin" class="collapse" aria-labelledby="heading_admin" data-parent="#accordion">
-                    <div class="card-body">
-                      <ul class="list-group-flush">
-                      <li class="list-group-item">{{ project.creator }}</li>
-                      {% for perm in project.projectpermissions_set.all %}
-                        {% if perm.permission == 'ADMIN' %}
-                          <li class="list-group-item">{{ perm.profile }}</li>
-                        {% endif %}
-                      {% endfor %}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </td>
-              <td>
-                <div class="card">
-                  <div class="card-header" id="heading_coders">
-                    <h5 class="mb-0">
-                      <button class="btn btn-link collapsed detail_button" data-toggle="collapse" data-target="#collapse_coders" aria-expanded="true" aria-controls="collapse_coders">
-                        <h5>
-                          Coder(s)
-                        </h5>
-                      </button>
-                    </h5>
-                  </div>
-                  <div id="collapse_coders" class="collapse" aria-labelledby="heading_coders" data-parent="#accordion">
-                    <div class="card-body">
-                      <ul class="list-group-flush">
-                      {% if project.coder_count > 0 %}
-                          {% for perm in project.projectpermissions_set.all %}
-                            {% if perm.permission == 'CODER' %}
-                            <li class="list-group-item">{{ perm.profile }}</li>
-                            {% endif %}
-                          {% endfor %}
-                      {% else %}
-                      <h5><strong>No CODER Permissions Available</strong></h5>
-                      {% endif %}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <div class="card">
-                  <div class="card-header" id="heading_adv">
-                    <h5 class="mb-0">
-                      <button class="btn btn-link collapsed detail_button" data-toggle="collapse" data-target="#collapse_adv" aria-expanded="true" aria-controls="collapse_adv">
-                        <h5>
-                          Advanced Settings
-                        </h5>
-                      </button>
-                    </h5>
-                  </div>
-                  <div id="collapse_adv" class="collapse" aria-labelledby="heading_adv" data-parent="#accordion">
-                    <div class="card-body">
-                      <p>Selection Algorithm: {{ project.learning_method }}</p>
-                      <p>Batch Size: {{ project.batch_size }}</p>
-                    </div>
-                  </div>
-                </div>
-              </td>
-              <td>
-                <div class="card">
-                  <div class="card-header" id="heading_labels">
-                    <h5 class="mb-0">
-                      <button class="btn btn-link collapsed detail_button" data-toggle="collapse" data-target="#collapse_labels" aria-expanded="true" aria-controls="collapse_labels">
-                        <h5>
-                          Labels
-                        </h5>
-                      </button>
-                    </h5>
-                  </div>
-                  <div id="collapse_labels" class="collapse" aria-labelledby="heading_labels" data-parent="#accordion">
-                    <div class="card-body">
-                      <ul class="list-group-flush">
-                        {% for label in project.labels.all %}
-                            {% if label.description == '' %}
-                            <li class="list-group-item"><b>{{ label.name }}</b></li>
-                            {% else %}
-                            <li class="list-group-item"><b>{{ label.name }}</b>: {{ label.description }}</li>
-                            {% endif %}
-                        {% endfor %}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td colspan="2">
-                <div class="card">
-                  <div class="card-header" id="heading_data">
-                    <h5 class="mb-0">
-                      <button class="btn btn-link collapsed detail_button" data-toggle="collapse" data-target="#collapse_data" aria-expanded="true" aria-controls="collapse_data">
-                        <h5>
-                          Data
-                        </h5>
-                      </button>
-                    </h5>
-                  </div>
-                  <div id="collapse_data" class="collapse" aria-labelledby="heading_data" data-parent="#accordion">
-                    <div class="card-body">
-                      <ul class="list-group-flush">
-                      {% for data in project.data_set.all|slice:"5" %}
-                          <li class="list-group-item showData">{{ data.text }}</li>
-                      {% endfor %}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </td>
-            </tr>
-          </table>
-        </div>
-        </div>
-        <div class="row">
-            <div class="col-md-12">
-                <div class="btn-group" role="group" aria-label="Project Controls">
-                    <a class="btn btn-primary" href="{% url 'projects:project_list' %}" role="button">
-                        Return to Projects
-                    </a>
-                    {% if project|proj_permission_level:request.user.profile > 1 %}
-                    <a class="btn btn-info" href="{% url 'projects:project_update' project.pk %}" role="button">
-                        Update Project
-                    </a>
-                    <a class="btn btn-danger" href="{% url 'projects:project_delete' project.pk %}" role="button">
-                        Delete Project
-                    </a>
-                    {% endif %}
-                </div>
-                {% if project|proj_permission_level:request.user.profile > 1 %}
-                <div class="btn-group pull-right" role="group" aria-label="Admin Controls">
-                    {% if project.labeled_data_count > 0 %}
-                    <a class="btn btn-primary" id="download_btn">Download Labeled Data</a>
-                    {% else %}
-                    <a class="btn btn-primary disabled" id="download_btn">No Labeled Data to Download</a>
-                    {% endif %}
-                    {% if project.codebook_file != "" %}
-                    <a class="btn btn-primary" href = "{% static project.codebook_file %}" id="download_cb_btn">View CodeBook</a>
-                    {% endif %}
-                    <a class="btn btn-primary" href="{% url 'projects:project_admin' project.pk %}" role="button">
-                        Admin Page
-                    </a>
-                </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-4">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h5 class="panel-title">
+              <a data-toggle="collapse" href="#admin-panel" class="accordion-toggle collapsed">
+                Admin(s)
+              </a>
+            </h5>
+          </div>
+          <div id="admin-panel" class="panel-collapse collapse">
+            <div class="panel-body">
+              <ul class="list-group-flush">
+              <li class="list-group-item">{{ project.creator }}</li>
+              {% for perm in project.projectpermissions_set.all %}
+                {% if perm.permission == 'ADMIN' %}
+                  <li class="list-group-item">{{ perm.profile }}</li>
                 {% endif %}
+              {% endfor %}
+              </ul>
             </div>
+          </div>
         </div>
+      </div>
+      <div class="col-md-4">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h5 class="panel-title">
+              <a data-toggle="collapse" href="#coder-panel" class="accordion-toggle collapsed">
+                Coder(s)
+              </a>
+            </h5>
+          </div>
+          <div id="coder-panel" class="panel-collapse collapse">
+            <div class="panel-body">
+              <ul class="list-group-flush">
+              {% if project.coder_count > 0 %}
+                  {% for perm in project.projectpermissions_set.all %}
+                    {% if perm.permission == 'CODER' %}
+                    <li class="list-group-item">{{ perm.profile }}</li>
+                    {% endif %}
+                  {% endfor %}
+              {% else %}
+              <h5><strong>No CODER Permissions Available</strong></h5>
+              {% endif %}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h5 class="panel-title">
+              <a data-toggle="collapse" href="#settings-panel" class="accordion-toggle collapsed">
+                Advanced Project Settings
+              </a>
+            </h5>
+          </div>
+          <div id="settings-panel" class="panel-collapse collapse">
+            <div class="panel-body">
+              <p>Selection Algorithm: {{ project.learning_method }}</p>
+              <p>Batch Size: {{ project.batch_size }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-12">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h5 class="panel-title">
+              <a data-toggle="collapse" href="#label-panel" class="accordion-toggle collapsed">
+                Labels
+              </a>
+            </h5>
+          </div>
+          <div id="label-panel" class="panel-collapse collapse">
+            <div class="panel-body">
+              <ul class="list-group-flush">
+                {% for label in project.labels.all %}
+                  <li class="list-group-item">
+                    <dt>{{ label.name }}</dt>
+                    <dd>{{ label.description }}</dd>
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-12">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h5 class="panel-title">
+              <a data-toggle="collapse" href="#Data-panel" class="accordion-toggle collapsed">
+                Data
+              </a>
+            </h5>
+          </div>
+          <div id="Data-panel" class="panel-collapse collapse">
+            <div class="panel-body">
+              <ul class="list-group-flush">
+              {% for data in project.data_set.all|slice:"5" %}
+                <li class="list-group-item showData">{{ data.text }}</li>
+              {% endfor %}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-12">
+        <div class="btn-group" role="group" aria-label="Project Controls">
+          <a class="btn btn-primary" href="{% url 'projects:project_list' %}" role="button">
+            Return to Projects
+          </a>
+          {% if project|proj_permission_level:request.user.profile > 1 %}
+          <a class="btn btn-info" href="{% url 'projects:project_update' project.pk %}" role="button">
+            Update Project
+          </a>
+          <a class="btn btn-danger" href="{% url 'projects:project_delete' project.pk %}" role="button">
+            Delete Project
+          </a>
+          {% endif %}
+        </div>
+        {% if project|proj_permission_level:request.user.profile > 1 %}
+        <div class="btn-group pull-right" role="group" aria-label="Admin Controls">
+          {% if project.labeled_data_count > 0 %}
+          <a class="btn btn-primary" id="download_btn">Download Labeled Data</a>
+          {% else %}
+          <a class="btn btn-primary disabled" id="download_btn">No Labeled Data to Download</a>
+          {% endif %}
+          {% if project.codebook_file != "" %}
+          <a class="btn btn-primary" href = "{% static project.codebook_file %}" id="download_cb_btn">View CodeBook</a>
+          {% endif %}
+          <a class="btn btn-primary" href="{% url 'projects:project_admin' project.pk %}" role="button">
+            Admin Page
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}
 
