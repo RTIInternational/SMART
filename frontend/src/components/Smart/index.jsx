@@ -33,8 +33,8 @@ class Smart extends React.Component {
     if(CODEBOOK_URL != "")
     {
       return (
-        <div>
-          <Button onClick={this.toggleCodebook}>Codebook</Button>
+        <div className="codebook-div">
+          <Button onClick={this.toggleCodebook} className="codebook-btn">Codebook</Button>
           <Modal show={this.state.codebook_open} onHide={this.toggleCodebook}>
             <Modal.Header closeButton>
               <Modal.Title>Codebook</Modal.Title>
@@ -53,7 +53,7 @@ class Smart extends React.Component {
       );
     }
     else {
-      return (<p>No Codebook</p>);
+      return null;
     }
   }
 
