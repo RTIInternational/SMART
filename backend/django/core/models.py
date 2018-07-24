@@ -30,7 +30,7 @@ class Project(models.Model):
     name = models.TextField()
     description = models.TextField(blank=True)
     creator = models.ForeignKey('Profile')
-    percentage_irr = models.IntegerField(default=10, validators=[MinValueValidator(0), MaxValueValidator(100)])
+    percentage_irr = models.FloatField(default=10.0, validators=[MinValueValidator(0.0), MaxValueValidator(100.0)])
     num_users_irr = models.IntegerField(default=2, validators=[MinValueValidator(2)])
 
     #####Advanced options#####

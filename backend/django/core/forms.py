@@ -145,7 +145,7 @@ class AdvancedWizardForm(forms.ModelForm):
         initial="least confident", required=False
     )
     use_irr = forms.BooleanField(initial=False, required=False)
-    percentage_irr = forms.IntegerField(initial=10, min_value=0, max_value=100)
+    percentage_irr = forms.FloatField(initial=10.0, min_value=0.0, max_value=100.0)
     num_users_irr = forms.IntegerField(initial=2, min_value=2)
 
     def clean(self):
