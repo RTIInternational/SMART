@@ -121,8 +121,8 @@ class Smart extends React.Component {
 
     return (
       <Tabs defaultActiveKey={1} id="data_tabs" >
-        <Tab eventKey={1} title="Annotate Data">
-        <div className="deck">
+        <Tab eventKey={1} title="Annotate Data" className="full card">
+        <div className="cardContent">
           <ProgressBar >
             <ProgressBar
             style={{minWidth: 60}}
@@ -137,18 +137,18 @@ class Smart extends React.Component {
         </div>
         </Tab>
         <Tab eventKey={2} title="History" className="full card">
-          <div className="cardface">
-          <HistoryTable
-            getHistory={getHistory}
-            history_data={history_data}
-            labels={labels}
-            changeLabel={changeLabel}
-            changeToSkip={changeToSkip}
-          />
+          <div className="cardContent">
+            <HistoryTable
+              getHistory={getHistory}
+              history_data={history_data}
+              labels={labels}
+              changeLabel={changeLabel}
+              changeToSkip={changeToSkip}
+            />
           </div>
         </Tab>
         <Tab eventKey={3} disabled={!ADMIN} title="Fix Skew" className="full card">
-          <div className="cardface">
+          <div className="cardContent">
             <Skew
             getUnlabeled={getUnlabeled}
             unlabeled_data={unlabeled_data}
@@ -160,7 +160,7 @@ class Smart extends React.Component {
           </div>
         </Tab>
         <Tab eventKey={4} disabled={!ADMIN} title="Skipped Cards" className="full card">
-          <div className="cardface">
+          <div className="cardContent">
             <AdminTable
             getAdmin={getAdmin}
             admin_data={admin_data}
