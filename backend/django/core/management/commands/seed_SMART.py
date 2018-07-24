@@ -42,7 +42,7 @@ def seed_project(creator, name, description, data_file, label_list, perm_list):
     num_coders = len(permissions) + 1
     q_length = find_queue_length(batch_size, num_coders)
 
-    queue = add_queue(project=project, length=q_length)
+    queue = add_queue(project=project, length=q_length, type="normal")
 
 
     # Data

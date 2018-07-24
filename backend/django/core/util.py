@@ -331,109 +331,58 @@ def fill_queue(queue, orderby,  irr_queue = None, irr_percent = 10, batch_size =
     eligible_data = Data.objects.filter(**data_filters)
     cte_sql, cte_params = eligible_data.query.sql_with_params()
 
+    #get the join clause that controls how the data is selected
+    join_clause = get_join_clause(orderby, queue)
 
-    if orderby == 'random':
-        join_clause = ''
-    else:
-        join_clause = """
-        LEFT JOIN
-            {datauncertainty_table} AS uncertainty
-          ON
-            eligible_data.{data_pk_col} = uncertainty.{datauncertainty_data_id_col}
-        WHERE
-            uncertainty.{datauncertainty_model_id_col} = (
-                SELECT max(c_model.{model_pk_col})
-                FROM {model_table} AS c_model
-                WHERE c_model.{model_project_id_col} = {project_id}
-            )
-        """.format(
-            datauncertainty_table=DataUncertainty._meta.db_table,
-            data_pk_col=Data._meta.pk.name,
-            datauncertainty_data_id_col=DataUncertainty._meta.get_field('data').column,
-            datauncertainty_model_id_col=DataUncertainty._meta.get_field('model').column,
-            model_pk_col=Model._meta.pk.name,
-            model_table=Model._meta.db_table,
-            model_project_id_col=Model._meta.get_field('project').column,
-            project_id=queue.project.pk)
-
-
-    #First get the IRR data, then remove it from eligible data to avoid overlap
+    #First process the IRR data
     if irr_queue:
         #if the irr queue is given, want to fill it with a given percent of
         #the batch size
         num_irr = math.ceil(batch_size * (irr_percent/100))
         num_elements = len(DataQueue.objects.filter(queue=irr_queue))
-
         queue_size = irr_queue.length
-        if queue_size - num_elements < num_irr:
-            irr_sample_size_sql, irr_sample_size_params = (Queue.objects.filter(pk=irr_queue.pk)
-                                                .annotate(sample_size=F('length') - Count('data'))
-                                                .values('sample_size')
-                                                .query.sql_with_params())
-        else:
-            irr_sample_size_sql, irr_sample_size_params = (Queue.objects.filter(pk=irr_queue.pk)
-                                                .annotate(sample_size=Value(num_irr, IntegerField()))
-                                                .values('sample_size')
-                                                .query.sql_with_params())
-        irr_sql = """
-        WITH eligible_data AS (
-            {cte_sql}
-        )
-        INSERT INTO {dataqueue_table}
-           ({dataqueue_data_id_col}, {dataqueue_queue_id_col})
-        SELECT
-            eligible_data.{data_pk_col},
-            {queue_id}
-        FROM
-            eligible_data
-        {join_clause}
-        ORDER BY
-            {orderby_value}
-        LIMIT ({sample_size_sql});
-        """.format(
-            cte_sql=cte_sql,
-            dataqueue_table=DataQueue._meta.db_table,
-            dataqueue_data_id_col=DataQueue._meta.get_field('data').column,
-            dataqueue_queue_id_col=DataQueue._meta.get_field('queue').column,
-            data_pk_col=Data._meta.pk.name,
-            queue_id=irr_queue.pk,
-            join_clause=join_clause,
-            orderby_value=ORDERBY_VALUE[orderby],
-            sample_size_sql=irr_sample_size_sql)
+
+        #get the number of elements to add to the irr queue
+        irr_sample_size_sql, irr_sample_size_params = get_queue_size_params(irr_queue,queue_size, num_elements, num_irr, irr_queue)
+        #get the sql for adding the elements
+        irr_sql = generate_sql_for_fill_queue(irr_queue,ORDERBY_VALUE[orderby],join_clause, cte_sql, irr_sample_size_sql)
 
         with connection.cursor() as c:
             c.execute(irr_sql, (*cte_params, *irr_sample_size_params))
 
+        data_ids = []
         with transaction.atomic():
             irr_data = DataQueue.objects.filter(queue=irr_queue.pk)
-            data_ids = []
             for d in irr_data:
-                data_ids.append(d.data.df_idx)
-            Data.objects.filter(df_idx__in=data_ids).update(irr_ind=True)
+                data_ids.append(d.data.pk)
+            Data.objects.filter(pk__in=data_ids).update(irr_ind=True)
 
         sync_redis_objects(irr_queue, orderby)
 
         #get new eligible data by filtering out what was just chosen
-        eligible_data = Data.objects.filter(**data_filters)
+        eligible_data = eligible_data.exclude(pk__in=data_ids)
         cte_sql, cte_params = eligible_data.query.sql_with_params()
 
     #get the remaining space in the normal queue
-    normal_element_size = math.ceil(batch_size * ((100 - irr_percent)/100))
-    num_non_irr = len(DataQueue.objects.filter(queue=queue))
+    non_irr_batch_size = math.ceil(batch_size * ((100 - irr_percent)/100))
+    num_in_queue = len(DataQueue.objects.filter(queue=queue))
     queue_size = queue.length
     #if there is not much space or we are not filling the irr queue, just
     #fill the normal queue to the top
-    if (queue_size - num_non_irr < normal_element_size) or not(irr_queue):
-        sample_size_sql, sample_size_params = (Queue.objects.filter(pk=queue.pk)
-                                                .annotate(sample_size=F('length') - Count('data'))
-                                                .values('sample_size')
-                                                .query.sql_with_params())
-    else:
-        sample_size_sql, sample_size_params = (Queue.objects.filter(pk=queue.pk)
-                                                .annotate(sample_size=Value(normal_element_size, IntegerField()))
-                                                .values('sample_size')
-                                                .query.sql_with_params())
+    sample_size_sql, sample_size_params = get_queue_size_params(queue,queue_size, num_in_queue, non_irr_batch_size, irr_queue)
 
+    sql = generate_sql_for_fill_queue(queue, ORDERBY_VALUE[orderby], join_clause, cte_sql, sample_size_sql)
+
+    with connection.cursor() as c:
+        c.execute(sql, (*cte_params, *sample_size_params))
+
+    sync_redis_objects(queue, orderby)
+
+def generate_sql_for_fill_queue(queue, orderby_value, join_clause, cte_sql, size_sql):
+    '''
+    This function merely takes the given paramters and returns an sql query
+    to execute for filling the queue
+    '''
     sql = """
     WITH eligible_data AS (
         {cte_sql}
@@ -457,13 +406,58 @@ def fill_queue(queue, orderby,  irr_queue = None, irr_percent = 10, batch_size =
         data_pk_col=Data._meta.pk.name,
         queue_id=queue.pk,
         join_clause=join_clause,
-        orderby_value=ORDERBY_VALUE[orderby],
-        sample_size_sql=sample_size_sql)
+        orderby_value=orderby_value,
+        sample_size_sql= size_sql)
+    return sql
 
-    with connection.cursor() as c:
-        c.execute(sql, (*cte_params, *sample_size_params))
+def get_join_clause(orderby, queue):
+    '''
+    This function generates the join clause used to fill queues
+    '''
+    if orderby == 'random':
+        join_clause = ''
+    else:
+        join_clause = """
+        LEFT JOIN
+            {datauncertainty_table} AS uncertainty
+          ON
+            eligible_data.{data_pk_col} = uncertainty.{datauncertainty_data_id_col}
+        WHERE
+            uncertainty.{datauncertainty_model_id_col} = (
+                SELECT max(c_model.{model_pk_col})
+                FROM {model_table} AS c_model
+                WHERE c_model.{model_project_id_col} = {project_id}
+            )
+        """.format(
+            datauncertainty_table=DataUncertainty._meta.db_table,
+            data_pk_col=Data._meta.pk.name,
+            datauncertainty_data_id_col=DataUncertainty._meta.get_field('data').column,
+            datauncertainty_model_id_col=DataUncertainty._meta.get_field('model').column,
+            model_pk_col=Model._meta.pk.name,
+            model_table=Model._meta.db_table,
+            model_project_id_col=Model._meta.get_field('project').column,
+            project_id=queue.project.pk)
+    return join_clause
 
-    sync_redis_objects(queue, orderby)
+def get_queue_size_params(queue,queue_size, num_in_queue, batch_size, irr_queue):
+    '''
+    Get the sql parameters for the number of items to add to the queue
+    '''
+    #if there is less space in the queue than the default number of
+    #elements to add, or we are trying to fill the queue to the top
+    #(irr_queue=None in the second case)
+    if (queue_size - num_in_queue < batch_size) or not(irr_queue):
+        sample_size_sql, sample_size_params = (Queue.objects.filter(pk=queue.pk)
+                                                .annotate(sample_size=F('length') - Count('data'))
+                                                .values('sample_size')
+                                                .query.sql_with_params())
+    else:
+        #just add the number requested (some percent of the batch size)
+        sample_size_sql, sample_size_params = (Queue.objects.filter(pk=queue.pk)
+                                                .annotate(sample_size=Value(batch_size, IntegerField()))
+                                                .values('sample_size')
+                                                .query.sql_with_params())
+    return sample_size_sql, sample_size_params
 
 
 def pop_first_nonempty_queue(project, profile=None, type="normal"):
@@ -490,7 +484,6 @@ def pop_first_nonempty_queue(project, profile=None, type="normal"):
 
 
     if type == "irr":
-        #######NEED TO SORT THE QUEUE SO THE LABELED STUFF IS AT THE BOTTOM#######
         for queue in eligible_queue_ids:
             queue_id = int(queue.replace("queue:",""))
 
@@ -598,7 +591,6 @@ def assign_datum(profile, project, type="normal"):
     Given a profile and project, figure out which queue to pull from;
     then pop a datum off that queue and assign it to the profile.
     '''
-
     with transaction.atomic():
         queue, datum = pop_first_nonempty_queue(project, profile=profile, type=type)
         if datum is None:
@@ -641,7 +633,13 @@ def label_data(label, datum, profile, time):
         if not irr_data:
             DataQueue.objects.filter(data=datum, queue=queue).delete()
         else:
-            process_irr_label(datum,label)
+            num_history = IRRLog.objects.filter(data=datum).count()
+            #if the IRR history has more than the needed number of labels , it is
+            #already processed so just add this label to the history.
+            if num_history >= datum.project.num_users_irr:
+                IRRLog.objects.create(data=datum, profile=profile, label=label, timestamp = timezone.now())
+            else:
+                process_irr_label(datum,label)
     if not irr_data:
         settings.REDIS.srem(redis_serialize_set(queue), redis_serialize_data(datum))
 

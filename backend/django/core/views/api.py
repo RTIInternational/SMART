@@ -509,6 +509,9 @@ def label_admin_label(request, pk):
         if datum.irr_ind:
             Data.objects.filter(pk=datum.pk).update(irr_ind=False)
 
+    #NOTE: this checks if the model needs to be triggered, but not if the
+    #queues need to be refilled. This is because for something to be in the
+    #admin queue, annotate or skip would have already checked for an empty queue
     util.check_and_trigger_model(datum)
     return Response({'test':'success'})
 
@@ -573,8 +576,12 @@ def get_label_history(request, pk):
                 minute = "0" + str(d.timestamp.minute)
             else:
                 minute = str(d.timestamp.minute)
+            if d.timestamp.second < 10:
+                second = "0" + str(d.timestamp.second)
+            else:
+                second = str(d.timestamp.second)
             new_timestamp = str(d.timestamp.date()) + ", " + str(d.timestamp.hour)\
-            + ":" + minute + "." + str(d.timestamp.second)
+            + ":" + minute + "." + second
         else:
             new_timestamp = "None"
         temp_dict = {"data":d.data.text,
@@ -595,8 +602,12 @@ def get_label_history(request, pk):
                 minute = "0" + str(d.timestamp.minute)
             else:
                 minute = str(d.timestamp.minute)
+            if d.timestamp.second < 10:
+                second = "0" + str(d.timestamp.second)
+            else:
+                second = str(d.timestamp.second)
             new_timestamp = str(d.timestamp.date()) + ", " + str(d.timestamp.hour)\
-            + ":" + minute + "." + str(d.timestamp.second)
+            + ":" + minute + "." + second
         else:
             new_timestamp = "None"
         temp_dict = {"data":d.data.text,
@@ -737,6 +748,10 @@ def skip_data(request, pk):
         IRRLog.objects.create(data=data, profile=profile, label = None, timestamp = timezone.now())
         util.process_irr_label(data, None)
 
+        #unassign the skipped item
+        assignment = AssignedData.objects.get(data=data,profile=profile)
+        assignment.delete()
+
     else:
         # Make sure coder still has permissions before labeling data
         if project_extras.proj_permission_level(project, profile) > 0:
@@ -850,7 +865,8 @@ def modify_label_to_skip(request, pk):
             DataLabel.objects.filter(data=data, label=old_label).delete()
             if data.irr_ind:
                 #if it was irr, add it to the log
-                IRRLog.objects.create(data=data, profile=profile, label = None, timestamp = timezone.now())
+                if len(IRRLog.objects.filter(data=data,profile=profile)) == 0:
+                    IRRLog.objects.create(data=data, profile=profile, label = None, timestamp = timezone.now())
             else:
                 #if it's not irr, add it to the admin queue immediately
                 DataQueue.objects.create(data=data, queue=queue)
