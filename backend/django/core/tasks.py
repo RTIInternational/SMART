@@ -14,8 +14,8 @@ def send_model_task(project_pk):
     from core.util import train_and_save_model, predict_data, fill_queue, find_queue_length
 
     project = Project.objects.get(pk=project_pk)
-    queue = project.queue_set.get(admin=False, irr=False)
-    irr_queue = project.queue_set.get(admin=False, irr=True)
+    queue = project.queue_set.get(type="normal")
+    irr_queue = project.queue_set.get(type="irr")
 
     model = train_and_save_model(project)
     predictions = predict_data(project, model)

@@ -97,7 +97,7 @@ def test_admin_queue(db, test_project_data):
     A queue containing data from the test project, with length set to
     the global len.
     '''
-    return add_queue(test_project_data, TEST_QUEUE_LEN, admin=True, irr=False)
+    return add_queue(test_project_data, TEST_QUEUE_LEN, type="admin")
 
 @pytest.fixture
 def test_irr_queue(db, test_project_data):
@@ -105,7 +105,7 @@ def test_irr_queue(db, test_project_data):
     A queue containing data from the test project, with length set to
     the global len.
     '''
-    return add_queue(test_project_data, TEST_QUEUE_LEN, admin=False, irr=True)
+    return add_queue(test_project_data, TEST_QUEUE_LEN, type="irr")
 
 @pytest.fixture
 def test_profile_queue(db, test_profile, test_project_data):

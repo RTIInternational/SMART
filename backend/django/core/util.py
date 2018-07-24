@@ -255,14 +255,14 @@ def find_queue_length(batch_size, num_coders):
     return math.ceil(batch_size/num_coders) * num_coders + math.ceil(batch_size/num_coders) * (num_coders - 1)
 
 
-def add_queue(project, length, admin = False, irr = False, profile=None):
+def add_queue(project, length, type="normal", profile=None):
     '''
     Add a queue of the given length to the given project.  If a profile is provided,
     assign the queue to that profile.
 
     Return the created queue.
     '''
-    return Queue.objects.create(length=length, project=project, profile=profile, admin = admin, irr=irr)
+    return Queue.objects.create(length=length, project=project, profile=profile, type=type)
 
 
 def get_ordered_data(data_ids, orderby):
@@ -466,7 +466,7 @@ def fill_queue(queue, orderby,  irr_queue = None, irr_percent = 10, batch_size =
     sync_redis_objects(queue, orderby)
 
 
-def pop_first_nonempty_queue(project, profile=None, admin=False, irr=False):
+def pop_first_nonempty_queue(project, profile=None, type="normal"):
     '''
     Determine which queues are eligible to be popped (and in what order)
     and pass them into redis to have the first nonempty one popped.
@@ -476,12 +476,12 @@ def pop_first_nonempty_queue(project, profile=None, admin=False, irr=False):
     if profile is not None:
         # Use priority to ensure we set profile queues above project queues
         # in the resulting list; break ties by pk
-        profile_queues = project.queue_set.filter(profile=profile, admin=admin, irr=irr)
+        profile_queues = project.queue_set.filter(profile=profile, type=type)
     else:
         profile_queues = Queue.objects.none()
     profile_queues = profile_queues.annotate(priority=Value(1, IntegerField()))
 
-    project_queues = (project.queue_set.filter(profile=None, admin=admin, irr=irr)
+    project_queues = (project.queue_set.filter(profile=None, type=type)
                       .annotate(priority=Value(2, IntegerField())))
 
     eligible_queue_ids = [redis_serialize_queue(queue) for queue in
@@ -489,7 +489,7 @@ def pop_first_nonempty_queue(project, profile=None, admin=False, irr=False):
                            .order_by('priority', 'pk'))]
 
 
-    if irr:
+    if type == "irr":
         #######NEED TO SORT THE QUEUE SO THE LABELED STUFF IS AT THE BOTTOM#######
         for queue in eligible_queue_ids:
             queue_id = int(queue.replace("queue:",""))
@@ -571,7 +571,7 @@ def get_nonempty_queue(project, profile=None):
     # Only check for profile queues if we were passed a profile
     if profile is not None:
         nonempty_profile_queues = (project.queue_set
-                                .filter(profile=profile, admin=False)
+                                .filter(profile=profile, type="normal")
                                 .annotate(
                                     data_count=Count('data'))
                                 .filter(data_count__gt=0))
@@ -582,7 +582,7 @@ def get_nonempty_queue(project, profile=None):
     # If we didn't find a profile queue, check project queues
     if first_nonempty_queue is None:
         nonempty_queues = (project.queue_set
-                           .filter(profile=None, admin=False)
+                           .filter(profile=None, type="normal")
                            .annotate(
                                data_count=Count('data'))
                            .filter(data_count__gt=0))
@@ -593,13 +593,14 @@ def get_nonempty_queue(project, profile=None):
     return first_nonempty_queue
 
 
-def assign_datum(profile, project, irr=False):
+def assign_datum(profile, project, type="normal"):
     '''
     Given a profile and project, figure out which queue to pull from;
     then pop a datum off that queue and assign it to the profile.
     '''
+
     with transaction.atomic():
-        queue, datum = pop_first_nonempty_queue(project, profile=profile, irr=irr)
+        queue, datum = pop_first_nonempty_queue(project, profile=profile, type=type)
         if datum is None:
             return None
         else:
@@ -655,7 +656,7 @@ def process_irr_label(data, label):
     project = data.project
     current_training_set = project.get_current_training_set()
 
-    admin_queue = Queue.objects.get(project=project, admin=True, irr=False)
+    admin_queue = Queue.objects.get(project=project, type="admin")
     #if there are >= labels or skips than the project calls for
     if (labeled.count() + skipped.count()) >= project.num_users_irr:
         #add all labels to IRRLog
@@ -692,7 +693,7 @@ def process_irr_label(data, label):
                 DataQueue.objects.filter(data=data).update(queue=admin_queue)
 
         #update redis to reflect the queue changes
-        irr_queue = Queue.objects.get(project=project, admin=False, irr=True)
+        irr_queue = Queue.objects.get(project=project, type="irr")
         settings.REDIS.srem(redis_serialize_set(irr_queue), redis_serialize_data(data))
 
         if not agree:
@@ -737,7 +738,7 @@ def cohens_kappa(project):
         rater2_labels[label2] += 1
     if num_data == 0:
         #there is no irr data, so just return bad values
-        return "no irr data processed", "no irr data processed"
+        raise ValueError('No irr data')
 
     label_list = list(Label.objects.filter(project=project).values_list('name',flat=True))
     label_list.append("skip")
@@ -798,7 +799,7 @@ def fleiss_kappa(project):
 
     if N == 0:
         #there is no irr data, so just return bad values
-        return "no irr data processed", "no irr data processed"
+        raise ValueError('No irr data')
 
     M = np.asarray(pd.DataFrame(data_label_dict))
 
@@ -865,7 +866,7 @@ def move_skipped_to_admin_queue(datum, profile, project):
     '''
     Remove the data from AssignedData and redis
 
-    Change the assigned queue to the admin=True one for this project
+    Change the assigned queue to the admin one for this project
     '''
     with transaction.atomic():
         #remove the data from the assignment table
@@ -875,7 +876,7 @@ def move_skipped_to_admin_queue(datum, profile, project):
         assignment.delete()
         #change the queue to the admin one
         old_id = queue.id
-        new_queue = Queue.objects.get(project=queue.project, admin=True, irr=False)
+        new_queue = Queue.objects.get(project=queue.project, type="admin")
         DataQueue.objects.filter(data=datum, queue=queue).update(queue=new_queue)
 
     #remove the data from redis
@@ -900,7 +901,7 @@ def get_assignments(profile, project, num_assignments):
 
             #first try to get any IRR data
             if more_irr:
-                assigned_datum = assign_datum(profile, project, irr=True)
+                assigned_datum = assign_datum(profile, project, type="irr")
                 if assigned_datum is None:
                     #no irr data found
                     more_irr = False
@@ -1033,8 +1034,8 @@ def check_and_trigger_model(datum, profile=None):
     #if both the normal and irr queue are empty or the user
     #has labeled all of the irr
     if profile:
-        queue = Queue.objects.get(project=project,irr=False,admin=False)
-        irr_queue = Queue.objects.get(project=project,irr=True,admin=False)
+        queue = Queue.objects.get(project=project,type="normal")
+        irr_queue = Queue.objects.get(project=project,type="irr")
         queue_count = DataQueue.objects.filter(queue=queue).count()
         #get the number of items that the profile has not labeled/skipped in irr
         irr_data = DataQueue.objects.filter(queue=irr_queue)
@@ -1056,7 +1057,7 @@ def check_and_trigger_model(datum, profile=None):
         return_str = 'task already running'
     elif labeled_data_count >= batch_size:
         if labels_count < project.labels.count():
-            queue = project.queue_set.get(admin=False, irr=False)
+            queue = project.queue_set.get(type="normal")
             fill_queue(queue = queue, orderby = 'random')
             return_str = 'random'
         else:

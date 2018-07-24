@@ -48,8 +48,8 @@ def seed_project(creator, name, description, data_file, label_list, perm_list):
     # Data
     f_data = read_test_data_backend(file=data_file)
     data_length = len(f_data)
-    admin_queue = add_queue(project=project,length=data_length, admin=True)
-    irr_queue = add_queue(project=project,length=data_length, irr=True)
+    admin_queue = add_queue(project=project,length=data_length, type="admin")
+    irr_queue = add_queue(project=project,length=data_length, type="irr")
     data_objs = add_data(project, f_data)
     fill_queue(queue, irr_queue = irr_queue, orderby='random', batch_size = batch_size)
     save_data_file(f_data, project.pk)

@@ -309,7 +309,7 @@ def test_pop_empty_queue(db, test_project, test_redis):
 
 def test_pop_nonempty_queue(db, test_project_data, test_redis):
     queue_len = 10
-    queue = add_queue(test_project_data, queue_len, admin = False)
+    queue = add_queue(test_project_data, queue_len)
     fill_queue(queue, orderby='random')
 
     datum = pop_queue(queue)
@@ -1168,8 +1168,8 @@ def test_check_and_trigger_queue_changes_success(setup_celery, test_project_labe
 
     # Assert queue filled and redis sycned
     batch_size = len(project.labels.all()) * 10
-    q = project.queue_set.get(admin=False, irr=False)
-    q_irr = project.queue_set.get(admin=False, irr=True)
+    q = project.queue_set.get(type="normal")
+    q_irr = project.queue_set.get(type="irr")
     assert (q.data.count() + q_irr.data.count()) == batch_size
     assert_redis_matches_db(test_redis)
 

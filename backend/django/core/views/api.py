@@ -405,7 +405,7 @@ def data_admin_table(request, pk):
         data: a list of data information
     """
     project = Project.objects.get(pk=pk)
-    queue = Queue.objects.filter(project=project,admin=True)
+    queue = Queue.objects.filter(project=project,type="admin")
 
     data_objs = DataQueue.objects.filter(queue=queue)
 
@@ -495,7 +495,7 @@ def label_admin_label(request, pk):
     current_training_set = project.get_current_training_set()
 
     with transaction.atomic():
-        queue = project.queue_set.get(admin=True)
+        queue = project.queue_set.get(type="admin")
         DataLabel.objects.create(data=datum,
                                 label=label,
                                 profile=profile,
@@ -623,17 +623,16 @@ def get_irr_metrics(request, pk):
     #of labels for each datum
     all_data = []
     project = Project.objects.get(pk=pk)
-    if project.num_users_irr > 2:
-        kappa, perc_agreement = util.fleiss_kappa(project)
-    else:
-        kappa, perc_agreement = util.cohens_kappa(project)
-
-    if not isinstance(kappa,str):
+    try:
+        if project.num_users_irr > 2:
+            kappa, perc_agreement = util.fleiss_kappa(project)
+        else:
+            kappa, perc_agreement = util.cohens_kappa(project)
         kappa = round(kappa,3)
-    if not isinstance(perc_agreement,str):
         perc_agreement = round(perc_agreement,3)
-
-
+    except ValueError:
+        kappa = "No irr data processed"
+        perc_agreement = "No irr data processed"
     return Response({'kappa':kappa, 'percent agreement':perc_agreement})
 
 @api_view(['GET'])
@@ -730,7 +729,7 @@ def skip_data(request, pk):
     data = Data.objects.get(pk=pk)
     profile = request.user.profile
     project = data.project
-    queue = project.queue_set.get(admin=False, irr=False)
+    queue = project.queue_set.get(type="normal")
     response = {}
 
     if data.irr_ind:
@@ -843,7 +842,7 @@ def modify_label_to_skip(request, pk):
     response = {}
     project = data.project
     old_label = Label.objects.get(pk=request.data['oldLabelID'])
-    queue = Queue.objects.get(project=project, admin=True, irr=False)
+    queue = Queue.objects.get(project=project, type="admin")
     # Make sure coder still has permissions before labeling data
     if project_extras.proj_permission_level(data.project, profile) > 0:
 
