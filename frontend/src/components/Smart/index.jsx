@@ -123,13 +123,13 @@ class Smart extends React.Component {
       <Tabs defaultActiveKey={1} id="data_tabs" >
         <Tab eventKey={1} title="Annotate Data" className="full card">
         <div className="cardContent">
-          <ProgressBar >
+          {this.getPDF()}
+          <ProgressBar>
             <ProgressBar
             style={{minWidth: 60}}
             label={label}
             now={progress}/>
           </ProgressBar>
-          {this.getPDF()}
           <LabelInfo
             labels={labels}
           />

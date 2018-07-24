@@ -1,43 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import ReactTable from 'react-table';
 import {Button, Glyphicon} from "react-bootstrap";
-
-const label_columns = [
-  {
-    Header: "id",
-    accessor: "id",
-    show: false
-  },
-  {
-    Header: "Label",
-    accessor: "name",
-    filterMethod: (filter, row) => {
-      if(String(row["name"]).toLowerCase().includes(filter.value.toLowerCase()))
-      {
-        return true;
-      }
-      else {
-        return false;
-      }
-    }
-  },
-  {
-    Header: "Description",
-    accessor: "description",
-    className: "no_word_wrap",
-    filterMethod: (filter, row) => {
-      if(String(row["description"]).toLowerCase().includes(filter.value.toLowerCase()))
-      {
-        return true;
-      }
-      else {
-        return false;
-      }
-    }
-
-  }
-];
 
 class LabelInfo extends React.Component {
   constructor(props)
@@ -57,7 +20,7 @@ class LabelInfo extends React.Component {
   if(this.state.labels_open)
   {
     return (
-      <div>
+      <div className="margin-bottom-15">
         <Button
         bsSize="small"
         onClick={this.toggleLabel}
@@ -66,25 +29,34 @@ class LabelInfo extends React.Component {
         >
         <Glyphicon glyph="minus"/> Label Guide
         </Button>
-        <ReactTable
-          data={labels}
-          columns={label_columns}
-          filterable={false}
-          minRows={2}
-          className="label_table"
-        />
+        <div className="row">
+          <div className="col-md-12">
+            <ul className="list-group-flush">
+              {labels.map( (label) => (
+                <li className="list-group-item" key={label.pk}>
+                  <dt>{label.name}</dt>
+                  <dd>{label.description}</dd>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
       </div>
     )
   }
   else {
-    return (<Button
-    bsSize="small"
-    onClick={this.toggleLabel}
-    className="plus_button"
-    bsStyle="success"
-    >
-    <Glyphicon glyph="plus"/> Label Guide
-    </Button>)
+    return (
+      <div className="margin-bottom-15">
+        <Button
+        bsSize="small"
+        onClick={this.toggleLabel}
+        className="plus_button"
+        bsStyle="success"
+        >
+        <Glyphicon glyph="plus"/> Label Guide
+        </Button>
+      </div>
+    )
   }
 
   }
