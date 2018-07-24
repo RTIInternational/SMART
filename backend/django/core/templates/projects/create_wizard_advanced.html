@@ -70,37 +70,32 @@
 <script type="text/javascript">
 var methods_box = $("div#choose_method_box");
 var batch_field = $('#choose_batch_size');
-if ($('input#id_advanced-use_active_learning').prop('checked') == true)
-{
-    methods_box.show();
-}
-else {
-    methods_box.hide();
+if ($('input#id_advanced-use_active_learning').prop('checked') == true) {
+  methods_box.show();
+} else {
+  methods_box.hide();
 }
 
-if ($('input#id_advanced-use_default_batch_size').prop('checked') == true)
-{
-    batch_field.hide();
-}
-else
-{
-    batch_field.show();
+if ($('input#id_advanced-use_default_batch_size').prop('checked') == true) {
+  batch_field.hide();
+} else {
+  batch_field.show();
 }
 
 $('input#id_advanced-use_active_learning').change(function(){
   if ($(this).prop('checked') == true) {
-        methods_box.show();
-    } else {
-        methods_box.hide();
-    }
+    methods_box.show();
+  } else {
+    methods_box.hide();
+  }
 });
 
 $('input#id_advanced-use_default_batch_size').change(function(){
   if ($(this).prop('checked') == true) {
-        batch_field.hide();
-    } else {
-        batch_field.show();
-    }
+    batch_field.hide();
+  } else {
+    batch_field.show();
+  }
 });
 </script>
 {% endblock %}
