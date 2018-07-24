@@ -144,14 +144,18 @@ class AdvancedWizardForm(forms.ModelForm):
         widget=RadioSelect(), choices=active_l_choices,
         initial="least confident", required=False
     )
+    use_irr = forms.BooleanField(initial=False, required=False)
     percentage_irr = forms.IntegerField(initial=10, min_value=0, max_value=100)
     num_users_irr = forms.IntegerField(initial=2, min_value=2)
 
     def clean(self):
         use_active_learning = self.cleaned_data.get("use_active_learning")
+        use_irr = self.cleaned_data.get("use_irr")
         #if they are not using active learning, the selection method is random
         if not use_active_learning:
             self.cleaned_data['learning_method'] = 'random'
+        if not use_irr:
+            self.cleaned_data['percentage_irr'] = 0
         return self.cleaned_data
 
 
