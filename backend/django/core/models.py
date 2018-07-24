@@ -103,7 +103,7 @@ class Label(models.Model):
         unique_together = (('name', 'project'))
     name = models.TextField()
     project = models.ForeignKey('Project', related_name='labels', on_delete=models.CASCADE)
-    description = models.TextField(default="")
+    description = models.TextField(blank=True)
 
     def __str__(self):
         return self.name

@@ -127,9 +127,9 @@
                       <ul class="list-group-flush">
                         {% for label in project.labels.all %}
                             {% if label.description == '' %}
-                            <li class="list-group-item">{{ label.name }}</li>
+                            <li class="list-group-item"><b>{{ label.name }}</b></li>
                             {% else %}
-                            <li class="list-group-item">{{ label.name }}: {{ label.description }}</li>
+                            <li class="list-group-item"><b>{{ label.name }}</b>: {{ label.description }}</li>
                             {% endif %}
                         {% endfor %}
                       </ul>

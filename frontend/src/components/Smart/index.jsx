@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { Button, ButtonToolbar, Clearfix,
    Well, Tooltip, OverlayTrigger,
-   ProgressBar, Tabs, Tab, ButtonGroup, Modal  } from "react-bootstrap";
+   ProgressBar, Tabs, Tab, Modal  } from "react-bootstrap";
 import Card from '../Card';
 import HistoryTable from '../HistoryTable';
 import Skew from '../Skew';
