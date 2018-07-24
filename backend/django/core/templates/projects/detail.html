@@ -188,7 +188,7 @@
                     <a class="btn btn-primary disabled" id="download_btn">No Labeled Data to Download</a>
                     {% endif %}
                     {% if project.codebook_file != "" %}
-                    <a class="btn btn-primary" href = "{% static project.codebook_file %}" id="download_cb_btn">Download CodeBook</a>
+                    <a class="btn btn-primary" href = "{% static project.codebook_file %}" id="download_cb_btn">View CodeBook</a>
                     {% endif %}
                     <a class="btn btn-primary" href="{% url 'projects:project_admin' project.pk %}" role="button">
                         Admin Page
