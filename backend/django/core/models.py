@@ -84,6 +84,7 @@ class Data(models.Model):
     hash = models.CharField(max_length=128)
     project = models.ForeignKey('Project')
     df_idx = models.IntegerField()
+    upload_id = models.CharField(max_length=128)
 
     def __str__(self):
         return self.text

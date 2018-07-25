@@ -73,7 +73,6 @@ def md5_hash(obj):
     else:
         return None
 
-
 def create_profile(username, password, email):
     '''
     Create a user with the given attributes.
@@ -215,7 +214,8 @@ def add_data(project, df):
 
     # Create the data objects
     df['object'] = df.apply(lambda x: Data(text=x['Text'], project=project,
-                                            hash=x['hash'], df_idx=x['idx']), axis=1)
+                                            hash=x['hash'], df_idx=x['idx'],
+                                            upload_id=x['ID']), axis=1)
     data = Data.objects.bulk_create(df['object'].tolist())
 
     labels = {}
