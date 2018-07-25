@@ -2,6 +2,9 @@ import random
 import redis
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.naive_bayes import GaussianNB
 from sklearn.model_selection import cross_val_predict
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from sklearn.externals import joblib
@@ -23,6 +26,7 @@ from celery.result import AsyncResult
 from django.db import transaction, connection
 from django.db.models import Count, Value, IntegerField, F, Max, Min
 from django.db.utils import ProgrammingError
+from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.conf import settings
 
@@ -248,7 +252,7 @@ def find_queue_length(batch_size, num_coders):
     """Determine the length of the queue given by the batch_size and number of coders
 
     Args:
-        batch_size [number of labels * 10]
+        batch_size [default: number of labels * 10]
         num_coders [creator, admins, coders]
     Returns:
         queue_length
@@ -950,6 +954,16 @@ def save_data_file(df, project_pk):
 
     return fpath
 
+def save_codebook_file(data, project_pk):
+    """Given the django data file, save it as the codebook for that project
+    make sure to overwrite any project that is already there/
+
+    """
+    date = timezone.now().strftime('%m_%d_%y__%H_%M_%S')
+    fpath = os.path.join(settings.CODEBOOK_FILE_PATH, 'project_' + str(project_pk) + '_codebook'+date+'.pdf')
+    with open(fpath, "wb") as outputFile:
+        outputFile.write(data.read())
+    return fpath.replace("/data/code_books/","")
 
 def create_tfidf_matrix(data, max_df=0.95, min_df=0.05):
     """Create a TF-IDF matrix. Make sure to order the data by df_idx so that we
@@ -1012,7 +1026,7 @@ def check_and_trigger_model(datum, profile=None):
     """
     project = datum.project
     current_training_set = project.get_current_training_set()
-    batch_size = project.labels.count() * 10
+    batch_size = project.batch_size
     labeled_data = DataLabel.objects.filter(data__project=project,
                                             training_set=current_training_set,
                                             data__irr_ind = False)
@@ -1046,7 +1060,7 @@ def check_and_trigger_model(datum, profile=None):
     elif labeled_data_count >= batch_size:
         if labels_count < project.labels.count():
             queue = project.queue_set.get(type="normal")
-            fill_queue(queue = queue, orderby = 'random')
+            fill_queue(queue = queue, orderby = 'random', batch_size=batch_size)
             return_str = 'random'
         else:
             task_num = tasks.send_model_task.delay(project.pk)
@@ -1061,12 +1075,12 @@ def check_and_trigger_model(datum, profile=None):
         if len(Model.objects.filter(project=project)) > 0:
             fill_queue(queue=queue, orderby = project.learning_method,
                        irr_queue = irr_queue, irr_percent = project.percentage_irr,
-                       batch_size = len(project.labels.all()) * 10 )
+                       batch_size = batch_size )
             return_str = project.learning_method
         else:
             fill_queue(queue=queue, orderby = 'random',
                        irr_queue = irr_queue, irr_percent = project.percentage_irr,
-                       batch_size = len(project.labels.all()) * 10 )
+                       batch_size = batch_size )
             return_str = 'random'
     else:
         return_str = 'no trigger'
@@ -1085,7 +1099,16 @@ def train_and_save_model(project):
     Returns:
         model: A model object
     """
-    clf = LogisticRegression(class_weight='balanced', solver='lbfgs', multi_class='multinomial')
+    if project.classifier == "logistic_regression":
+        clf = LogisticRegression(class_weight='balanced', solver='lbfgs', multi_class='multinomial')
+    elif project.classifier == "svm":
+        clf = SVC(probability=True)
+    elif project.classifier == "random_forest":
+        clf = RandomForestClassifier()
+    elif project.classifier == "gnb":
+        clf = GaussianNB()
+    else:
+        raise ValueError('There was no valid classifier for project: ' + str(project_pk))
     tf_idf = load_tfidf_matrix(project.pk).A
     current_training_set = project.get_current_training_set()
 

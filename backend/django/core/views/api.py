@@ -17,6 +17,7 @@ from itertools import combinations
 
 import csv
 import io
+import os
 import math
 import random
 import pandas as pd
@@ -75,7 +76,6 @@ def download_data(request, pk):
     response['Content-Disposition'] = 'attachment;'
 
     return response
-
 
 @api_view(['GET'])
 def label_distribution_inverted(request, pk):
@@ -189,7 +189,6 @@ def label_timing(request, pk):
             dataset.append(temp)
 
     return Response({'data': dataset, 'yDomain': yDomain})
-
 
 @api_view(['GET'])
 def model_metrics(request, pk):
@@ -420,31 +419,6 @@ def data_admin_table(request, pk):
 
     return Response({'data': data})
 
-
-@api_view(['GET'])
-def get_labels(request, pk):
-    """This is called by the React frontend to get a dictionary of the labels
-
-    Args:
-        request: The POST request
-        pk: Primary key of the data
-    Returns:
-        data: a dictionary of the label text and ID's
-    """
-    project = Project.objects.get(pk=pk)
-
-    labels = Label.objects.filter(project=project)
-    data = []
-    for d in labels:
-        temp = {
-            'Text': escape(d.name),
-            'ID':d.id
-        }
-        data.append(temp)
-
-    return Response({'data': data})
-
-
 @api_view(['POST'])
 def label_skew_label(request, pk):
     """This is called when an admin manually labels a datum on the skew page. It
@@ -534,7 +508,7 @@ def get_card_deck(request, pk):
     project = Project.objects.get(pk=pk)
 
     # Calculate queue parameters
-    batch_size = len(project.labels.all()) * 10
+    batch_size = project.batch_size
     num_coders = len(project.projectpermissions_set.all()) + 1
     coder_size = math.ceil(batch_size / num_coders)
 
@@ -615,8 +589,7 @@ def get_label_history(request, pk):
         "labelID": d.label.id ,"timestamp":new_timestamp, "edit":"no"}
         results.append(temp_dict)
 
-    return Response({'labels': LabelSerializer(labels, many=True).data,
-     'data': results})
+    return Response({'data': results})
 
 @api_view(['GET'])
 def get_irr_metrics(request, pk):

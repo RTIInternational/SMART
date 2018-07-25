@@ -21,12 +21,13 @@
 
             <h1>Advanced Settings</h1>
             <div class="form-group">
+              <h2>Active Learning</h2>
               <div class="choose_al_or_not">
               {{ wizard.form.use_active_learning }} Use Active Learning to select data to label
               </div>
               <div id="choose_method_box">
                 {% for radio in wizard.form.learning_method %}
-                <div class="choose_method" id={{radio.value}}>
+                <div class="choose_method" name = "al_choice" id={{radio.value}}>
                   {{radio}}
                 </div>
                 {% endfor %}
@@ -47,6 +48,24 @@
                 <br />
                 Number of coders needed (minimum of 2): {{ wizard.form.num_users_irr }}
               </div>
+              <div id="choose_classifier_box">
+                <h2>Model Selection</h2>
+                <p>Choose the classification algorithm used by active learning algorithms.</p>
+                {% for radio2 in wizard.form.classifier %}
+                <div class="choose_classifier" name="classifier_choice" id="{{radio2.value}}">
+                  {{radio2}}
+                </div>
+                {% endfor %}
+                <p>{{ wizard.form.classifier.errors }}</p>
+
+              </div>
+              <h2>Batch Settings</h2>
+              <div id="use_default_size">
+                Use default size (10 times the number of labels): {{ wizard.form.use_default_batch_size}}
+              </div>
+              <div id="choose_batch_size">
+                Batch size (must be between 10 and 1000): {{ wizard.form.batch_size}}
+              </div>
             </div>
 
           <div>
@@ -66,8 +85,8 @@
 {% block scripts_body %}
 <script type="text/javascript">
 var methods_box = $("div#choose_method_box");
-methods_box.show();
 var irr_box = $("div#IRR_options");
+var batch_field = $('#choose_batch_size');
 if($('input#id_advanced-use_irr').prop('checked') == true)
 {
   irr_box.show();
@@ -75,13 +94,32 @@ if($('input#id_advanced-use_irr').prop('checked') == true)
 else {
   irr_box.hide();
 }
+if ($('input#id_advanced-use_active_learning').prop('checked') == true) {
+  methods_box.show();
+} else {
+  methods_box.hide();
+}
+
+if ($('input#id_advanced-use_default_batch_size').prop('checked') == true) {
+  batch_field.hide();
+} else {
+  batch_field.show();
+}
 
 $('input#id_advanced-use_active_learning').change(function(){
   if ($(this).prop('checked') == true) {
-        methods_box.show();
-    } else {
-        methods_box.hide();
-    }
+    methods_box.show();
+  } else {
+    methods_box.hide();
+  }
+});
+
+$('input#id_advanced-use_default_batch_size').change(function(){
+  if ($(this).prop('checked') == true) {
+    batch_field.hide();
+  } else {
+    batch_field.show();
+  }
 });
 
 $('input#id_advanced-use_irr').change(function(){

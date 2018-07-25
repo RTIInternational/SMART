@@ -84,14 +84,19 @@ def test_model_task_redis_no_dupes_data_left_in_queue(test_project_labeled_and_t
     queue.length = 40
     queue.save()
 
+    irr_queue = project.queue_set.get(type="irr")
+    irr_queue.length = 40
+    irr_queue.save()
+
     model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
     settings.MODEL_PICKLE_PATH = str(model_path_temp)
 
-    fill_queue(queue, 'random')
+    batch_size = project.batch_size
+    fill_queue(queue, 'random', irr_queue , irr_percent = project.percentage_irr ,batch_size = batch_size)
 
-    batch_size = project.labels.count() * 10
+
     labels = project.labels.all()
-    for i in range(batch_size):
+    for i in range(int(batch_size* ((100-project.percentage_irr)/100))):
         datum = assign_datum(project.creator, project)
         label_data(random.choice(labels), datum, project.creator, 3)
 
@@ -112,12 +117,16 @@ def test_model_task_redis_no_dupes_data_unassign_assigned_data(test_project_labe
     queue.length = 40
     queue.save()
 
+    irr_queue = project.queue_set.get(type="irr")
+    irr_queue.length = 40
+    irr_queue.save()
+
     model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
     settings.MODEL_PICKLE_PATH = str(model_path_temp)
 
-    fill_queue(queue, 'random')
+    batch_size = project.batch_size
+    fill_queue(queue, 'random', irr_queue , irr_percent = project.percentage_irr ,batch_size = batch_size)
 
-    batch_size = project.labels.count() * 10
     labels = project.labels.all()
     assignments = get_assignments(project.creator, project, batch_size)
     for assignment in assignments:

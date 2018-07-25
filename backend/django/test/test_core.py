@@ -1167,7 +1167,7 @@ def test_check_and_trigger_queue_changes_success(setup_celery, test_project_labe
                                                    labelers=None).count() * project.labels.count()
 
     # Assert queue filled and redis sycned
-    batch_size = len(project.labels.all()) * 10
+    batch_size = project.batch_size
     q = project.queue_set.get(type="normal")
     q_irr = project.queue_set.get(type="irr")
     assert (q.data.count() + q_irr.data.count()) == batch_size

@@ -39,6 +39,9 @@ def seed_project(creator, name, description, data_file, label_list, perm_list):
         permissions.append(ProjectPermissions.objects.create(profile=perm, project=project, permission='CODER'))
 
     batch_size = 10 * len(labels)
+    project.batch_size = batch_size
+    project.save()
+
     num_coders = len(permissions) + 1
     q_length = find_queue_length(batch_size, num_coders)
 

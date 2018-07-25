@@ -13,7 +13,6 @@ describe('<Smart />', () => {
               <Smart
                 history_data = {data}
                 getHistory = {fn}
-                labels = {data}
                 changeLabel = {fn}
                 changeToSkip = {fn}
                 getUnlabeled = {fn}

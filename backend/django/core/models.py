@@ -32,7 +32,8 @@ class Project(models.Model):
     creator = models.ForeignKey('Profile')
     percentage_irr = models.FloatField(default=10.0, validators=[MinValueValidator(0.0), MaxValueValidator(100.0)])
     num_users_irr = models.IntegerField(default=2, validators=[MinValueValidator(2)])
-
+    codebook_file = models.TextField(default='')
+    batch_size = models.IntegerField(default=30)
     #####Advanced options#####
     #the current options are 'random', 'least confident', 'entropy', and 'margin sampling'
     ACTIVE_L_CHOICES = [
@@ -41,7 +42,16 @@ class Project(models.Model):
         ("entropy","By Uncertainty using Entropy"),
         ("random","Randomly (No Active Learning)")
     ]
+
+    CLASSIFIER_CHOICES = [
+        ("logistic_regression","Logistic Regression (default)"),
+        ("svm","Support Vector Machine (warning: slower for large datasets)"),
+        ("random_forest","Random Forest"),
+        ("gnb","Gaussian Naive Bayes")
+    ]
+
     learning_method = models.CharField(max_length = 15, default='least confident', choices=ACTIVE_L_CHOICES)
+    classifier = models.CharField(max_length = 19, default="logistic_regression", choices = CLASSIFIER_CHOICES)
 
     def get_absolute_url(self):
         return reverse('projects:project_detail', kwargs={'pk': self.pk})
@@ -97,6 +107,8 @@ class Label(models.Model):
         unique_together = (('name', 'project'))
     name = models.TextField()
     project = models.ForeignKey('Project', related_name='labels', on_delete=models.CASCADE)
+    description = models.TextField(blank=True)
+
     def __str__(self):
         return self.name
 

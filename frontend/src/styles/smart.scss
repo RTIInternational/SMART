@@ -128,6 +128,16 @@ main {
     }
 }
 
+.cardContent {
+    padding: 12px 16px;
+    margin: 16px 24px;
+
+    @include breakpoint(large) {
+        padding: 16px 24px;
+        margin: 24px 32px;
+    }
+}
+
 .margin-top {
     margin-top: 15px;
 }
@@ -279,4 +289,48 @@ li.disabled {
 
 #heatmap_chart {
     overflow: auto;
+}
+
+.no_word_wrap {
+    white-space: pre-line !important;
+    word-wrap: break-word;
+}
+
+.label_table {
+    height: 300px;
+    overflow: scroll;
+}
+
+.modal-content {
+    height: 700px;
+    width: 900px;
+}
+
+#pdf_document {
+    height: 600px;
+    width: 850px;
+}
+
+.panel-heading .accordion-toggle:after {
+    font-family: Glyphicons Halflings;  /* essential for enabling glyphicon */
+    content: '\e114';    /* adjust as needed, taken from bootstrap.css */
+    float: right;        /* adjust as needed */
+    color: grey;         /* adjust as needed */
+}
+
+.panel-heading .accordion-toggle.collapsed:after {
+    content: '\e080';    /* adjust as needed, taken from bootstrap.css */
+}
+
+.codebook-div {
+    position: relative;
+    overflow: hidden;
+}
+
+.codebook-btn {
+    float: right;
+}
+
+.margin-bottom-15 {
+    margin-bottom: 15px;
 }
