@@ -11,6 +11,7 @@ import math
 import numpy as np
 import hashlib
 import pandas as pd
+import statsmodels.stats.inter_rater as raters
 from collections import defaultdict
 from django.utils import timezone
 
@@ -709,8 +710,16 @@ def cohens_kappa(project):
     irr_data = set(IRRLog.objects.values_list('data', flat=True))
 
     agree = 0
-    rater1_labels = defaultdict(int)
-    rater2_labels = defaultdict(int)
+
+    #initialize the dictionary
+    rater1_rater2_dict = {}
+    label_list = list(Label.objects.filter(project=project).values_list('name',flat=True))
+    label_list.append("skip")
+    for label1 in label_list:
+        rater1_rater2_dict[label1] = {}
+        for label2 in label_list:
+            rater1_rater2_dict[label1][label2] = 0
+
     num_data = 0
     for d in irr_data:
         d_log = IRRLog.objects.filter(data=d,data__project=project)
@@ -727,27 +736,19 @@ def cohens_kappa(project):
             label1 = "skip"
         else:
             label1 = d_log[0].label.name
-        rater1_labels[label1] += 1
 
         if d_log[1].label == None:
             label2 = "skip"
         else:
             label2 = d_log[1].label.name
-        rater2_labels[label2] += 1
+
+        rater1_rater2_dict[label1][label2] +=1
     if num_data == 0:
         #there is no irr data, so just return bad values
         raise ValueError('No irr data')
 
-    label_list = list(Label.objects.filter(project=project).values_list('name',flat=True))
-    label_list.append("skip")
-
+    kappa = raters.cohens_kappa(np.asarray(pd.DataFrame(rater1_rater2_dict)),return_results=False)
     p_o = agree / num_data
-    p_e = 0
-    for label in label_list:
-        p_e += rater1_labels[label]*rater2_labels[label]
-    p_e *= (1/(num_data**2))
-
-    kappa = (p_o - p_e)/(1 - p_e)
     return kappa, p_o
 
 def fleiss_kappa(project):
@@ -799,18 +800,7 @@ def fleiss_kappa(project):
         #there is no irr data, so just return bad values
         raise ValueError('No irr data')
 
-    M = np.asarray(pd.DataFrame(data_label_dict))
-
-    pj_const = 1 / (N*n)
-    pj_s = pj_const * np.sum(M,axis=0)
-
-    pi_const = 1/(n*(n-1))
-    pi_s = pi_const * (np.sum(np.multiply(M,M),axis=1) - n)
-
-    p_bar = np.sum(pi_s)* (1/N)
-    p_bar_e = np.sum(np.multiply(pj_s,pj_s))
-
-    kappa = (p_bar - p_bar_e)/(1 - p_bar_e)
+    kappa = raters.fleiss_kappa(np.asarray(pd.DataFrame(data_label_dict)))
 
     return kappa, agree/N
 

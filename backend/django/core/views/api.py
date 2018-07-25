@@ -640,7 +640,7 @@ def get_irr_metrics(request, pk):
         else:
             kappa, perc_agreement = util.cohens_kappa(project)
         kappa = round(kappa,3)
-        perc_agreement = round(perc_agreement,3)
+        perc_agreement = str(round(perc_agreement,5)*100)+"%"
     except ValueError:
         kappa = "No irr data processed"
         perc_agreement = "No irr data processed"
@@ -692,7 +692,7 @@ def perc_agree_table(request,pk):
         #get the total number they both edited
         p_total = len(choice_frame[[pair[0],pair[1]]].dropna(axis=0))
         if p_total > 0:
-            user_agree.append({"First Coder":pair[0],"Second Coder":pair[1],"Percent Agreement":round(p_agree/p_total,3)})
+            user_agree.append({"First Coder":pair[0],"Second Coder":pair[1],"Percent Agreement":str(100*round(p_agree/p_total,3))+"%"})
         else:
             user_agree.append({"First Coder":pair[0],"Second Coder":pair[1],"Percent Agreement":"No samples"})
 
