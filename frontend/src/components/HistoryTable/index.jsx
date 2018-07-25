@@ -50,6 +50,7 @@ class HistoryTable extends React.Component {
 
   render() {
   const {history_data, labels, changeLabel, changeToSkip} = this.props;
+
   return (
     <div>
     <h3>Instructions</h3>
@@ -64,17 +65,18 @@ class HistoryTable extends React.Component {
             <div className="sub-row">
               <p>{row.row.data}</p>
               <ButtonToolbar bsClass="btn-toolbar pull-right">
-                {labels[0].map( (label) => (
-                  <Button key={label.id.toString() + "_" + row.row.id.toString()}
+                {labels.map( (label) => {
+                  return (
+                  <Button key={label.pk.toString() + "_" + row.row.id.toString()}
                   onClick={() => {
-                    if(!(row.row.old_label_id === label.id))
+                    if(!(row.row.old_label_id === label.pk))
                     {
-                      changeLabel(row.row.id,row.row.old_label_id,label.id)
+                      changeLabel(row.row.id,row.row.old_label_id,label.pk)
                     }
                   }}
                   bsStyle="primary"
                   >{label.name}</Button>
-                ))}
+                )})}
                 <Button onClick={() => changeToSkip(row.row.id,row.row.old_label_id)}
                 bsStyle="info"
                 >Skip</Button>

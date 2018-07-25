@@ -12,6 +12,20 @@ class AdminTable extends React.Component {
   render() {
   const {admin_data, labels, adminLabel} = this.props;
 
+  if(admin_data && admin_data.length > 0)
+  {
+    var table_data = admin_data[0];
+  }
+  else {
+    table_data = [];
+  }
+
+  var expanded = {}
+  for(var i = 0; i < table_data.length; i++)
+  {
+    expanded[i] = true;
+  }
+
   const columns = [
     {
       Header: "id",
@@ -26,43 +40,19 @@ class AdminTable extends React.Component {
           <p id="admin_text">{row.row.data}</p>
           <div id="admin_buttons">
           <ButtonToolbar bsClass="btn-toolbar pull-right">
-            {labels[0].map( (label) => (
-              <Button key={label.id.toString() + "_" + row.row.id.toString()}
-              onClick={() => adminLabel(row.row.id,label.id)}
+            {labels.map( (label) => {
+              return (
+              <Button key={label.pk.toString() + "_" + row.row.id.toString()}
+              onClick={() => adminLabel(row.row.id,label.pk)}
               bsStyle="primary"
               >{label.name}</Button>
-            ))}
+            )})}
           </ButtonToolbar>
           </div>
         </div>
       )
     }
   ];
-
-
-  if(admin_data && admin_data.length > 0)
-  {
-    var table_data = admin_data[0];
-  }
-  else {
-    table_data = [];
-  }
-
-  if(labels && labels.length > 0)
-  {
-    var label_list = labels[0];
-  }
-  else {
-    label_list = [];
-  }
-
-  var expanded = {}
-  for(var i = 0; i < table_data.length; i++)
-  {
-    expanded[i] = true;
-  }
-
-
 
   return (
     <div>

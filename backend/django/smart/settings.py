@@ -173,6 +173,7 @@ class Dev(Configuration):
     TF_IDF_PATH = os.path.join(DATA_DIR, 'tf_idf')
     MODEL_PICKLE_PATH = os.path.join(DATA_DIR, 'model_pickles')
     PROJECT_FILE_PATH = os.path.join(DATA_DIR, 'data_files')
+    CODEBOOK_FILE_PATH = os.path.join(DATA_DIR, 'code_books')
 
     AUTH_USER_MODEL = 'auth.User'
 
@@ -199,7 +200,8 @@ class Dev(Configuration):
 
     STATICFILES_DIRS = [
         os.path.join(BASE_DIR, 'frontend', 'dist'),
-        os.path.join(BASE_DIR, 'core/data')
+        os.path.join(BASE_DIR, 'core/data'),
+         '/data/code_books/',
     ]
 
     WEBPACK_LOADER = {
