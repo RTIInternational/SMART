@@ -16,6 +16,7 @@ import hashlib
 import pandas as pd
 import statsmodels.stats.inter_rater as raters
 from collections import defaultdict
+from itertools import combinations
 from django.utils import timezone
 
 # https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
@@ -190,16 +191,13 @@ def sync_redis_objects(queue, orderby):
             settings.REDIS.rpush(redis_serialize_queue(queue), *ordered_data_ids)
 
 
-def create_project(name, creator, percentage_irr=None,num_users_irr=None):
+def create_project(name, creator, percentage_irr=10,num_users_irr=2):
     '''
     Create a project with the given name and creator.
     '''
-    if not percentage_irr:
-        proj = Project.objects.create(name=name, creator=creator)
-    else:
-        proj = Project.objects.create(name=name, creator=creator,
-                                      percentage_irr = percentage_irr,
-                                      num_users_irr = num_users_irr)
+    proj = Project.objects.create(name=name, creator=creator,
+                                   percentage_irr = percentage_irr,
+                                    num_users_irr = num_users_irr)
     training_set = TrainingSet.objects.create(project=proj, set_number=0)
 
     return proj
@@ -609,6 +607,29 @@ def assign_datum(profile, project, type="normal"):
             else:
                 return None
 
+def skip_data(datum, profile):
+    '''
+    Record that a given datum has been skipped
+    '''
+    project = datum.project
+    queue = Queue.objects.get(project=project,type="normal")
+
+    IRRLog.objects.create(data=datum, profile=profile, label = None, timestamp = timezone.now())
+    num_history = IRRLog.objects.filter(data=datum).count()
+    #if the datum is irr or processed irr, dont add to admin queue yet
+    if datum.irr_ind or num_history > 0:
+        #if the IRR history has more than the needed number of labels , it is
+        #already processed so don't do anything else
+        if num_history <= project.num_users_irr:
+            process_irr_label(datum, None)
+
+        #unassign the skipped item
+        assignment = AssignedData.objects.get(data=datum,profile=profile)
+        assignment.delete()
+    else:
+        # Make sure coder still has permissions before labeling data
+        if project_extras.proj_permission_level(project, profile) > 0:
+            move_skipped_to_admin_queue(datum, profile, project)
 
 def label_data(label, datum, profile, time):
     '''
@@ -617,7 +638,7 @@ def label_data(label, datum, profile, time):
     Remove datum from DataQueue and its assocaited redis set.
     '''
     current_training_set = datum.project.get_current_training_set()
-
+    project = datum.project
     irr_data = datum.irr_ind
 
     with transaction.atomic():
@@ -643,6 +664,7 @@ def label_data(label, datum, profile, time):
             #already processed so just add this label to the history.
             if num_history >= datum.project.num_users_irr:
                 IRRLog.objects.create(data=datum, profile=profile, label=label, timestamp = timezone.now())
+                DataLabel.objects.get(data=datum,profile=profile).delete()
             else:
                 process_irr_label(datum,label)
     if not irr_data:
@@ -703,7 +725,6 @@ def process_irr_label(data, label):
             settings.REDIS.sadd(redis_serialize_set(admin_queue), redis_serialize_data(data))
 
 
-
 def cohens_kappa(project):
     '''
     Takes in the irr log data and calculates cohen's kappa
@@ -725,9 +746,11 @@ def cohens_kappa(project):
             rater1_rater2_dict[label1][label2] = 0
 
     num_data = 0
+    labels_seen = set()
     for d in irr_data:
         d_log = IRRLog.objects.filter(data=d,data__project=project)
         labels = list(set(d_log.values_list('label',flat=True)))
+        labels_seen = labels_seen | set(labels)
         #get the percent agreement between the users  = (num agree)/size_data
         if d_log.count() < 2:
             #don't use this datum, it isn't processed yet
@@ -746,12 +769,17 @@ def cohens_kappa(project):
         else:
             label2 = d_log[1].label.name
 
+
         rater1_rater2_dict[label1][label2] +=1
     if num_data == 0:
         #there is no irr data, so just return bad values
         raise ValueError('No irr data')
 
+    if len(labels_seen) < 2:
+        raise ValueError('Need at least two labels represented')
+
     kappa = raters.cohens_kappa(np.asarray(pd.DataFrame(rater1_rater2_dict)),return_results=False)
+
     p_o = agree / num_data
     return kappa, p_o
 
@@ -773,6 +801,7 @@ def fleiss_kappa(project):
     n = project.num_users_irr
     agree = 0
     data_label_dict = []
+    num_data = 0
     for d in irr_data:
         d_data_log = IRRLog.objects.filter(data=d,data__project=project)
 
@@ -782,6 +811,7 @@ def fleiss_kappa(project):
         elif d_data_log.count() > n:
             #grab only the first few elements if there were extra labelers
             d_data_log = d_data_log[:n]
+        num_data += 1
         labels = list(set(d_data_log.values_list('label',flat=True)))
         #accumulate the percent agreement
         if len(labels) == 1:
@@ -797,16 +827,67 @@ def fleiss_kappa(project):
             label_count_dict[l_label] = len(d_data_log.filter(label__name = l))
 
         data_label_dict.append(label_count_dict)
-    #N is the number of data points
-    N = len(label_count_dict)
 
-    if N == 0:
+    if num_data == 0:
         #there is no irr data, so just return bad values
         raise ValueError('No irr data')
 
     kappa = raters.fleiss_kappa(np.asarray(pd.DataFrame(data_label_dict)))
 
-    return kappa, agree/N
+    return kappa, agree/num_data
+
+def perc_agreement_table_data(project):
+    '''
+    Takes in the irrlog and finds the pairwise percent agreement
+    '''
+    irr_data = set(IRRLog.objects.filter(data__project=project).values_list('data', flat=True))
+
+    user_list = [str(Profile.objects.get(pk=x)) for x in list(ProjectPermissions.objects.filter(project=project).values_list('profile',flat=True))]
+    user_list.append(str(project.creator))
+    #get all possible pairs of users
+    user_combinations = combinations(user_list,r=2)
+    data_choices = []
+
+    for d in irr_data:
+        d_log = IRRLog.objects.filter(data=d,data__project=project)
+        labels = list(set(d_log.values_list('label',flat=True)))
+        #get the percent agreement between the users  = (num agree)/size_data
+        if d_log.count() < 2:
+            #don't use this datum, it isn't processed yet
+            continue
+        temp_dict = {}
+        for d in d_log:
+            if d.label == None:
+                name = "Skip"
+            else:
+                name = d.label.name
+            temp_dict[str(d.profile)] = name
+        data_choices.append(temp_dict)
+
+    #If there is no data, just return nothing
+    if len(data_choices) == 0:
+        user_agree = []
+        for pair in user_combinations:
+            user_agree.append({"First Coder":pair[0],"Second Coder":pair[1],"Percent Agreement":"No samples"})
+        return user_agree
+
+    choice_frame = pd.DataFrame(data_choices)
+    user_agree = []
+    for pair in user_combinations:
+        #get the total number they both edited
+        p_total = len(choice_frame[[pair[0],pair[1]]].dropna(axis=0))
+
+        #get the elements that were labeled by both and not skipped
+        choice_frame2 = choice_frame.replace("Skip", np.nan).dropna(axis=0)
+
+        #fill the na's so if they are both na they aren't equal
+        p_agree = np.sum(np.equal(choice_frame2[pair[0]],choice_frame2[pair[1]]))
+
+        if p_total > 0:
+            user_agree.append({"First Coder":pair[0],"Second Coder":pair[1],"Percent Agreement":str(100*round(p_agree/p_total,3))+"%"})
+        else:
+            user_agree.append({"First Coder":pair[0],"Second Coder":pair[1],"Percent Agreement":"No samples"})
+    return user_agree
 
 def irr_heatmap_data(project):
     '''

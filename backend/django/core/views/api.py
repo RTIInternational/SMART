@@ -13,7 +13,7 @@ from rest_framework import viewsets, permissions
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.db import transaction
-from itertools import combinations
+
 
 import csv
 import io
@@ -622,53 +622,15 @@ def get_irr_metrics(request, pk):
 @api_view(['GET'])
 def perc_agree_table(request,pk):
     '''
-    Finds the total overal percent irr data agreed upon as well
-    as the percent agreement between each pair of coders
-
+    Finds the percent agreement between each pair of coders
+    to be displayed on the IRR page as a table
     '''
     project = Project.objects.get(pk=pk)
     irr_data = set(IRRLog.objects.filter(data__project=project).values_list('data', flat=True))
     if len(irr_data) == 0:
         return Response({'data':[]})
 
-
-    user_list = [str(Profile.objects.get(pk=x)) for x in list(ProjectPermissions.objects.filter(project=project).values_list('profile',flat=True))]
-    user_list.append(str(project.creator))
-    #get all possible pairs of users
-    user_combinations = combinations(user_list,r=2)
-    data_choices = []
-
-
-    for d in irr_data:
-        d_log = IRRLog.objects.filter(data=d,data__project=project)
-        labels = list(set(d_log.values_list('label',flat=True)))
-        #get the percent agreement between the users  = (num agree)/size_data
-        if d_log.count() < 2:
-            #don't use this datum, it isn't processed yet
-            continue
-        temp_dict = {}
-        for d in d_log:
-            if d.label == None:
-                name = "skip"
-            else:
-                name = d.label.name
-            temp_dict[str(d.profile)] = name
-        data_choices.append(temp_dict)
-
-    choice_frame = pd.DataFrame(data_choices)
-
-    user_agree = []
-    for pair in user_combinations:
-        #fill the na's so if they are both na they aren't equal
-        p_agree = np.sum(np.equal(choice_frame[pair[0]].fillna("p"),choice_frame[pair[1]].fillna("q")))
-
-        #get the total number they both edited
-        p_total = len(choice_frame[[pair[0],pair[1]]].dropna(axis=0))
-        if p_total > 0:
-            user_agree.append({"First Coder":pair[0],"Second Coder":pair[1],"Percent Agreement":str(100*round(p_agree/p_total,3))+"%"})
-        else:
-            user_agree.append({"First Coder":pair[0],"Second Coder":pair[1],"Percent Agreement":"No samples"})
-
+    user_agree = util.perc_agreement_table_data(project)
     return Response({'data':user_agree})
 
 @api_view(['GET'])
@@ -716,14 +678,20 @@ def skip_data(request, pk):
     queue = project.queue_set.get(type="normal")
     response = {}
 
-    if data.irr_ind:
+    #if the data is IRR or processed IRR, dont add to admin queue yet
+    num_history = IRRLog.objects.filter(data=data).count()
+    if data.irr_ind or num_history > 0:
         #log the data and check IRR but don't put in admin queue yet
         IRRLog.objects.create(data=data, profile=profile, label = None, timestamp = timezone.now())
-        util.process_irr_label(data, None)
 
         #unassign the skipped item
         assignment = AssignedData.objects.get(data=data,profile=profile)
         assignment.delete()
+
+        #if the IRR history has more than the needed number of labels , it is
+        #already processed so don't do anything else
+        if num_history <= project.num_users_irr:
+            util.process_irr_label(data, None)
 
     else:
         # Make sure coder still has permissions before labeling data
@@ -764,7 +732,8 @@ def annotate_data(request, pk):
     #already processed so just add this label to the history.
     if num_history >= project.num_users_irr:
         IRRLog.objects.create(data=data, profile=profile, label=label, timestamp = timezone.now())
-
+        assignment = AssignedData.objects.get(data=data,profile=profile)
+        assignment.delete()
     else:
         # Make sure coder still has permissions before labeling data
         if project_extras.proj_permission_level(data.project, profile) > 0:
