@@ -1447,9 +1447,6 @@ def test_all_irr(setup_celery, test_project_all_irr_3_coders_data, test_all_irr_
     assert IRRLog.objects.filter(data__in=[datum3, second_datum3, third_datum3]).count() == 9
     assert DataLabel.objects.filter(data__in=[datum3, second_datum3, third_datum3]).count() == 0
 
-    # NOTE- TODO??: check overflowing the irr queue. Have one user label everything over and over until there is no more space. This should not error, but
-    #   user should not get any more assignments once irr queue is filled.
-
 def test_cohens_kappa_perc_agreement(setup_celery, test_project_half_irr_data, test_half_irr_all_queues, test_profile, test_profile2, test_labels_half_irr, test_redis, tmpdir, settings):
     '''
     want to check several different configurations including empty, no agreement

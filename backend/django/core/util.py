@@ -844,6 +844,8 @@ def perc_agreement_table_data(project):
 
     user_list = [str(Profile.objects.get(pk=x)) for x in list(ProjectPermissions.objects.filter(project=project).values_list('profile',flat=True))]
     user_list.append(str(project.creator))
+    user_pk_list = list(ProjectPermissions.objects.filter(project=project).values_list('profile',flat=True))
+    user_pk_list.append(project.creator)
     #get all possible pairs of users
     user_combinations = combinations(user_list,r=2)
     data_choices = []
@@ -856,14 +858,17 @@ def perc_agreement_table_data(project):
             #don't use this datum, it isn't processed yet
             continue
         temp_dict = {}
-        for d in d_log:
-            if d.label == None:
-                name = "Skip"
+        for user in user_pk_list:
+            if d_log.filter(profile=user).count() == 0:
+                temp_dict[str(Profile.objects.get(pk=user))] = np.nan
             else:
-                name = d.label.name
-            temp_dict[str(d.profile)] = name
+                d = d_log.get(profile=user)
+                if d.label == None:
+                    name = "Skip"
+                else:
+                    name = d.label.name
+                temp_dict[str(d.profile)] = name
         data_choices.append(temp_dict)
-
     #If there is no data, just return nothing
     if len(data_choices) == 0:
         user_agree = []
@@ -878,7 +883,7 @@ def perc_agreement_table_data(project):
         p_total = len(choice_frame[[pair[0],pair[1]]].dropna(axis=0))
 
         #get the elements that were labeled by both and not skipped
-        choice_frame2 = choice_frame.replace("Skip", np.nan).dropna(axis=0)
+        choice_frame2 = choice_frame[[pair[0],pair[1]]].replace("Skip", np.nan).dropna(axis=0)
 
         #fill the na's so if they are both na they aren't equal
         p_agree = np.sum(np.equal(choice_frame2[pair[0]],choice_frame2[pair[1]]))

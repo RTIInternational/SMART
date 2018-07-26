@@ -17,6 +17,7 @@ from core.util import (create_project, add_queue,
 from test.util import read_test_data_backend
 
 TEST_QUEUE_LEN = 30
+MAX_DATA_LEN = 2000000
 
 # Before starting any tests clear the redis cache
 def pytest_sessionstart(session):
@@ -105,7 +106,7 @@ def test_irr_queue(db, test_project_data):
     A queue containing data from the test project, with length set to
     the global len.
     '''
-    return add_queue(test_project_data, TEST_QUEUE_LEN, type="irr")
+    return add_queue(test_project_data, MAX_DATA_LEN, type="irr")
 
 @pytest.fixture
 def test_profile_queue(db, test_profile, test_project_data):
@@ -122,7 +123,7 @@ def test_all_queues(db, test_project_data):
     '''
     normal_q =  add_queue(test_project_data, TEST_QUEUE_LEN)
     admin_q = add_queue(test_project_data, TEST_QUEUE_LEN, type="admin")
-    irr_q = add_queue(test_project_data, TEST_QUEUE_LEN, type="irr")
+    irr_q = add_queue(test_project_data, MAX_DATA_LEN, type="irr")
     return [normal_q, admin_q, irr_q]
 
 @pytest.fixture
@@ -231,7 +232,7 @@ def test_no_irr_all_queues(db, test_project_no_irr_data):
     '''
     normal_q =  add_queue(test_project_no_irr_data, TEST_QUEUE_LEN)
     admin_q = add_queue(test_project_no_irr_data, TEST_QUEUE_LEN, type="admin")
-    irr_q = add_queue(test_project_no_irr_data, TEST_QUEUE_LEN, type="irr")
+    irr_q = add_queue(test_project_no_irr_data, MAX_DATA_LEN, type="irr")
     return [normal_q, admin_q, irr_q]
 
 @pytest.fixture
@@ -268,7 +269,7 @@ def test_all_irr_3_coders_all_queues(db, test_project_all_irr_3_coders_data):
     '''
     normal_q =  add_queue(test_project_all_irr_3_coders_data, TEST_QUEUE_LEN)
     admin_q = add_queue(test_project_all_irr_3_coders_data, TEST_QUEUE_LEN, type="admin")
-    irr_q = add_queue(test_project_all_irr_3_coders_data, TEST_QUEUE_LEN, type="irr")
+    irr_q = add_queue(test_project_all_irr_3_coders_data, MAX_DATA_LEN, type="irr")
     return [normal_q, admin_q, irr_q]
 
 @pytest.fixture
@@ -305,7 +306,7 @@ def test_half_irr_all_queues(db, test_project_half_irr):
     '''
     normal_q =  add_queue(test_project_half_irr, TEST_QUEUE_LEN)
     admin_q = add_queue(test_project_half_irr, TEST_QUEUE_LEN, type="admin")
-    irr_q = add_queue(test_project_half_irr, TEST_QUEUE_LEN, type="irr")
+    irr_q = add_queue(test_project_half_irr, MAX_DATA_LEN, type="irr")
     return [normal_q, admin_q, irr_q]
 
 @pytest.fixture
