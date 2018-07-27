@@ -2,7 +2,7 @@ from django.contrib.auth.models import Group, User as AuthUser
 from django.conf import settings
 from rest_framework import serializers
 from core.models import (Profile, Project, Model, Data, Label, DataLabel,
-                         DataPrediction, Queue, DataQueue, AssignedData)
+                         DataPrediction, Queue, DataQueue, AssignedData, LabelChangeLog)
 
 
 class ProfileSerializer(serializers.HyperlinkedModelSerializer):
@@ -25,7 +25,7 @@ class ProjectSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ('name','labels','learning_method')
+        fields = ('name','labels','learning_method', 'classifier')
 
 class CoreModelSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
@@ -35,7 +35,7 @@ class CoreModelSerializer(serializers.HyperlinkedModelSerializer):
 class LabelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Label
-        fields = ('pk', 'name', 'project')
+        fields = ('pk', 'name', 'project', 'description')
 
 class DataSerializer(serializers.ModelSerializer):
     class Meta:
@@ -45,7 +45,12 @@ class DataSerializer(serializers.ModelSerializer):
 class DataLabelSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = DataLabel
-        fields = ('data', 'profile', 'label')
+        fields = ('data', 'profile', 'label', 'timestamp')
+
+class LabelChangeLogSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = LabelChangeLog
+        fields = ('project','data','profile', 'old_label', 'new_label' ,'change_timestamp')
 
 class DataPredictionSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:

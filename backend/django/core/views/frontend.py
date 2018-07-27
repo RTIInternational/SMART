@@ -14,13 +14,15 @@ from formtools.wizard.storage import get_storage
 
 import pandas as pd
 import math
+import os
 from celery import chord
 
 from core.models import (Profile, Project, ProjectPermissions, Model, Data, Label,
                          DataLabel, DataPrediction, Queue, DataQueue, AssignedData,
                          TrainingSet)
 from core.forms import (ProjectUpdateForm, PermissionsFormSet, LabelFormSet,
-                        ProjectWizardForm, DataWizardForm, AdvancedWizardForm)
+                        ProjectWizardForm, DataWizardForm, AdvancedWizardForm,
+                        CodeBookWizardForm, LabelDescriptionFormSet)
 from core.serializers import DataSerializer
 from core.templatetags import project_extras
 import core.util as util
@@ -40,8 +42,13 @@ class ProjectCode(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         ctx = super(ProjectCode, self).get_context_data(**kwargs)
-
+        project = Project.objects.get(pk=self.kwargs['pk'])
         ctx['pk'] = self.kwargs['pk']
+        admin = project_extras.proj_permission_level(project, self.request.user.profile) > 1
+        if admin:
+            ctx['admin'] = "true"
+        else:
+            ctx['admin'] = "false"
         ctx['project'] = Project.objects.get(pk=self.kwargs['pk'])
 
         return ctx
@@ -63,18 +70,6 @@ class ProjectAdmin(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         ctx['project'] = Project.objects.get(pk=self.kwargs['pk'])
 
         return ctx
-
-
-class ProjectSkew(LoginRequiredMixin, DetailView):
-    model = Project
-    template_name = 'projects/skew_fix.html'
-    permission_denied_message = 'You must be an Admin or Project Creator to access the Admin page.'
-    raise_exception = True
-
-    def test_func(self):
-        project = Project.objects.get(pk=self.kwargs['pk'])
-
-        return project_extras.proj_permission_level(project, self.request.user.profile) >= 2
 
 
 class ProjectList(LoginRequiredMixin, ListView):
@@ -130,7 +125,6 @@ def upload_data(form_data, project, queue=None):
           tasks.send_check_and_trigger_model_task.si(project.pk)
     ).apply_async()
 
-
 class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
     file_storage = FileSystemStorage(location=settings.DATA_DIR)
     form_list = [
@@ -138,6 +132,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         ('labels', LabelFormSet),
         ('permissions', PermissionsFormSet),
         ('advanced', AdvancedWizardForm),
+        ('codebook', CodeBookWizardForm),
         ('data', DataWizardForm)
     ]
     template_list = {
@@ -145,6 +140,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         'labels': 'projects/create_wizard_labels.html',
         'permissions': 'projects/create_wizard_permissions.html',
         'advanced':'projects/create_wizard_advanced.html',
+        'codebook':'projects/create_wizard_codebook.html',
         'data': 'projects/create_wizard_data.html'
     }
 
@@ -156,7 +152,8 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         if step == 'data':
             temp = []
             for label in self.get_cleaned_data_for_step('labels'):
-                temp.append(label['name'])
+                if 'name' in label.keys():
+                    temp.append(label['name'])
             kwargs['labels'] = temp
         return kwargs
 
@@ -225,8 +222,8 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         labels = form_dict['labels']
         permissions = form_dict['permissions']
         advanced = form_dict['advanced']
-
         data = form_dict['data']
+        codebook_data = form_dict['codebook']
 
         with transaction.atomic():
             # Project
@@ -235,7 +232,24 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
             proj_obj.creator = self.request.user.profile
             # Advanced Options
+            proj_obj.save()
+            proj_pk = proj_obj.pk
+            # Save the codebook file
+
+            cb_data =  codebook_data.cleaned_data['data']
+            if cb_data != "":
+                cb_filepath = util.save_codebook_file(cb_data, proj_pk)
+            else:
+                cb_filepath = ""
+            proj_obj.codebook_file = cb_filepath
+            if advanced_data["batch_size"] == 0:
+                batch_size = 10 * len([x for x in labels if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True])
+            else:
+                batch_size = advanced_data["batch_size"]
+
+            proj_obj.batch_size = batch_size
             proj_obj.learning_method = advanced_data["learning_method"]
+            proj_obj.classifier = advanced_data["classifier"]
             proj_obj.save()
 
             # Training Set
@@ -250,7 +264,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             permissions.save()
 
             # Queue
-            batch_size = 10 * len([x for x in labels if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True])
+
             num_coders = len([x for x in permissions if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True]) + 1
             q_length = util.find_queue_length(batch_size, num_coders)
 
@@ -289,14 +303,17 @@ class ProjectUpdate(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         data = super(ProjectUpdate, self).get_context_data(**kwargs)
         if self.request.POST:
             data['permissions'] = PermissionsFormSet(self.request.POST, instance=data['project'], prefix='permissions_set', form_kwargs={'action': 'update', 'creator':data['project'].creator, 'profile': self.request.user.profile})
+            data['label_descriptions'] = LabelDescriptionFormSet(self.request.POST, instance=data['project'], prefix='label_descriptions_set', form_kwargs={'action': 'update'})
         else:
             data['num_data'] = Data.objects.filter(project=data['project']).count()
             data['permissions'] = PermissionsFormSet(instance=data['project'], prefix='permissions_set', form_kwargs={'action': 'update', 'creator':data['project'].creator, 'profile': self.request.user.profile})
+            data['label_descriptions'] = LabelDescriptionFormSet(instance=data['project'], prefix='label_descriptions_set', form_kwargs={'action': 'update'})
         return data
 
     def form_valid(self, form):
         context = self.get_context_data()
         permissions = context['permissions']
+        labels = context["label_descriptions"]
         with transaction.atomic():
             if permissions.is_valid():
                 self.object = form.save()
@@ -310,6 +327,17 @@ class ProjectUpdate(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
                 f_data = form.cleaned_data.get('data', False)
                 if isinstance(f_data, pd.DataFrame):
                     upload_data(f_data, self.object)
+
+                # CodeBook
+                cb_data = form.cleaned_data.get('cb_data',False)
+                if cb_data and cb_data != "":
+                    cb_filepath = util.save_codebook_file(cb_data, self.object.pk)
+                    self.object.codebook_file = cb_filepath
+                    self.object.save()
+
+                labels.instance = self.object
+                labels.save()
+
                 return redirect(self.get_success_url())
             else:
                 return self.render_to_response(context)

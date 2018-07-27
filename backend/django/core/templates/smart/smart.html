@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-
+{% block page_title %}Annotate Data{% endblock %}
 {% load render_bundle from webpack_loader %}
-
+{% load static %}
 {% block content %}
 <div id="mount"></main>
 {% endblock %}
@@ -9,6 +9,12 @@
 {% block scripts_body %}
   <script type="text/javascript">
     window.PROJECT_ID = {{ pk }};
+    {% if project.codebook_file == '' %}
+    window.CODEBOOK_URL = ""
+    {% else %}
+    window.CODEBOOK_URL = "{% static project.codebook_file %}"
+    {% endif %}
+    window.ADMIN = {{admin}};
     window.onbeforeunload = function (e) {
        $.ajax({
          type: 'GET',

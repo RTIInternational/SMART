@@ -16,18 +16,23 @@ from django.db import transaction
 
 import csv
 import io
+import os
 import math
 import random
 import pandas as pd
+from django.utils import timezone
+
 from postgres_stats.aggregates import Percentile
 
 from core.serializers import (ProfileSerializer, AuthUserGroupSerializer,
                               AuthUserSerializer, ProjectSerializer,
                               CoreModelSerializer, LabelSerializer, DataSerializer,
                               DataLabelSerializer, DataPredictionSerializer,
-                              QueueSerializer, AssignedDataSerializer)
+                              QueueSerializer, AssignedDataSerializer,
+                              LabelChangeLogSerializer)
 from core.models import (Profile, Project, Model, Data, Label, DataLabel,
-                         DataPrediction, Queue, DataQueue, AssignedData, TrainingSet)
+                         DataPrediction, Queue, DataQueue, AssignedData, TrainingSet,
+                         LabelChangeLog)
 import core.util as util
 from core.pagination import SmartPagination
 from core.templatetags import project_extras
@@ -38,14 +43,23 @@ from core.templatetags import project_extras
 ############################################
 @api_view(['GET'])
 def download_data(request, pk):
-    data_objs = Data.objects.filter(project=pk)
+    """This function gets the labeled data and makes it available for download
 
+    Args:
+        request: The POST request
+        pk: Primary key of the project
+    Returns:
+        an HttpResponse containing the requested data
+    """
+    data_objs = Data.objects.filter(project=pk)
+    project_labels = Label.objects.filter(project=pk)
     data = []
-    for d in data_objs:
-        if d.datalabel_set.count() >= 1:
+    for label in project_labels:
+        labeled_data = DataLabel.objects.filter(label=label)
+        for d in labeled_data:
             temp = {}
-            temp['Text'] = d.text
-            temp['Label'] = d.datalabel_set.first().label.name
+            temp['Text'] = d.data.text
+            temp['Label'] = label.name
             data.append(temp)
 
     buffer = io.StringIO()
@@ -59,9 +73,19 @@ def download_data(request, pk):
 
     return response
 
-
 @api_view(['GET'])
 def label_distribution_inverted(request, pk):
+    """This function finds and returns the number of each label. The format
+    is more focussed on showing the total amount of each label then the user
+    label distribution, so the data is inverted from the function below.
+    This is used by a graph on the front end admin page.
+
+    Args:
+        request: The POST request
+        pk: Primary key of the project
+    Returns:
+        a dictionary of the amount each label has been used
+    """
     project = Project.objects.get(pk=pk)
 
     labels = [l for l in project.labels.all()]
@@ -90,6 +114,15 @@ def label_distribution_inverted(request, pk):
 
 @api_view(['GET'])
 def label_distribution(request, pk):
+    """This function finds and returns the number of each label per user.
+    This is used by a graph on the front end admin page.
+
+    Args:
+        request: The POST request
+        pk: Primary key of the project
+    Returns:
+        a dictionary of the amount of labels per person per type
+    """
     project = Project.objects.get(pk=pk)
 
     labels = [l for l in project.labels.all()]
@@ -117,6 +150,15 @@ def label_distribution(request, pk):
 
 @api_view(['GET'])
 def label_timing(request, pk):
+    """This function finds and returns the requested label time metrics. This is
+    used by the graphs on the admin page to show how long each labeler is taking.
+
+    Args:
+        request: The POST request
+        pk: Primary key of the project
+    Returns:
+        a dictionary of label timing information.
+    """
     project = Project.objects.get(pk=pk)
 
     users = []
@@ -149,9 +191,17 @@ def label_timing(request, pk):
 
     return Response({'data': dataset, 'yDomain': yDomain})
 
-
 @api_view(['GET'])
 def model_metrics(request, pk):
+    """This function finds and returns the requested metrics. This is
+    used by the graphs on the front end admin page.
+
+    Args:
+        request: The POST request
+        pk: Primary key of the project
+    Returns:
+        a dictionary of model metric information
+    """
     metric = request.GET.get('metric', 'accuracy')
 
     project = Project.objects.get(pk=pk)
@@ -193,6 +243,14 @@ def model_metrics(request, pk):
 
 @api_view(['GET'])
 def data_coded_table(request, pk):
+    """This returns the labeled data
+
+    Args:
+        request: The POST request
+        pk: Primary key of the project
+    Returns:
+        data: a list of data information
+    """
     project = Project.objects.get(pk=pk)
 
     data_objs = DataLabel.objects.filter(data__project=project)
@@ -208,9 +266,47 @@ def data_coded_table(request, pk):
 
     return Response({'data': data})
 
+@api_view(['GET'])
+def data_change_log_table(request, pk):
+    project = Project.objects.get(pk=pk)
+
+    data_objs = LabelChangeLog.objects.filter(project=project)
+
+    data = []
+    for d in data_objs:
+        if d.change_timestamp:
+            if d.change_timestamp.minute < 10:
+                minute = "0" + str(d.change_timestamp.minute)
+            else:
+                minute = str(d.change_timestamp.minute)
+            new_timestamp = str(d.change_timestamp.date()) + ", " + str(d.change_timestamp.hour)\
+            + ":" + minute + "." + str(d.change_timestamp.second)
+        else:
+            new_timestamp = "None"
+
+        temp = {
+            'Text': escape(d.data.text),
+            'Coder': escape(d.profile.user),
+            'Old Label': d.old_label,
+            'New Label': d.new_label,
+            'Timestamp': new_timestamp
+        }
+
+        data.append(temp)
+
+    return Response({'data': data})
+
 
 @api_view(['GET'])
 def data_predicted_table(request, pk):
+    """This returns the predictions for the unlabeled data
+
+    Args:
+        request: The POST request
+        pk: Primary key of the project
+    Returns:
+        data: a list of data information
+    """
     project = Project.objects.get(pk=pk)
     previous_run = project.get_current_training_set().set_number - 1
 
@@ -272,6 +368,14 @@ def data_predicted_table(request, pk):
 
 @api_view(['GET'])
 def data_unlabeled_table(request, pk):
+    """This returns the unlebeled data not in a queue for the skew table
+
+    Args:
+        request: The POST request
+        pk: Primary key of the project
+    Returns:
+        data: a list of data information
+    """
     project = Project.objects.get(pk=pk)
 
     stuff_in_queue = DataQueue.objects.filter(queue__project=project)
@@ -290,6 +394,14 @@ def data_unlabeled_table(request, pk):
 
 @api_view(['GET'])
 def data_admin_table(request, pk):
+    """This returns the elements in the admin queue for annotation
+
+    Args:
+        request: The POST request
+        pk: Primary key of the project
+    Returns:
+        data: a list of data information
+    """
     project = Project.objects.get(pk=pk)
     queue = Queue.objects.filter(project=project,admin=True)
 
@@ -305,28 +417,18 @@ def data_admin_table(request, pk):
 
     return Response({'data': data})
 
-
-@api_view(['GET'])
-def get_labels(request, pk):
-    project = Project.objects.get(pk=pk)
-
-    labels = Label.objects.filter(project=project)
-    data = []
-    for d in labels:
-        temp = {
-            'Text': escape(d.name),
-            'ID':d.id
-        }
-        data.append(temp)
-
-    return Response({'data': data})
-
-
 @api_view(['POST'])
 def label_skew_label(request, pk):
-    '''This is called when an admin manually labels a datum on the skew page. It
+    """This is called when an admin manually labels a datum on the skew page. It
     annotates a single datum with the given label, and profile with null as the time.
-    '''
+
+    Args:
+        request: The request to the endpoint
+        pk: Primary key of data
+    Returns:
+        {}
+    """
+
     datum = Data.objects.get(pk=pk)
     project = datum.project
     label = Label.objects.get(pk=request.data['labelID'])
@@ -339,18 +441,25 @@ def label_skew_label(request, pk):
                                 label=label,
                                 profile=profile,
                                 training_set=current_training_set,
-                                time_to_label=None
+                                time_to_label=None,
+                                timestamp = timezone.now()
                                 )
 
     return Response({'test':'success'})
 
+
 @api_view(['POST'])
 def label_admin_label(request, pk):
-    '''This is called when an admin manually labels a datum on the admin
+    """This is called when an admin manually labels a datum on the admin
     annotation page. It labels a single datum with the given label and profile,
     with null as the time.
-    It also removes the data from the admin queue.
-    '''
+
+    Args:
+        request: The POST request
+        pk: Primary key of the data
+    Returns:
+        {}
+    """
     datum = Data.objects.get(pk=pk)
     project = datum.project
     label = Label.objects.get(pk=request.data['labelID'])
@@ -364,7 +473,8 @@ def label_admin_label(request, pk):
                                 label=label,
                                 profile=profile,
                                 training_set=current_training_set,
-                                time_to_label=None
+                                time_to_label=None,
+                                timestamp=timezone.now()
                                 )
 
         DataQueue.objects.filter(data=datum, queue=queue).delete()
@@ -376,7 +486,6 @@ def label_admin_label(request, pk):
 ############################################
 #    REACT API ENDPOINTS FOR CODING VIEW   #
 ############################################
-
 @api_view(['GET'])
 def get_card_deck(request, pk):
     """Grab data using get_assignments and send it to the frontend react app.
@@ -392,7 +501,7 @@ def get_card_deck(request, pk):
     project = Project.objects.get(pk=pk)
 
     # Calculate queue parameters
-    batch_size = len(project.labels.all()) * 10
+    batch_size = project.batch_size
     num_coders = len(project.projectpermissions_set.all()) + 1
     coder_size = math.ceil(batch_size / num_coders)
 
@@ -400,6 +509,42 @@ def get_card_deck(request, pk):
     labels = Label.objects.all().filter(project=project)
 
     return Response({'labels': LabelSerializer(labels, many=True).data, 'data': DataSerializer(data, many=True).data})
+
+@api_view(['GET'])
+def get_label_history(request, pk):
+    """Grab items previously labeled by this user
+    and send it to the frontend react app.
+
+    Args:
+        request: The request to the endpoint
+        pk: Primary key of project
+    Returns:
+        labels: The project labels
+        data: DataLabel objects where that user was the one to label them
+    """
+    profile = request.user.profile
+    project = Project.objects.get(pk=pk)
+
+    labels = Label.objects.all().filter(project=project)
+    data = DataLabel.objects.filter(profile=profile, data__project = pk, label__in=labels)
+
+    results = []
+    for d in data:
+        if d.timestamp:
+            if d.timestamp.minute < 10:
+                minute = "0" + str(d.timestamp.minute)
+            else:
+                minute = str(d.timestamp.minute)
+            new_timestamp = str(d.timestamp.date()) + ", " + str(d.timestamp.hour)\
+            + ":" + minute + "." + str(d.timestamp.second)
+        else:
+            new_timestamp = "None"
+        temp_dict = {"data":d.data.text,
+        "id": d.data.id,"label":d.label.name,
+        "labelID": d.label.id ,"timestamp":new_timestamp}
+        results.append(temp_dict)
+
+    return Response({'data': results})
 
 @api_view(['POST'])
 def skip_data(request, pk):
@@ -457,6 +602,68 @@ def annotate_data(request, pk):
 
     return Response(response)
 
+@api_view(['POST'])
+def modify_label(request, pk):
+    """Take a single datum with a label and change the label in the DataLabel table
+    Args:
+        request: The POST request
+        pk: Primary key of the data
+    Returns:
+        {}
+    """
+    data = Data.objects.get(pk=pk)
+    profile = request.user.profile
+    response = {}
+    project = data.project
+
+    # Make sure coder still has permissions before labeling data
+    if project_extras.proj_permission_level(data.project, profile) > 0:
+        label = Label.objects.get(pk=request.data['labelID'])
+        old_label = Label.objects.get(pk=request.data['oldLabelID'])
+        with transaction.atomic():
+            DataLabel.objects.filter(data=data, label=old_label).update(label=label,
+            time_to_label=0, timestamp=timezone.now())
+
+            LabelChangeLog.objects.create(project=project, data=data, profile=profile,
+            old_label=old_label.name, new_label = label.name, change_timestamp = timezone.now() )
+
+
+
+
+    else:
+        response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
+
+    return Response(response)
+
+@api_view(['POST'])
+def modify_label_to_skip(request, pk):
+    """Take a datum that is in the assigneddata queue for that user
+    and place it in the admin queue. Remove it from the
+    assignedData queue.
+
+    Args:
+        request: The POST request
+        pk: Primary key of the data
+    Returns:
+        {}
+    """
+    data = Data.objects.get(pk=pk)
+    profile = request.user.profile
+    response = {}
+    project = data.project
+    old_label = Label.objects.get(pk=request.data['oldLabelID'])
+    queue = Queue.objects.get(project=project, admin=True)
+    # Make sure coder still has permissions before labeling data
+    if project_extras.proj_permission_level(data.project, profile) > 0:
+
+        with transaction.atomic():
+            DataLabel.objects.filter(data=data, label=old_label).delete()
+            DataQueue.objects.create(data=data, queue=queue)
+            LabelChangeLog.objects.create(project=project, data=data, profile=profile,
+            old_label=old_label.name, new_label = "skip", change_timestamp = timezone.now())
+    else:
+        response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
+    return Response(response)
 
 @api_view(['GET'])
 def leave_coding_page(request):

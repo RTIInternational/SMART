@@ -1,20 +1,15 @@
 import React, { Component } from 'react';
 import { shallow } from 'enzyme';
 import { assert } from 'chai';
-import Deck from './index';
+import LabelInfo from './index';
 
-describe('<Deck />', () => {
+describe('<LabelInfo />', () => {
     describe('render', () => {
         it('renders properly if all props provided', () => {
-            const cards = [];
-
-            const fn = () => {};
-
+            const labels = [];
             const wrapper = shallow(
-                <Deck
-                    fetchCards={fn}
-                    popCard={fn}
-                    cards={cards}
+                <LabelInfo
+                    labels={labels}
                 />
             );
         });

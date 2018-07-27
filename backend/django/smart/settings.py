@@ -51,7 +51,8 @@ class Dev(Configuration):
         'formtools',
         'rest_auth.registration',
         'rest_framework_swagger',
-        'webpack_loader'
+        'webpack_loader',
+        'progressbarupload'
     ]
 
     MIDDLEWARE = [
@@ -86,6 +87,15 @@ class Dev(Configuration):
             },
         },
     ]
+
+    # upload handlers
+    # https://github.com/ouhouhsami/django-progressbarupload
+    FILE_UPLOAD_HANDLERS = (
+        "progressbarupload.uploadhandler.ProgressBarUploadHandler",
+        "django.core.files.uploadhandler.MemoryFileUploadHandler",
+        "django.core.files.uploadhandler.TemporaryFileUploadHandler",
+    )
+    PROGRESSBARUPLOAD_INCLUDE_JQUERY = True
 
     WSGI_APPLICATION = 'smart.wsgi.application'
 
@@ -163,6 +173,7 @@ class Dev(Configuration):
     TF_IDF_PATH = os.path.join(DATA_DIR, 'tf_idf')
     MODEL_PICKLE_PATH = os.path.join(DATA_DIR, 'model_pickles')
     PROJECT_FILE_PATH = os.path.join(DATA_DIR, 'data_files')
+    CODEBOOK_FILE_PATH = os.path.join(DATA_DIR, 'code_books')
 
     AUTH_USER_MODEL = 'auth.User'
 
@@ -189,7 +200,8 @@ class Dev(Configuration):
 
     STATICFILES_DIRS = [
         os.path.join(BASE_DIR, 'frontend', 'dist'),
-        os.path.join(BASE_DIR, 'core/data')
+        os.path.join(BASE_DIR, 'core/data'),
+         '/data/code_books/',
     ]
 
     WEBPACK_LOADER = {

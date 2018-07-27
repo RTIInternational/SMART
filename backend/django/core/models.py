@@ -29,7 +29,8 @@ class Project(models.Model):
     name = models.TextField()
     description = models.TextField(blank=True)
     creator = models.ForeignKey('Profile')
-
+    codebook_file = models.TextField(default='')
+    batch_size = models.IntegerField(default=30)
     #####Advanced options#####
     #the current options are 'random', 'least confident', 'entropy', and 'margin sampling'
     ACTIVE_L_CHOICES = [
@@ -39,7 +40,16 @@ class Project(models.Model):
         ("random","Randomly (No Active Learning)"),
         ("qbc","Query by Committee (using bagging)")
     ]
+
+    CLASSIFIER_CHOICES = [
+        ("logistic_regression","Logistic Regression (default)"),
+        ("svm","Support Vector Machine (warning: slower for large datasets)"),
+        ("random_forest","Random Forest"),
+        ("gnb","Gaussian Naive Bayes")
+    ]
+
     learning_method = models.CharField(max_length = 15, default='least confident', choices=ACTIVE_L_CHOICES)
+    classifier = models.CharField(max_length = 19, default="logistic_regression", choices = CLASSIFIER_CHOICES)
 
     def get_absolute_url(self):
         return reverse('projects:project_detail', kwargs={'pk': self.pk})
@@ -94,6 +104,7 @@ class Label(models.Model):
         unique_together = (('name', 'project'))
     name = models.TextField()
     project = models.ForeignKey('Project', related_name='labels', on_delete=models.CASCADE)
+    description = models.TextField(blank=True)
 
     def __str__(self):
         return self.name
@@ -106,6 +117,15 @@ class DataLabel(models.Model):
     label = models.ForeignKey('Label')
     training_set = models.ForeignKey('TrainingSet')
     time_to_label = models.IntegerField(null=True)
+    timestamp = models.DateTimeField(null=True, default= None)
+
+class LabelChangeLog(models.Model):
+    project = models.ForeignKey('Project')
+    data = models.ForeignKey('Data')
+    profile = models.ForeignKey('Profile')
+    old_label = models.TextField()
+    new_label = models.TextField()
+    change_timestamp = models.DateTimeField(null=True, default= None)
 
 class DataPrediction(models.Model):
     class Meta:

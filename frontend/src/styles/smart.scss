@@ -128,6 +128,16 @@ main {
     }
 }
 
+.cardContent {
+    padding: 12px 16px;
+    margin: 16px 24px;
+
+    @include breakpoint(large) {
+        padding: 16px 24px;
+        margin: 24px 32px;
+    }
+}
+
 .margin-top {
     margin-top: 15px;
 }
@@ -201,4 +211,122 @@ table.dataTable tbody td.no-padding {
 
 #user_buttons {
     margin-left: auto;
+}
+
+.progress {
+    margin-top: 15px;
+}
+
+#admin_text {
+    white-space: normal;
+}
+
+li.disabled {
+    visibility: hidden;
+}
+
+.loader {
+    border: 8px solid #F3F3F3; /* Light grey */
+    border-top: 8px solid #3498DB; /* Blue */
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+
+    0% { transform: rotate(0deg); }
+
+    100% { transform: rotate(360deg); }
+}
+
+#progressBar {
+    visibility: hidden;
+}
+
+.modal-content {
+    z-index: auto;
+}
+
+.overlay {
+    background: #B2B2B2;
+    color: #000000;
+    display: none;
+    position: fixed;
+    top: 0;
+    right: 0;
+    opacity: 0.9;
+    z-index: 1000;
+    width: 100%;
+    height: 100%;
+}
+
+.overlay_contents {
+    position: absolute;
+    top: 50%;
+    width: 100%;
+    transform: translateY(-50%);
+    transform: translateX(50%);
+    color: black;
+    display: table;
+    margin: 0 auto;
+    z-index: 102;
+}
+
+.loader {
+    margin-top: -60px;
+}
+
+#loading_text {
+    margin-left: -45px;
+}
+
+.sub-row {
+    border-top: 2px solid #EFEFEF;
+    margin: 0px 15px 10px;
+}
+
+.no_word_wrap {
+    white-space: pre-line !important;
+    word-wrap: break-word;
+}
+
+.label_table {
+    height: 300px;
+    overflow: scroll;
+}
+
+.modal-content {
+    height: 700px;
+    width: 900px;
+}
+
+#pdf_document {
+    height: 600px;
+    width: 850px;
+}
+
+.panel-heading .accordion-toggle:after {
+    font-family: Glyphicons Halflings;  /* essential for enabling glyphicon */
+    content: '\e114';    /* adjust as needed, taken from bootstrap.css */
+    float: right;        /* adjust as needed */
+    color: grey;         /* adjust as needed */
+}
+
+.panel-heading .accordion-toggle.collapsed:after {
+    content: '\e080';    /* adjust as needed, taken from bootstrap.css */
+}
+
+.codebook-div {
+    position: relative;
+    overflow: hidden;
+}
+
+.codebook-btn {
+    float: right;
+}
+
+.margin-bottom-15 {
+    margin-bottom: 15px;
 }
