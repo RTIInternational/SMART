@@ -187,11 +187,14 @@ def sync_redis_objects(queue, orderby):
             settings.REDIS.rpush(redis_serialize_queue(queue), *ordered_data_ids)
 
 
-def create_project(name, creator):
+def create_project(name, creator, classifier = None):
     '''
     Create a project with the given name and creator.
     '''
-    proj = Project.objects.create(name=name, creator=creator)
+    if classifier:
+        proj = Project.objects.create(name=name, creator=creator, classifier = classifier)
+    else:
+        proj = Project.objects.create(name=name, creator=creator)
     training_set = TrainingSet.objects.create(project=proj, set_number=0)
 
     return proj

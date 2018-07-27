@@ -124,7 +124,6 @@ def test_labels(test_project_data):
 
     for l in SEED_LABELS:
         labels.append(Label.objects.create(name=l, project=test_project_data))
-
     return labels
 
 @pytest.fixture
@@ -178,3 +177,122 @@ def test_project_predicted_data(test_project_with_trained_model, tmpdir):
     predictions = predict_data(project, project.model_set.get())
 
     return test_project_with_trained_model
+
+####Fixtures for testing various classifiers####
+@pytest.fixture
+def test_project_svm_data_tfidf(db, test_profile, tmpdir, settings):
+    '''
+    This fixture only creates the test project without any data.
+    '''
+    proj =  create_project('test_project', test_profile, "svm")
+    test_data = read_test_data_backend(file='./core/data/test_files/test_no_labels.csv')
+    add_data(proj, test_data)
+
+    data = Data.objects.filter(project=proj)
+    matrix = create_tfidf_matrix(data)
+
+    data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
+    settings.TF_IDF_PATH = str(data_temp)
+
+    fpath = save_tfidf_matrix(matrix, proj.pk)
+
+    return proj
+
+@pytest.fixture
+def test_svm_queue_list(db, test_project_svm_data_tfidf):
+    '''
+    A queue containing data from the test project, with length set to
+    the global len.
+    '''
+    normal_q =  add_queue(test_project_svm_data_tfidf, TEST_QUEUE_LEN, admin=False)
+    admin_q =  add_queue(test_project_svm_data_tfidf, TEST_QUEUE_LEN, admin=True)
+    return [normal_q, admin_q]
+
+@pytest.fixture
+def test_svm_labels(test_project_svm_data_tfidf):
+    '''
+    A list of labels that correspond to SEED_LABELS
+    '''
+    labels = []
+    for l in SEED_LABELS:
+        labels.append(Label.objects.create(name=l, project=test_project_svm_data_tfidf))
+    return labels
+
+@pytest.fixture
+def test_project_randomforest_data_tfidf(db, test_profile, tmpdir, settings):
+    '''
+    This fixture only creates the test project without any data.
+    '''
+    proj =  create_project('test_project', test_profile, "random_forest")
+    test_data = read_test_data_backend(file='./core/data/test_files/test_no_labels.csv')
+    add_data(proj, test_data)
+
+    data = Data.objects.filter(project=proj)
+    matrix = create_tfidf_matrix(data)
+
+    data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
+    settings.TF_IDF_PATH = str(data_temp)
+
+    fpath = save_tfidf_matrix(matrix, proj.pk)
+
+    return proj
+
+@pytest.fixture
+def test_randomforest_queue_list(db, test_project_randomforest_data_tfidf):
+    '''
+    A queue containing data from the test project, with length set to
+    the global len.
+    '''
+    normal_q =  add_queue(test_project_randomforest_data_tfidf, TEST_QUEUE_LEN, admin=False)
+    admin_q =  add_queue(test_project_randomforest_data_tfidf, TEST_QUEUE_LEN, admin=True)
+    return [normal_q, admin_q]
+
+@pytest.fixture
+def test_randomforest_labels(test_project_randomforest_data_tfidf):
+    '''
+    A list of labels that correspond to SEED_LABELS
+    '''
+    labels = []
+
+    for l in SEED_LABELS:
+        labels.append(Label.objects.create(name=l, project=test_project_randomforest_data_tfidf))
+    return labels
+
+@pytest.fixture
+def test_project_gnb_data_tfidf(db, test_profile, tmpdir, settings):
+    '''
+    This fixture only creates the test project without any data.
+    '''
+    proj =  create_project('test_project', test_profile, "gnb")
+    test_data = read_test_data_backend(file='./core/data/test_files/test_no_labels.csv')
+    add_data(proj, test_data)
+
+    data = Data.objects.filter(project=proj)
+    matrix = create_tfidf_matrix(data)
+
+    data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
+    settings.TF_IDF_PATH = str(data_temp)
+
+    fpath = save_tfidf_matrix(matrix, proj.pk)
+    return proj
+
+@pytest.fixture
+def test_gnb_queue_list(db, test_project_gnb_data_tfidf):
+    '''
+    A queue containing data from the test project, with length set to
+    the global len.
+    '''
+    normal_q =  add_queue(test_project_gnb_data_tfidf, TEST_QUEUE_LEN, admin=False)
+    admin_q =  add_queue(test_project_gnb_data_tfidf, TEST_QUEUE_LEN, admin=True)
+    return [normal_q, admin_q]
+
+@pytest.fixture
+def test_gnb_labels(test_project_gnb_data_tfidf):
+    '''
+    A list of labels that correspond to SEED_LABELS
+    '''
+    labels = []
+
+    for l in SEED_LABELS:
+        labels.append(Label.objects.create(name=l, project=test_project_gnb_data_tfidf))
+    return labels

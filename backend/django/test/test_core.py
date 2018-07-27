@@ -9,7 +9,7 @@ import numpy as np
 import scipy
 import pandas as pd
 import math
-
+from django.utils import timezone
 from django.contrib.auth import get_user_model
 
 from core.models import (Project, Queue, Data, DataQueue, Profile, Model,
@@ -26,7 +26,7 @@ from core.util import (redis_serialize_queue, redis_serialize_data, redis_serial
                        train_and_save_model, predict_data,
                        least_confident, margin_sampling, entropy,
                        check_and_trigger_model, get_ordered_data,
-                       find_queue_length)
+                       find_queue_length, save_codebook_file)
 
 from test.util import read_test_data_backend, assert_obj_exists, assert_redis_matches_db
 from test.conftest import TEST_QUEUE_LEN
@@ -1203,3 +1203,156 @@ def test_skip_data(db, test_profile, test_queue, test_admin_queue, test_redis):
                                            queue=test_queue).exists()
     #make sure the item was re-assigned to the admin queue
     assert DataQueue.objects.filter(data=datum,queue = test_admin_queue).exists()
+    #make sure not in normal queue
+    assert not DataQueue.objects.filter(data=datum,queue = test_queue).exists()
+
+def test_svm_classifier(setup_celery, test_project_svm_data_tfidf, test_svm_labels,
+                         test_svm_queue_list, test_profile, test_redis, tmpdir, settings):
+    '''
+    This tests that a project with the svm classifier can successfully train
+    and give predictions for a model
+    '''
+    normal_queue, admin_queue = test_svm_queue_list
+    labels = test_svm_labels
+    project = test_project_svm_data_tfidf
+
+    active_l = project.learning_method
+    batch_size = project.batch_size
+    initial_training_set = project.get_current_training_set()
+    model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
+    settings.MODEL_PICKLE_PATH = str(model_path_temp)
+
+    assert project.classifier == "svm"
+    assert active_l == 'least confident'
+
+    fill_queue(normal_queue, 'random')
+
+    assert DataQueue.objects.filter(queue=normal_queue).count() == batch_size
+
+    for i in range(batch_size):
+        datum = assign_datum(test_profile, project)
+        label_data(labels[i%3], datum, test_profile, 3)
+
+    ret_str = check_and_trigger_model(datum)
+    assert ret_str == 'model running'
+
+    # Assert model created and saved
+    assert_obj_exists(Model, {
+        'project': project
+    })
+    model = Model.objects.get(project=project)
+    assert os.path.isfile(model.pickle_path)
+    assert model.pickle_path == os.path.join(str(model_path_temp), 'project_' + str(project.pk)
+                                             + '_training_' + str(initial_training_set.set_number)
+                                             + '.pkl')
+
+    # Assert predictions created
+    predictions = DataPrediction.objects.filter(data__project=project)
+    assert len(predictions) == Data.objects.filter(project=project,
+                                                   labelers=None).count() * project.labels.count()
+
+def test_randomforest_classifier(setup_celery, test_project_randomforest_data_tfidf, test_randomforest_labels,
+                         test_randomforest_queue_list, test_profile, test_redis, tmpdir, settings):
+    '''
+    This tests that a project with the random forest classifier can successfully train
+    and give predictions for a model
+    '''
+    normal_queue, admin_queue = test_randomforest_queue_list
+    labels = test_randomforest_labels
+    project = test_project_randomforest_data_tfidf
+
+    active_l = project.learning_method
+    batch_size = project.batch_size
+    initial_training_set = project.get_current_training_set()
+    model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
+    settings.MODEL_PICKLE_PATH = str(model_path_temp)
+
+    assert project.classifier == "random_forest"
+    assert active_l == 'least confident'
+
+    fill_queue(normal_queue, 'random')
+
+    assert DataQueue.objects.filter(queue=normal_queue).count() == batch_size
+
+    for i in range(batch_size):
+        datum = assign_datum(test_profile, project)
+        label_data(labels[i%3], datum, test_profile, 3)
+
+    ret_str = check_and_trigger_model(datum)
+    assert ret_str == 'model running'
+
+    # Assert model created and saved
+    assert_obj_exists(Model, {
+        'project': project
+    })
+    model = Model.objects.get(project=project)
+    assert os.path.isfile(model.pickle_path)
+    assert model.pickle_path == os.path.join(str(model_path_temp), 'project_' + str(project.pk)
+                                             + '_training_' + str(initial_training_set.set_number)
+                                             + '.pkl')
+
+    # Assert predictions created
+    predictions = DataPrediction.objects.filter(data__project=project)
+    assert len(predictions) == Data.objects.filter(project=project,
+                                                   labelers=None).count() * project.labels.count()
+
+def test_g_naivebayes_classifier(setup_celery, test_project_gnb_data_tfidf, test_gnb_labels,
+                         test_gnb_queue_list, test_profile, test_redis, tmpdir, settings):
+    '''
+    This tests that a project with the Gaussian Naiive Bayes classifier can successfully train
+    and give predictions for a model
+    '''
+    normal_queue, admin_queue = test_gnb_queue_list
+    labels = test_gnb_labels
+    project = test_project_gnb_data_tfidf
+
+    active_l = project.learning_method
+    batch_size = project.batch_size
+    initial_training_set = project.get_current_training_set()
+    model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
+    settings.MODEL_PICKLE_PATH = str(model_path_temp)
+
+    assert project.classifier == "gnb"
+    assert active_l == 'least confident'
+
+    fill_queue(normal_queue, 'random')
+
+    assert DataQueue.objects.filter(queue=normal_queue).count() == batch_size
+
+    for i in range(batch_size):
+        datum = assign_datum(test_profile, project)
+        label_data(labels[i%3], datum, test_profile, 3)
+
+    ret_str = check_and_trigger_model(datum)
+    assert ret_str == 'model running'
+
+    # Assert model created and saved
+    assert_obj_exists(Model, {
+        'project': project
+    })
+    model = Model.objects.get(project=project)
+    assert os.path.isfile(model.pickle_path)
+    assert model.pickle_path == os.path.join(str(model_path_temp), 'project_' + str(project.pk)
+                                             + '_training_' + str(initial_training_set.set_number)
+                                             + '.pkl')
+
+    # Assert predictions created
+    predictions = DataPrediction.objects.filter(data__project=project)
+    assert len(predictions) == Data.objects.filter(project=project,
+                                                   labelers=None).count() * project.labels.count()
+
+def test_save_codebook(test_project, tmpdir, settings):
+    '''
+    This tests that a user can upload a pdf codebook and
+    have it be saved properly internally.
+    '''
+    test_file = open('./core/data/test_files/test_codebook.pdf',"rb")
+
+    temp_data_file_path = tmpdir.mkdir('data').mkdir('code_books')
+    settings.CODEBOOK_FILE_PATH = str(temp_data_file_path)
+
+    fname = save_codebook_file(test_file, test_project.pk)
+    date = timezone.now().strftime('%m_%d_%y__%H_%M_%S')
+    f_path = os.path.join(str(temp_data_file_path), 'project_' + str(test_project.pk) + '_codebook'+date+'.pdf')
+    assert fname == f_path.replace("/data/code_books/","")
+    assert os.path.isfile(f_path)
