@@ -158,6 +158,15 @@ def test_project_labeled_and_tfidf(test_project_labeled, test_tfidf_matrix, tmpd
     return test_project_labeled
 
 @pytest.fixture
+def test_project_unlabeled_and_tfidf(test_project_data, test_tfidf_matrix, tmpdir, settings):
+    data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
+    settings.TF_IDF_PATH = str(data_temp)
+
+    fpath = save_tfidf_matrix(test_tfidf_matrix, test_project_data.pk)
+
+    return test_project_data
+
+@pytest.fixture
 def test_project_with_trained_model(test_project_labeled_and_tfidf, tmpdir):
     '''
     A project which has labeled data, a tfidf matrix saved, and

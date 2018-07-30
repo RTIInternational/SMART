@@ -500,7 +500,7 @@ def test_label_distribution_inverted(seeded_database, admin_client, client, test
             else:
                 assert label_row['y'] == 0
 
-def test_label_timing(seeded_database, admin_client, client, test_project_data, test_queue, test_labels, test_admin_queue):
+def test_label_timing(seeded_database, admin_client, client, test_project_data, test_queue, test_labels):
     #test that it starts out empty
     project = test_project_data
     client_profile = sign_in_and_fill_queue(project, test_queue, client)[0]
@@ -561,9 +561,59 @@ def test_label_timing(seeded_database, admin_client, client, test_project_data, 
     assert response['yDomain'] == 110
 
 
-'''
-def test_model_metrics():
+def test_model_metrics(seeded_database, admin_client, client, test_project_unlabeled_and_tfidf, test_queue, test_labels):
+    '''
+    This function tests the model metrics api
+    '''
+    project = test_project_unlabeled_and_tfidf
+    client_profile = sign_in_and_fill_queue(project, test_queue, client)[0]
+    #at the beginning, shouldn't have any
+    for metric in ['accuracy','f1','precision','recall']:
+        response = client.get('/api/model_metrics/'+str(project.pk)+'/?metric='+metric).json()
+        if len(response) == 1:
+            assert response[0]['key'] == 'Accuracy'
+        else:
+            assert len(response) == len(test_labels)
+        for temp_dict in response:
+            assert len(temp_dict['values']) == 0
+    #label 30 items. The model should run.
+    data = get_assignments(client_profile, project, 30)
+    for i in range(30):
+        response = client.post('/api/annotate_data/'+str(data[i].pk)+'/',{
+        "labelID": test_labels[i%3].pk, "labeling_time": 1
+        })
+    assert DataLabel.objects.filter(data__in=data).count() == 30
 
+    #check that metrics were generated
+    #for metric in ['accuracy','f1','precision','recall']:
+    for metric in ['accuracy','f1','precision','recall']:
+        response = client.get('/api/model_metrics/'+str(project.pk)+'/?metric='+metric).json()
+        if len(response) == 1:
+            assert response[0]['key'] == 'Accuracy'
+        else:
+            assert len(response) == len(test_labels)
+
+        #check there is some value for the first run
+        for temp_dict in response:
+            assert len(temp_dict['values']) == 1
+    #do this again and check that a new metric is generated
+    fill_queue(test_queue, project.learning_method)
+    data = get_assignments(client_profile, project, 30)
+    for i in range(30):
+        response = client.post('/api/annotate_data/'+str(data[i].pk)+'/',{
+        "labelID": test_labels[i%3].pk, "labeling_time": 1
+        })
+    for metric in ['accuracy','f1','precision','recall']:
+        response = client.get('/api/model_metrics/'+str(project.pk)+'/?metric='+metric).json()
+        if len(response) == 1:
+            assert response[0]['key'] == 'Accuracy'
+        else:
+            assert len(response) == len(test_labels)
+
+        #check there is some value for the first run
+        for temp_dict in response:
+            assert len(temp_dict['values']) == 2
+'''
 def test_coded_table():
 
 def test_predicted_table():
@@ -573,7 +623,4 @@ def test_unlabeled_table():
 def test_admin_table():
 
 def test_change_log_table():
-
-
-
 '''
