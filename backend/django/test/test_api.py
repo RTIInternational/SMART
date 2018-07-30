@@ -500,11 +500,68 @@ def test_label_distribution_inverted(seeded_database, admin_client, client, test
             else:
                 assert label_row['y'] == 0
 
+def test_label_timing(seeded_database, admin_client, client, test_project_data, test_queue, test_labels, test_admin_queue):
+    #test that it starts out empty
+    project = test_project_data
+    client_profile = sign_in_and_fill_queue(project, test_queue, client)[0]
+
+    response = client.get('/api/label_timing/'+str(project.pk)+'/').json()
+    assert len(response['data']) == 0
+    assert response['yDomain'] == 0
+    #have the client label three data with time=1
+    data = get_assignments(client_profile, project, 3)
+    response = client.post('/api/annotate_data/'+str(data[0].pk)+'/',{
+    "labelID": test_labels[0].pk, "labeling_time": 1
+    })
+    response = client.post('/api/annotate_data/'+str(data[1].pk)+'/',{
+    "labelID": test_labels[1].pk, "labeling_time": 1
+    })
+    response = client.post('/api/annotate_data/'+str(data[2].pk)+'/',{
+    "labelID": test_labels[2].pk, "labeling_time": 1
+    })
+
+    #check that the quartiles are all the same
+    response = client.get('/api/label_timing/'+str(project.pk)+'/').json()
+    assert len(response['data']) == 1
+
+    quarts = response['data'][0]['values']
+    assert quarts['Q1'] == 1 and quarts['Q2'] == 1 and quarts['Q3'] == 1
+    assert quarts['whisker_low'] == 1 and quarts['whisker_high'] == 1
+    assert response['yDomain'] == 11
+
+    #have the client label three data with 0, 3, 10. Check quartiles
+    data = get_assignments(client_profile, project, 3)
+    response = client.post('/api/annotate_data/'+str(data[0].pk)+'/',{
+    "labelID": test_labels[0].pk, "labeling_time": 0
+    })
+    response = client.post('/api/annotate_data/'+str(data[1].pk)+'/',{
+    "labelID": test_labels[1].pk, "labeling_time": 3
+    })
+    response = client.post('/api/annotate_data/'+str(data[2].pk)+'/',{
+    "labelID": test_labels[2].pk, "labeling_time": 10
+    })
+
+    response = client.get('/api/label_timing/'+str(project.pk)+'/').json()
+    assert len(response['data']) == 1
+
+    quarts = response['data'][0]['values']
+    assert quarts['Q1'] == 1 and quarts['Q2'] == 1 and quarts['Q3'] == 3
+    assert quarts['whisker_low'] == 0 and quarts['whisker_high'] == 10
+    assert response['yDomain'] == 20
+
+    #have a client label with t=100. Check quartiles.
+    data = get_assignments(client_profile, project, 1)
+    response = client.post('/api/annotate_data/'+str(data[0].pk)+'/',{
+    "labelID": test_labels[0].pk, "labeling_time": 100
+    })
+    response = client.get('/api/label_timing/'+str(project.pk)+'/').json()
+    quarts = response['data'][0]['values']
+    assert quarts['Q1'] == 1 and quarts['Q2'] == 1 and quarts['Q3'] == 10
+    assert quarts['whisker_low'] == 0 and quarts['whisker_high'] == 100
+    assert response['yDomain'] == 110
+
 
 '''
-
-def test_label_timing():
-
 def test_model_metrics():
 
 def test_coded_table():
