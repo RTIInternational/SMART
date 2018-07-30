@@ -333,3 +333,58 @@ def test_skew_label(seeded_database, admin_client, client, test_project_data, te
     response = admin_client.post('/api/label_skew_label/'+str(data.pk)+'/', request_info)
     assert 'error' not in response.json()
     assert DataLabel.objects.filter(data=data).count() == 1
+
+def test_admin_label(seeded_database, admin_client, client, test_project_data, test_queue, test_labels, test_admin_queue):
+    '''
+    This tests the admin ability to label skipped items in the admin table
+    '''
+    #fill queue. The admin queue should be empty
+    project = test_project_data
+    client_profile, admin_profile = sign_in_and_fill_queue(project, test_queue, client, admin_client)
+    assert DataQueue.objects.filter(queue=test_admin_queue).count() == 0
+    #have a normal client skip something and try to admin label. Should not
+    #be allowed
+    data = get_assignments(client_profile, project, 1)[0]
+    response = client.post('/api/skip_data/'+str(data.pk)+'/')
+    assert 'error' not in response.json()
+
+    payload = {'labelID':test_labels[0].pk}
+    response = client.post('/api/label_admin_label/'+str(data.pk)+'/',payload)
+
+    assert 'error' in response.json() and "Invalid permission. Must be an admin." in response.json()['error']
+
+    #check datum is in proper places
+    assert DataQueue.objects.filter(data=data, queue=test_admin_queue).count() == 1
+    assert DataQueue.objects.filter(data=data, queue=test_queue).count() == 0
+    assert DataLabel.objects.filter(data=data).count() == 0
+
+
+    #Let admin label datum. Should work. Check it is now in proper places
+    response = admin_client.post('/api/label_admin_label/'+str(data.pk)+'/',payload)
+    assert 'error' not in response.json()
+    assert DataQueue.objects.filter(data=data, queue=test_admin_queue).count() == 0
+    assert DataLabel.objects.filter(data=data).count() == 1
+
+'''
+
+def test_label_distribution():
+
+def test_label_distribution_inverted():
+
+def test_label_timing():
+
+def test_model_metrics():
+
+def test_coded_table():
+
+def test_predicted_table():
+
+def test_unlabeled_table():
+
+def test_admin_table():
+
+def test_change_log_table():
+
+
+
+'''
