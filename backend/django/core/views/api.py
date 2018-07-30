@@ -433,19 +433,22 @@ def label_skew_label(request, pk):
     project = datum.project
     label = Label.objects.get(pk=request.data['labelID'])
     profile = request.user.profile
+    response = {}
 
     current_training_set = project.get_current_training_set()
+    if project_extras.proj_permission_level(datum.project, profile) >= 2:
+        with transaction.atomic():
+            DataLabel.objects.create(data=datum,
+                                    label=label,
+                                    profile=profile,
+                                    training_set=current_training_set,
+                                    time_to_label=None,
+                                    timestamp = timezone.now()
+                                    )
+    else:
+        response['error'] = "Invalid permission. Must be an admin."
 
-    with transaction.atomic():
-        DataLabel.objects.create(data=datum,
-                                label=label,
-                                profile=profile,
-                                training_set=current_training_set,
-                                time_to_label=None,
-                                timestamp = timezone.now()
-                                )
-
-    return Response({'test':'success'})
+    return Response(response)
 
 
 @api_view(['POST'])
@@ -464,23 +467,26 @@ def label_admin_label(request, pk):
     project = datum.project
     label = Label.objects.get(pk=request.data['labelID'])
     profile = request.user.profile
+    response = {}
 
     current_training_set = project.get_current_training_set()
+    if project_extras.proj_permission_level(datum.project, profile) >= 2:
+        with transaction.atomic():
+            queue = project.queue_set.get(admin=True)
+            DataLabel.objects.create(data=datum,
+                                    label=label,
+                                    profile=profile,
+                                    training_set=current_training_set,
+                                    time_to_label=None,
+                                    timestamp=timezone.now()
+                                    )
 
-    with transaction.atomic():
-        queue = project.queue_set.get(admin=True)
-        DataLabel.objects.create(data=datum,
-                                label=label,
-                                profile=profile,
-                                training_set=current_training_set,
-                                time_to_label=None,
-                                timestamp=timezone.now()
-                                )
-
-        DataQueue.objects.filter(data=datum, queue=queue).delete()
+            DataQueue.objects.filter(data=datum, queue=queue).delete()
+    else:
+        response['error'] = "Invalid permission. Must be an admin."
 
     util.check_and_trigger_model(datum)
-    return Response({'test':'success'})
+    return Response(response)
 
 
 ############################################
@@ -616,6 +622,10 @@ def modify_label(request, pk):
     response = {}
     project = data.project
 
+    if request.data['labelID'] == request.data['oldLabelID']:
+        response['error'] = 'Invalid. The new label should be different'
+        return Response(response)
+
     # Make sure coder still has permissions before labeling data
     if project_extras.proj_permission_level(data.project, profile) > 0:
         label = Label.objects.get(pk=request.data['labelID'])
@@ -626,9 +636,6 @@ def modify_label(request, pk):
 
             LabelChangeLog.objects.create(project=project, data=data, profile=profile,
             old_label=old_label.name, new_label = label.name, change_timestamp = timezone.now() )
-
-
-
 
     else:
         response['error'] = 'Account disabled by administrator.  Please contact project owner for details'

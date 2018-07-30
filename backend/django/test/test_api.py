@@ -2,11 +2,16 @@ from django.conf import settings
 
 from core.management.commands.seed import (
     SEED_PROJECT, SEED_USERNAME, SEED_EMAIL,
-    SEED_PASSWORD, SEED_LABELS)
+    SEED_PASSWORD, SEED_LABELS, SEED_USERNAME2,
+    SEED_PASSWORD2)
 from core.pagination import SmartPagination
-from core.models import (Project)
+from core.models import Project, Profile, DataQueue, DataLabel, Data, Queue, ProjectPermissions, LabelChangeLog
 
 from test.util import read_test_data_api
+
+from core.util import assign_datum, fill_queue, get_assignments
+from django.contrib.auth import get_user_model
+AuthUser = get_user_model()
 
 # Need a hashable dict so we can put them in a set
 class HashableDict(dict):
@@ -65,6 +70,28 @@ def compare_get_response(response, expected, significant_keys):
 
     assert_collections_equal(significant_expected, significant_response)
 
+def sign_in_and_fill_queue(project, test_queue, client, admin_client = None):
+    fill_queue(test_queue,'random')
+
+    if admin_client is not None:
+        admin_client.login(username=SEED_USERNAME2, password=SEED_PASSWORD2)
+        admin_profile = Profile.objects.get(user__username=SEED_USERNAME2)
+        ProjectPermissions.objects.create(profile=admin_profile,
+                                          project=project,
+                                          permission='ADMIN')
+    else:
+        admin_profile = None
+    client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
+
+
+    client_profile = Profile.objects.get(user__username=SEED_USERNAME)
+
+
+    ProjectPermissions.objects.create(profile=client_profile,
+                                      project=project,
+                                      permission='CODER')
+
+    return client_profile, admin_profile
 
 def test_get_projects(seeded_database, admin_client):
     response = admin_client.get('/api/projects/')
@@ -78,6 +105,7 @@ def test_get_auth_users(seeded_database, admin_client):
     response = admin_client.get('/api/auth_users/')
     compare_get_response(response, [
         { 'username': SEED_USERNAME, 'email': SEED_EMAIL },
+        { 'username': SEED_USERNAME2, 'email': SEED_EMAIL },
         # Special user created for the admin_client to run tests
         { 'username': 'admin', 'email': 'admin@example.com' }
     ], ['username', 'email'])
@@ -101,3 +129,207 @@ def test_get_data(seeded_database, admin_client):
 
     response = admin_client.get('/api/data/?page_size={}'.format(len(expected)))
     compare_get_response(response, expected, ['text'])
+
+def test_get_label_history(seeded_database, admin_client, client, test_project_data, test_queue, test_labels, test_admin_queue):
+    '''This tests the function that returns the elements
+    that user has already labeled'''
+    project = test_project_data
+    client_profile, admin_profile = sign_in_and_fill_queue(project, test_queue, client, admin_client)
+    #before anything has been labeled, the history table should be empty
+    response = admin_client.get('/api/get_label_history/'+str(project.pk)+'/')
+    assert response.json()['data'] == []
+
+    #skip an item. Should still be empty
+    data = get_assignments(client_profile, project, 2)
+    datum = data[0]
+    assert datum is not None
+    response = client.post('/api/skip_data/'+str(datum.pk)+'/')
+    assert 'error' not in response.json()
+
+    response = client.get('/api/get_label_history/'+str(project.pk)+'/')
+    assert response.json()['data'] == []
+
+    #have one user label something. Call label history on two users.
+    request_info = {
+    "labelID": test_labels[0].pk,
+    "labeling_time": 3
+    }
+    datum = data[1]
+    response = client.post('/api/annotate_data/'+str(datum.pk)+'/', request_info)
+    assert 'error' not in response.json()
+
+    response_client = client.get('/api/get_label_history/'+str(project.pk)+'/')
+    assert response_client.json()['data'] != []
+
+    response_admin = admin_client.get('/api/get_label_history/'+str(project.pk)+'/')
+    assert response_admin.json()['data'] == []
+
+    #the label should be in the correct person's history
+    response_data = response_client.json()['data'][0]
+    assert response_data["id"] == datum.pk
+    assert response_data["labelID"] == test_labels[0].pk
+
+
+def test_annotate_data(seeded_database, client, test_project_data, test_queue, test_labels, test_admin_queue):
+    '''This tests the basic ability to annotate a datum'''
+    #get a datum from the queue
+    project = test_project_data
+    fill_queue(test_queue,'random')
+    request_info = {
+    "labelID": test_labels[0].pk,
+    "labeling_time": 3
+    }
+    permission_message = 'Account disabled by administrator.  Please contact project owner for details'
+    #call annotate data without the user having permission. Check that
+    #the data is not annotated and the response has an error.
+    client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
+    client_profile = Profile.objects.get(user__username=SEED_USERNAME)
+
+    data = get_assignments(client_profile, project, 1)
+    response = client.post('/api/annotate_data/'+str(data[0].pk)+'/', request_info)
+    assert 'error' in response.json() and permission_message in response.json()['error']
+
+    assert DataLabel.objects.filter(data=data[0]).count() == 0
+    ProjectPermissions.objects.create(profile=client_profile,
+                                      project=project,
+                                      permission='CODER')
+
+    #give the user permission and call annotate again
+    #The data should be labeled and in the proper places
+    #check that the response was {} (no error)
+    response = client.post('/api/annotate_data/'+str(data[0].pk)+'/', request_info)
+    assert 'error' not in response.json()
+    assert DataLabel.objects.filter(data=data[0]).count() == 1
+    assert DataQueue.objects.filter(data=data[0]).count() == 0
+
+def test_skip_data(seeded_database, client, test_project_data, test_queue, test_labels, test_admin_queue):
+    '''
+    This tests that the skip data api works
+    '''
+    project = test_project_data
+    fill_queue(test_queue,'random')
+    permission_message = 'Account disabled by administrator.  Please contact project owner for details'
+    #call skip data without the user having permission. Check that
+    #the data is not in admin and the response has an error.
+    client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
+    client_profile = Profile.objects.get(user__username=SEED_USERNAME)
+
+    data = get_assignments(client_profile, project, 1)
+    response = client.post('/api/skip_data/'+str(data[0].pk)+'/')
+    assert 'error' in response.json() and permission_message in response.json()['error']
+
+    assert DataQueue.objects.filter(data=data[0], queue = test_queue).count() == 1
+    assert DataQueue.objects.filter(data=data[0], queue = test_admin_queue).count() == 0
+    ProjectPermissions.objects.create(profile=client_profile,
+                                      project=project,
+                                      permission='CODER')
+
+    #have someone skip something with permission. Should
+    #be in admin queue, not in normal queue, not in datalabel
+    response = client.post('/api/skip_data/'+str(data[0].pk)+'/')
+    assert 'error' not in response.json()
+
+    assert DataQueue.objects.filter(data=data[0], queue = test_queue).count() == 0
+    assert DataQueue.objects.filter(data=data[0], queue = test_admin_queue).count() == 1
+    assert DataLabel.objects.filter(data=data[0]).count() == 0
+
+def test_modify_label(seeded_database, client, test_project_data, test_queue, test_labels, test_admin_queue):
+    '''
+    This tests the history table's ability to modify a label
+    '''
+    request_info = {
+    "labelID": test_labels[0].pk,
+    "labeling_time": 3
+    }
+    project = test_project_data
+    client_profile, admin_profile = sign_in_and_fill_queue(project, test_queue, client)
+    #have a user annotate some data
+    data = get_assignments(client_profile, project, 1)[0]
+    assert data is not None
+    response = client.post('/api/annotate_data/'+str(data.pk)+'/', request_info)
+    assert DataLabel.objects.filter(data=data).count() == 1
+    #call modify label to change it to the same thing
+    change_info = {
+    "dataID": data.pk,
+    "oldLabelID": test_labels[0].pk,
+    "labelID": test_labels[0].pk
+    }
+    response = client.post('/api/modify_label/'+str(data.pk)+'/',change_info).json()
+    assert response != {}
+    #check that there is an error
+    assert 'error' in response and 'Invalid. The new label should be different' in response['error']
+    #call modify label to change it to something else
+    change_info = {
+    "dataID": data.pk,
+    "oldLabelID": test_labels[0].pk,
+    "labelID": test_labels[1].pk
+    }
+    response = client.post('/api/modify_label/'+str(data.pk)+'/',change_info)
+    assert 'error' not in response.json()
+    #check that the label is updated and it's in the correct places
+    #check that there are no duplicate labels
+    assert DataLabel.objects.filter(data=data).count() == 1
+    assert DataLabel.objects.get(data=data).label.pk == test_labels[1].pk
+    #check it's in change log
+    assert LabelChangeLog.objects.filter(data=data).count() == 1
+
+def test_modify_label_to_skip(seeded_database, client, test_project_data, test_queue, test_labels, test_admin_queue):
+    '''This tests the history table's ability to change labeled items
+    to skipped items.'''
+    request_info = {
+    "labelID": test_labels[0].pk,
+    "labeling_time": 3
+    }
+    project = test_project_data
+    client_profile, admin_profile = sign_in_and_fill_queue(project, test_queue, client)
+    #have a user annotate some data
+    data = get_assignments(client_profile, project, 1)[0]
+    assert data is not None
+    response = client.post('/api/annotate_data/'+str(data.pk)+'/', request_info)
+    assert DataLabel.objects.filter(data=data).count() == 1
+
+    #Call the change to skip function. Should now be in admin table, not be
+    #in history table.
+    change_info = {
+    "dataID": data.pk,
+    "oldLabelID": test_labels[0].pk
+    }
+    response = client.post('/api/modify_label_to_skip/'+str(data.pk)+'/', change_info)
+    assert 'error' not in response.json()
+
+    assert DataLabel.objects.filter(data=data).count() == 0
+    assert DataQueue.objects.filter(queue=test_admin_queue).count() == 1
+    #check it's in change log
+    assert LabelChangeLog.objects.filter(data=data,new_label="skip").count() == 1
+
+def test_skew_label(seeded_database, admin_client, client, test_project_data, test_queue, test_labels, test_admin_queue):
+    '''
+    This tests the skew label functionalty, which takes unlabeled and
+    unnasigned data and labels it.
+    '''
+    request_info = {
+    "labelID": test_labels[0].pk,
+    "labeling_time": 3
+    }
+    project = test_project_data
+    admin_client.login(username=SEED_USERNAME2, password=SEED_PASSWORD2)
+    admin_profile = Profile.objects.get(user__username=SEED_USERNAME2)
+    ProjectPermissions.objects.create(profile=admin_profile,
+                                          project=project,
+                                          permission='ADMIN')
+    client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
+    client_profile = Profile.objects.get(user__username=SEED_USERNAME)
+    ProjectPermissions.objects.create(profile=client_profile,
+                                      project=project,
+                                      permission='CODER')
+
+
+    #have a regular coder try and label things. Should not be allowed.
+    data = Data.objects.filter(project=project)[0]
+    assert data is not None
+    response = client.post('/api/label_skew_label/'+str(data.pk)+'/', request_info)
+    assert 'error' in response.json() and "Invalid permission. Must be an admin." in response.json()['error']
+    #have an admin try and label. Should be allowed.
+    response = admin_client.post('/api/label_skew_label/'+str(data.pk)+'/', request_info)
+    assert 'error' not in response.json()
+    assert DataLabel.objects.filter(data=data).count() == 1

@@ -69,10 +69,7 @@ class HistoryTable extends React.Component {
                   return (
                   <Button key={label.pk.toString() + "_" + row.row.id.toString()}
                   onClick={() => {
-                    if(!(row.row.old_label_id === label.pk))
-                    {
-                      changeLabel(row.row.id,row.row.old_label_id,label.pk)
-                    }
+                    changeLabel(row.row.id,row.row.old_label_id,label.pk)
                   }}
                   bsStyle="primary"
                   >{label.name}</Button>
