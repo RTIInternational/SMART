@@ -405,14 +405,18 @@ def data_admin_table(request, pk):
     queue = Queue.objects.filter(project=project,admin=True)
 
     data_objs = DataQueue.objects.filter(queue=queue)
+    profile = request.user.profile
 
-    data = []
-    for d in data_objs:
-        temp = {
-            'Text': d.data.text,
-            'ID': d.data.id
-        }
-        data.append(temp)
+    if project_extras.proj_permission_level(project, profile) >= 2:
+        data = []
+        for d in data_objs:
+            temp = {
+                'Text': d.data.text,
+                'ID': d.data.id
+            }
+            data.append(temp)
+    else:
+        return Response({'error':'Invalid permission. Must be an administrator.'})
 
     return Response({'data': data})
 

@@ -5,8 +5,9 @@ from core.management.commands.seed import (
     SEED_PASSWORD, SEED_LABELS, SEED_USERNAME2,
     SEED_PASSWORD2)
 from core.pagination import SmartPagination
-from core.models import Project, Profile, DataQueue, DataLabel, Data, Queue, ProjectPermissions, LabelChangeLog, Label
-
+from core.models import (Project, Profile, DataQueue, DataLabel, Data, Queue, ProjectPermissions,
+                         LabelChangeLog, Label, DataPrediction, TrainingSet, Model)
+from django.utils.html import escape
 from test.util import read_test_data_api
 
 from core.util import assign_datum, fill_queue, get_assignments
@@ -613,14 +614,184 @@ def test_model_metrics(seeded_database, admin_client, client, test_project_unlab
         #check there is some value for the first run
         for temp_dict in response:
             assert len(temp_dict['values']) == 2
-'''
-def test_coded_table():
 
-def test_predicted_table():
 
-def test_unlabeled_table():
+def test_coded_table(seeded_database, admin_client, client, test_project_data, test_queue, test_labels):
+    '''
+    This tests the table that displays the labeled table
+    '''
+    project = test_project_data
+    client_profile = sign_in_and_fill_queue(project, test_queue, client)[0]
 
-def test_admin_table():
+    #first, check that it is empty
+    response = client.get('/api/data_coded_table/'+str(project.pk)+'/').json()
+    assert len(response['data']) == 0
+    #label a few things, and check that they are in the table
+    data = get_assignments(client_profile, project, 3)
+    data_text = []
+    label_names = []
+    for i in range(3):
+        data_text.append(escape(data[i].text))
+        label_names.append(test_labels[i].name)
+        response = client.post('/api/annotate_data/'+str(data[i].pk)+'/',{
+        "labelID": test_labels[i].pk, "labeling_time": 1
+        })
+    response = client.get('/api/data_coded_table/'+str(project.pk)+'/').json()
+    assert len(response['data']) == 3
+    for row in response['data']:
+        assert row['Text'] in data_text
+        assert row['Label'] in label_names
+        assert row['Coder'] == str(client_profile)
 
-def test_change_log_table():
-'''
+def test_predicted_table(seeded_database, admin_client, client, test_project_unlabeled_and_tfidf, test_queue, test_labels):
+    '''
+    This tests that the predicted table contains what it should
+    '''
+    project = test_project_unlabeled_and_tfidf
+    client_profile = sign_in_and_fill_queue(project, test_queue, client)[0]
+    #first, check that it is empty
+    response = client.get('/api/data_predicted_table/'+str(project.pk)+'/').json()
+    assert len(response['data']) == 0
+
+    #label 15 things and check that it is still empty
+    data = get_assignments(client_profile, project, 15)
+    data_text = []
+    label_names = []
+    for i in range(15):
+        data_text.append(escape(data[i].text))
+        label_names.append(test_labels[i%3].name)
+        response = client.post('/api/annotate_data/'+str(data[i].pk)+'/',{
+        "labelID": test_labels[i%3].pk, "labeling_time": 1
+        })
+    response = client.get('/api/data_predicted_table/'+str(project.pk)+'/').json()
+    assert len(response['data']) == 0
+    #label 15 more things and let the predictions be created
+    #check that the unlabeled items are in the table
+    data = get_assignments(client_profile, project, 15)
+    for i in range(15):
+        data_text.append(escape(data[i].text))
+        label_names.append(test_labels[i%3].name)
+        response = client.post('/api/annotate_data/'+str(data[i].pk)+'/',{
+        "labelID": test_labels[i%3].pk, "labeling_time": 1
+        })
+    response = client.get('/api/data_predicted_table/'+str(project.pk)+'/').json()
+
+    training_set = TrainingSet.objects.get(set_number= project.get_current_training_set().set_number - 1)
+    model = Model.objects.get(training_set=training_set)
+    #check that the table holds the predicted data
+    assert len(response['data']) == (DataPrediction.objects.filter(data__project=project, model=model).count())//len(test_labels)
+    #check that the table has the number of unlabeled data
+    assert len(response['data']) == (Data.objects.filter(project=project).count() - DataLabel.objects.filter(data__project=project).count())
+    #check that the table does not have the labeled data
+    data_list = list(DataPrediction.objects.filter(data__project=project).values_list("data__text"))
+    for d in data_text:
+        assert d not in data_list
+
+def test_unlabeled_table(seeded_database, client, test_project_unlabeled_and_tfidf, test_queue, test_admin_queue, test_labels):
+    '''
+    This tests that the unlabeled data table contains what it should
+    '''
+    project = test_project_unlabeled_and_tfidf
+    #first, check that it has all the unlabeled data
+    client_profile = sign_in_and_fill_queue(project, test_queue, client)[0]
+    response = client.get('/api/data_unlabeled_table/'+str(project.pk)+'/').json()
+    assert 'data' in response
+    assert len(response['data']) == Data.objects.filter(project=project).count() - DataQueue.objects.filter(data__project=project).count()
+
+    #label something. Check it is not in the table.
+    data = get_assignments(client_profile, project, 2)
+    response = client.post('/api/annotate_data/'+str(data[0].pk)+'/',{
+    "labelID": test_labels[0].pk, "labeling_time": 1
+    })
+    response = client.get('/api/data_unlabeled_table/'+str(project.pk)+'/').json()
+    data_ids = [d["ID"] for d in response['data']]
+    assert data[0].pk not in data_ids
+
+    #skip something. Check it is not in the table.
+    response = client.post('/api/skip_data/'+str(data[1].pk)+'/')
+    response = client.get('/api/data_unlabeled_table/'+str(project.pk)+'/').json()
+    data_ids = [d["ID"] for d in response['data']]
+    assert data[1].pk not in data_ids
+
+
+def test_admin_table(seeded_database, admin_client, client, test_project_data, test_queue, test_admin_queue, test_labels):
+    '''
+    This tests that the admin table holds the correct items
+    '''
+    project = test_project_data
+    client_profile, admin_profile = sign_in_and_fill_queue(project, test_queue, client, admin_client)
+    #check that a non-admin can't get the table
+    response = client.get('/api/data_admin_table/'+str(project.pk)+'/').json()
+    assert 'error' in response and 'Invalid permission. Must be an administrator.' in response['error']
+
+    response = admin_client.get('/api/data_admin_table/'+str(project.pk)+'/').json()
+    #first, check that it is empty
+    assert len(response['data']) == 0
+
+    #label something. Should still be empty.
+    data = get_assignments(client_profile, project, 2)
+    response = client.post('/api/annotate_data/'+str(data[0].pk)+'/',{
+    "labelID": test_labels[0].pk, "labeling_time": 1
+    })
+    response = admin_client.get('/api/data_admin_table/'+str(project.pk)+'/').json()
+    assert len(response['data']) == 0
+
+    #skip something. Should be in the table.
+    response = client.post('/api/skip_data/'+str(data[1].pk)+'/')
+    response = admin_client.get('/api/data_admin_table/'+str(project.pk)+'/').json()
+    assert len(response['data']) == 1
+    assert response['data'][0]['ID'] == data[1].pk
+
+    #admin annotate the data. Admin table should be empty again.
+    response = admin_client.post('/api/label_admin_label/'+str(data[1].pk)+'/',{
+    "labelID": test_labels[0].pk})
+    response = admin_client.get('/api/data_admin_table/'+str(project.pk)+'/').json()
+    assert len(response['data']) == 0
+
+def test_change_log_table(seeded_database, client, test_project_data, test_queue, test_admin_queue, test_labels):
+    '''
+    This tests that the change log table records changes in the history table
+    '''
+    project = test_project_data
+    client_profile = sign_in_and_fill_queue(project, test_queue, client)[0]
+    data = get_assignments(client_profile, project, 3)
+    #label three datum. Table should be empty.
+    for i in range(3):
+        response = client.post('/api/annotate_data/'+str(data[i].pk)+'/',{
+        "labelID": test_labels[0].pk, "labeling_time": 1
+        })
+    response = client.get('/api/data_change_log_table/'+str(project.pk)+'/').json()
+    assert len(response['data']) == 0
+    #change the first to itself. Should not be in the table.
+    change_info = {
+    "dataID": data[0].pk,
+    "oldLabelID": test_labels[0].pk,
+    "labelID": test_labels[0].pk
+    }
+    response = client.post('/api/modify_label/'+str(data[0].pk)+'/',change_info).json()
+    response = client.get('/api/data_change_log_table/'+str(project.pk)+'/').json()
+    assert len(response['data']) == 0
+
+    #skip the second one. Should be in the table with "skip"
+    change_info = {
+    "dataID": data[1].pk,
+    "oldLabelID": test_labels[0].pk
+    }
+    response = client.post('/api/modify_label_to_skip/'+str(data[1].pk)+'/', change_info)
+    assert 'error' not in response.json()
+    response = client.get('/api/data_change_log_table/'+str(project.pk)+'/').json()
+    assert len(response['data']) == 1
+    assert response['data'][0]['New Label'] == 'skip'
+    assert response['data'][0]['Text'] == escape(data[1].text)
+
+    #change the third one to something else. Should be in the table.
+    change_info = {
+    "dataID": data[2].pk,
+    "oldLabelID": test_labels[0].pk,
+    "labelID": test_labels[1].pk
+    }
+    response = client.post('/api/modify_label/'+str(data[2].pk)+'/',change_info).json()
+    response = client.get('/api/data_change_log_table/'+str(project.pk)+'/').json()
+    assert len(response['data']) == 2
+    for item in response['data']:
+        assert item['New Label'] in ['skip',test_labels[1].name]
