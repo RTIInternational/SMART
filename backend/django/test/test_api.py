@@ -5,7 +5,7 @@ from core.management.commands.seed import (
     SEED_PASSWORD, SEED_LABELS, SEED_USERNAME2,
     SEED_PASSWORD2)
 from core.pagination import SmartPagination
-from core.models import Project, Profile, DataQueue, DataLabel, Data, Queue, ProjectPermissions, LabelChangeLog
+from core.models import Project, Profile, DataQueue, DataLabel, Data, Queue, ProjectPermissions, LabelChangeLog, Label
 
 from test.util import read_test_data_api
 
@@ -365,11 +365,143 @@ def test_admin_label(seeded_database, admin_client, client, test_project_data, t
     assert DataQueue.objects.filter(data=data, queue=test_admin_queue).count() == 0
     assert DataLabel.objects.filter(data=data).count() == 1
 
+def test_label_distribution(seeded_database, admin_client, client, test_project_data, test_queue, test_labels, test_admin_queue):
+    '''
+    This tests the api that produces the label counts chart
+    for the admin page
+    '''
+    project = test_project_data
+    client_profile, admin_profile = sign_in_and_fill_queue(project, test_queue, client, admin_client)
+
+    #at the beginning, should return empty list
+    response = client.get('/api/label_distribution/'+str(project.pk)+'/')
+    assert len(response.json()) == 0
+
+    #have client label three things differently. Check values.
+    data = get_assignments(client_profile, project, 3)
+    response = client.post('/api/annotate_data/'+str(data[0].pk)+'/',{
+    "labelID": test_labels[0].pk, "labeling_time": 3
+    })
+    response = client.post('/api/annotate_data/'+str(data[1].pk)+'/',{
+    "labelID": test_labels[1].pk, "labeling_time": 3
+    })
+    response = client.post('/api/annotate_data/'+str(data[2].pk)+'/',{
+    "labelID": test_labels[2].pk, "labeling_time": 3
+    })
+    assert DataLabel.objects.filter(data__in=data).count() == 3
+
+    response = client.get('/api/label_distribution/'+str(project.pk)+'/').json()
+    assert len(response) > 0
+
+    for row in response:
+        temp_dict = row['values']
+        for label_dict in temp_dict:
+            assert label_dict['x'] in [str(admin_profile),str(client_profile), 'test_profile']
+            if label_dict['x'] == str(admin_profile) or label_dict['x'] == 'test_profile':
+                assert label_dict['y'] == 0
+            else:
+                assert label_dict['y'] == 1
+
+    #Have admin label three things the same. Check values.
+    data = get_assignments(admin_profile, project, 3)
+    response = admin_client.post('/api/annotate_data/'+str(data[0].pk)+'/',{
+    "labelID": test_labels[0].pk, "labeling_time": 3
+    })
+    response = admin_client.post('/api/annotate_data/'+str(data[1].pk)+'/',{
+    "labelID": test_labels[0].pk, "labeling_time": 3
+    })
+    response = admin_client.post('/api/annotate_data/'+str(data[2].pk)+'/',{
+    "labelID": test_labels[0].pk, "labeling_time": 3
+    })
+
+    response = client.get('/api/label_distribution/'+str(project.pk)+'/').json()
+    assert len(response) > 0
+
+    for row in response:
+        label = row['key']
+        temp_dict = row['values']
+        for label_dict in temp_dict:
+            assert label_dict['x'] in [str(admin_profile),str(client_profile), 'test_profile']
+            if label_dict['x'] == str(admin_profile):
+                if label == test_labels[0].name:
+                    assert label_dict['y'] == 3
+                else:
+                    assert label_dict['y'] == 0
+            elif label_dict['x'] == 'test_profile':
+                assert label_dict['y'] == 0
+            else:
+                assert label_dict['y'] == 1
+
+
+def test_label_distribution_inverted(seeded_database, admin_client, client, test_project_data, test_queue, test_labels, test_admin_queue):
+    '''
+    This tests the api that produces the label counts chart for
+    the skew page. It is stacked differently than the previous.
+    '''
+    project = test_project_data
+    client_profile, admin_profile = sign_in_and_fill_queue(project, test_queue, client, admin_client)
+
+    #at the beginning, should return empty list
+    response = client.get('/api/label_distribution/'+str(project.pk)+'/')
+    assert len(response.json()) == 0
+
+    #have client label three things differently. Check values.
+    data = get_assignments(client_profile, project, 3)
+    response = client.post('/api/annotate_data/'+str(data[0].pk)+'/',{
+    "labelID": test_labels[0].pk, "labeling_time": 3
+    })
+    response = client.post('/api/annotate_data/'+str(data[1].pk)+'/',{
+    "labelID": test_labels[1].pk, "labeling_time": 3
+    })
+    response = client.post('/api/annotate_data/'+str(data[2].pk)+'/',{
+    "labelID": test_labels[2].pk, "labeling_time": 3
+    })
+    assert DataLabel.objects.filter(data__in=data).count() == 3
+
+    response = client.get('/api/label_distribution_inverted/'+str(project.pk)+'/').json()
+    assert len(response) > 0
+
+    for row in response:
+        user = row['key']
+        temp_dict = row['values']
+        for label_row in temp_dict:
+            if user == str(client_profile):
+                assert label_row['y'] == 1
+            else:
+                assert user in [str(admin_profile), 'test_profile']
+                assert label_row['y'] == 0
+
+    #Have admin label three things the same. Check values.
+    data = get_assignments(admin_profile, project, 3)
+    response = admin_client.post('/api/annotate_data/'+str(data[0].pk)+'/',{
+    "labelID": test_labels[0].pk, "labeling_time": 3
+    })
+    response = admin_client.post('/api/annotate_data/'+str(data[1].pk)+'/',{
+    "labelID": test_labels[0].pk, "labeling_time": 3
+    })
+    response = admin_client.post('/api/annotate_data/'+str(data[2].pk)+'/',{
+    "labelID": test_labels[0].pk, "labeling_time": 3
+    })
+
+    response = client.get('/api/label_distribution_inverted/'+str(project.pk)+'/').json()
+    assert len(response) > 0
+
+    for row in response:
+        user = row['key']
+        temp_dict = row['values']
+        for label_row in temp_dict:
+            if user == str(client_profile):
+                assert label_row['y'] == 1
+            elif user == str(admin_profile):
+                if label_row['x'] == test_labels[0].name:
+                    assert label_row['y'] == 3
+                else:
+                    assert label_row['y'] == 0
+            else:
+                assert label_row['y'] == 0
+
+
 '''
-
-def test_label_distribution():
-
-def test_label_distribution_inverted():
 
 def test_label_timing():
 

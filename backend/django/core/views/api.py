@@ -97,7 +97,6 @@ def label_distribution_inverted(request, pk):
     dataset = []
     all_counts = []
     for u in users:
-        temp_data = {'key':u.__str__()}
         temp_values = []
         for l in labels:
             label_count = DataLabel.objects.filter(profile=u, label=l).count()
