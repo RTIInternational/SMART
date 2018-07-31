@@ -164,21 +164,22 @@
           </a>
           {% endif %}
         </div>
-        {% if project|proj_permission_level:request.user.profile > 1 %}
+
         <div class="btn-group pull-right" role="group" aria-label="Admin Controls">
-          {% if project.labeled_data_count > 0 %}
-          <a class="btn btn-primary" id="download_btn">Download Labeled Data</a>
-          {% else %}
-          <a class="btn btn-primary disabled" id="download_btn">No Labeled Data to Download</a>
+          {% if project|proj_permission_level:request.user.profile > 1 %}
+            {% if project.labeled_data_count > 0 %}
+            <a class="btn btn-primary" id="download_btn">Download Labeled Data</a>
+            {% else %}
+            <a class="btn btn-primary disabled" id="download_btn">No Labeled Data to Download</a>
+            {% endif %}
+            <a class="btn btn-primary" href="{% url 'projects:project_admin' project.pk %}" role="button">
+              Admin Page
+            </a>
           {% endif %}
           {% if project.codebook_file != "" %}
-          <a class="btn btn-primary" href = "{% static project.codebook_file %}" id="download_cb_btn">View CodeBook</a>
+          <a class="btn btn-primary" href = "{% static project.codebook_file %}" target = "_blank" id="download_cb_btn">View CodeBook</a>
           {% endif %}
-          <a class="btn btn-primary" href="{% url 'projects:project_admin' project.pk %}" role="button">
-            Admin Page
-          </a>
         </div>
-        {% endif %}
       </div>
     </div>
   </div>
