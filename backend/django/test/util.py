@@ -3,6 +3,7 @@ import pandas as pd
 
 from core.management.commands.seed import (SEED_FILE_PATH)
 from core.models import Queue
+from core.util import md5_hash
 
 def assert_obj_exists(model, filter_):
     '''
@@ -46,6 +47,4 @@ def read_test_data_backend(file=SEED_FILE_PATH):
     Read the test data from its file and store as dataframe.  Used for backend
     tests.
     '''
-    data_file = pd.read_csv(file)
-    data_file["ID"] = list(data_file.index.values)
-    return data_file
+    return pd.read_csv(file)

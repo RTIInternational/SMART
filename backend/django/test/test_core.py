@@ -26,7 +26,7 @@ from core.util import (redis_serialize_queue, redis_serialize_data, redis_serial
                        train_and_save_model, predict_data,
                        least_confident, margin_sampling, entropy,
                        check_and_trigger_model, get_ordered_data,
-                       find_queue_length)
+                       find_queue_length, md5_hash)
 
 from test.util import read_test_data_backend, assert_obj_exists, assert_redis_matches_db
 from test.conftest import TEST_QUEUE_LEN
@@ -204,7 +204,7 @@ def test_fill_empty_queue(db, test_queue):
 
 def test_fill_nonempty_queue(db, test_queue):
     # Manually add one observation so the queue is now nonempty
-    test_datum = Data.objects.create(text='test data', project=test_queue.project, df_idx=0)
+    test_datum = Data.objects.create(text='test data', project=test_queue.project, upload_id_hash=md5_hash(0))
     DataQueue.objects.create(data=test_datum, queue=test_queue)
     assert test_queue.data.count() == 1
 
@@ -804,10 +804,10 @@ def test_save_tfidf_matrix(test_project_data, test_tfidf_matrix, tmpdir, setting
     assert file == os.path.join(settings.TF_IDF_PATH, str(test_project_data.pk) + '.npz')
 
 
-def test_load_tfidf_matrix(test_project_labeled_and_tfidf, test_tfidf_matrix, tmpdir, settings):
+def test_load_tfidf_matrix(test_project_labeled_and_tfidf, test_tfidf_matrix_labeled, tmpdir, settings):
     matrix = load_tfidf_matrix(test_project_labeled_and_tfidf.pk)
 
-    assert np.allclose(matrix.A, test_tfidf_matrix.A)
+    assert np.allclose(matrix.A, test_tfidf_matrix_labeled.A)
 
 
 def test_least_confident_notarray():
@@ -1065,8 +1065,9 @@ def test_check_and_trigger_lt_batch_labeled(setup_celery, test_project_data, tes
 
 
 def test_check_and_trigger_batched_success(setup_celery, test_project_labeled_and_tfidf,
-                                           test_queue, test_redis, tmpdir, settings):
+                                           test_queue_labeled, test_redis, tmpdir, settings):
     project = test_project_labeled_and_tfidf
+    test_queue = test_queue_labeled
     initial_training_set = project.get_current_training_set()
     initial_queue_size = test_queue.length
     model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
@@ -1134,8 +1135,9 @@ def test_check_and_trigger_batched_onlyone_label(setup_celery, test_project_data
 
 
 def test_check_and_trigger_queue_changes_success(setup_celery, test_project_labeled_and_tfidf,
-                                           test_queue, test_redis, tmpdir, settings, test_profile2):
+                                           test_queue_labeled, test_redis, tmpdir, settings, test_profile2):
     project = test_project_labeled_and_tfidf
+    test_queue = test_queue_labeled
     initial_training_set = project.get_current_training_set()
     initial_queue_size = test_queue.length
     model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')

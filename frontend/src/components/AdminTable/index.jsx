@@ -48,14 +48,6 @@ class AdminTable extends React.Component {
     table_data = [];
   }
 
-  if(labels && labels.length > 0)
-  {
-    var label_list = labels[0];
-  }
-  else {
-    label_list = [];
-  }
-
   var expanded = {}
   for(var i = 0; i < table_data.length; i++)
   {

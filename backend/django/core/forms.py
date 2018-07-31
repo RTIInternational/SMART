@@ -89,10 +89,11 @@ def clean_data_helper(data, supplied_labels):
         #they have an id column, check for duplicates
         if len(data["id_hash"].tolist()) > len(data["id_hash"].unique()):
             raise ValidationError("Unique ID provided contains duplicates.")
-    else:
-        data.reset_index(inplace=True)
-        data["ID"] = list(data.index.values)
 
+        #get the hashes from existing identifiers. Check that the new identifiers do not overlap
+        existing_hashes = Data.objects.values_list('upload_id_hash',flat=True)
+        if len(set(data['id_hash'].tolist()) & set(existing_hashes)) > 0:
+            raise ValidationError("Unique ID already exists for previous data.")
     return data
 
 

@@ -15,8 +15,8 @@ class Smart extends React.Component {
   }
 
   render(){
-    const { message, cards, passCard, annotateCard, fetchCards,
-    popCard, history_data, getHistory, labels, changeLabel,
+    const { message, cards, passCard, annotateCard,
+    history_data, getHistory, labels, changeLabel,
     changeToSkip, getUnlabeled, unlabeled_data,
     skewLabel, getLabelCounts, label_counts, getAdmin, admin_data,
     adminLabel} = this.props;
