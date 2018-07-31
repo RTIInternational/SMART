@@ -1,6 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from .models import Project, ProjectPermissions, Label
+from .models import Project, ProjectPermissions, Label, Data
 import pandas as pd
 import numpy as np
 from pandas.errors import EmptyDataError, ParserError
@@ -90,10 +90,6 @@ def clean_data_helper(data, supplied_labels):
         if len(data["id_hash"].tolist()) > len(data["id_hash"].unique()):
             raise ValidationError("Unique ID provided contains duplicates.")
 
-        #get the hashes from existing identifiers. Check that the new identifiers do not overlap
-        existing_hashes = Data.objects.values_list('upload_id_hash',flat=True)
-        if len(set(data['id_hash'].tolist()) & set(existing_hashes)) > 0:
-            raise ValidationError("Unique ID already exists for previous data.")
     return data
 
 

@@ -216,10 +216,17 @@ def add_data(project, df):
     df = df[:2000000- num_existing_data]
     #if there is no ID column already, add it and hash it
     df.reset_index(drop=True, inplace=True)
-    if 'ID' not in df.columns.tolist():
+    if 'ID' not in df.columns:
         #should add to what already exists
         df["ID"] = [x + num_existing_data for x in list(df.index.values)]
         df["id_hash"] = df["ID"].astype(str).apply(md5_hash)
+    else:
+        #get the hashes from existing identifiers. Check that the new identifiers do not overlap
+        existing_hashes = Data.objects.filter(project=project).values_list('upload_id_hash',flat=True)
+        df = df.loc[~df['id_hash'].isin(existing_hashes)]
+        if len(df) == 0:
+            return []
+
 
     # Create the data objects
     df['object'] = df.apply(lambda x: Data(text=x['Text'], project=project,

@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import ReactTable from 'react-table';
-import { Button, ButtonToolbar, Panel, Table } from "react-bootstrap";
+import { Button, ButtonToolbar, Panel } from "react-bootstrap";
 import NVD3Chart from "react-nvd3";
 import d3 from 'd3';
 
