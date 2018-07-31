@@ -177,7 +177,7 @@ class AdvancedWizardForm(forms.ModelForm):
 
     classifier = forms.ChoiceField(
         widget=RadioSelect(), choices=Project.CLASSIFIER_CHOICES,
-        initial="logistic_regression", required=False
+        initial="logistic regression", required=False
     )
 
     def clean(self):

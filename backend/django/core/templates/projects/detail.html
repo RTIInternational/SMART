@@ -96,7 +96,10 @@
           <div id="settings-panel" class="panel-collapse collapse">
             <div class="panel-body">
               <p>Selection Algorithm: {{ project.learning_method }}</p>
+              <p>Classifier: {{ project.classifier }}
               <p>Batch Size: {{ project.batch_size }}</p>
+              <div id="irr_info"></div>
+              <p id="num_users"></div>
             </div>
           </div>
         </div>
@@ -214,6 +217,23 @@ $("#download_btn").on("click", function() {
     xhttp.responseType = 'blob';
     xhttp.send();
 });
+make_irr()
+function make_irr()
+{
+  var irr_div = $("#irr_info");
+  if ({{ project.percentage_irr }} == 0.0)
+  {
+    irr_div.append(document.createTextNode("IRR: No IRR being used."));
+  }
+  else {
+    var percent = ({{ project.percentage_irr }} * 100).toString() + "%";
+    irr_div.append(document.createTextNode("Percent IRR: "+percent));
+    $("#num_users").html("Number of user for IRR: "+{{project.num_users_irr}});
+  }
+
+}
+
+
 
 
 </script>

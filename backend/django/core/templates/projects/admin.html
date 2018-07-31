@@ -16,7 +16,7 @@
                 <li class="nav-item">
                     <a data-toggle="tab" href="#model" class="nav-link">Active Learning Model</a>
                 </li>
-                <li class="nav-item">
+                <li class="nav-item" id="irr_tab_navitem">
                     <a data-toggle="tab" href="#irr_tab" class="nav-link">IRR</a>
                 </li>
             </ul>
@@ -143,6 +143,13 @@
 {% block scripts_body %}
 <script>
 
+if({{project.percentage_irr}} == 0)
+{
+  $("#irr_tab").hide();
+  $("#irr_tab_navitem").addClass("hidden");
+}
+
+
 function drawHeatmap(response)
 {
   var coders = response["coders"]
@@ -157,6 +164,16 @@ function drawHeatmap(response)
   }
   else{
     var data = response['data'][comb2];
+  }
+
+  var all_zero = true;
+  //don't draw the heatmap if there is no data
+  for(var i = 0; i < data.length; i++)
+  {
+    if(data[i]["count"] > 0)
+    {
+      all_zero = false;
+    }
   }
 
   var coder1_name = "";
@@ -195,100 +212,103 @@ function drawHeatmap(response)
   //delete the old chart
   d3.select('#heatmap').remove();
 
-  //append the new svg to put everything in
-  var svg = d3.select("#heatmap_chart").append("svg")
-      .attr("id","heatmap")
-      .attr("width", width + margin.left + margin.right)
-      .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  if(!all_zero)
+  {
+    //append the new svg to put everything in
+    var svg = d3.select("#heatmap_chart").append("svg")
+        .attr("id","heatmap")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-  //add the y axis labels
-  var vertLabels = svg.selectAll(".vertLabel")
-      .data(labels)
-      .enter().append("text")
-      .text(function (d) { return d.slice(0,5); })
-      .attr("x", 0)
-      .attr("y", function (d, i) { return i * gridSize; })
-      .style("text-anchor", "end")
-      .attr("transform", "translate(-6," + gridSize / 1.5 + ")")
-      .attr("class", function (d, i) { return ((i >= 0 && i <= 4) ? "vertLabel mono axis axis-workweek" : "vertLabel mono axis"); });
+    //add the y axis labels
+    var vertLabels = svg.selectAll(".vertLabel")
+        .data(labels)
+        .enter().append("text")
+        .text(function (d) { return d.slice(0,5); })
+        .attr("x", 0)
+        .attr("y", function (d, i) { return i * gridSize; })
+        .style("text-anchor", "end")
+        .attr("transform", "translate(-6," + gridSize / 1.5 + ")")
+        .attr("class", function (d, i) { return ((i >= 0 && i <= 4) ? "vertLabel mono axis axis-workweek" : "vertLabel mono axis"); });
 
-  //add the x axis labels
-  var horzLabels = svg.selectAll(".horzLabel")
-      .data(labels)
-      .enter().append("text")
-      .text(function(d) { return d.slice(0,5); })
-      .attr("x", function(d, i) { return i * gridSize; })
-      .attr("y", 0)
-      .style("text-anchor", "middle")
-      .attr("transform", "translate(" + gridSize / 2 + ", -6)")
-      .attr("class", function(d, i) { return ((i >= 7 && i <= 16) ? "horzLabel mono axis axis-worktime" : "horzLabel mono axis"); });
-
-
-  var colorScale = d3.scale.quantile()
-      .domain([0, buckets - 1, d3.max(data, function (d) { return d.count; })])
-      .range(colors);
+    //add the x axis labels
+    var horzLabels = svg.selectAll(".horzLabel")
+        .data(labels)
+        .enter().append("text")
+        .text(function(d) { return d.slice(0,5); })
+        .attr("x", function(d, i) { return i * gridSize; })
+        .attr("y", 0)
+        .style("text-anchor", "middle")
+        .attr("transform", "translate(" + gridSize / 2 + ", -6)")
+        .attr("class", function(d, i) { return ((i >= 7 && i <= 16) ? "horzLabel mono axis axis-worktime" : "horzLabel mono axis"); });
 
 
-  var cards = svg.selectAll(".label2")
-        .data(data, function(d) {return d.label1+':'+d.label2;});
-  cards.append("title");
-
-  cards.enter().append("rect")
-       .attr("x", function(d) { return (labels.indexOf(d.label1) * gridSize); })
-       .attr("y", function(d) { return (labels.indexOf(d.label2) * gridSize); })
-       .attr("rx", 4)
-       .attr("ry", 4)
-       .attr("class", "hour bordered")
-       .attr("width", gridSize)
-       .attr("height", gridSize)
-       .style("fill", function(d) {
-         return colorScale(d.count);
-       });
+    var colorScale = d3.scale.quantile()
+        .domain([0, buckets - 1, d3.max(data, function (d) { return d.count; })])
+        .range(colors);
 
 
-  cards.select("title").text(function(d) { return d.count; });
+    var cards = svg.selectAll(".label2")
+          .data(data, function(d) {return d.label1+':'+d.label2;});
+    cards.append("title");
 
-  //Axis code found at https://bl.ocks.org/d3noob/23e42c8f67210ac6c678db2cd07a747e
-  // text label for the x axis
-  svg.append("text")
-      .attr("transform",
-            "translate(" + (width/5) + " ," +
-                           (-50) + ")")
-      .style("text-anchor", "middle")
-      .text(coder1_name);
-  // text label for the y axis
-  svg.append("text")
-      .attr("transform", "rotate(-90)")
-      .attr("y", -70)
-      .attr("x",0 - (height / 5))
-      .attr("dy", "1em")
-      .style("text-anchor", "middle")
-      .text(coder2_name);
+    cards.enter().append("rect")
+         .attr("x", function(d) { return (labels.indexOf(d.label1) * gridSize); })
+         .attr("y", function(d) { return (labels.indexOf(d.label2) * gridSize); })
+         .attr("rx", 4)
+         .attr("ry", 4)
+         .attr("class", "hour bordered")
+         .attr("width", gridSize)
+         .attr("height", gridSize)
+         .style("fill", function(d) {
+           return colorScale(d.count);
+         });
 
-  cards.exit().remove();
 
-  var legend = svg.selectAll(".legend")
-      .data([0].concat(colorScale.quantiles()), function(d) { return d; });
+    cards.select("title").text(function(d) { return d.count; });
 
-  legend.enter().append("g")
-      .attr("class", "legend");
+    //Axis code found at https://bl.ocks.org/d3noob/23e42c8f67210ac6c678db2cd07a747e
+    // text label for the x axis
+    svg.append("text")
+        .attr("transform",
+              "translate(" + (width/5) + " ," +
+                             (-50) + ")")
+        .style("text-anchor", "middle")
+        .text(coder1_name);
+    // text label for the y axis
+    svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", -70)
+        .attr("x",0 - (height / 5))
+        .attr("dy", "1em")
+        .style("text-anchor", "middle")
+        .text(coder2_name);
 
-  legend.append("rect")
-      .attr("x", function(d, i) { return legendElementWidth * i; })
-      .attr("y", height + margin.top)
-      .attr("width", legendElementWidth)
-      .attr("height", gridSize / 2)
-      .style("fill", function(d, i) { return colors[i]; });
+    cards.exit().remove();
 
-  legend.append("text")
-      .attr("class", "mono")
-      .text(function(d) { return "≥ " + Math.round(d); })
-      .attr("x", function(d, i) { return legendElementWidth * i; })
-      .attr("y", height + gridSize + margin.top);
+    var legend = svg.selectAll(".legend")
+        .data([0].concat(colorScale.quantiles()), function(d) { return d; });
 
-  legend.exit().remove();
+    legend.enter().append("g")
+        .attr("class", "legend");
+
+    legend.append("rect")
+        .attr("x", function(d, i) { return legendElementWidth * i; })
+        .attr("y", height + margin.top)
+        .attr("width", legendElementWidth)
+        .attr("height", gridSize / 2)
+        .style("fill", function(d, i) { return colors[i]; });
+
+    legend.append("text")
+        .attr("class", "mono")
+        .text(function(d) { return "≥ " + Math.round(d); })
+        .attr("x", function(d, i) { return legendElementWidth * i; })
+        .attr("y", height + gridSize + margin.top);
+
+    legend.exit().remove();
+  }
 
 }
 

@@ -1185,11 +1185,11 @@ def train_and_save_model(project):
     Returns:
         model: A model object
     """
-    if project.classifier == "logistic_regression":
+    if project.classifier == "logistic regression":
         clf = LogisticRegression(class_weight='balanced', solver='lbfgs', multi_class='multinomial')
     elif project.classifier == "svm":
         clf = SVC(probability=True)
-    elif project.classifier == "random_forest":
+    elif project.classifier == "random forest":
         clf = RandomForestClassifier()
     elif project.classifier == "gnb":
         clf = GaussianNB()

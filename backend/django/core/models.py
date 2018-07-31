@@ -44,14 +44,14 @@ class Project(models.Model):
     ]
 
     CLASSIFIER_CHOICES = [
-        ("logistic_regression","Logistic Regression (default)"),
+        ("logistic regression","Logistic Regression (default)"),
         ("svm","Support Vector Machine (warning: slower for large datasets)"),
-        ("random_forest","Random Forest"),
+        ("random forest","Random Forest"),
         ("gnb","Gaussian Naive Bayes")
     ]
 
     learning_method = models.CharField(max_length = 15, default='least confident', choices=ACTIVE_L_CHOICES)
-    classifier = models.CharField(max_length = 19, default="logistic_regression", choices = CLASSIFIER_CHOICES)
+    classifier = models.CharField(max_length = 19, default="logistic regression", choices = CLASSIFIER_CHOICES)
 
     def get_absolute_url(self):
         return reverse('projects:project_detail', kwargs={'pk': self.pk})
