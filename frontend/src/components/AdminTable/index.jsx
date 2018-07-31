@@ -12,34 +12,6 @@ class AdminTable extends React.Component {
   render() {
   const {admin_data, labels, adminLabel} = this.props;
 
-  const columns = [
-    {
-      Header: "id",
-      accessor: "id",
-      show: false
-    },
-    {
-      Header: "Unlabeled Data",
-      accessor: "data",
-      Cell: row => (
-        <div>
-          <p id="admin_text">{row.row.data}</p>
-          <div id="admin_buttons">
-          <ButtonToolbar bsClass="btn-toolbar pull-right">
-            {labels[0].map( (label) => (
-              <Button key={label.id.toString() + "_" + row.row.id.toString()}
-              onClick={() => adminLabel(row.row.id,label.id)}
-              bsStyle="primary"
-              >{label.name}</Button>
-            ))}
-          </ButtonToolbar>
-          </div>
-        </div>
-      )
-    }
-  ];
-
-
   if(admin_data && admin_data.length > 0)
   {
     var table_data = admin_data[0];
@@ -54,7 +26,33 @@ class AdminTable extends React.Component {
     expanded[i] = true;
   }
 
-
+  const columns = [
+    {
+      Header: "id",
+      accessor: "id",
+      show: false
+    },
+    {
+      Header: "Unlabeled Data",
+      accessor: "data",
+      Cell: row => (
+        <div>
+          <p id="admin_text">{row.row.data}</p>
+          <div id="admin_buttons">
+          <ButtonToolbar bsClass="btn-toolbar pull-right">
+            {labels.map( (label) => {
+              return (
+              <Button key={label.pk.toString() + "_" + row.row.id.toString()}
+              onClick={() => adminLabel(row.row.id,label.pk)}
+              bsStyle="primary"
+              >{label.name}</Button>
+            )})}
+          </ButtonToolbar>
+          </div>
+        </div>
+      )
+    }
+  ];
 
   return (
     <div>

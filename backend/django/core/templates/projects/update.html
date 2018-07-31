@@ -31,8 +31,8 @@
                       <li class="list-group-item">The largest file size supported is 4GBs.</li>
                     </ul>
                     <p>The (optional) <code>ID</code> column should contain a <b>unique</b> identifier for your data. The identifiers should be no more than 128 characters.</p>
-                    <p>The <code>Text</code> column should container the text you wish users to label. For example, if you are building a sentiment analysis model to predict whether a tweet is positive, negative, or neutral, the <code>Text</code> column would contain the tweets.</p>
-                    <p>The <code>Label</code> column should contain any pre-exisiting labels for the corresponding text. If none of you data contains existing labels, then this column can be left blank. Extending our sentiment analysis example, if a lead coder has already annotated some tweets as positive, negative, or neutral, this column would contain those labeled records.</p>
+                    <p>The <code>Text</code> column should contain the text you wish users to label. For example, if you are building a sentiment analysis model to predict whether a tweet is positive, negative, or neutral, the <code>Text</code> column would contain the tweets.</p>
+                    <p>The <code>Label</code> column should contain any pre-exisiting labels for the corresponding text. If none of your data contains existing labels, then this column can be left blank. Extending our sentiment analysis example, if a lead coder has already annotated some tweets as positive, negative, or neutral, this column would contain those labeled records.</p>
                     <p><i>Data Upload Notes:</i></p>
                     <ul class="list-group">
                       <li class="list-group-item">SMART restricts your project to having two million unique records.</li>
@@ -45,11 +45,22 @@
                         <input class="form-control" id="{{ form.data.id_for_label }}" maxlength="30" name="{{ form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" />
                         {{ form.data.errors }}
                     </div>
+                    <h1>Codebook Upload Instructions</h1>
+                    <h3>Description</h3>
+                    <p>This section gives you the opportunity to upload extra information for coders (ex: tips or hints differentiating different labels, examples of labeled data, etc.). To upload, the file <strong>must pass the following checks:</strong></p>
+                    <ul class="list-group">
+                      <li class="list-group-item">The file must be a pdf</li>
+                    </ul>
                     {% else %}
                     <div>
                         <p>You already have two million unique data objects for this project, you can not upload additional data.</p>
                     </div>
                     {% endif %}
+                    <div class="form-group">
+                        <label class="control-label" for="{{ form.cb_data.id_for_label }}">Code Book File</label>
+                        <input class="form-control" id="{{ form.cb_data.id_for_label }}" maxlength="30" name="{{ form.cb_data.html_name }}" type="file" placeholder="{{ form.cb_data.label }}" />
+                        {{ form.cb_data.errors }}
+                    </div>
                     <br />
                     <h1>Permissions</h1>
                     <h3>Description</h3>
@@ -95,6 +106,28 @@
                                 {% endfor %}
                             </tr>
                         {% endfor %}
+                    </table>
+                    <h1>Label Descriptions</h1>
+                    <p>This section lets you update your label descriptions.</p>
+                    <table class="table">
+                      {{ label_descriptions.management_form }}
+                      {{ label_descriptions.non_form_errors }}
+                      <thead>
+                        <th>Label</th>
+                        <th>Description</th>
+                      </thead>
+                      <tbody>
+                      {% for form in label_descriptions.forms %}
+                      <tr>
+                      {% for field in form.hidden_fields %}
+                          {{ field }}
+                      {% endfor %}
+                      {% for field in form.visible_fields %}
+                          <td>{{ field }}</td>
+                      {% endfor %}
+                      </tr>
+                      {% endfor %}
+                    </tbody>
                     </table>
                     <div class="form-group">
                         <button class="btn btn-primary" type="submit">Submit</button>

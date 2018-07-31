@@ -4,10 +4,11 @@ from .models import Project, ProjectPermissions, Label, Data
 import pandas as pd
 import numpy as np
 from pandas.errors import EmptyDataError, ParserError
-from django.forms.widgets import RadioSelect
+from django.forms.widgets import RadioSelect, Textarea
 import copy
 from io import StringIO
 from core.util import md5_hash
+
 
 
 def clean_data_helper(data, supplied_labels):
@@ -39,7 +40,7 @@ def clean_data_helper(data, supplied_labels):
         elif data.content_type.startswith('application/vnd') and data.name.endswith('.csv'):
             data = pd.read_csv(StringIO(data.read().decode('utf8','ignore'))).dropna(axis=0, how="all")
         elif data.content_type.startswith('application/vnd') and data.name.endswith('.xlsx'):
-            data = pd.read_excel(StringIO(data.read().decode('utf8','ignore'))).dropna(axis=0, how="all")
+            data = pd.read_excel(data).dropna(axis=0, how="all")
         else:
             raise ValidationError("File type is not supported.  Received {0} but only {1} are supported."\
                               .format(data.content_type, ', '.join(ALLOWED_TYPES)))
@@ -92,6 +93,11 @@ def clean_data_helper(data, supplied_labels):
 
     return data
 
+def cleanCodebookDataHelper(data):
+    if not (data.content_type == "application/pdf"):
+        raise ValidationError("File type is not supported. Please upload a PDF.")
+    return data
+
 
 class ProjectUpdateForm(forms.ModelForm):
     class Meta:
@@ -101,6 +107,7 @@ class ProjectUpdateForm(forms.ModelForm):
     name = forms.CharField()
     description = forms.CharField(required=False)
     data = forms.FileField(required=False)
+    cb_data = forms.FileField(required=False)
 
     def __init__(self, *args, **kwargs):
         self.project_labels = kwargs.pop('labels', None)
@@ -109,8 +116,12 @@ class ProjectUpdateForm(forms.ModelForm):
     def clean_data(self):
         data = self.cleaned_data.get('data', False)
         labels = self.project_labels
+        cb_data = self.cleaned_data.get('cb_data',False)
         if data:
             return clean_data_helper(data, labels)
+        if cb_data:
+            return cleanCodebookDataHelper(cb_data)
+
 
 
 class LabelForm(forms.ModelForm):
@@ -119,6 +130,20 @@ class LabelForm(forms.ModelForm):
         fields = '__all__'
 
     name = forms.CharField()
+    description = forms.CharField(required=False, initial="", widget=Textarea())
+
+class LabelDescriptionForm(forms.ModelForm):
+    class Meta:
+        model = Label
+        fields = ['name','description']
+
+    name = forms.CharField(disabled=True)
+    description = forms.CharField(required=False, widget=Textarea())
+
+    def __init__(self, *args, **kwargs):
+        self.action = kwargs.pop('action', None)
+        super(LabelDescriptionForm, self).__init__(*args, **kwargs)
+
 
 
 class ProjectPermissionsForm(forms.ModelForm):
@@ -140,8 +165,8 @@ class ProjectPermissionsForm(forms.ModelForm):
 
 
 LabelFormSet = forms.inlineformset_factory(Project, Label, form=LabelForm, min_num=2, validate_min=True, extra=0, can_delete=True)
+LabelDescriptionFormSet = forms.inlineformset_factory(Project, Label, form=LabelDescriptionForm, can_delete=False, extra=0)
 PermissionsFormSet = forms.inlineformset_factory(Project, ProjectPermissions, form=ProjectPermissionsForm, extra=1, can_delete=True)
-
 
 class ProjectWizardForm(forms.ModelForm):
     class Meta:
@@ -152,7 +177,7 @@ class ProjectWizardForm(forms.ModelForm):
 class AdvancedWizardForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ['learning_method']
+        fields = ['learning_method', 'batch_size', 'classifier']
 
     use_active_learning = forms.BooleanField(initial=True, required=False)
     active_l_choices = copy.deepcopy(Project.ACTIVE_L_CHOICES)
@@ -162,12 +187,23 @@ class AdvancedWizardForm(forms.ModelForm):
         widget=RadioSelect(), choices=active_l_choices,
         initial="least confident", required=False
     )
+    use_default_batch_size = forms.BooleanField(initial=True, required=False)
+    batch_size = forms.IntegerField(initial=30, min_value=10, max_value=1000)
+
+    classifier = forms.ChoiceField(
+        widget=RadioSelect(), choices=Project.CLASSIFIER_CHOICES,
+        initial="logistic_regression", required=False
+    )
 
     def clean(self):
         use_active_learning = self.cleaned_data.get("use_active_learning")
+        use_default_batch_size = self.cleaned_data.get("use_default_batch_size")
         #if they are not using active learning, the selection method is random
         if not use_active_learning:
             self.cleaned_data['learning_method'] = 'random'
+
+        if use_default_batch_size:
+            self.cleaned_data['batch_size'] = 0
         return self.cleaned_data
 
 
@@ -182,3 +218,16 @@ class DataWizardForm(forms.Form):
         data = self.cleaned_data.get('data', False)
         labels = self.supplied_labels
         return clean_data_helper(data, labels)
+
+class CodeBookWizardForm(forms.Form):
+    data = forms.FileField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(CodeBookWizardForm, self).__init__(*args, **kwargs)
+
+    def clean_data(self):
+        data = self.cleaned_data.get('data', False)
+        if data:
+            return cleanCodebookDataHelper(data)
+        else:
+            return ""

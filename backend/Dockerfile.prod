@@ -6,6 +6,6 @@ ADD ./requirements.txt /code/requirements.txt
 RUN pip install --use-wheel -r requirements.txt
 RUN pip install gunicorn
 ADD ./smart/ /code/
-RUN mkdir -p /data/data_files /data/tf_idf /data/model_pickles
+RUN mkdir -p /data/data_files /data/tf_idf /data/model_pickles /data/code_books
 EXPOSE 8000
 CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "--timeout", "75", "--worker-class", "gevent", "config.wsgi"]

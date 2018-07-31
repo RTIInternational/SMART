@@ -91,7 +91,7 @@ def test_model_task_redis_no_dupes_data_left_in_queue(test_project_labeled_and_t
 
     fill_queue(queue, 'random')
 
-    batch_size = project.labels.count() * 10
+    batch_size = project.batch_size
     labels = project.labels.all()
     for i in range(batch_size):
         datum = assign_datum(project.creator, project)
@@ -120,7 +120,7 @@ def test_model_task_redis_no_dupes_data_unassign_assigned_data(test_project_labe
 
     fill_queue(queue, 'random')
 
-    batch_size = project.labels.count() * 10
+    batch_size = project.batch_size
     labels = project.labels.all()
     assignments = get_assignments(project.creator, project, batch_size)
     for assignment in assignments:

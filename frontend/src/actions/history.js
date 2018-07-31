@@ -2,7 +2,7 @@ import { createAction } from 'redux-actions';
 import 'whatwg-fetch';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
-import { setMessage, setLabels } from './classifier';
+import { setMessage } from './classifier';
 import { getLabelCounts, getAdmin } from './adminTables';
 export const SET_HIST_DATA = 'SET_HIST_DATA';
 export const set_hist_data = createAction(SET_HIST_DATA);
@@ -25,12 +25,6 @@ export const getHistory = (projectID) => {
         .then(response => {
             // If error was in the response then set that message
             if ('error' in response) console.log(response);
-            var all_labels = []
-            for (let i = 0; i < response.labels.length; i++) {
-                const label = {"id":response.labels[i].pk, "name":response.labels[i].name};
-                all_labels.push(label);
-            }
-            dispatch(setLabels(all_labels));
             var all_data = [];
             for (let i = 0; i < response.data.length; i++) {
                 const row = {

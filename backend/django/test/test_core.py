@@ -1172,7 +1172,7 @@ def test_check_and_trigger_queue_changes_success(setup_celery, test_project_labe
     assert q.data.count() == q.length
     assert_redis_matches_db(test_redis)
 
-    batch_size = len(project.labels.all()) * 10
+    batch_size = project.batch_size
     num_coders = len(project.projectpermissions_set.all()) + 1
     new_queue_length = find_queue_length(batch_size, num_coders)
     assert q.length == new_queue_length

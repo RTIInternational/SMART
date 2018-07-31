@@ -44,7 +44,6 @@ class Skew extends React.Component {
   const {unlabeled_data, labels, skewLabel, label_counts} = this.props;
 
 
-
   var label_data = [];
   if(label_counts.length > 0)
   {
@@ -92,9 +91,9 @@ class Skew extends React.Component {
               <p id="skew_text">{row.row.data}</p>
               <div id="skew_buttons">
                 <ButtonToolbar bsClass="btn-toolbar pull-right">
-                  {labels[0].map( (label) => (
-                    <Button key={label.id.toString() + "_" + row.row.id.toString()}
-                    onClick={() => skewLabel(row.row.id,label.id)}
+                  {labels.map( (label) => (
+                    <Button key={label.pk.toString() + "_" + row.row.id.toString()}
+                    onClick={() => skewLabel(row.row.id,label.pk)}
                     bsStyle="primary"
                     >{label.name}</Button>
                   ))}
