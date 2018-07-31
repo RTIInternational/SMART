@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import ReactTable from 'react-table';
-import { Button, ButtonToolbar, Panel } from "react-bootstrap";
+import { Button, ButtonToolbar, Panel, Table } from "react-bootstrap";
 import NVD3Chart from "react-nvd3";
 import d3 from 'd3';
 
@@ -52,36 +52,47 @@ class Skew extends React.Component {
 
   return (
     <div>
-      <h3>Instructions</h3>
-      <p>This page allows an admin to manually search for and annotate data in the case of a particularly bad data skew.</p>
-      <p>To the left is a chart that shows the distribution of labels in the project. Below is all of the unlabeled data that are not in a queue.</p>
-      <p>To annotate, click on a data entry below and select the label from the expanded list of labels. As you label data the chart to the left will update.</p>
-      <Panel>
-        <NVD3Chart
-        id="labelCounts"
-        type="multiBarChart"
-        datum={label_data}
-        duration={300}
-        groupSpacing={0.1}
-        stacked={true}
-        yAxis={{
-          axisLabel: "Number of Data Annotated",
-          axisLabelDistance: -5,
-          tickFormat: d3.format(',.01f')
-        }}
-        xAxis={{
-          axisLabel: "Label",
-          axisLabelDistance: 15,
-          showMaxMin: false
-        }}
-        noData="Insufficient labeled data -- please code more documents"
-        margin={{
-          bottom: 20,
-          left: 70
-        }}
-        />
-      </Panel>
-      <ReactTable
+    <Table id="skew_table">
+      <tbody>
+        <tr>
+          <td className="col-md-4">
+            <h3>Instructions</h3>
+            <p>This page allows an admin to manually search for and annotate data in the case of a particularly bad data skew.</p>
+            <p>To the left is a chart that shows the distribution of labels in the project. Below is all of the unlabeled data that are not in a queue.</p>
+            <p>To annotate, click on a data entry below and select the label from the expanded list of labels. As you label data the chart to the left will update.</p>
+          </td>
+          <td className="col-md-4">
+            <Panel id="chart_panel">
+              <NVD3Chart
+              id="label_counts"
+              type="multiBarChart"
+              datum={label_data}
+              duration={300}
+              groupSpacing={0.1}
+              stacked={true}
+              height={300}
+              yAxis={{
+                axisLabel: "Number of Data Annotated",
+                axisLabelDistance: -5,
+                tickFormat: d3.format(',.01f')
+              }}
+              xAxis={{
+                axisLabel: "Label",
+                axisLabelDistance: 15,
+                showMaxMin: false
+              }}
+              noData="Insufficient labeled data -- please code more documents"
+              margin={{
+                bottom: 20,
+                left: 70
+              }}
+              />
+            </Panel>
+          </td>
+        </tr>
+      </tbody>
+    </Table>
+    <ReactTable
         data={unlabeled_data[0]}
         columns={columns}
         filterable={true}
@@ -102,8 +113,8 @@ class Skew extends React.Component {
             </div>
           );
         }}
-      />
-    </div>
+    />
+  </div>
   )
   }
 
