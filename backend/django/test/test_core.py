@@ -1238,8 +1238,8 @@ def test_fill_half_irr_queues(setup_celery, test_project_half_irr_data, test_hal
     #check that NONE of the data in the normal queue is irr_ind=True
     assert DataQueue.objects.filter(queue=normal_queue, data__irr_ind = True).count() == 0
     #check that there is no duplicate data across the two queues
-    data_irr = DataQueue.objects.filter(queue=irr_queue).values_list('data',flat=True)
-    data_norm = DataQueue.objects.filter(queue=normal_queue).values_list('data',flat=True)
+    data_irr = DataQueue.objects.filter(queue=irr_queue).values_list('data__hash',flat=True)
+    data_norm = DataQueue.objects.filter(queue=normal_queue).values_list('data__hash',flat=True)
     assert len(set(data_irr) & set(data_norm)) == 0
 
 def test_annotate_irr(setup_celery, test_project_half_irr_data, test_half_irr_all_queues, test_profile, test_profile2, test_profile3, test_labels_half_irr, test_redis, tmpdir, settings):
@@ -1256,9 +1256,9 @@ def test_annotate_irr(setup_celery, test_project_half_irr_data, test_half_irr_al
     # let one user label a datum. It should be in DataLabel, not be in IRRLog,
     #still be in IRR Queue
     label_data(test_labels_half_irr[0], datum, test_profile, 3)
-    assert len(DataLabel.objects.filter(data=datum,profile=test_profile)) > 0
-    assert len(IRRLog.objects.filter(data=datum,profile=test_profile)) == 0
-    assert len(DataQueue.objects.filter(data=datum,queue=irr_queue)) > 0
+    assert DataLabel.objects.filter(data=datum,profile=test_profile).count() > 0
+    assert IRRLog.objects.filter(data=datum,profile=test_profile).count() == 0
+    assert DataQueue.objects.filter(data=datum,queue=irr_queue).count() > 0
 
     datum2 = assign_datum(test_profile2, project, "irr")
     assert datum.pk == datum2.pk
@@ -1269,16 +1269,16 @@ def test_annotate_irr(setup_celery, test_project_half_irr_data, test_half_irr_al
     # let other user label the same datum. It should now be in datatable with
     #creater=profile, be in IRRLog (twice), not be in IRRQueue
     label_data(test_labels_half_irr[0], datum2, test_profile2, 3)
-    assert len(DataLabel.objects.filter(data=datum2))  == 1
+    assert DataLabel.objects.filter(data=datum2).count()  == 1
     assert DataLabel.objects.get(data=datum2).profile.pk == project.creator.pk
-    assert len(IRRLog.objects.filter(data=datum2)) == 2
-    assert len(DataQueue.objects.filter(data=datum2,queue=irr_queue)) == 0
+    assert IRRLog.objects.filter(data=datum2).count() == 2
+    assert DataQueue.objects.filter(data=datum2,queue=irr_queue).count() == 0
 
     # let a third user label the first data something else. It should be in
     #IRRLog but not overwrite the label from before
     label_data(test_labels_half_irr[0], datum3, test_profile3, 3)
-    assert len(IRRLog.objects.filter(data=datum3)) == 3
-    assert len(DataLabel.objects.filter(data=datum3)) == 1
+    assert IRRLog.objects.filter(data=datum3).count() == 3
+    assert DataLabel.objects.filter(data=datum3).count() == 1
     assert DataLabel.objects.get(data=datum3).profile.pk == project.creator.pk
 
     # let two users disagree on a datum. It should be in the admin queue,
@@ -1289,10 +1289,10 @@ def test_annotate_irr(setup_celery, test_project_half_irr_data, test_half_irr_al
     second_datum2 = assign_datum(test_profile2, project, "irr")
     label_data(test_labels_half_irr[0], second_datum, test_profile, 3)
     label_data(test_labels_half_irr[1], second_datum2, test_profile2, 3)
-    assert len(DataQueue.objects.filter(data=second_datum2,queue=admin_queue)) == 1
-    assert len(DataQueue.objects.filter(data=second_datum2,queue=irr_queue)) == 0
-    assert len(DataLabel.objects.filter(data=second_datum2)) == 0
-    assert len(IRRLog.objects.filter(data=second_datum2)) == 2
+    assert DataQueue.objects.filter(data=second_datum2,queue=admin_queue).count() == 1
+    assert DataQueue.objects.filter(data=second_datum2,queue=irr_queue).count() == 0
+    assert DataLabel.objects.filter(data=second_datum2).count() == 0
+    assert IRRLog.objects.filter(data=second_datum2).count() == 2
 
 
 def test_skip_irr(setup_celery, test_project_half_irr_data, test_half_irr_all_queues, test_profile, test_profile2, test_profile3, test_labels_half_irr, test_redis, tmpdir, settings):
@@ -1309,20 +1309,20 @@ def test_skip_irr(setup_celery, test_project_half_irr_data, test_half_irr_all_qu
     #let one user skip an irr datum. It should not be in adminqueue, should be in irr queue,
     #should be in irrlog, should be in irr queue, not be in datalabel
     skip_data(datum, test_profile)
-    assert len(DataQueue.objects.filter(data=datum,queue=admin_queue)) == 0
-    assert len(DataQueue.objects.filter(data=datum,queue=irr_queue)) == 1
-    assert len(IRRLog.objects.filter(data=datum,profile=test_profile)) == 1
-    assert len(DataLabel.objects.filter(data=datum,profile=test_profile)) == 0
+    assert DataQueue.objects.filter(data=datum,queue=admin_queue).count() == 0
+    assert DataQueue.objects.filter(data=datum,queue=irr_queue).count() == 1
+    assert IRRLog.objects.filter(data=datum,profile=test_profile).count() == 1
+    assert DataLabel.objects.filter(data=datum,profile=test_profile).count() == 0
 
     #let the other user skip the data. It should be in admin queue,
     #IRRlog (twice), and nowhere else.
     datum2 = assign_datum(test_profile2, project, "irr")
     assert datum.pk == datum2.pk
     skip_data(datum2, test_profile2)
-    assert len(DataQueue.objects.filter(data=datum,queue=admin_queue)) == 1
-    assert len(DataQueue.objects.filter(data=datum,queue=irr_queue)) == 0
-    assert len(IRRLog.objects.filter(data=datum)) == 2
-    assert len(DataLabel.objects.filter(data=datum)) == 0
+    assert DataQueue.objects.filter(data=datum,queue=admin_queue).count() == 1
+    assert DataQueue.objects.filter(data=datum,queue=irr_queue).count() == 0
+    assert IRRLog.objects.filter(data=datum).count() == 2
+    assert DataLabel.objects.filter(data=datum).count() == 0
 
     #have two users label an IRR datum then have a third user skip it.
     #It should be in the IRRLog but not in admin queue or anywhere else.
@@ -1336,10 +1336,10 @@ def test_skip_irr(setup_celery, test_project_half_irr_data, test_half_irr_all_qu
     label_data(test_labels_half_irr[0], second_datum, test_profile, 3)
     label_data(test_labels_half_irr[0], second_datum2, test_profile2, 3)
     skip_data(second_datum3, test_profile3)
-    assert len(DataQueue.objects.filter(data=second_datum3,queue=admin_queue)) == 0
-    assert len(DataQueue.objects.filter(data=second_datum3,queue=irr_queue)) == 0
-    assert len(IRRLog.objects.filter(data=second_datum3)) == 3
-    assert len(DataLabel.objects.filter(data=second_datum3)) == 1
+    assert DataQueue.objects.filter(data=second_datum3,queue=admin_queue).count() == 0
+    assert DataQueue.objects.filter(data=second_datum3,queue=irr_queue).count() == 0
+    assert IRRLog.objects.filter(data=second_datum3).count() == 3
+    assert DataLabel.objects.filter(data=second_datum3).count() == 1
 
 def test_queue_refill(setup_celery, test_project_data, test_all_queues, test_profile, test_labels, test_redis, tmpdir, settings):
     '''

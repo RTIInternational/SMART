@@ -844,8 +844,8 @@ def perc_agreement_table_data(project):
 
     user_list = [str(Profile.objects.get(pk=x)) for x in list(ProjectPermissions.objects.filter(project=project).values_list('profile',flat=True))]
     user_list.append(str(project.creator))
-    user_pk_list = list(ProjectPermissions.objects.filter(project=project).values_list('profile',flat=True))
-    user_pk_list.append(project.creator)
+    user_pk_list = list(ProjectPermissions.objects.filter(project=project).values_list('profile__pk',flat=True))
+    user_pk_list.append(project.creator.pk)
     #get all possible pairs of users
     user_combinations = combinations(user_list,r=2)
     data_choices = []
