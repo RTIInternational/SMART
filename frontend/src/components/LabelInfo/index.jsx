@@ -3,32 +3,14 @@ import PropTypes from 'prop-types';
 import {Button, Glyphicon} from "react-bootstrap";
 
 class LabelInfo extends React.Component {
-  constructor(props)
-  {
-    super(props);
-    this.state= {
-      labels_open: false
-    };
-    this.toggleLabel = this.toggleLabel.bind(this);
-  }
-
-  toggleLabel(){ this.setState({labels_open: !this.state.labels_open})};
 
   render() {
-  const {labels} = this.props;
+  const {labels, labels_open} = this.props;
 
-  if(this.state.labels_open)
+  if(labels_open)
   {
     return (
       <div className="margin-bottom-15">
-        <Button
-        bsSize="small"
-        onClick={this.toggleLabel}
-        className="minus_button"
-        bsStyle="danger"
-        >
-        <Glyphicon glyph="minus"/> Label Guide
-        </Button>
         <div className="row">
           <div className="col-md-12">
             <ul className="list-group-flush">
@@ -47,14 +29,6 @@ class LabelInfo extends React.Component {
   else {
     return (
       <div className="margin-bottom-15">
-        <Button
-        bsSize="small"
-        onClick={this.toggleLabel}
-        className="plus_button"
-        bsStyle="success"
-        >
-        <Glyphicon glyph="plus"/> Label Guide
-        </Button>
       </div>
     )
   }
@@ -65,7 +39,8 @@ class LabelInfo extends React.Component {
 
 
 LabelInfo.propTypes = {
-  labels: PropTypes.arrayOf(PropTypes.object)
+  labels: PropTypes.arrayOf(PropTypes.object),
+  labels_open: PropTypes.bool
 };
 
 export default LabelInfo;

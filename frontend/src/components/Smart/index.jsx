@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Button, ButtonToolbar, Clearfix,
-   Well, Tooltip, OverlayTrigger,
+import { Button, ButtonToolbar, Clearfix, ButtonGroup,
+   Well, Tooltip, OverlayTrigger, Glyphicon,
    ProgressBar, Tabs, Tab, Modal  } from "react-bootstrap";
 import Card from '../Card';
 import HistoryTable from '../HistoryTable';
@@ -16,8 +16,10 @@ class Smart extends React.Component {
     super(props);
     this.getPDF = this.getPDF.bind(this);
     this.toggleCodebook = this.toggleCodebook.bind(this);
+    this.toggleLabel = this.toggleLabel.bind(this);
     this.state = {
-      codebook_open: false
+      codebook_open: false,
+      labels_open: false
     }
   }
 
@@ -26,35 +28,79 @@ class Smart extends React.Component {
     this.setState({codebook_open: !this.state.codebook_open});
   }
 
+  toggleLabel(){
+    this.setState({labels_open: !this.state.labels_open});
+  }
+
 
   //This renders the PDF in the modal if one exists for the project
-  getPDF()
+  getPDF(labels)
   {
     if(CODEBOOK_URL != "")
     {
-      return (
-        <div className="codebook-div">
-          <Button onClick={this.toggleCodebook} className="codebook-btn">Codebook</Button>
-          <Modal show={this.state.codebook_open} onHide={this.toggleCodebook}>
-            <Modal.Header closeButton>
-              <Modal.Title>Codebook</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-            <embed
-                type="application/pdf"
-                src={CODEBOOK_URL}
-                id="pdf_document"
-                width="100%"
-                height="100%"
-            />
-            </Modal.Body>
-          </Modal>
-        </div>
+      var codebook_module = (
+        <Modal show={this.state.codebook_open} onHide={this.toggleCodebook}>
+          <Modal.Header closeButton>
+            <Modal.Title>Codebook</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+          <embed
+              type="application/pdf"
+              src={CODEBOOK_URL}
+              id="pdf_document"
+              width="100%"
+              height="100%"
+          />
+          </Modal.Body>
+        </Modal>
+      );
+      var codebook_button = (
+        <Button onClick={this.toggleCodebook} className="codebook-btn">Codebook</Button>
       );
     }
     else {
-      return null;
+      codebook_module = (<div />);
+      codebook_button = (<div />);
     }
+
+    if(this.state.labels_open)
+    {
+      var label_button = (
+        <Button
+        bsSize="small"
+        onClick={this.toggleLabel}
+        className="minus_button"
+        bsStyle="danger"
+        >
+        <Glyphicon glyph="minus"/> Label Guide
+        </Button>
+      )
+    }
+    else {
+      label_button = (
+        <Button
+        bsSize="small"
+        onClick={this.toggleLabel}
+        className="plus_button"
+        bsStyle="success"
+        >
+        <Glyphicon glyph="plus"/> Label Guide
+        </Button>
+      )
+    }
+
+    return (
+      <div>
+      <ButtonGroup>
+      {label_button}
+      {codebook_button}
+      </ButtonGroup>
+      <LabelInfo labels={labels} labels_open={this.state.labels_open}/>
+      {codebook_module}
+      </div>
+    )
+
+
   }
 
   componentWillMount() {
@@ -123,16 +169,14 @@ class Smart extends React.Component {
       <Tabs defaultActiveKey={1} id="data_tabs" >
         <Tab eventKey={1} title="Annotate Data" className="full card">
         <div className="cardContent">
-          {this.getPDF()}
+          {this.getPDF(labels)}
           <ProgressBar>
             <ProgressBar
             style={{minWidth: 60}}
             label={label}
             now={progress}/>
           </ProgressBar>
-          <LabelInfo
-            labels={labels}
-          />
+
           {card}
         </div>
         </Tab>
