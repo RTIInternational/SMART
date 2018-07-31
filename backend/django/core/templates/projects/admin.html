@@ -168,13 +168,19 @@ function drawHeatmap(response)
 
   var all_zero = true;
   //don't draw the heatmap if there is no data
+  var most_data = 0;
   for(var i = 0; i < data.length; i++)
   {
+    if(data[i]["count"] > most_data)
+    {
+      most_data = data[i]["count"];
+    }
     if(data[i]["count"] > 0)
     {
       all_zero = false;
     }
   }
+
 
   var coder1_name = "";
   var coder2_name = "";
@@ -204,10 +210,21 @@ function drawHeatmap(response)
     var height = labels.length*50;
   }
 
+  var colors = ["#f7fbff","#deebf7","#c6dbef","#9ecae1","#6baed6","#4292c6","#2171b5","#08519c","#08306b"];
+  if(most_data >= 9)
+  {
+    var buckets = 9;
+  }
+  else {
+    var buckets = most_data + 1;
+    colors = colors.slice(0, buckets);
+
+  }
+
   var gridSize = 50,
-      legendElementWidth = 30,
-      buckets = 9,
-      colors = ["#f7fbff","#deebf7","#c6dbef","#9ecae1","#6baed6","#4292c6","#2171b5","#08519c","#08306b"];
+      legendElementWidth = 30;
+
+
 
   //delete the old chart
   d3.select('#heatmap').remove();
@@ -244,11 +261,9 @@ function drawHeatmap(response)
         .attr("transform", "translate(" + gridSize / 2 + ", -6)")
         .attr("class", function(d, i) { return ((i >= 7 && i <= 16) ? "horzLabel mono axis axis-worktime" : "horzLabel mono axis"); });
 
-
     var colorScale = d3.scale.quantile()
-        .domain([0, buckets - 1, d3.max(data, function (d) { return d.count; })])
+        .domain([0, most_data+1])
         .range(colors);
-
 
     var cards = svg.selectAll(".label2")
           .data(data, function(d) {return d.label1+':'+d.label2;});
@@ -263,7 +278,18 @@ function drawHeatmap(response)
          .attr("width", gridSize)
          .attr("height", gridSize)
          .style("fill", function(d) {
-           return colorScale(d.count);
+           //Manually calculate the colors since the quantiles
+           //can have roundoff errors (ex: 1.00000001)
+           var quantiles = [0].concat(colorScale.quantiles());
+           for(var i = 0; i < quantiles.length; i++)
+           {
+             if(d.count <= Math.round(quantiles[i]))
+             {
+               return colors[i];
+             }
+           }
+           return "#000000";
+
          });
 
 
