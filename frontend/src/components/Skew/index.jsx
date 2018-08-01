@@ -49,6 +49,21 @@ class Skew extends React.Component {
   {
     label_data = label_counts[0];
   }
+  if(unlabeled_data && unlabeled_data.length > 0)
+  {
+    var table_data = unlabeled_data[0]
+  }
+  else {
+    table_data = []
+  }
+  var page_sizes = [1];
+  var counter = 1;
+  for(var i = 5; i < table_data.length; i+=5*counter)
+  {
+    page_sizes.push(i);
+    counter +=1;
+  }
+  page_sizes.push(table_data.length);
 
   return (
     <div>
@@ -93,9 +108,10 @@ class Skew extends React.Component {
       </tbody>
     </Table>
     <ReactTable
-        data={unlabeled_data[0]}
+        data={table_data}
         columns={columns}
         filterable={true}
+        pageSizeOptions={page_sizes}
         SubComponent={row => {
           return (
             <div className="sub-row">
@@ -103,7 +119,7 @@ class Skew extends React.Component {
               <div id="skew_buttons">
                 <ButtonToolbar bsClass="btn-toolbar pull-right">
                   {labels.map( (label) => (
-                    <Button key={label.pk.toString() + "_" + row.row.id.toString()}
+                    <Button key={label.pk.toString() + "_skew_" + row.row.id.toString()}
                     onClick={() => skewLabel(row.row.id,label.pk)}
                     bsStyle="primary"
                     >{label.name}</Button>

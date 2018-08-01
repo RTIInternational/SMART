@@ -112,9 +112,16 @@ class Smart extends React.Component {
     history_data, getHistory, changeLabel,
     changeToSkip, getUnlabeled, unlabeled_data,
     skewLabel, getLabelCounts, label_counts, getAdmin, admin_data,
-    adminLabel} = this.props;
+    adminLabel, labels} = this.props;
 
-    var labels = [];
+    if(labels && labels.length > 0)
+    {
+      var label_list = labels[0];
+    }
+    else {
+      label_list = [];
+    }
+
     var progress = 100;
     var start_card = 0;
     var num_cards = 0;
@@ -128,8 +135,6 @@ class Smart extends React.Component {
     }
     if (!(cards === undefined) && cards.length > 0) {
       //just get the labels from the cards
-      labels = cards[0].options;
-
       var card = (
       <Card className="full" key={cards[0].id}>
           <h2>Card {cards[0].id + 1}</h2>
@@ -137,8 +142,10 @@ class Smart extends React.Component {
               { cards[0].text['text'] }
           </p>
           <ButtonToolbar bsClass="btn-toolbar pull-right">
-              {cards[0].options.map( (opt) => (
-                  <Button onClick={() => annotateCard(cards[0], opt['pk'])}
+              {label_list.map( (opt) => (
+                  <Button onClick={() => {
+                    annotateCard(cards[0], opt['pk'], cards.length);
+                  }}
                   bsStyle="primary"
                   key={`deck-button-${opt['name']}`}>{opt['name']}</Button>
               ))}
@@ -149,7 +156,9 @@ class Smart extends React.Component {
                   Clicking this button will send this document to an administrator for review
                 </Tooltip>
               }>
-                <Button onClick={() => passCard(cards[0])}
+                <Button onClick={() => {
+                  passCard(cards[0], cards.length);
+                }}
                 bsStyle="info">Skip</Button>
               </OverlayTrigger>
           </ButtonToolbar>
@@ -169,7 +178,7 @@ class Smart extends React.Component {
       <Tabs defaultActiveKey={1} id="data_tabs" >
         <Tab eventKey={1} title="Annotate Data" className="full card">
         <div className="cardContent">
-          {this.getPDF(labels)}
+          {this.getPDF(label_list)}
           <ProgressBar>
             <ProgressBar
             style={{minWidth: 60}}
@@ -185,7 +194,7 @@ class Smart extends React.Component {
             <HistoryTable
               getHistory={getHistory}
               history_data={history_data}
-              labels={labels}
+              labels={label_list}
               changeLabel={changeLabel}
               changeToSkip={changeToSkip}
             />
@@ -196,7 +205,7 @@ class Smart extends React.Component {
             <Skew
             getUnlabeled={getUnlabeled}
             unlabeled_data={unlabeled_data}
-            labels={labels}
+            labels={label_list}
             skewLabel={skewLabel}
             getLabelCounts={getLabelCounts}
             label_counts={label_counts}
@@ -208,7 +217,7 @@ class Smart extends React.Component {
             <AdminTable
             getAdmin={getAdmin}
             admin_data={admin_data}
-            labels={labels}
+            labels={label_list}
             adminLabel={adminLabel}
             />
           </div>
