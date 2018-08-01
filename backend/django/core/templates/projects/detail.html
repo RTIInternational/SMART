@@ -46,35 +46,33 @@
           </div>
           <div id="admin-panel" class="panel-collapse collapse in">
             <div class="panel-body">
-              <table>
-                <div class="row">
-                  <div class="col-md-4">
-                      <h4>Admin(s)</h4>
-                      <ul class="list-group-flush">
-                      <li class="list-group-item">{{ project.creator }}</li>
-                      {% for perm in project.projectpermissions_set.all %}
-                        {% if perm.permission == 'ADMIN' %}
-                          <li class="list-group-item">{{ perm.profile }}</li>
-                        {% endif %}
-                      {% endfor %}
-                      </ul>
-                    </div>
-                  <div class="col-md-4">
-                    <h4>Coder(s)</h4>
+              <div class="row">
+                <div class="col-md-6">
+                    <h4>Admin(s)</h4>
                     <ul class="list-group-flush">
-                    {% if project.coder_count > 0 %}
-                        {% for perm in project.projectpermissions_set.all %}
-                          {% if perm.permission == 'CODER' %}
-                          <li class="list-group-item">{{ perm.profile }}</li>
-                          {% endif %}
-                        {% endfor %}
-                    {% else %}
-                    <h5><strong>No CODER Permissions Available</strong></h5>
-                    {% endif %}
+                    <li class="list-group-item">{{ project.creator }}</li>
+                    {% for perm in project.projectpermissions_set.all %}
+                      {% if perm.permission == 'ADMIN' %}
+                        <li class="list-group-item">{{ perm.profile }}</li>
+                      {% endif %}
+                    {% endfor %}
                     </ul>
                   </div>
+                <div class="col-md-6">
+                  <h4>Coder(s)</h4>
+                  <ul class="list-group-flush">
+                  {% if project.coder_count > 0 %}
+                    {% for perm in project.projectpermissions_set.all %}
+                      {% if perm.permission == 'CODER' %}
+                      <li class="list-group-item">{{ perm.profile }}</li>
+                      {% endif %}
+                    {% endfor %}
+                  {% else %}
+                  <h5><strong>No CODER Permissions Available</strong></h5>
+                  {% endif %}
+                  </ul>
                 </div>
-              </table>
+              </div>
             </div>
           </div>
         </div>
@@ -90,10 +88,16 @@
           </div>
           <div id="settings-panel" class="panel-collapse collapse in">
             <div class="panel-body">
-              <dt>Selection Algorithm</dt>
-              <dd> {{ project.learning_method }}</dd>
-              <dt>Batch Size</dt>
-              <dd>{{ project.batch_size }}</dd>
+              <ul class="list-group-flush">
+                <li class="list-group-item">
+                  <dt>Selection Algorithm</dt>
+                  <dd> {{ project.learning_method }}</dd>
+                </li>
+                <li class="list-group-item">
+                  <dt>Batch Size</dt>
+                  <dd>{{ project.batch_size }}</dd>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
