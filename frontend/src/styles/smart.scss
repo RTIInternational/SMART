@@ -318,13 +318,9 @@ li.disabled {
     content: '\e080';    /* adjust as needed, taken from bootstrap.css */
 }
 
-.codebook-div {
+.no-overflow {
     position: relative;
     overflow: hidden;
-}
-
-.codebook-btn {
-    float: right;
 }
 
 .margin-bottom-15 {

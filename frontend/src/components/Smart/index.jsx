@@ -88,8 +88,8 @@ class Smart extends React.Component {
     }
 
     return (
-      <div className="margin-bottom-15">
-        <ButtonGroup>
+      <div className="margin-bottom-15 no-overflow">
+        <ButtonGroup className="pull-right">
           {label_button}
           {codebook_button}
         </ButtonGroup>
