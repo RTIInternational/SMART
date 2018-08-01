@@ -170,6 +170,9 @@
         </div>
 
         <div class="btn-group pull-right" role="group" aria-label="Admin Controls">
+          {% if project.codebook_file != "" %}
+          <a class="btn btn-primary" href = "{% static project.codebook_file %}" target = "_blank" id="download_cb_btn">View CodeBook</a>
+          {% endif %}
           {% if project|proj_permission_level:request.user.profile > 1 %}
             {% if project.labeled_data_count > 0 %}
             <a class="btn btn-primary" id="download_btn">Download Labeled Data</a>
@@ -179,9 +182,6 @@
             <a class="btn btn-primary" href="{% url 'projects:project_admin' project.pk %}" role="button">
               Admin Page
             </a>
-          {% endif %}
-          {% if project.codebook_file != "" %}
-          <a class="btn btn-primary" href = "{% static project.codebook_file %}" target = "_blank" id="download_cb_btn">View CodeBook</a>
           {% endif %}
         </div>
       </div>
