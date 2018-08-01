@@ -2,12 +2,13 @@ import { handleActions } from 'redux-actions';
 import update from 'immutability-helper';
 import moment from 'moment';
 
-import { POP_CARD, PUSH_CARD, SET_MESSAGE, CLEAR_DECK, SET_URL } from '../actions/classifier'
+import { POP_CARD, PUSH_CARD, SET_LABEL, SET_MESSAGE, CLEAR_DECK, SET_URL } from '../actions/classifier'
 
 const initialState = {
     cards: [],
     message: '',
-    codebook_url: ''
+    codebook_url: '',
+    labels: []
 };
 
 const classifier = handleActions({
@@ -24,6 +25,10 @@ const classifier = handleActions({
             state.cards[0]['start_time'] = moment();
         }
         return update(state, { cards: { $push: [action.payload] } } )
+    },
+    [SET_LABEL]: (state, action) => {
+        // Set the start time of the new top card to the current time
+        return update(state, { labels: { $set: [action.payload] } } )
     },
     [SET_MESSAGE]: (state, action) => (
         update(state, { message: { $set: [action.payload] } } )

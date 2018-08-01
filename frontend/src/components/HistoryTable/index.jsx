@@ -51,6 +51,22 @@ class HistoryTable extends React.Component {
   render() {
   const {history_data, labels, changeLabel, changeToSkip} = this.props;
 
+  if(history_data && history_data.length > 0)
+  {
+    var table_data = history_data[0]
+  }
+  else {
+    table_data = []
+  }
+  var page_sizes = [1];
+  var counter = 1;
+  for(var i = 5; i < table_data.length; i+=5*counter)
+  {
+    page_sizes.push(i);
+    counter +=1;
+  }
+  page_sizes.push(table_data.length);
+
   return (
     <div>
     <h3>Instructions</h3>
@@ -58,8 +74,10 @@ class HistoryTable extends React.Component {
     <p>To annotate, click on a data entry below and select the label from the expanded list of labels. The chart will then update with the new label and current timestamp </p>
     <p><strong>NOTE:</strong> Data labels that are changed on this page will not effect past model accuracy or data selected by active learning in the past. The training data will only be updated for the next run of the model</p>
       <ReactTable
-        data={history_data[0]}
+        data={table_data}
         columns={columns}
+        pageSizeOptions={page_sizes}
+        pageSize={(table_data.length < 50) ? table_data.length : 50}
         SubComponent={row => {
           return (
             <div className="sub-row">
@@ -67,7 +85,7 @@ class HistoryTable extends React.Component {
               <ButtonToolbar bsClass="btn-toolbar pull-right">
                 {labels.map( (label) => {
                   return (
-                  <Button key={label.pk.toString() + "_" + row.row.id.toString()}
+                  <Button key={label.pk.toString() + "_his_" + row.row.id.toString()}
                   onClick={() => {
                     if(!(row.row.old_label_id === label.pk))
                     {

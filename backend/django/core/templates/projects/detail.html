@@ -16,12 +16,12 @@
         <div class="panel panel-default">
           <div class="panel-heading">
             <h5 class="panel-title">
-              <a data-toggle="collapse" href="#description-panel" class="accordion-toggle collapsed">
+              <a data-toggle="collapse" href="#description-panel" class="accordion-toggle">
                 Description
               </a>
             </h5>
           </div>
-          <div id="description-panel" class="panel-collapse collapse">
+          <div id="description-panel" class="panel-collapse collapse in">
             <div class="panel-body">
               {% if project.description %}
               <p>{{ project.description }}</p>
@@ -35,25 +35,44 @@
     </div>
 
     <div class="row">
-      <div class="col-md-4">
+      <div class="col-md-8">
         <div class="panel panel-default">
           <div class="panel-heading">
             <h5 class="panel-title">
-              <a data-toggle="collapse" href="#admin-panel" class="accordion-toggle collapsed">
-                Admin(s)
+              <a data-toggle="collapse" href="#admin-panel" class="accordion-toggle">
+                Permissions
               </a>
             </h5>
           </div>
-          <div id="admin-panel" class="panel-collapse collapse">
+          <div id="admin-panel" class="panel-collapse collapse in">
             <div class="panel-body">
-              <ul class="list-group-flush">
-              <li class="list-group-item">{{ project.creator }}</li>
-              {% for perm in project.projectpermissions_set.all %}
-                {% if perm.permission == 'ADMIN' %}
-                  <li class="list-group-item">{{ perm.profile }}</li>
-                {% endif %}
-              {% endfor %}
-              </ul>
+              <div class="row">
+                <div class="col-md-6">
+                    <h4>Admin(s)</h4>
+                    <ul class="list-group-flush">
+                    <li class="list-group-item">{{ project.creator }}</li>
+                    {% for perm in project.projectpermissions_set.all %}
+                      {% if perm.permission == 'ADMIN' %}
+                        <li class="list-group-item">{{ perm.profile }}</li>
+                      {% endif %}
+                    {% endfor %}
+                    </ul>
+                  </div>
+                <div class="col-md-6">
+                  <h4>Coder(s)</h4>
+                  <ul class="list-group-flush">
+                  {% if project.coder_count > 0 %}
+                    {% for perm in project.projectpermissions_set.all %}
+                      {% if perm.permission == 'CODER' %}
+                      <li class="list-group-item">{{ perm.profile }}</li>
+                      {% endif %}
+                    {% endfor %}
+                  {% else %}
+                  <h5><strong>No CODER Permissions Available</strong></h5>
+                  {% endif %}
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -62,41 +81,23 @@
         <div class="panel panel-default">
           <div class="panel-heading">
             <h5 class="panel-title">
-              <a data-toggle="collapse" href="#coder-panel" class="accordion-toggle collapsed">
-                Coder(s)
-              </a>
-            </h5>
-          </div>
-          <div id="coder-panel" class="panel-collapse collapse">
-            <div class="panel-body">
-              <ul class="list-group-flush">
-              {% if project.coder_count > 0 %}
-                  {% for perm in project.projectpermissions_set.all %}
-                    {% if perm.permission == 'CODER' %}
-                    <li class="list-group-item">{{ perm.profile }}</li>
-                    {% endif %}
-                  {% endfor %}
-              {% else %}
-              <h5><strong>No CODER Permissions Available</strong></h5>
-              {% endif %}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="panel panel-default">
-          <div class="panel-heading">
-            <h5 class="panel-title">
-              <a data-toggle="collapse" href="#settings-panel" class="accordion-toggle collapsed">
+              <a data-toggle="collapse" href="#settings-panel" class="accordion-toggle">
                 Advanced Project Settings
               </a>
             </h5>
           </div>
-          <div id="settings-panel" class="panel-collapse collapse">
+          <div id="settings-panel" class="panel-collapse collapse in">
             <div class="panel-body">
-              <p>Selection Algorithm: {{ project.learning_method }}</p>
-              <p>Batch Size: {{ project.batch_size }}</p>
+              <ul class="list-group-flush">
+                <li class="list-group-item">
+                  <dt>Selection Algorithm</dt>
+                  <dd> {{ project.learning_method }}</dd>
+                </li>
+                <li class="list-group-item">
+                  <dt>Batch Size</dt>
+                  <dd>{{ project.batch_size }}</dd>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
@@ -167,21 +168,22 @@
           </a>
           {% endif %}
         </div>
-        {% if project|proj_permission_level:request.user.profile > 1 %}
+
         <div class="btn-group pull-right" role="group" aria-label="Admin Controls">
-          {% if project.labeled_data_count > 0 %}
-          <a class="btn btn-primary" id="download_btn">Download Labeled Data</a>
-          {% else %}
-          <a class="btn btn-primary disabled" id="download_btn">No Labeled Data to Download</a>
-          {% endif %}
           {% if project.codebook_file != "" %}
-          <a class="btn btn-primary" href = "{% static project.codebook_file %}" id="download_cb_btn">View CodeBook</a>
+          <a class="btn btn-primary" href = "{% static project.codebook_file %}" target = "_blank" id="download_cb_btn">View CodeBook</a>
           {% endif %}
-          <a class="btn btn-primary" href="{% url 'projects:project_admin' project.pk %}" role="button">
-            Admin Page
-          </a>
+          {% if project|proj_permission_level:request.user.profile > 1 %}
+            {% if project.labeled_data_count > 0 %}
+            <a class="btn btn-primary" id="download_btn">Download Labeled Data</a>
+            {% else %}
+            <a class="btn btn-primary disabled" id="download_btn">No Labeled Data to Download</a>
+            {% endif %}
+            <a class="btn btn-primary" href="{% url 'projects:project_admin' project.pk %}" role="button">
+              Admin Page
+            </a>
+          {% endif %}
         </div>
-        {% endif %}
       </div>
     </div>
   </div>

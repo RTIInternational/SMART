@@ -15,6 +15,7 @@ describe('<Smart />', () => {
                 getHistory = {fn}
                 changeLabel = {fn}
                 changeToSkip = {fn}
+                labels = {fn}
                 getUnlabeled = {fn}
                 unlabeled_data = {data}
                 label_counts = {data}
