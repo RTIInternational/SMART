@@ -67,7 +67,6 @@ class Smart extends React.Component {
     {
       var label_button = (
         <Button
-        bsSize="small"
         onClick={this.toggleLabel}
         className="minus_button"
         bsStyle="danger"
@@ -79,7 +78,6 @@ class Smart extends React.Component {
     else {
       label_button = (
         <Button
-        bsSize="small"
         onClick={this.toggleLabel}
         className="plus_button"
         bsStyle="success"
@@ -90,13 +88,13 @@ class Smart extends React.Component {
     }
 
     return (
-      <div>
-      <ButtonGroup>
-      {label_button}
-      {codebook_button}
-      </ButtonGroup>
-      <LabelInfo labels={labels} labels_open={this.state.labels_open}/>
-      {codebook_module}
+      <div className="margin-bottom-15">
+        <ButtonGroup>
+          {label_button}
+          {codebook_button}
+        </ButtonGroup>
+        <LabelInfo labels={labels} labels_open={this.state.labels_open}/>
+        {codebook_module}
       </div>
     )
 
