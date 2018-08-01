@@ -74,10 +74,11 @@ def redis_parse_list_dataids(data_ids):
 def md5_hash(obj):
     """Return MD5 hash hexdigest of obj; returns None if obj is None"""
     if obj is not None:
+        if isinstance(obj, int):
+            obj = str(obj)
         return hashlib.md5(obj.encode('utf-8', errors='ignore')).hexdigest()
     else:
         return None
-
 
 def create_profile(username, password, email):
     '''
@@ -208,19 +209,34 @@ def add_data(project, df):
     df['hash'] = df['Text'].apply(md5_hash)
     df.drop_duplicates(subset='hash', keep='first', inplace=True)
 
-    # Limit the number of rows to 2mil
-    df = df[:2000000]
-
-    # Set the index column.  If previous data exists then we want to start the
-    # index from the end of the current data.  The next new index should start
-    # at the count of existing data since the existing df_idx is zero indexed
+    #check that the data is not already in the system and drop duplicates
+    df = df.loc[~df['hash'].isin(list(Data.objects.filter(project=project).values_list("hash",flat=True)))]
+    if len(df) == 0:
+        return []
+    # Limit the number of rows to 2mil for the entire project
     num_existing_data = Data.objects.filter(project=project).count()
+    if num_existing_data >= 2000000:
+        return []
+
+    df = df[:2000000- num_existing_data]
+    #if there is no ID column already, add it and hash it
     df.reset_index(drop=True, inplace=True)
-    df['idx'] = df.index + num_existing_data
+    if 'ID' not in df.columns:
+        #should add to what already exists
+        df["ID"] = [x + num_existing_data for x in list(df.index.values)]
+        df["id_hash"] = df["ID"].astype(str).apply(md5_hash)
+    else:
+        #get the hashes from existing identifiers. Check that the new identifiers do not overlap
+        existing_hashes = Data.objects.filter(project=project).values_list('upload_id_hash',flat=True)
+        df = df.loc[~df['id_hash'].isin(existing_hashes)]
+        if len(df) == 0:
+            return []
+
 
     # Create the data objects
     df['object'] = df.apply(lambda x: Data(text=x['Text'], project=project,
-                                            hash=x['hash'], df_idx=x['idx']), axis=1)
+                                            hash=x['hash'],
+                                            upload_id=x['ID'], upload_id_hash = x['id_hash']), axis=1)
     data = Data.objects.bulk_create(df['object'].tolist())
 
     labels = {}
@@ -638,7 +654,7 @@ def save_codebook_file(data, project_pk):
     return fpath.replace("/data/code_books/","")
 
 def create_tfidf_matrix(data, max_df=0.95, min_df=0.05):
-    """Create a TF-IDF matrix. Make sure to order the data by df_idx so that we
+    """Create a TF-IDF matrix. Make sure to order the data by upload_id_hash so that we
         can sync the data up again when training the model
 
     Args:
@@ -646,7 +662,7 @@ def create_tfidf_matrix(data, max_df=0.95, min_df=0.05):
     Returns:
         tf_idf_matrix: CSR-format tf-idf matrix
     """
-    data_list = [d.text for d in data.order_by('df_idx')]
+    data_list = list(Data.objects.values_list('text', flat=True).order_by('upload_id_hash'))
     vectorizer = TfidfVectorizer(max_df=max_df, min_df=min_df, stop_words='english')
     tf_idf_matrix = vectorizer.fit_transform(data_list)
 
@@ -743,11 +759,14 @@ def train_and_save_model(project):
     current_training_set = project.get_current_training_set()
 
     # In order to train need X (tf-idf vector) and Y (label) for every labeled datum
-    # Order both X and Y by df_idx to ensure the tf-idf vector corresponds to the correct
+    # Order both X and Y by upload_id_hash to ensure the tf-idf vector corresponds to the correct
     # label
     labeled_data = DataLabel.objects.filter(data__project=project)
-    labeled_values = list(labeled_data.values_list('label', flat=True).order_by('data__df_idx'))
-    labeled_indices = list(labeled_data.values_list('data__df_idx', flat=True).order_by('data__df_idx'))
+    #get the list of all data sorted by identifier
+    all_data = list(Data.objects.filter(project=project).values_list('pk', flat=True).order_by('upload_id_hash'))
+    labeled_indices = [all_data.index(x.data.pk) for x in labeled_data]
+
+    labeled_values = list(labeled_data.values_list('label', flat=True).order_by('data__upload_id_hash'))
 
     X = tf_idf[labeled_indices]
     Y = labeled_values
@@ -896,9 +915,11 @@ def predict_data(project, model):
     tf_idf = load_tfidf_matrix(project.pk).A
 
     # In order to predict need X (tf-idf vector) for every unlabeled datum. Order
-    # X by df_idx to ensure the tf-idf vector corresponds to the correct datum
-    unlabeled_data = project.data_set.filter(datalabel__isnull=True).order_by('df_idx')
-    unlabeled_indices = unlabeled_data.values_list('df_idx', flat=True).order_by('df_idx')
+    # X by upload_id_hash to ensure the tf-idf vector corresponds to the correct datum
+    unlabeled_data = project.data_set.filter(datalabel__isnull=True).order_by('upload_id_hash')
+    #get the list of all data sorted by identifier
+    all_data = list(Data.objects.filter(project=project).values_list('pk', flat=True).order_by('upload_id_hash'))
+    unlabeled_indices = [all_data.index(x.pk) for x in unlabeled_data]
 
     X = tf_idf[unlabeled_indices]
     predictions = clf.predict_proba(X)
