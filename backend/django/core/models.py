@@ -170,3 +170,7 @@ class TrainingSet(models.Model):
     project = models.ForeignKey('Project')
     set_number = models.IntegerField()
     celery_task_id = models.TextField(blank=True)
+
+class RecycleBin(models.Model):
+    data = models.ForeignKey('Data')
+    timestamp = models.DateTimeField(default = timezone.now)

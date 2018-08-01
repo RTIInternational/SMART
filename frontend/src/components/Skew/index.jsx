@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import ReactTable from 'react-table';
-import { Button, ButtonToolbar, Panel } from "react-bootstrap";
+import { Button, ButtonToolbar, Panel, Tooltip, OverlayTrigger } from "react-bootstrap";
 import NVD3Chart from "react-nvd3";
 import d3 from 'd3';
 
@@ -92,10 +92,19 @@ class Skew extends React.Component {
               <div id="skew_buttons">
                 <ButtonToolbar bsClass="btn-toolbar pull-right">
                   {labels.map( (label) => (
-                    <Button key={label.pk.toString() + "_" + row.row.id.toString()}
-                    onClick={() => skewLabel(row.row.id,label.pk)}
-                    bsStyle="primary"
-                    >{label.name}</Button>
+                    <OverlayTrigger
+                      key={label['pk']+"__"+row.row.id+"__tooltip"}
+                      placement = "top"
+                      overlay={
+                        <Tooltip id="label_tooltip">
+                          {label['description']}
+                        </Tooltip>
+                      }>
+                      <Button key={label.pk.toString() + "_" + row.row.id.toString()}
+                      onClick={() => skewLabel(row.row.id,label.pk)}
+                      bsStyle="primary"
+                      >{label.name}</Button>
+                    </OverlayTrigger>
                   ))}
                 </ButtonToolbar>
               </div>

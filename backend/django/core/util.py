@@ -29,7 +29,7 @@ from django.conf import settings
 
 from core.models import (Project, Data, Queue, DataQueue, Profile, Label,
                          AssignedData, DataLabel, Model, DataPrediction,
-                         DataUncertainty, TrainingSet)
+                         DataUncertainty, TrainingSet, RecycleBin)
 from core import tasks
 
 
@@ -315,13 +315,14 @@ def fill_queue(queue, orderby):
         raise ValueError('orderby parameter must be one of the following: ' +
                          ' '.join(ORDERBY_VALUE))
 
+    recycled_data = RecycleBin.objects.filter(data__project=queue.project).values_list('data__pk',flat=True)
     data_filters = {
         'project': queue.project,
         'labelers': None,
         'queues': None
     }
 
-    eligible_data = Data.objects.filter(**data_filters)
+    eligible_data = Data.objects.filter(**data_filters).exclude(pk__in=recycled_data)
 
     cte_sql, cte_params = eligible_data.query.sql_with_params()
     sample_size_sql, sample_size_params = (Queue.objects.filter(pk=queue.pk)
@@ -843,7 +844,9 @@ def predict_data(project, model):
 
     # In order to predict need X (tf-idf vector) for every unlabeled datum. Order
     # X by df_idx to ensure the tf-idf vector corresponds to the correct datum
-    unlabeled_data = project.data_set.filter(datalabel__isnull=True).order_by('df_idx')
+    #do not try and predict recycled data
+    recycle_data = RecycleBin.objects.filter(data__project=project).values_list('pk',flat=True)
+    unlabeled_data = project.data_set.filter(datalabel__isnull=True).exclude(pk__in=recycle_data).order_by('df_idx')
     unlabeled_indices = unlabeled_data.values_list('df_idx', flat=True).order_by('df_idx')
 
     X = tf_idf[unlabeled_indices]

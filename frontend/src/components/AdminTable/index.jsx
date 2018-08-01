@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import ReactTable from 'react-table';
-import {Button, ButtonToolbar} from "react-bootstrap";
+import {Button, ButtonToolbar, Tooltip, OverlayTrigger} from "react-bootstrap";
 
 class AdminTable extends React.Component {
 
@@ -10,7 +10,7 @@ class AdminTable extends React.Component {
   }
 
   render() {
-  const {admin_data, labels, adminLabel} = this.props;
+  const {admin_data, labels, adminLabel, discardData} = this.props;
 
   if(admin_data && admin_data.length > 0)
   {
@@ -42,11 +42,33 @@ class AdminTable extends React.Component {
           <ButtonToolbar bsClass="btn-toolbar pull-right">
             {labels.map( (label) => {
               return (
-              <Button key={label.pk.toString() + "_" + row.row.id.toString()}
-              onClick={() => adminLabel(row.row.id,label.pk)}
-              bsStyle="primary"
-              >{label.name}</Button>
+                <OverlayTrigger
+                  key={label['pk']+"__"+row.row.id+"__tooltip"}
+                  placement = "top"
+                  overlay={
+                    <Tooltip id="label_tooltip">
+                      {label['description']}
+                    </Tooltip>
+                  }>
+                  <Button key={label.pk.toString() + "_" + row.row.id.toString()}
+                  onClick={() => adminLabel(row.row.id,label.pk)}
+                  bsStyle="primary"
+                  >{label.name}</Button>
+                </OverlayTrigger>
             )})}
+            <OverlayTrigger
+              placement = "top"
+              overlay={
+                <Tooltip id="discard_tooltip">
+                  This marks this data as uncodable, and will remove it from the active data in this project.
+                </Tooltip>
+              }>
+              <Button key={"discard_" + row.row.id.toString()}
+              onClick={() => discardData(row.row.id)}
+              bsStyle="info"
+              >Discard Data</Button>
+            </OverlayTrigger>
+
           </ButtonToolbar>
           </div>
         </div>
@@ -76,7 +98,8 @@ AdminTable.propTypes = {
   getAdmin: PropTypes.func.isRequired,
   admin_data: PropTypes.arrayOf(PropTypes.object),
   labels: PropTypes.arrayOf(PropTypes.object),
-  adminLabel: PropTypes.func.isRequired
+  adminLabel: PropTypes.func.isRequired,
+  discardData: PropTypes.func.isRequired
 };
 
 export default AdminTable;

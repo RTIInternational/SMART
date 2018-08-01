@@ -2,11 +2,12 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { Button, ButtonToolbar, Clearfix,
    Well, Tooltip, OverlayTrigger,
-   ProgressBar, Tabs, Tab, Modal  } from "react-bootstrap";
+   ProgressBar, Tabs, Tab, Modal, Glyphicon  } from "react-bootstrap";
 import Card from '../Card';
 import HistoryTable from '../HistoryTable';
 import Skew from '../Skew';
 import AdminTable from '../AdminTable';
+import RecycleBinTable from '../RecycleBinTable';
 const ADMIN = window.ADMIN;
 import LabelInfo from '../LabelInfo';
 const CODEBOOK_URL = window.CODEBOOK_URL;
@@ -66,7 +67,8 @@ class Smart extends React.Component {
     history_data, getHistory, changeLabel,
     changeToSkip, getUnlabeled, unlabeled_data,
     skewLabel, getLabelCounts, label_counts, getAdmin, admin_data,
-    adminLabel} = this.props;
+    adminLabel, discardData, getDiscarded, discarded_data,
+    restoreData} = this.props;
 
     var labels = [];
     var progress = 100;
@@ -92,9 +94,18 @@ class Smart extends React.Component {
           </p>
           <ButtonToolbar bsClass="btn-toolbar pull-right">
               {cards[0].options.map( (opt) => (
-                  <Button onClick={() => annotateCard(cards[0], opt['pk'])}
-                  bsStyle="primary"
-                  key={`deck-button-${opt['name']}`}>{opt['name']}</Button>
+                <OverlayTrigger
+                key={opt['pk']+"__"+cards[0].id+"__tooltip"}
+                placement = "top"
+                overlay={
+                  <Tooltip id="skip_tooltip">
+                    {opt['description']}
+                  </Tooltip>
+                }>
+                <Button onClick={() => annotateCard(cards[0], opt['pk'])}
+                bsStyle="primary"
+                key={`deck-button-${opt['name']}`}>{opt['name']}</Button>
+                </OverlayTrigger>
               ))}
               <OverlayTrigger
               placement = "top"
@@ -166,6 +177,16 @@ class Smart extends React.Component {
             admin_data={admin_data}
             labels={labels}
             adminLabel={adminLabel}
+            discardData={discardData}
+            />
+          </div>
+        </Tab>
+        <Tab eventKey={5} disabled={!ADMIN} title={<Glyphicon glyph="trash"/>} className="full card">
+          <div className="cardContent">
+            <RecycleBinTable
+            getDiscarded = {getDiscarded}
+            discarded_data = {discarded_data}
+            restoreData = {restoreData}
             />
           </div>
         </Tab>
@@ -190,6 +211,10 @@ Smart.propTypes = {
     getAdmin: PropTypes.func.isRequired,
     admin_data: PropTypes.arrayOf(PropTypes.object),
     adminLabel: PropTypes.func.isRequired,
+    discardData: PropTypes.func.isRequired,
+    restoreData: PropTypes.func.isRequired,
+    getDiscarded: PropTypes.func.isRequired,
+    discarded_data: PropTypes.arrayOf(PropTypes.object),
     fetchCards: PropTypes.func.isRequired,
     annotateCard: PropTypes.func.isRequired,
     passCard: PropTypes.func.isRequired,

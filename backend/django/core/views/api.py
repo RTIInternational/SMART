@@ -32,7 +32,7 @@ from core.serializers import (ProfileSerializer, AuthUserGroupSerializer,
                               LabelChangeLogSerializer)
 from core.models import (Profile, Project, Model, Data, Label, DataLabel,
                          DataPrediction, Queue, DataQueue, AssignedData, TrainingSet,
-                         LabelChangeLog)
+                         LabelChangeLog, RecycleBin)
 import core.util as util
 from core.pagination import SmartPagination
 from core.templatetags import project_extras
@@ -381,7 +381,8 @@ def data_unlabeled_table(request, pk):
     stuff_in_queue = DataQueue.objects.filter(queue__project=project)
     queued_ids = [queued.data.id for queued in stuff_in_queue]
 
-    unlabeled_data = project.data_set.filter(datalabel__isnull=True).exclude(id__in=queued_ids)
+    recycle_ids = RecycleBin.objects.filter(data__project=project).values_list('data__pk',flat=True)
+    unlabeled_data = project.data_set.filter(datalabel__isnull=True).exclude(id__in=queued_ids).exclude(id__in=recycle_ids)
     data = []
     for d in unlabeled_data:
         temp = {
@@ -406,6 +407,29 @@ def data_admin_table(request, pk):
     queue = Queue.objects.filter(project=project,admin=True)
 
     data_objs = DataQueue.objects.filter(queue=queue)
+
+    data = []
+    for d in data_objs:
+        temp = {
+            'Text': d.data.text,
+            'ID': d.data.id
+        }
+        data.append(temp)
+
+    return Response({'data': data})
+
+@api_view(['GET'])
+def recycle_bin_table(request, pk):
+    """This returns the elements in the recycle bin
+
+    Args:
+        request: The POST request
+        pk: Primary key of the project
+    Returns:
+        data: a list of data information
+    """
+    project = Project.objects.get(pk=pk)
+    data_objs = RecycleBin.objects.filter(data__project=project)
 
     data = []
     for d in data_objs:
@@ -599,6 +623,57 @@ def annotate_data(request, pk):
         util.check_and_trigger_model(data)
     else:
         response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
+
+    return Response(response)
+
+@api_view(['POST'])
+def discard_data(request, pk):
+    """Move a datum to the RecycleBin. This removes it from
+       the admin dataqueue. This is used only in the skew table by the admin.
+
+    Args:
+        request: The POST request
+        pk: Primary key of the data
+    Returns:
+        {}
+    """
+    data = Data.objects.get(pk=pk)
+    profile = request.user.profile
+    project = data.project
+    response = {}
+
+    # Make sure coder is an admin
+    if project_extras.proj_permission_level(data.project, profile) > 1:
+        #remove it from the admin queue
+        queue = Queue.objects.get(project=project,admin=True)
+        DataQueue.objects.get(data=data, queue=queue).delete()
+
+        RecycleBin.objects.create(data=data, timestamp=timezone.now())
+    else:
+        response['error'] = 'Invalid credentials. Must be an admin.'
+
+    return Response(response)
+
+@api_view(['POST'])
+def restore_data(request, pk):
+    """Move a datum out of the RecycleBin.
+    Args:
+        request: The POST request
+        pk: Primary key of the data
+    Returns:
+        {}
+    """
+    data = Data.objects.get(pk=pk)
+    profile = request.user.profile
+    project = data.project
+    response = {}
+
+    # Make sure coder is an admin
+    if project_extras.proj_permission_level(data.project, profile) > 1:
+        #remove it from the recycle bin
+        RecycleBin.objects.get(data=data).delete()
+    else:
+        response['error'] = 'Invalid credentials. Must be an admin.'
 
     return Response(response)
 

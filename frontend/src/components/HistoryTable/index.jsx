@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import ReactTable from 'react-table';
-import {Button, ButtonToolbar} from "react-bootstrap";
+import {Button, ButtonToolbar, Tooltip, OverlayTrigger} from "react-bootstrap";
 
 const columns = [
   {
@@ -67,19 +67,36 @@ class HistoryTable extends React.Component {
               <ButtonToolbar bsClass="btn-toolbar pull-right">
                 {labels.map( (label) => {
                   return (
-                  <Button key={label.pk.toString() + "_" + row.row.id.toString()}
-                  onClick={() => {
-                    if(!(row.row.old_label_id === label.pk))
-                    {
-                      changeLabel(row.row.id,row.row.old_label_id,label.pk)
-                    }
-                  }}
-                  bsStyle="primary"
-                  >{label.name}</Button>
+                    <OverlayTrigger
+                    key={label['pk']+"__"+row.row.id+"__tooltip"}
+                    placement = "top"
+                    overlay={
+                      <Tooltip id="label_tooltip">
+                        {label['description']}
+                      </Tooltip>
+                    }>
+                    <Button key={label.pk.toString() + "_" + row.row.id.toString()}
+                    onClick={() => {
+                      if(!(row.row.old_label_id === label.pk))
+                      {
+                        changeLabel(row.row.id,row.row.old_label_id,label.pk)
+                      }
+                    }}
+                    bsStyle="primary"
+                    >{label.name}</Button>
+                    </OverlayTrigger>
                 )})}
+                <OverlayTrigger
+                placement = "top"
+                overlay={
+                  <Tooltip id="skip_tooltip">
+                    Clicking this button will send this document to an administrator for review
+                  </Tooltip>
+                }>
                 <Button onClick={() => changeToSkip(row.row.id,row.row.old_label_id)}
                 bsStyle="info"
                 >Skip</Button>
+                </OverlayTrigger>
               </ButtonToolbar>
             </div>
           );
