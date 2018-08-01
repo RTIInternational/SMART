@@ -877,8 +877,10 @@ def train_and_apply_committee(project, unlabeled_X, com_size = 5):
     # Order both X and Y by df_idx to ensure the tf-idf vector corresponds to the correct
     # label
     labeled_data = DataLabel.objects.filter(data__project=project)
-    labeled_values = list(labeled_data.values_list('label', flat=True).order_by('data__df_idx'))
-    labeled_indices = list(labeled_data.values_list('data__df_idx', flat=True).order_by('data__df_idx'))
+    all_data = list(Data.objects.filter(project=project).values_list('pk', flat=True).order_by('upload_id_hash'))
+    labeled_indices = [all_data.index(x.data.pk) for x in labeled_data]
+
+    labeled_values = list(labeled_data.values_list('label', flat=True).order_by('data__upload_id_hash'))
 
     X = pd.DataFrame(tf_idf[labeled_indices])
     Y = pd.DataFrame(labeled_values)
