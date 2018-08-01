@@ -96,7 +96,7 @@ class Skew extends React.Component {
                 axisLabelDistance: 15,
                 showMaxMin: false
               }}
-              noData="Insufficient labeled data -- please code more documents"
+              noData="Insufficient labeled data"
               margin={{
                 bottom: 20,
                 left: 70
