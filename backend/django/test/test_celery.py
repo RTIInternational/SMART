@@ -16,8 +16,9 @@ def test_celery():
     assert result == 'Test Task Complete'
 
 
-def test_model_task(test_project_labeled_and_tfidf, test_queue, test_irr_queue, test_redis, tmpdir, settings):
+def test_model_task(test_project_labeled_and_tfidf, test_queue_labeled, test_irr_queue_labeled, test_redis, tmpdir, settings):
     project = test_project_labeled_and_tfidf
+    test_queue = test_queue_labeled
     initial_training_set = project.get_current_training_set()
     initial_queue_length = test_queue.length
 
@@ -42,7 +43,7 @@ def test_model_task(test_project_labeled_and_tfidf, test_queue, test_irr_queue, 
                                                    labelers=None).count() * project.labels.count()
 
     # Assert bothe queues are filled and redis sycned
-    assert (test_queue.data.count() + test_irr_queue.data.count()) == test_queue.length
+    assert (test_queue.data.count() + test_irr_queue_labeled.data.count()) == test_queue.length
     assert_redis_matches_db(test_redis)
 
     # Assert queue correct size
@@ -77,8 +78,9 @@ def test_tfidf_creation_task(test_project_data, tmpdir, settings):
     assert file == os.path.join(str(data_temp), str(test_project_data.pk) + '.npz')
 
 
-def test_model_task_redis_no_dupes_data_left_in_queue(test_project_labeled_and_tfidf, test_queue, test_irr_queue, test_admin_queue, test_redis, tmpdir, settings):
+def test_model_task_redis_no_dupes_data_left_in_queue(test_project_labeled_and_tfidf, test_queue_labeled, test_irr_queue_labeled, test_admin_queue_labeled, test_redis, tmpdir, settings):
     project = test_project_labeled_and_tfidf
+    test_queue = test_queue_labeled
     initial_training_set = project.get_current_training_set().set_number
     queue = project.queue_set.get(type="normal")
     queue.length = 40
@@ -106,8 +108,9 @@ def test_model_task_redis_no_dupes_data_left_in_queue(test_project_labeled_and_t
     assert len(redis_items) == len(set(redis_items))
 
 
-def test_model_task_redis_no_dupes_data_unassign_assigned_data(test_project_labeled_and_tfidf, test_queue, test_irr_queue, test_admin_queue ,test_redis, tmpdir, settings):
+def test_model_task_redis_no_dupes_data_unassign_assigned_data(test_project_labeled_and_tfidf, test_queue_labeled, test_irr_queue_labeled, test_admin_queue_labeled ,test_redis, tmpdir, settings):
     project = test_project_labeled_and_tfidf
+    test_queue = test_queue_labeled
     person2 = create_profile('test_profilezzz', 'password', 'test_profile@rti.org')
     person3 = create_profile('test_profile2', 'password', 'test_profile@rti.org')
     ProjectPermissions.objects.create(profile=person2, project=project, permission='CODER')

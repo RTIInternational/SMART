@@ -28,7 +28,7 @@ from core.util import (redis_serialize_queue, redis_serialize_data, redis_serial
                        least_confident, margin_sampling, entropy,
                        check_and_trigger_model, get_ordered_data,
                        find_queue_length, cohens_kappa, fleiss_kappa,
-                       irr_heatmap_data, perc_agreement_table_data)
+                       irr_heatmap_data, perc_agreement_table_data, md5_hash)
 
 from test.util import read_test_data_backend, assert_obj_exists, assert_redis_matches_db
 from test.conftest import TEST_QUEUE_LEN
@@ -206,7 +206,7 @@ def test_fill_empty_queue(db, test_queue):
 
 def test_fill_nonempty_queue(db, test_queue):
     # Manually add one observation so the queue is now nonempty
-    test_datum = Data.objects.create(text='test data', project=test_queue.project, df_idx=0)
+    test_datum = Data.objects.create(text='test data', project=test_queue.project, upload_id_hash=md5_hash(0))
     DataQueue.objects.create(data=test_datum, queue=test_queue)
     assert test_queue.data.count() == 1
 
@@ -806,10 +806,10 @@ def test_save_tfidf_matrix(test_project_data, test_tfidf_matrix, tmpdir, setting
     assert file == os.path.join(settings.TF_IDF_PATH, str(test_project_data.pk) + '.npz')
 
 
-def test_load_tfidf_matrix(test_project_labeled_and_tfidf, test_tfidf_matrix, tmpdir, settings):
+def test_load_tfidf_matrix(test_project_labeled_and_tfidf, test_tfidf_matrix_labeled, tmpdir, settings):
     matrix = load_tfidf_matrix(test_project_labeled_and_tfidf.pk)
 
-    assert np.allclose(matrix.A, test_tfidf_matrix.A)
+    assert np.allclose(matrix.A, test_tfidf_matrix_labeled.A)
 
 
 def test_least_confident_notarray():
@@ -1067,8 +1067,9 @@ def test_check_and_trigger_lt_batch_labeled(setup_celery, test_project_data, tes
 
 
 def test_check_and_trigger_batched_success(setup_celery, test_project_labeled_and_tfidf,
-                                           test_queue, test_irr_queue, test_redis, tmpdir, settings):
+                                           test_queue_labeled, test_irr_queue_labeled, test_redis, tmpdir, settings):
     project = test_project_labeled_and_tfidf
+    test_queue = test_queue_labeled
     initial_training_set = project.get_current_training_set()
     initial_queue_size = test_queue.length
     model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
@@ -1094,7 +1095,7 @@ def test_check_and_trigger_batched_success(setup_celery, test_project_labeled_an
                                                    labelers=None).count() * project.labels.count()
 
     # Assert queue filled and redis sycned
-    assert (test_queue.data.count() + test_irr_queue.data.count()) == test_queue.length
+    assert (test_queue.data.count() + test_irr_queue_labeled.data.count()) == test_queue.length
     assert_redis_matches_db(test_redis)
     assert test_queue.length == initial_queue_size
 
@@ -1109,7 +1110,7 @@ def test_check_and_trigger_batched_success(setup_celery, test_project_labeled_an
         assert datum.datauncertainty_set.get().least_confident <= previous_lc
         previous_lc = datum.datauncertainty_set.get().least_confident
     assert (DataQueue.objects.filter(queue=test_queue).count() +
-            DataQueue.objects.filter(queue=test_irr_queue).count()) == TEST_QUEUE_LEN
+            DataQueue.objects.filter(queue=test_irr_queue_labeled).count()) == TEST_QUEUE_LEN
 
     # Assert new training set
     assert project.get_current_training_set() != initial_training_set
@@ -1137,8 +1138,9 @@ def test_check_and_trigger_batched_onlyone_label(setup_celery, test_project_data
 
 
 def test_check_and_trigger_queue_changes_success(setup_celery, test_project_labeled_and_tfidf,
-                                           test_queue, test_irr_queue, test_redis, tmpdir, settings, test_profile2):
+                                                  test_queue_labeled, test_irr_queue_labeled, test_redis, tmpdir, settings, test_profile2):
     project = test_project_labeled_and_tfidf
+    test_queue = test_queue_labeled
     initial_training_set = project.get_current_training_set()
     initial_queue_size = test_queue.length
     model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
@@ -1191,7 +1193,7 @@ def test_check_and_trigger_queue_changes_success(setup_celery, test_project_labe
         assert datum.datauncertainty_set.get().least_confident <= previous_lc
         previous_lc = datum.datauncertainty_set.get().least_confident
     assert (DataQueue.objects.filter(queue=test_queue).count() +
-            DataQueue.objects.filter(queue=test_irr_queue).count()) == batch_size
+            DataQueue.objects.filter(queue=test_irr_queue_labeled).count()) == batch_size
 
     # Assert new training set
     assert project.get_current_training_set() != initial_training_set
@@ -1599,7 +1601,8 @@ def test_fleiss_kappa_perc_agreement(setup_celery, test_project_all_irr_3_coders
     assert round(perc,2) == 0.25
 
 
-def test_heatmap_data(setup_celery, test_project_half_irr_data, test_half_irr_all_queues, test_profile, test_profile2, test_labels_half_irr, test_redis, tmpdir, settings):
+def test_heatmap_data(setup_celery, test_project_half_irr_data, test_half_irr_all_queues,
+                       test_profile, test_profile2, test_labels_half_irr, test_redis, tmpdir, settings):
     '''
     These tests check that the heatmap accurately reflects the data
     '''
@@ -1680,7 +1683,8 @@ def test_heatmap_data(setup_celery, test_project_half_irr_data, test_half_irr_al
     heatmap = pd.DataFrame(heatmap[combo1])
     assert np.sum(pd.DataFrame(heatmap)["count"].tolist()) == 8
 
-def test_percent_agreement_table(setup_celery, test_project_all_irr_3_coders_data, test_all_irr_3_coders_all_queues, test_profile, test_profile2, test_profile3, test_labels_all_irr_3_coders, test_redis, tmpdir, settings):
+def test_percent_agreement_table(setup_celery, test_project_all_irr_3_coders_data, test_all_irr_3_coders_all_queues,
+                                  test_profile, test_profile2, test_profile3, test_labels_all_irr_3_coders, test_redis, tmpdir, settings):
     '''
     This tests the percent agreement table
     '''

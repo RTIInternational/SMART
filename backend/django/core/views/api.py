@@ -62,12 +62,13 @@ def download_data(request, pk):
         labeled_data = DataLabel.objects.filter(label=label)
         for d in labeled_data:
             temp = {}
+            temp['ID'] = d.data.upload_id
             temp['Text'] = d.data.text
             temp['Label'] = label.name
             data.append(temp)
 
     buffer = io.StringIO()
-    wr = csv.DictWriter(buffer, fieldnames=['Text', 'Label'], quoting=csv.QUOTE_ALL)
+    wr = csv.DictWriter(buffer, fieldnames=['ID','Text', 'Label'], quoting=csv.QUOTE_ALL)
     wr.writeheader()
     wr.writerows(data)
 

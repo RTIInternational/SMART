@@ -3,6 +3,7 @@ import pandas as pd
 
 from core.management.commands.seed import (SEED_FILE_PATH)
 from core.models import Queue
+from core.util import md5_hash
 
 def assert_obj_exists(model, filter_):
     '''

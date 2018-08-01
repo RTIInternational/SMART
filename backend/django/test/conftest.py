@@ -93,6 +93,14 @@ def test_queue(db, test_project_data):
     return add_queue(test_project_data, TEST_QUEUE_LEN)
 
 @pytest.fixture
+def test_queue_labeled(db, test_project_labeled):
+    '''
+    A queue containing data from the test project, with length set to
+    the global len.
+    '''
+    return add_queue(test_project_labeled, TEST_QUEUE_LEN, type="normal")
+
+@pytest.fixture
 def test_admin_queue(db, test_project_data):
     '''
     A queue containing data from the test project, with length set to
@@ -107,6 +115,22 @@ def test_irr_queue(db, test_project_data):
     the global len.
     '''
     return add_queue(test_project_data, MAX_DATA_LEN, type="irr")
+
+@pytest.fixture
+def test_irr_queue_labeled(db, test_project_labeled):
+    '''
+    A queue containing data from the test project, with length set to
+    the global len.
+    '''
+    return add_queue(test_project_labeled, MAX_DATA_LEN, type="irr")
+
+@pytest.fixture
+def test_admin_queue_labeled(db, test_project_labeled):
+    '''
+    A queue containing data from the test project, with length set to
+    the global len.
+    '''
+    return add_queue(test_project_labeled, TEST_QUEUE_LEN, type="admin")
 
 @pytest.fixture
 def test_profile_queue(db, test_profile, test_project_data):
@@ -143,6 +167,14 @@ def test_tfidf_matrix(test_project_data):
     return create_tfidf_matrix(data)
 
 @pytest.fixture
+def test_tfidf_matrix_labeled(test_project_labeled):
+    '''
+    A CSR-format tf-idf matrix created from the data of test_project_data
+    '''
+    data = Data.objects.filter(project=test_project_labeled)
+    return create_tfidf_matrix(data)
+
+@pytest.fixture
 def test_labels(test_project_data):
     '''
     A list of labels that correspond to SEED_LABELS
@@ -155,34 +187,34 @@ def test_labels(test_project_data):
     return labels
 
 @pytest.fixture
-def test_project_labels(test_project_data):
+def test_project_labels(test_project):
     '''
     A list of labels that correspond to SEED_LABELS
     '''
     labels = []
 
     for l in SEED_LABELS:
-        labels.append(Label.objects.create(name=l, project=test_project_data))
+        labels.append(Label.objects.create(name=l, project=test_project))
 
-    return test_project_data
+    return test_project
 
 @pytest.fixture
-def test_project_labeled(test_project, test_labels):
+def test_project_labeled(test_project):
     '''
     A project that has labeled data
     '''
+    for l in SEED_LABELS:
+        Label.objects.create(name=l, project=test_project)
     test_data = read_test_data_backend(file='./core/data/test_files/test_some_labels.csv')
     add_data(test_project, test_data)
     return test_project
 
 
 @pytest.fixture
-def test_project_labeled_and_tfidf(test_project_labeled, test_tfidf_matrix, tmpdir, settings):
+def test_project_labeled_and_tfidf(test_project_labeled, test_tfidf_matrix_labeled, tmpdir, settings):
     data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
     settings.TF_IDF_PATH = str(data_temp)
-
-    fpath = save_tfidf_matrix(test_tfidf_matrix, test_project_labeled.pk)
-
+    fpath = save_tfidf_matrix(test_tfidf_matrix_labeled, test_project_labeled.pk)
     return test_project_labeled
 
 @pytest.fixture
