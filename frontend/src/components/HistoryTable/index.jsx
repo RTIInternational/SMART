@@ -77,6 +77,7 @@ class HistoryTable extends React.Component {
         data={table_data}
         columns={columns}
         pageSizeOptions={page_sizes}
+        pageSize={(table_data.length < 50) ? table_data.length : 50}
         SubComponent={row => {
           return (
             <div className="sub-row">
