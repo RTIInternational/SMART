@@ -90,10 +90,13 @@ class Model(models.Model):
     )
 
 class Data(models.Model):
+    class Meta:
+        unique_together = (('hash', 'upload_id_hash', 'project'))
     text = models.TextField()
     hash = models.CharField(max_length=128)
     project = models.ForeignKey('Project')
-    df_idx = models.IntegerField()
+    upload_id = models.CharField(max_length=128)
+    upload_id_hash = models.CharField(max_length=128)
 
     def __str__(self):
         return self.text

@@ -1,11 +1,13 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from .models import Project, ProjectPermissions, Label
+from .models import Project, ProjectPermissions, Label, Data
 import pandas as pd
+import numpy as np
 from pandas.errors import EmptyDataError, ParserError
 from django.forms.widgets import RadioSelect, Textarea
 import copy
 from io import StringIO
+from core.util import md5_hash
 
 
 
@@ -22,6 +24,7 @@ def clean_data_helper(data, supplied_labels):
         'application/vnd.ms-excel.sheet.binary.macroenabled.12'
     ]
     ALLOWED_HEADER = ['Text', 'Label']
+    ALLOWED_HEADER_ID = ['ID', 'Text', 'Label']
     MAX_FILE_SIZE = 4 * 1000 * 1000 * 1000
 
 
@@ -48,13 +51,13 @@ def clean_data_helper(data, supplied_labels):
         # Some files are not in utf-8, let's just reject those.
         raise ValidationError("Unable to read the file.  Please ensure that the file is encoded in UTF-8.")
 
-    if len(data.columns) != len(ALLOWED_HEADER):
-        raise ValidationError("File has incorrect number of columns.  Received {0} but expected {1}."\
-                              .format(len(data.columns), len(ALLOWED_HEADER)))
+    if (len(data.columns) != len(ALLOWED_HEADER)) and len(data.columns) != len(ALLOWED_HEADER_ID):
+        raise ValidationError("File has incorrect number of columns.  Received {0} but expected {1} or {2}."\
+                              .format(len(data.columns), len(ALLOWED_HEADER), len(ALLOWED_HEADER_ID)))
 
-    if data.columns.tolist() != ALLOWED_HEADER:
-        raise ValidationError("File headers are incorrect.  Received {0} but header must be {1}."\
-                              .format(', '.join(data.columns), ', '.join(ALLOWED_HEADER)))
+    if (data.columns.tolist() != ALLOWED_HEADER) and (data.columns.tolist() != ALLOWED_HEADER_ID):
+        raise ValidationError("File headers are incorrect.  Received {0} but header must be {1} or {2}."\
+                              .format(', '.join(data.columns), ', '.join(ALLOWED_HEADER), ', '.join(ALLOWED_HEADER_ID)))
 
     if len(data) < 1:
         raise ValidationError("File should contain some data.")
@@ -72,6 +75,21 @@ def clean_data_helper(data, supplied_labels):
             "All text in the file already has a label.  SMART needs unlabeled data "
             "to do active learning.  Please upload a file that has less labels."
         )
+
+    if len(data.columns) == len(ALLOWED_HEADER_ID):
+        #there should be no null values
+        if data["ID"].isnull().sum() > 0:
+            raise ValidationError("Unique ID field cannot have missing values.")
+
+        data_lens = data["ID"].astype(str).apply(lambda x: len(x))
+        #check that the ID follow the character limit
+        if np.any(np.greater(data_lens,[128]*len(data_lens))):
+            raise ValidationError("Unique ID should not be greater than 128 characters.")
+
+        data["id_hash"] = data["ID"].astype(str).apply(md5_hash)
+        #they have an id column, check for duplicates
+        if len(data["id_hash"].tolist()) > len(data["id_hash"].unique()):
+            raise ValidationError("Unique ID provided contains duplicates.")
 
     return data
 
