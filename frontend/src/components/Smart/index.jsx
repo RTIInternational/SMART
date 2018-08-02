@@ -1,8 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Button, ButtonToolbar, Clearfix,
-   Well, Tooltip, OverlayTrigger,
-   ProgressBar, Tabs, Tab, Modal, Glyphicon  } from "react-bootstrap";
+import { Button, ButtonToolbar, Clearfix, ButtonGroup,
+   Well, Tooltip, OverlayTrigger, Glyphicon,
+   ProgressBar, Tabs, Tab, Modal  } from "react-bootstrap";
 import Card from '../Card';
 import HistoryTable from '../HistoryTable';
 import Skew from '../Skew';
@@ -17,8 +17,10 @@ class Smart extends React.Component {
     super(props);
     this.getPDF = this.getPDF.bind(this);
     this.toggleCodebook = this.toggleCodebook.bind(this);
+    this.toggleLabel = this.toggleLabel.bind(this);
     this.state = {
-      codebook_open: false
+      codebook_open: false,
+      labels_open: false
     }
   }
 
@@ -27,35 +29,77 @@ class Smart extends React.Component {
     this.setState({codebook_open: !this.state.codebook_open});
   }
 
+  toggleLabel(){
+    this.setState({labels_open: !this.state.labels_open});
+  }
+
 
   //This renders the PDF in the modal if one exists for the project
-  getPDF()
+  getPDF(labels)
   {
     if(CODEBOOK_URL != "")
     {
-      return (
-        <div className="codebook-div">
-          <Button onClick={this.toggleCodebook} className="codebook-btn">Codebook</Button>
-          <Modal show={this.state.codebook_open} onHide={this.toggleCodebook}>
-            <Modal.Header closeButton>
-              <Modal.Title>Codebook</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-            <embed
-                type="application/pdf"
-                src={CODEBOOK_URL}
-                id="pdf_document"
-                width="100%"
-                height="100%"
-            />
-            </Modal.Body>
-          </Modal>
-        </div>
+      var codebook_module = (
+        <Modal show={this.state.codebook_open} onHide={this.toggleCodebook}>
+          <Modal.Header closeButton>
+            <Modal.Title>Codebook</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+          <embed
+              type="application/pdf"
+              src={CODEBOOK_URL}
+              id="pdf_document"
+              width="100%"
+              height="100%"
+          />
+          </Modal.Body>
+        </Modal>
+      );
+      var codebook_button = (
+        <Button onClick={this.toggleCodebook} className="codebook-btn">Codebook</Button>
       );
     }
     else {
-      return null;
+      codebook_module = (<div />);
+      codebook_button = (<div />);
     }
+
+    if(this.state.labels_open)
+    {
+      var label_button = (
+        <Button
+        onClick={this.toggleLabel}
+        className="minus_button"
+        bsStyle="danger"
+        >
+        <Glyphicon glyph="minus"/> Label Guide
+        </Button>
+      )
+    }
+    else {
+      label_button = (
+        <Button
+        onClick={this.toggleLabel}
+        className="plus_button"
+        bsStyle="success"
+        >
+        <Glyphicon glyph="plus"/> Label Guide
+        </Button>
+      )
+    }
+
+    return (
+      <div className="margin-bottom-15 no-overflow">
+        <ButtonGroup className="pull-right">
+          {label_button}
+          {codebook_button}
+        </ButtonGroup>
+        <LabelInfo labels={labels} labels_open={this.state.labels_open}/>
+        {codebook_module}
+      </div>
+    )
+
+
   }
 
   componentWillMount() {
@@ -68,9 +112,15 @@ class Smart extends React.Component {
     changeToSkip, getUnlabeled, unlabeled_data,
     skewLabel, getLabelCounts, label_counts, getAdmin, admin_data,
     adminLabel, discardData, getDiscarded, discarded_data,
-    restoreData} = this.props;
+    restoreData, labels} = this.props;
+    if(labels && labels.length > 0)
+    {
+      var label_list = labels[0];
+    }
+    else {
+      label_list = [];
+    }
 
-    var labels = [];
     var progress = 100;
     var start_card = 0;
     var num_cards = 0;
@@ -84,8 +134,6 @@ class Smart extends React.Component {
     }
     if (!(cards === undefined) && cards.length > 0) {
       //just get the labels from the cards
-      labels = cards[0].options;
-
       var card = (
       <Card className="full" key={cards[0].id}>
           <h2>Card {cards[0].id + 1}</h2>
@@ -93,7 +141,7 @@ class Smart extends React.Component {
               { cards[0].text['text'] }
           </p>
           <ButtonToolbar bsClass="btn-toolbar pull-right">
-              {cards[0].options.map( (opt) => (
+              {label_list.map( (opt) => (
                 <OverlayTrigger
                 key={opt['pk']+"__"+cards[0].id+"__tooltip"}
                 placement = "top"
@@ -114,7 +162,9 @@ class Smart extends React.Component {
                   Clicking this button will send this document to an administrator for review
                 </Tooltip>
               }>
-                <Button onClick={() => passCard(cards[0])}
+                <Button onClick={() => {
+                  passCard(cards[0], cards.length);
+                }}
                 bsStyle="info">Skip</Button>
               </OverlayTrigger>
           </ButtonToolbar>
@@ -134,16 +184,14 @@ class Smart extends React.Component {
       <Tabs defaultActiveKey={1} id="data_tabs" >
         <Tab eventKey={1} title="Annotate Data" className="full card">
         <div className="cardContent">
-          {this.getPDF()}
+          {this.getPDF(label_list)}
           <ProgressBar>
             <ProgressBar
             style={{minWidth: 60}}
             label={label}
             now={progress}/>
           </ProgressBar>
-          <LabelInfo
-            labels={labels}
-          />
+
           {card}
         </div>
         </Tab>
@@ -152,7 +200,7 @@ class Smart extends React.Component {
             <HistoryTable
               getHistory={getHistory}
               history_data={history_data}
-              labels={labels}
+              labels={label_list}
               changeLabel={changeLabel}
               changeToSkip={changeToSkip}
             />
@@ -163,7 +211,7 @@ class Smart extends React.Component {
             <Skew
             getUnlabeled={getUnlabeled}
             unlabeled_data={unlabeled_data}
-            labels={labels}
+            labels={label_list}
             skewLabel={skewLabel}
             getLabelCounts={getLabelCounts}
             label_counts={label_counts}
@@ -175,7 +223,7 @@ class Smart extends React.Component {
             <AdminTable
             getAdmin={getAdmin}
             admin_data={admin_data}
-            labels={labels}
+            labels={label_list}
             adminLabel={adminLabel}
             discardData={discardData}
             />

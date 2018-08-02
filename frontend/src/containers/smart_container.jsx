@@ -20,7 +20,8 @@ const mapStateToProps = (state) => {
         unlabeled_data: state.adminTables.unlabeled_data,
         label_counts: state.adminTables.label_counts,
         admin_data: state.adminTables.admin_data,
-        discarded_data: state.adminTables.discarded_data
+        discarded_data: state.adminTables.discarded_data,
+        labels: state.classifier.labels
     };
 };
 
@@ -29,11 +30,11 @@ const mapDispatchToProps = (dispatch) => {
         fetchCards: () => {
             dispatch(fetchCards(PROJECT_ID))
         },
-        annotateCard: (dataID, labelID) => {
-            dispatch(annotateCard(dataID, labelID, PROJECT_ID))
+        annotateCard: (dataID, labelID, num_cards_left) => {
+            dispatch(annotateCard(dataID, labelID, num_cards_left, PROJECT_ID))
         },
-        passCard: (dataID) => {
-            dispatch(passCard(dataID, PROJECT_ID))
+        passCard: (dataID, num_cards_left) => {
+            dispatch(passCard(dataID, num_cards_left, PROJECT_ID))
         },
         popCard: () => {
             dispatch(popCard())
