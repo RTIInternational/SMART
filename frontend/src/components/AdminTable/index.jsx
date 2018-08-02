@@ -65,8 +65,8 @@ class AdminTable extends React.Component {
               }>
               <Button key={"discard_" + row.row.id.toString()}
               onClick={() => discardData(row.row.id)}
-              bsStyle="info"
-              >Discard Data</Button>
+              bsStyle="danger"
+              >Discard</Button>
             </OverlayTrigger>
 
           </ButtonToolbar>

@@ -721,7 +721,7 @@ def check_and_trigger_model(datum):
     if current_training_set.celery_task_id != '':
         return_str = 'task already running'
     elif labeled_data_count >= batch_size:
-        if labels_count < project.labels.count():
+        if labels_count < project.labels.count() or project.classifier is None:
             fill_queue(project.queue_set.get(admin=False), 'random')
             return_str = 'random'
         else:

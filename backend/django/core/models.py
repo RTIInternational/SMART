@@ -48,7 +48,7 @@ class Project(models.Model):
     ]
 
     learning_method = models.CharField(max_length = 15, default='least confident', choices=ACTIVE_L_CHOICES)
-    classifier = models.CharField(max_length = 19, default="logistic_regression", choices = CLASSIFIER_CHOICES)
+    classifier = models.CharField(max_length = 19, default="logistic_regression", choices = CLASSIFIER_CHOICES, null=True)
 
     def get_absolute_url(self):
         return reverse('projects:project_detail', kwargs={'pk': self.pk})
@@ -67,6 +67,12 @@ class Project(models.Model):
 
     def labeled_data_count(self):
         return self.data_set.all().filter(datalabel__isnull=False).count()
+
+    def has_classifier(self):
+        if self.classifier is not None:
+            return 1
+        else:
+            return 0
 
 class ProjectPermissions(models.Model):
     class Meta:

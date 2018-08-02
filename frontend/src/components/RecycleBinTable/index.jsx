@@ -67,7 +67,7 @@ class RecycleBinTable extends React.Component {
                   </Tooltip>
                 }>
                 <Button onClick = {() => restoreData(row.row.id)}
-                bsStyle="primary">Restore</Button>
+                bsStyle="danger">Restore</Button>
               </OverlayTrigger>
               </ButtonToolbar>
             </div>
