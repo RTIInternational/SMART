@@ -101,6 +101,14 @@ def test_queue_labeled(db, test_project_labeled):
     return add_queue(test_project_labeled, TEST_QUEUE_LEN, type="normal")
 
 @pytest.fixture
+def test_queue_labeled(db, test_project_labeled):
+    '''
+    A queue containing data from the test project, with length set to
+    the global len.
+    '''
+    return add_queue(test_project_labeled, TEST_QUEUE_LEN, type="normal")
+
+@pytest.fixture
 def test_admin_queue(db, test_project_data):
     '''
     A queue containing data from the test project, with length set to
@@ -123,6 +131,14 @@ def test_irr_queue_labeled(db, test_project_labeled):
     the global len.
     '''
     return add_queue(test_project_labeled, MAX_DATA_LEN, type="irr")
+
+@pytest.fixture
+def test_admin_queue_labeled(db, test_project_labeled):
+    '''
+    A queue containing data from the test project, with length set to
+    the global len.
+    '''
+    return add_queue(test_project_labeled, TEST_QUEUE_LEN, type="admin")
 
 @pytest.fixture
 def test_admin_queue_labeled(db, test_project_labeled):

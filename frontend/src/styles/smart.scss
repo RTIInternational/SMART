@@ -326,15 +326,19 @@ li.disabled {
     content: '\e080';    /* adjust as needed, taken from bootstrap.css */
 }
 
-.codebook-div {
+.no-overflow {
     position: relative;
     overflow: hidden;
 }
 
-.codebook-btn {
-    float: right;
-}
-
 .margin-bottom-15 {
     margin-bottom: 15px;
+}
+
+#chart_panel {
+    height: 350px;
+}
+
+#chart_panel div.panel_body {
+    height: 350px;
 }

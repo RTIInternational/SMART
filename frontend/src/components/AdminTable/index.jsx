@@ -48,7 +48,7 @@ class AdminTable extends React.Component {
           <ButtonToolbar bsClass="btn-toolbar pull-right">
             {labels.map( (label) => {
               return (
-              <Button key={label.pk.toString() + "_" + row.row.id.toString()}
+              <Button key={label.pk.toString() + "_adm_" + row.row.id.toString()}
               onClick={() => adminLabel(row.row.id,label.pk)}
               bsStyle="primary"
               >{label.name}</Button>
@@ -60,6 +60,14 @@ class AdminTable extends React.Component {
     }
   ];
 
+  var page_sizes = [1];
+  for(i = 5; i < table_data.length; i+=5)
+  {
+    page_sizes.push(i);
+  }
+  page_sizes.push(table_data.length);
+
+
   return (
     <div>
     <h3>Instructions</h3>
@@ -67,7 +75,7 @@ class AdminTable extends React.Component {
       <ReactTable
         data={table_data}
         columns={columns}
-        pageSizeOptions={[1,5,10,20,30,50,100]}
+        pageSizeOptions={page_sizes}
         defaultPageSize={1}
         expanded={expanded}
         filterable={false}
