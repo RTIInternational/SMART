@@ -96,31 +96,26 @@
                   <dt>Batch Size</dt>
                   <dd>{{ project.batch_size }}</dd>
                 </li>
+                {% if project.percentage_irr == 0.0 %}
+                <li class="list-group-item">
+                  <dt>No IRR being used</dt>
+                </li>
+                {% else %}
+                <li class="list-group-item">
+                  <dt>Percent IRR</dt>
+                  <dd>{{ project.percentage_irr }}%</dd>
+                </li>
+                <li class="list-group-item">
+                  <dt>Number of users for IRR</dt>
+                  <dd>{{ project.num_users_irr }}</dd>
+                </li>
+                {% endif %}
               </ul>
             </div>
           </div>
         </div>
       </div>
-      <div class="col-md-4">
-        <div class="panel panel-default">
-          <div class="panel-heading">
-            <h5 class="panel-title">
-              <a data-toggle="collapse" href="#settings-panel" class="accordion-toggle collapsed">
-                Advanced Project Settings
-              </a>
-            </h5>
-          </div>
-          <div id="settings-panel" class="panel-collapse collapse">
-            <div class="panel-body">
-              <p>Selection Algorithm: {{ project.learning_method }}</p>
-              <p>Classifier: {{ project.classifier }}
-              <p>Batch Size: {{ project.batch_size }}</p>
-              <div id="irr_info"></div>
-              <p id="num_users"></div>
-            </div>
-          </div>
-        </div>
-      </div>
+    </div>
     <div class="row">
       <div class="col-md-12">
         <div class="panel panel-default">
@@ -232,24 +227,5 @@ $("#download_btn").on("click", function() {
     xhttp.responseType = 'blob';
     xhttp.send();
 });
-make_irr()
-function make_irr()
-{
-  var irr_div = $("#irr_info");
-  if ({{ project.percentage_irr }} == 0.0)
-  {
-    irr_div.append(document.createTextNode("IRR: No IRR being used."));
-  }
-  else {
-    var percent = ({{ project.percentage_irr }} * 100).toString() + "%";
-    irr_div.append(document.createTextNode("Percent IRR: "+percent));
-    $("#num_users").html("Number of user for IRR: "+{{project.num_users_irr}});
-  }
-
-}
-
-
-
-
 </script>
 {% endblock %}
