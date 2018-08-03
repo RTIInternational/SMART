@@ -10,6 +10,7 @@ describe('<LabelInfo />', () => {
             const wrapper = shallow(
                 <LabelInfo
                     labels={labels}
+                    labels_open={true}
                 />
             );
         });

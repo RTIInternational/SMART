@@ -8,12 +8,14 @@ import { getLabelCounts, getAdmin } from './adminTables';
 
 export const POP_CARD = 'POP_CARD';
 export const PUSH_CARD = 'PUSH_CARD';
+export const SET_LABEL = 'SET_LABEL';
 export const SET_MESSAGE = 'SET_MESSAGE';
 export const CLEAR_DECK = 'CLEAR_DECK';
 export const SET_URL = 'SET_URL';
 
 export const popCard = createAction(POP_CARD);
 export const pushCard = createAction(PUSH_CARD);
+export const setLabel = createAction(SET_LABEL);
 export const setMessage = createAction(SET_MESSAGE);
 export const clearDeck = createAction(CLEAR_DECK);
 export const setURL = createAction(SET_URL);
@@ -37,11 +39,12 @@ export const fetchCards = (projectID) => {
                 // If error was in the response then set that message
                 if ('error' in response) return dispatch(setMessage(response.error));
 
+                dispatch(setLabel(response.labels));
+
                 for (let i = 0; i < response.data.length; i++) {
 
                     const card = {
                         id: i,
-                        options: response.labels,
                         text: response.data[i]
                     }
                     dispatch(pushCard(card));
@@ -51,7 +54,7 @@ export const fetchCards = (projectID) => {
     }
 };
 
-export const annotateCard = (card, labelID, projectID) => {
+export const annotateCard = (card, labelID, num_cards_left, projectID) => {
     let payload = {
         labelID: labelID,
         labeling_time: moment().diff(card['start_time'], 'seconds') // now - start_time rounded to whole seconds
@@ -75,16 +78,20 @@ export const annotateCard = (card, labelID, projectID) => {
                     return dispatch(setMessage(response.error))
                 }
                 else {
-                    dispatch(popCard())
-                    dispatch(getHistory(projectID))
-                    dispatch(getLabelCounts(projectID))
+                    dispatch(popCard());
+                    dispatch(getHistory(projectID));
+                    dispatch(getLabelCounts(projectID));
+                    if(num_cards_left <=1)
+                    {
+                      dispatch(fetchCards(projectID));
+                    }
                 }
             })
     }
 }
 
 //skip a card and put it in the admin table
-export const passCard = (card, projectID) => {
+export const passCard = (card, num_cards_left, projectID) => {
     let payload = {
     }
     let apiURL = `/api/skip_data/${card.text.pk}/`;
@@ -108,6 +115,10 @@ export const passCard = (card, projectID) => {
                 else {
                     dispatch(popCard())
                     dispatch(getAdmin(projectID))
+                    if(num_cards_left <=1)
+                    {
+                      dispatch(fetchCards(projectID))
+                    }
                 }
             })
     }
