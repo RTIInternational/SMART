@@ -142,7 +142,7 @@ class Smart extends React.Component {
           <ButtonToolbar bsClass="btn-toolbar pull-right">
               {label_list.map( (opt) => (
                   <Button onClick={() => {
-                    annotateCard(cards[0], opt['pk'], cards.length);
+                    annotateCard(cards[0], opt['pk'], cards.length, ADMIN);
                   }}
                   bsStyle="primary"
                   key={`deck-button-${opt['name']}`}>{opt['name']}</Button>
@@ -155,7 +155,7 @@ class Smart extends React.Component {
                 </Tooltip>
               }>
                 <Button onClick={() => {
-                  passCard(cards[0], cards.length);
+                  passCard(cards[0], cards.length, ADMIN);
                 }}
                 bsStyle="info">Skip</Button>
               </OverlayTrigger>
@@ -172,6 +172,33 @@ class Smart extends React.Component {
         );
     }
 
+    var adminTab1 = (
+      <Tab eventKey={3} title="Fix Skew" className="full card">
+        <div className="cardContent">
+          <Skew
+          getUnlabeled={getUnlabeled}
+          unlabeled_data={unlabeled_data}
+          labels={label_list}
+          skewLabel={skewLabel}
+          getLabelCounts={getLabelCounts}
+          label_counts={label_counts}
+          />
+        </div>
+      </Tab>
+    );
+    var adminTab2 = (
+      <Tab eventKey={4} title="Skipped Cards" className="full card">
+        <div className="cardContent">
+          <AdminTable
+          getAdmin={getAdmin}
+          admin_data={admin_data}
+          labels={label_list}
+          adminLabel={adminLabel}
+          />
+        </div>
+      </Tab>
+    );
+
     return (
       <Tabs defaultActiveKey={1} id="data_tabs" >
         <Tab eventKey={1} title="Annotate Data" className="full card">
@@ -183,7 +210,6 @@ class Smart extends React.Component {
             label={label}
             now={progress}/>
           </ProgressBar>
-
           {card}
         </div>
         </Tab>
@@ -198,28 +224,8 @@ class Smart extends React.Component {
             />
           </div>
         </Tab>
-        <Tab eventKey={3} disabled={!ADMIN} title="Fix Skew" className="full card">
-          <div className="cardContent">
-            <Skew
-            getUnlabeled={getUnlabeled}
-            unlabeled_data={unlabeled_data}
-            labels={label_list}
-            skewLabel={skewLabel}
-            getLabelCounts={getLabelCounts}
-            label_counts={label_counts}
-            />
-          </div>
-        </Tab>
-        <Tab eventKey={4} disabled={!ADMIN} title="Skipped Cards" className="full card">
-          <div className="cardContent">
-            <AdminTable
-            getAdmin={getAdmin}
-            admin_data={admin_data}
-            labels={label_list}
-            adminLabel={adminLabel}
-            />
-          </div>
-        </Tab>
+        { ADMIN === true && adminTab1 }
+        { ADMIN === true && adminTab2 }
       </Tabs>
     );
 
@@ -230,7 +236,6 @@ Smart.propTypes = {
     message: PropTypes.string,
     history_data: PropTypes.arrayOf(PropTypes.object),
     getHistory: PropTypes.func.isRequired,
-    labels: PropTypes.arrayOf(PropTypes.object),
     changeLabel: PropTypes.func.isRequired,
     changeToSkip: PropTypes.func.isRequired,
     getUnlabeled: PropTypes.func.isRequired,

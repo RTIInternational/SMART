@@ -1,7 +1,7 @@
 from django.contrib.auth.models import Group, User as AuthUser
 from django.conf import settings
 from rest_framework import serializers
-from core.models import (Profile, Project, Model, Data, Label, DataLabel,
+from core.models import (Profile, Project, Model, Data, Label, DataLabel, IRRLog,
                          DataPrediction, Queue, DataQueue, AssignedData, LabelChangeLog)
 
 
@@ -45,6 +45,11 @@ class DataSerializer(serializers.ModelSerializer):
 class DataLabelSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = DataLabel
+        fields = ('data', 'profile', 'label', 'timestamp')
+
+class IRRLog(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = IRRLog
         fields = ('data', 'profile', 'label', 'timestamp')
 
 class LabelChangeLogSerializer(serializers.HyperlinkedModelSerializer):

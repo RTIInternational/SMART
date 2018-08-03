@@ -245,6 +245,10 @@ li.disabled {
     visibility: hidden;
 }
 
+#irr_tab_navitem .hidden {
+    visibility: hidden;
+}
+
 .modal-content {
     z-index: auto;
 }
@@ -285,6 +289,10 @@ li.disabled {
 .sub-row {
     border-top: 2px solid #EFEFEF;
     margin: 0px 15px 10px;
+}
+
+#heatmap_chart {
+    overflow: auto;
 }
 
 .no_word_wrap {

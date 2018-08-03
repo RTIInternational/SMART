@@ -16,7 +16,7 @@ def test_celery():
     assert result == 'Test Task Complete'
 
 
-def test_model_task(test_project_labeled_and_tfidf, test_queue_labeled, test_redis, tmpdir, settings):
+def test_model_task(test_project_labeled_and_tfidf, test_queue_labeled, test_irr_queue_labeled, test_redis, tmpdir, settings):
     project = test_project_labeled_and_tfidf
     test_queue = test_queue_labeled
     initial_training_set = project.get_current_training_set()
@@ -42,8 +42,8 @@ def test_model_task(test_project_labeled_and_tfidf, test_queue_labeled, test_red
     assert len(predictions) == Data.objects.filter(project=project,
                                                    labelers=None).count() * project.labels.count()
 
-    # Assert queue filled and redis sycned
-    assert test_queue.data.count() == test_queue.length
+    # Assert bothe queues are filled and redis sycned
+    assert (test_queue.data.count() + test_irr_queue_labeled.data.count()) == test_queue.length
     assert_redis_matches_db(test_redis)
 
     # Assert queue correct size
@@ -78,22 +78,27 @@ def test_tfidf_creation_task(test_project_data, tmpdir, settings):
     assert file == os.path.join(str(data_temp), str(test_project_data.pk) + '.npz')
 
 
-def test_model_task_redis_no_dupes_data_left_in_queue(test_project_labeled_and_tfidf, test_queue_labeled, test_redis, tmpdir, settings):
+def test_model_task_redis_no_dupes_data_left_in_queue(test_project_labeled_and_tfidf, test_queue_labeled, test_irr_queue_labeled, test_admin_queue_labeled, test_redis, tmpdir, settings):
     project = test_project_labeled_and_tfidf
     test_queue = test_queue_labeled
     initial_training_set = project.get_current_training_set().set_number
-    queue = project.queue_set.get(admin=False)
+    queue = project.queue_set.get(type="normal")
     queue.length = 40
     queue.save()
+
+    irr_queue = project.queue_set.get(type="irr")
+    irr_queue.length = 40
+    irr_queue.save()
 
     model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
     settings.MODEL_PICKLE_PATH = str(model_path_temp)
 
-    fill_queue(queue, 'random')
-
     batch_size = project.batch_size
+    fill_queue(queue, 'random', irr_queue , irr_percent = project.percentage_irr ,batch_size = batch_size)
+
+
     labels = project.labels.all()
-    for i in range(batch_size):
+    for i in range(int(batch_size* ((100-project.percentage_irr)/100))):
         datum = assign_datum(project.creator, project)
         label_data(random.choice(labels), datum, project.creator, 3)
 
@@ -103,7 +108,7 @@ def test_model_task_redis_no_dupes_data_left_in_queue(test_project_labeled_and_t
     assert len(redis_items) == len(set(redis_items))
 
 
-def test_model_task_redis_no_dupes_data_unassign_assigned_data(test_project_labeled_and_tfidf, test_queue_labeled, test_redis, tmpdir, settings):
+def test_model_task_redis_no_dupes_data_unassign_assigned_data(test_project_labeled_and_tfidf, test_queue_labeled, test_irr_queue_labeled, test_admin_queue_labeled ,test_redis, tmpdir, settings):
     project = test_project_labeled_and_tfidf
     test_queue = test_queue_labeled
     person2 = create_profile('test_profilezzz', 'password', 'test_profile@rti.org')
@@ -111,16 +116,20 @@ def test_model_task_redis_no_dupes_data_unassign_assigned_data(test_project_labe
     ProjectPermissions.objects.create(profile=person2, project=project, permission='CODER')
     ProjectPermissions.objects.create(profile=person3, project=project, permission='CODER')
     initial_training_set = project.get_current_training_set().set_number
-    queue = project.queue_set.get(admin=False)
+    queue = project.queue_set.get(type="normal")
     queue.length = 40
     queue.save()
+
+    irr_queue = project.queue_set.get(type="irr")
+    irr_queue.length = 40
+    irr_queue.save()
 
     model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
     settings.MODEL_PICKLE_PATH = str(model_path_temp)
 
-    fill_queue(queue, 'random')
-
     batch_size = project.batch_size
+    fill_queue(queue, 'random', irr_queue , irr_percent = project.percentage_irr ,batch_size = batch_size)
+
     labels = project.labels.all()
     assignments = get_assignments(project.creator, project, batch_size)
     for assignment in assignments:
