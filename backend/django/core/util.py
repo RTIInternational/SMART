@@ -503,14 +503,14 @@ def pop_first_nonempty_queue(project, profile=None, type="normal"):
 
 
     if type == "irr":
-        for queue in eligible_queue_ids:
-            queue_id = int(queue.replace("queue:",""))
+        for queue_id in eligible_queue_ids:
+            queue = redis_parse_queue(queue_id.encode())
 
             #first get the assigned data that was already labeled, or data already assigned
             labeled_irr_data = DataLabel.objects.filter(profile=profile).values_list('data',flat=True)
-            assigned_data = AssignedData.objects.filter(profile=profile, queue=queue_id).values_list('data',flat=True)
+            assigned_data = AssignedData.objects.filter(profile=profile, queue=queue).values_list('data',flat=True)
             skipped_data = IRRLog.objects.filter(profile=profile,label__isnull=True).values_list('data',flat=True)
-            assigned_unlabeled = DataQueue.objects.filter(queue=queue_id).exclude(data__in=labeled_irr_data).exclude(data__in=assigned_data).exclude(data__in=skipped_data)
+            assigned_unlabeled = DataQueue.objects.filter(queue=queue).exclude(data__in=labeled_irr_data).exclude(data__in=assigned_data).exclude(data__in=skipped_data)
 
             #if there are no elements, return none
             if len(assigned_unlabeled) == 0:
@@ -518,8 +518,7 @@ def pop_first_nonempty_queue(project, profile=None, type="normal"):
             else:
                 #else, get the first element off the group and return it
                 datum = Data.objects.get(pk=assigned_unlabeled[0].data.pk)
-                queue_obj = Queue.objects.get(pk=queue_id)
-                return (queue_obj, datum)
+                return (queue, datum)
     if len(eligible_queue_ids) == 0:
         return (None, None)
 
