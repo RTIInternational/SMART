@@ -172,6 +172,33 @@ class Smart extends React.Component {
         );
     }
 
+    var adminTab1 = (
+      <Tab eventKey={3} title="Fix Skew" className="full card">
+        <div className="cardContent">
+          <Skew
+          getUnlabeled={getUnlabeled}
+          unlabeled_data={unlabeled_data}
+          labels={label_list}
+          skewLabel={skewLabel}
+          getLabelCounts={getLabelCounts}
+          label_counts={label_counts}
+          />
+        </div>
+      </Tab>
+    );
+    var adminTab2 = (
+      <Tab eventKey={4} title="Skipped Cards" className="full card">
+        <div className="cardContent">
+          <AdminTable
+          getAdmin={getAdmin}
+          admin_data={admin_data}
+          labels={label_list}
+          adminLabel={adminLabel}
+          />
+        </div>
+      </Tab>
+    );
+
     return (
       <Tabs defaultActiveKey={1} id="data_tabs" >
         <Tab eventKey={1} title="Annotate Data" className="full card">
@@ -197,32 +224,8 @@ class Smart extends React.Component {
             />
           </div>
         </Tab>
-        { ADMIN === true && (
-          <React.Fragment>
-            <Tab eventKey={3} title="Fix Skew" className="full card">
-              <div className="cardContent">
-                <Skew
-                getUnlabeled={getUnlabeled}
-                unlabeled_data={unlabeled_data}
-                labels={label_list}
-                skewLabel={skewLabel}
-                getLabelCounts={getLabelCounts}
-                label_counts={label_counts}
-                />
-              </div>
-            </Tab>
-            <Tab eventKey={4} title="Skipped Cards" className="full card">
-              <div className="cardContent">
-                <AdminTable
-                getAdmin={getAdmin}
-                admin_data={admin_data}
-                labels={label_list}
-                adminLabel={adminLabel}
-                />
-              </div>
-            </Tab>
-          </React.Fragment>
-        )}
+        { ADMIN === true && adminTab1 }
+        { ADMIN === true && adminTab2 }
       </Tabs>
     );
 
