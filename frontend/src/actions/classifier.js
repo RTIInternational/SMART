@@ -54,7 +54,7 @@ export const fetchCards = (projectID) => {
     }
 };
 
-export const annotateCard = (card, labelID, num_cards_left, projectID) => {
+export const annotateCard = (card, labelID, num_cards_left, projectID, is_admin) => {
     let payload = {
         labelID: labelID,
         labeling_time: moment().diff(card['start_time'], 'seconds') // now - start_time rounded to whole seconds
@@ -80,20 +80,19 @@ export const annotateCard = (card, labelID, num_cards_left, projectID) => {
                 else {
                     dispatch(popCard())
                     dispatch(getHistory(projectID))
-                    dispatch(getLabelCounts(projectID))
-                    //call getAdmin in case of a irr data
-                    dispatch(getAdmin(projectID))
-                    if(num_cards_left <=1)
-                    {
-                      dispatch(fetchCards(projectID));
+
+                    if (is_admin)  {
+                        dispatch(getAdmin(projectID))
+                        dispatch(getLabelCounts(projectID))
                     }
+                    if(num_cards_left <=1) dispatch(fetchCards(projectID));
                 }
             })
     }
 }
 
 //skip a card and put it in the admin table
-export const passCard = (card, num_cards_left, projectID) => {
+export const passCard = (card, num_cards_left, projectID, is_admin) => {
     let payload = {
     }
     let apiURL = `/api/skip_data/${card.text.pk}/`;
@@ -116,12 +115,10 @@ export const passCard = (card, num_cards_left, projectID) => {
                 }
                 else {
                     dispatch(popCard())
-                    dispatch(getAdmin(projectID))
                     dispatch(getHistory(projectID))
-                    if(num_cards_left <=1)
-                    {
-                      dispatch(fetchCards(projectID))
-                    }
+
+                    if (is_admin) dispatch(getAdmin(projectID))
+                    if(num_cards_left <=1) dispatch(fetchCards(projectID))
                 }
             })
     }
