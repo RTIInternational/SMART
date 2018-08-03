@@ -132,8 +132,8 @@ def test_get_irr_metrics(seeded_database, client, admin_client, test_project_hal
     fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size )
 
     #non-admin should not be able to call the test
-    response = client.get('/api/get_irr_metrics/'+str(project.pk)+'/').json()
-    assert 'error' in response and "Invalid permission. Must be an admin" in response['error']
+    response = client.get('/api/get_irr_metrics/'+str(project.pk)+'/')
+    assert 403 == response.status_code and "Invalid permission. Must be an admin" in str(response.content)
 
     #initially, should have no irr data processed
     response = admin_client.get('/api/get_irr_metrics/'+str(project.pk)+'/').json()
@@ -187,8 +187,8 @@ def test_percent_agree_table(seeded_database, client, admin_client, test_project
     fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size )
 
     #non-admin should not be able to call the test
-    response = client.get('/api/perc_agree_table/'+str(project.pk)+'/').json()
-    assert 'error' in response and "Invalid permission. Must be an admin" in response['error']
+    response = client.get('/api/perc_agree_table/'+str(project.pk)+'/')
+    assert 403 == response.status_code and "Invalid permission. Must be an admin" in str(response.content)
 
     data = get_assignments(client_profile, project, 15)
     data2 = get_assignments(admin_profile, project, 15)
@@ -246,8 +246,8 @@ def test_heat_map_data(seeded_database, client, admin_client, test_project_all_i
     fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size )
 
     #non-admin should not be able to call the test
-    response = client.get('/api/heat_map_data/'+str(project.pk)+'/').json()
-    assert 'error' in response and "Invalid permission. Must be an admin" in response['error']
+    response = client.get('/api/heat_map_data/'+str(project.pk)+'/')
+    assert 403 == response.status_code and "Invalid permission. Must be an admin" in str(response.content)
 
     #get the heatmap. Check that the list of coders and list of labels match
     response = admin_client.get('/api/heat_map_data/'+str(project.pk)+'/').json()
