@@ -10,7 +10,7 @@ from django.db import connection
 from django.contrib.postgres.fields import ArrayField
 from django.utils.html import escape
 from rest_framework import viewsets, permissions
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.db import transaction
 
@@ -42,21 +42,58 @@ from core.pagination import SmartPagination
 from core.templatetags import project_extras
 
 
+class IsAdminOrCreator(permissions.BasePermission):
+    """
+    Checks if the requestor of the endpoint is admin or creator of a project
+    """
+    message = 'Invalid permission. Must be an admin'
+
+    def has_permission(self, request, view):
+        if 'project_pk' in view.kwargs:
+            project = Project.objects.get(pk=view.kwargs['project_pk'])
+        elif 'data_pk' in view.kwargs:
+            project = Data.objects.get(pk=view.kwargs['data_pk']).project
+        else:
+            return False
+
+        return project_extras.proj_permission_level(project, request.user.profile) > 1
+
+
+class IsCoder(permissions.BasePermission):
+    """
+    Checks if the requestor of the endpoint is coder (or higher permission) of a project
+
+    Use pk_kwarg_mapping dictionary to map from the request.path to the appropriate type of pk
+    """
+    message = 'Account disabled by administrator.  Please contact project owner for details'
+
+    def has_permission(self, request, view):
+        if 'project_pk' in view.kwargs:
+            project = Project.objects.get(pk=view.kwargs['project_pk'])
+        elif 'data_pk' in view.kwargs:
+            project = Data.objects.get(pk=view.kwargs['data_pk']).project
+        else:
+            return False
+
+        return project_extras.proj_permission_level(project, request.user.profile) > 0
+
+
 ############################################
 #        FRONTEND USER API ENDPOINTS       #
 ############################################
 @api_view(['GET'])
-def download_data(request, pk):
+@permission_classes((IsAdminOrCreator, ))
+def download_data(request, project_pk):
     """This function gets the labeled data and makes it available for download
 
     Args:
         request: The POST request
-        pk: Primary key of the project
+        project_pk: Primary key of the project
     Returns:
         an HttpResponse containing the requested data
     """
-    data_objs = Data.objects.filter(project=pk)
-    project_labels = Label.objects.filter(project=pk)
+    data_objs = Data.objects.filter(project=project_pk)
+    project_labels = Label.objects.filter(project=project_pk)
     data = []
     for label in project_labels:
         labeled_data = DataLabel.objects.filter(label=label)
@@ -78,8 +115,10 @@ def download_data(request, pk):
 
     return response
 
+
 @api_view(['GET'])
-def label_distribution_inverted(request, pk):
+@permission_classes((IsAdminOrCreator, ))
+def label_distribution_inverted(request, project_pk):
     """This function finds and returns the number of each label. The format
     is more focussed on showing the total amount of each label then the user
     label distribution, so the data is inverted from the function below.
@@ -87,11 +126,11 @@ def label_distribution_inverted(request, pk):
 
     Args:
         request: The POST request
-        pk: Primary key of the project
+        project_pk: Primary key of the project
     Returns:
         a dictionary of the amount each label has been used
     """
-    project = Project.objects.get(pk=pk)
+    project = Project.objects.get(pk=project_pk)
     labels = [l for l in project.labels.all()]
     users = []
     users.append(project.creator)
@@ -116,17 +155,18 @@ def label_distribution_inverted(request, pk):
 
 
 @api_view(['GET'])
-def label_distribution(request, pk):
+@permission_classes((IsAdminOrCreator, ))
+def label_distribution(request, project_pk):
     """This function finds and returns the number of each label per user.
     This is used by a graph on the front end admin page.
 
     Args:
         request: The POST request
-        pk: Primary key of the project
+        project_pk: Primary key of the project
     Returns:
         a dictionary of the amount of labels per person per type
     """
-    project = Project.objects.get(pk=pk)
+    project = Project.objects.get(pk=project_pk)
     labels = [l for l in project.labels.all()]
     users = []
     users.append(project.creator)
@@ -150,17 +190,18 @@ def label_distribution(request, pk):
 
 
 @api_view(['GET'])
-def label_timing(request, pk):
+@permission_classes((IsAdminOrCreator, ))
+def label_timing(request, project_pk):
     """This function finds and returns the requested label time metrics. This is
     used by the graphs on the admin page to show how long each labeler is taking.
 
     Args:
         request: The POST request
-        pk: Primary key of the project
+        project_pk: Primary key of the project
     Returns:
         a dictionary of label timing information.
     """
-    project = Project.objects.get(pk=pk)
+    project = Project.objects.get(pk=project_pk)
 
     users = []
     users.append(project.creator)
@@ -169,7 +210,7 @@ def label_timing(request, pk):
     dataset = []
     yDomain = 0
     for u in users:
-        result = DataLabel.objects.filter(data__project=pk, profile=u)\
+        result = DataLabel.objects.filter(data__project=project_pk, profile=u)\
                     .aggregate(quartiles=Percentile('time_to_label', [0.05, 0.25, 0.5, 0.75, 0.95],
                                continuous=False,
                                output_field=ArrayField(FloatField())))
@@ -191,19 +232,21 @@ def label_timing(request, pk):
 
     return Response({'data': dataset, 'yDomain': yDomain})
 
+
 @api_view(['GET'])
-def model_metrics(request, pk):
+@permission_classes((IsAdminOrCreator, ))
+def model_metrics(request, project_pk):
     """This function finds and returns the requested metrics. This is
     used by the graphs on the front end admin page.
     Args:
         request: The POST request
-        pk: Primary key of the project
+        project_pk: Primary key of the project
     Returns:
         a dictionary of model metric information
     """
     metric = request.GET.get('metric', 'accuracy')
 
-    project = Project.objects.get(pk=pk)
+    project = Project.objects.get(pk=project_pk)
     models = Model.objects.filter(project=project).order_by('training_set__set_number')
 
     if metric == 'accuracy':
@@ -239,17 +282,18 @@ def model_metrics(request, pk):
     return Response(dataset)
 
 
-
 @api_view(['GET'])
-def data_coded_table(request, pk):
+@permission_classes((IsAdminOrCreator, ))
+def data_coded_table(request, project_pk):
     """This returns the labeled data
+
     Args:
         request: The POST request
-        pk: Primary key of the project
+        project_pk: Primary key of the project
     Returns:
         data: a list of data information
     """
-    project = Project.objects.get(pk=pk)
+    project = Project.objects.get(pk=project_pk)
 
     data_objs = DataLabel.objects.filter(data__project=project)
 
@@ -264,17 +308,19 @@ def data_coded_table(request, pk):
 
     return Response({'data': data})
 
+
 @api_view(['GET'])
-def data_change_log_table(request, pk):
-    """This returns the data of the label change log for visualization in a
-    table
+@permission_classes((IsAdminOrCreator, ))
+def data_change_log_table(request, project_pk):
+    """This returns the data of the label change log for visualization in a table
+
     Args:
         request: The POST request
-        pk: Primary key of the project
+        project_pk: Primary key of the project
     Returns:
         data: a list of data information
     """
-    project = Project.objects.get(pk=pk)
+    project = Project.objects.get(pk=project_pk)
     data_objs = LabelChangeLog.objects.filter(project=project)
     data = []
     for d in data_objs:
@@ -299,17 +345,19 @@ def data_change_log_table(request, pk):
         data.append(temp)
     return Response({'data': data})
 
+
 @api_view(['GET'])
-def data_predicted_table(request, pk):
+@permission_classes((IsAdminOrCreator, ))
+def data_predicted_table(request, project_pk):
     """This returns the predictions for the unlabeled data
 
     Args:
         request: The POST request
-        pk: Primary key of the project
+        project_pk: Primary key of the project
     Returns:
         data: a list of data information
     """
-    project = Project.objects.get(pk=pk)
+    project = Project.objects.get(pk=project_pk)
     previous_run = project.get_current_training_set().set_number - 1
 
     sql = """
@@ -369,16 +417,17 @@ def data_predicted_table(request, pk):
 
 
 @api_view(['GET'])
-def data_unlabeled_table(request, pk):
+@permission_classes((IsAdminOrCreator, ))
+def data_unlabeled_table(request, project_pk):
     """This returns the unlebeled data not in a queue for the skew table
 
     Args:
         request: The POST request
-        pk: Primary key of the project
+        project_pk: Primary key of the project
     Returns:
         data: a list of data information
     """
-    project = Project.objects.get(pk=pk)
+    project = Project.objects.get(pk=project_pk)
 
     stuff_in_queue = DataQueue.objects.filter(queue__project=project)
     queued_ids = [queued.data.id for queued in stuff_in_queue]
@@ -394,17 +443,19 @@ def data_unlabeled_table(request, pk):
 
     return Response({'data': data})
 
+
 @api_view(['GET'])
-def data_admin_table(request, pk):
+@permission_classes((IsAdminOrCreator, ))
+def data_admin_table(request, project_pk):
     """This returns the elements in the admin queue for annotation
 
     Args:
         request: The POST request
-        pk: Primary key of the project
+        project_pk: Primary key of the project
     Returns:
         data: a list of data information
     """
-    project = Project.objects.get(pk=pk)
+    project = Project.objects.get(pk=project_pk)
     queue = Queue.objects.filter(project=project,type="admin")
 
     data_objs = DataQueue.objects.filter(queue=queue)
@@ -420,19 +471,21 @@ def data_admin_table(request, pk):
 
     return Response({'data': data})
 
+
 @api_view(['POST'])
-def label_skew_label(request, pk):
+@permission_classes((IsAdminOrCreator, ))
+def label_skew_label(request, data_pk):
     """This is called when an admin manually labels a datum on the skew page. It
     annotates a single datum with the given label, and profile with null as the time.
 
     Args:
         request: The request to the endpoint
-        pk: Primary key of data
+        data_pk: Primary key of data
     Returns:
         {}
     """
 
-    datum = Data.objects.get(pk=pk)
+    datum = Data.objects.get(pk=data_pk)
     project = datum.project
     label = Label.objects.get(pk=request.data['labelID'])
     profile = request.user.profile
@@ -451,18 +504,19 @@ def label_skew_label(request, pk):
 
 
 @api_view(['POST'])
-def label_admin_label(request, pk):
+@permission_classes((IsAdminOrCreator, ))
+def label_admin_label(request, data_pk):
     """This is called when an admin manually labels a datum on the admin
     annotation page. It labels a single datum with the given label and profile,
     with null as the time.
 
     Args:
         request: The POST request
-        pk: Primary key of the data
+        data_pk: Primary key of the data
     Returns:
         {}
     """
-    datum = Data.objects.get(pk=pk)
+    datum = Data.objects.get(pk=data_pk)
     project = datum.project
     label = Label.objects.get(pk=request.data['labelID'])
     profile = request.user.profile
@@ -495,18 +549,19 @@ def label_admin_label(request, pk):
 #    REACT API ENDPOINTS FOR CODING VIEW   #
 ############################################
 @api_view(['GET'])
-def get_card_deck(request, pk):
+@permission_classes((IsCoder, ))
+def get_card_deck(request, project_pk):
     """Grab data using get_assignments and send it to the frontend react app.
 
     Args:
         request: The request to the endpoint
-        pk: Primary key of project
+        project_pk: Primary key of project
     Returns:
         labels: The project labels
         data: The data in the queue
     """
     profile = request.user.profile
-    project = Project.objects.get(pk=pk)
+    project = Project.objects.get(pk=project_pk)
 
     # Calculate queue parameters
     batch_size = project.batch_size
@@ -520,23 +575,25 @@ def get_card_deck(request, pk):
 
     return Response({'labels': LabelSerializer(labels, many=True).data, 'data': DataSerializer(data, many=True).data})
 
+
 @api_view(['GET'])
-def get_label_history(request, pk):
+@permission_classes((IsCoder, ))
+def get_label_history(request, project_pk):
     """Grab items previously labeled by this user
     and send it to the frontend react app.
 
     Args:
         request: The request to the endpoint
-        pk: Primary key of project
+        project_pk: Primary key of project
     Returns:
         labels: The project labels
         data: DataLabel objects where that user was the one to label them
     """
     profile = request.user.profile
-    project = Project.objects.get(pk=pk)
+    project = Project.objects.get(pk=project_pk)
 
     labels = Label.objects.all().filter(project=project)
-    data = DataLabel.objects.filter(profile=profile, data__project = pk, label__in=labels)
+    data = DataLabel.objects.filter(profile=profile, data__project=project_pk, label__in=labels)
 
     data_list = []
     results = []
@@ -564,7 +621,7 @@ def get_label_history(request, pk):
         "labelID": d.label.id ,"timestamp":new_timestamp, "edit": "yes"}
         results.append(temp_dict)
 
-    data_irr = IRRLog.objects.filter(profile=profile, data__project = pk, label__isnull=False)
+    data_irr = IRRLog.objects.filter(profile=profile, data__project=project_pk, label__isnull=False)
 
     for d in data_irr:
         #if the data was labeled by that person (they were the admin), don't add
@@ -592,14 +649,16 @@ def get_label_history(request, pk):
 
     return Response({'data': results})
 
+
 @api_view(['GET'])
-def get_irr_metrics(request, pk):
+@permission_classes((IsAdminOrCreator, ))
+def get_irr_metrics(request, project_pk):
     """This function takes the current coded IRR and calculates several
     reliability metrics
 
     Args:
         request: The POST request
-        pk: Primary key of the project
+        project_pk: Primary key of the project
     Returns:
         {}
     """
@@ -607,87 +666,84 @@ def get_irr_metrics(request, pk):
     #need to take the IRRLog and pull out exactly the max_labelers amount
     #of labels for each datum
     all_data = []
-    project = Project.objects.get(pk=pk)
+    project = Project.objects.get(pk=project_pk)
     profile = request.user.profile
 
-    if project_extras.proj_permission_level(project, profile) > 1:
-        try:
-            if project.num_users_irr > 2:
-                kappa, perc_agreement = util.fleiss_kappa(project)
-            else:
-                kappa, perc_agreement = util.cohens_kappa(project)
-            kappa = round(kappa,3)
-            perc_agreement = str(round(perc_agreement,5)*100)+"%"
-        except ValueError:
-            kappa = "No irr data processed"
-            perc_agreement = "No irr data processed"
-        return Response({'kappa':kappa, 'percent agreement':perc_agreement})
-    else:
-        return Response({'error':"Invalid permission. Must be an admin"})
+    try:
+        if project.num_users_irr > 2:
+            kappa, perc_agreement = util.fleiss_kappa(project)
+        else:
+            kappa, perc_agreement = util.cohens_kappa(project)
+        kappa = round(kappa,3)
+        perc_agreement = str(round(perc_agreement,5)*100)+"%"
+    except ValueError:
+        kappa = "No irr data processed"
+        perc_agreement = "No irr data processed"
+    return Response({'kappa':kappa, 'percent agreement':perc_agreement})
+
 
 @api_view(['GET'])
-def perc_agree_table(request,pk):
+@permission_classes((IsAdminOrCreator, ))
+def perc_agree_table(request, project_pk):
     '''
     Finds the percent agreement between each pair of coders
     to be displayed on the IRR page as a table
     '''
-    project = Project.objects.get(pk=pk)
+    project = Project.objects.get(pk=project_pk)
     irr_data = set(IRRLog.objects.filter(data__project=project).values_list('data', flat=True))
     profile = request.user.profile
 
-    if project_extras.proj_permission_level(project, profile) > 1:
-        if len(irr_data) == 0:
-            return Response({'data':[]})
+    if len(irr_data) == 0:
+        return Response({'data':[]})
 
-        user_agree = util.perc_agreement_table_data(project)
-        return Response({'data':user_agree})
-    else:
-        return Response({'error':"Invalid permission. Must be an admin"})
+    user_agree = util.perc_agreement_table_data(project)
+    return Response({'data':user_agree})
+
 
 @api_view(['GET'])
-def heat_map_data(request,pk):
+@permission_classes((IsAdminOrCreator, ))
+def heat_map_data(request, project_pk):
     '''
     Calculates the data for the heat map of irr data and returns the
     correct one for the pair of coders given
 
     Args:
         request: the GET request with the pk of the two users
-        pk: the Primary key of the project
+        project_pk: the Primary key of the project
     Returns:
         a list of dictionaries of form {label1, label2, count}
 
     '''
-    project = Project.objects.get(pk=pk)
+    project = Project.objects.get(pk=project_pk)
     profile = request.user.profile
 
-    if project_extras.proj_permission_level(project, profile) > 1:
-        heatmap_data = util.irr_heatmap_data(project)
-        labels = list(Label.objects.all().filter(project=project).values_list('name',flat=True))
-        labels.append("Skip")
-        coders = []
-        profiles = ProjectPermissions.objects.filter(project=project)
-        coders.append({'name':str(project.creator),'pk':project.creator.pk})
-        for p in profiles:
-            coders.append({'name':str(p.profile), 'pk':p.profile.pk})
+    heatmap_data = util.irr_heatmap_data(project)
+    labels = list(Label.objects.all().filter(project=project).values_list('name',flat=True))
+    labels.append("Skip")
+    coders = []
+    profiles = ProjectPermissions.objects.filter(project=project)
+    coders.append({'name':str(project.creator),'pk':project.creator.pk})
+    for p in profiles:
+        coders.append({'name':str(p.profile), 'pk':p.profile.pk})
 
 
-        return Response({'data':heatmap_data, 'labels':labels , "coders":coders})
-    else:
-        return Response({'error':"Invalid permission. Must be an admin"})
+    return Response({'data':heatmap_data, 'labels':labels , "coders":coders})
+
 
 @api_view(['POST'])
-def skip_data(request, pk):
+@permission_classes((IsCoder, ))
+def skip_data(request, data_pk):
     """Take a datum that is in the assigneddata queue for that user
     and place it in the admin queue. Remove it from the
     assignedData queue.
 
     Args:
         request: The POST request
-        pk: Primary key of the data
+        data_pk: Primary key of the data
     Returns:
         {}
     """
-    data = Data.objects.get(pk=pk)
+    data = Data.objects.get(pk=data_pk)
     profile = request.user.profile
     project = data.project
     queue = project.queue_set.get(type="normal")
@@ -695,35 +751,28 @@ def skip_data(request, pk):
 
     #if the data is IRR or processed IRR, dont add to admin queue yet
     num_history = IRRLog.objects.filter(data=data).count()
-    if data.irr_ind or num_history > 0:
-        #log the data and check IRR but don't put in admin queue yet
-        IRRLog.objects.create(data=data, profile=profile, label = None, timestamp = timezone.now())
 
-        #unassign the skipped item
-        assignment = AssignedData.objects.get(data=data,profile=profile)
-        assignment.delete()
+    #log the data and check IRR but don't put in admin queue yet
+    IRRLog.objects.create(data=data, profile=profile, label = None, timestamp = timezone.now())
 
-        #if the IRR history has more than the needed number of labels , it is
-        #already processed so don't do anything else
-        if num_history <= project.num_users_irr:
-            util.process_irr_label(data, None)
+    #unassign the skipped item
+    assignment = AssignedData.objects.get(data=data,profile=profile)
+    assignment.delete()
 
-    else:
-        # Make sure coder still has permissions before labeling data
-        if project_extras.proj_permission_level(project, profile) > 0:
-            util.move_skipped_to_admin_queue(data, profile, project)
-        else:
-            response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
+    #if the IRR history has more than the needed number of labels , it is
+    #already processed so don't do anything else
+    if num_history <= project.num_users_irr:
+        util.process_irr_label(data, None)
 
     #for all data, check if we need to refill queue
-    if project_extras.proj_permission_level(project, profile) > 0:
-        util.check_and_trigger_model(data, profile)
-    else:
-        response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
+    util.check_and_trigger_model(data, profile)
+
     return Response(response)
 
+
 @api_view(['POST'])
-def annotate_data(request, pk):
+@permission_classes((IsCoder, ))
+def annotate_data(request, data_pk):
     """Annotate a single datum which is in the assigneddata queue given the user,
        data_id, and label_id.  This will remove it from assigneddata, remove it
        from dataqueue and add it to labeleddata.  Also check if project is ready
@@ -731,11 +780,11 @@ def annotate_data(request, pk):
 
     Args:
         request: The POST request
-        pk: Primary key of the data
+        data_pk: Primary key of the data
     Returns:
         {}
     """
-    data = Data.objects.get(pk=pk)
+    data = Data.objects.get(pk=data_pk)
     project = data.project
     profile = request.user.profile
     response = {}
@@ -750,88 +799,80 @@ def annotate_data(request, pk):
         assignment = AssignedData.objects.get(data=data,profile=profile)
         assignment.delete()
     else:
-        # Make sure coder still has permissions before labeling data
-        if project_extras.proj_permission_level(data.project, profile) > 0:
-            util.label_data(label, data, profile, labeling_time)
-            if data.irr_ind:
-                #if it is reliability data, run processing step
-                util.process_irr_label(data, label)
-
-
-        else:
-            response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
+        util.label_data(label, data, profile, labeling_time)
+        if data.irr_ind:
+            #if it is reliability data, run processing step
+            util.process_irr_label(data, label)
 
     #for all data, check if we need to refill queue
-    if project_extras.proj_permission_level(project, profile) > 0:
-        util.check_and_trigger_model(data, profile)
-    else:
-        response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
+    util.check_and_trigger_model(data, profile)
+
     return Response(response)
 
+
 @api_view(['POST'])
-def modify_label(request, pk):
+@permission_classes((IsCoder, ))
+def modify_label(request, data_pk):
     """Take a single datum with a label and change the label in the DataLabel table
+
     Args:
         request: The POST request
-        pk: Primary key of the data
+        data_pk: Primary key of the data
     Returns:
         {}
     """
-    data = Data.objects.get(pk=pk)
+    data = Data.objects.get(pk=data_pk)
     profile = request.user.profile
     response = {}
     project = data.project
 
     # Make sure coder still has permissions before labeling data
-    if project_extras.proj_permission_level(data.project, profile) > 0:
-        label = Label.objects.get(pk=request.data['labelID'])
-        old_label = Label.objects.get(pk=request.data['oldLabelID'])
-        with transaction.atomic():
-            DataLabel.objects.filter(data=data, label=old_label).update(label=label,
-            time_to_label=0, timestamp=timezone.now())
+    label = Label.objects.get(pk=request.data['labelID'])
+    old_label = Label.objects.get(pk=request.data['oldLabelID'])
+    with transaction.atomic():
+        DataLabel.objects.filter(data=data, label=old_label).update(label=label,
+        time_to_label=0, timestamp=timezone.now())
 
-            LabelChangeLog.objects.create(project=project, data=data, profile=profile,
-            old_label=old_label.name, new_label = label.name, change_timestamp = timezone.now())
-    else:
-        response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
+        LabelChangeLog.objects.create(project=project, data=data, profile=profile,
+        old_label=old_label.name, new_label = label.name, change_timestamp = timezone.now())
 
     return Response(response)
 
+
 @api_view(['POST'])
-def modify_label_to_skip(request, pk):
+@permission_classes((IsCoder, ))
+def modify_label_to_skip(request, data_pk):
     """Take a datum that is in the assigneddata queue for that user
-    and place it in the admin queue. Remove it from the
-    assignedData queue.
+    and place it in the admin queue. Remove it from the assignedData queue.
 
     Args:
         request: The POST request
-        pk: Primary key of the data
+        data_pk: Primary key of the data
     Returns:
         {}
     """
-    data = Data.objects.get(pk=pk)
+    data = Data.objects.get(pk=data_pk)
     profile = request.user.profile
     response = {}
     project = data.project
     old_label = Label.objects.get(pk=request.data['oldLabelID'])
     queue = Queue.objects.get(project=project, type="admin")
-    # Make sure coder still has permissions before labeling data
-    if project_extras.proj_permission_level(data.project, profile) > 0:
 
-        with transaction.atomic():
-            DataLabel.objects.filter(data=data, label=old_label).delete()
-            if data.irr_ind:
-                #if it was irr, add it to the log
-                if len(IRRLog.objects.filter(data=data,profile=profile)) == 0:
-                    IRRLog.objects.create(data=data, profile=profile, label = None, timestamp = timezone.now())
-            else:
-                #if it's not irr, add it to the admin queue immediately
-                DataQueue.objects.create(data=data, queue=queue)
-            LabelChangeLog.objects.create(project=project, data=data, profile=profile,
-            old_label=old_label.name, new_label = "skip", change_timestamp = timezone.now())
-    else:
-        response['error'] = 'Account disabled by administrator.  Please contact project owner for details'
+    with transaction.atomic():
+        DataLabel.objects.filter(data=data, label=old_label).delete()
+        if data.irr_ind:
+            #if it was irr, add it to the log
+            if len(IRRLog.objects.filter(data=data,profile=profile)) == 0:
+                IRRLog.objects.create(data=data, profile=profile, label = None, timestamp = timezone.now())
+        else:
+            #if it's not irr, add it to the admin queue immediately
+            DataQueue.objects.create(data=data, queue=queue)
+        LabelChangeLog.objects.create(project=project, data=data, profile=profile,
+        old_label=old_label.name, new_label = "skip", change_timestamp = timezone.now())
+
+
     return Response(response)
+
 
 @api_view(['GET'])
 def leave_coding_page(request):
