@@ -10,7 +10,9 @@ from core.util import md5_hash
 AuthUser = get_user_model()
 
 SEED_USERNAME = 'test'
+SEED_USERNAME2 = 'test2'
 SEED_PASSWORD = 'password'
+SEED_PASSWORD2 = 'password2'
 SEED_EMAIL = 'dummy@smart.org'
 SEED_PROJECT = 'seed-data'
 SEED_FILE_PATH = './core/data/SemEval-2016-Task6/test-feminism.csv'
@@ -25,6 +27,10 @@ def seed_database(noprofile=False, nodata=False):
             auth_user = AuthUser.objects.create_user(username=SEED_USERNAME, password=SEED_PASSWORD, email=SEED_EMAIL)
             profile = Profile.objects.get(user=auth_user)
             print("SEED: New test User Created - profile.pk: {}".format(profile.pk))
+
+            auth_user2 = AuthUser.objects.create_user(username=SEED_USERNAME2, password=SEED_PASSWORD2, email=SEED_EMAIL)
+            profile2 = Profile.objects.get(user=auth_user2)
+            print("SEED: New test User Created - profile.pk: {}".format(profile2.pk))
 
     if not nodata:
         project, created = Project.objects.get_or_create(name=SEED_PROJECT, creator=profile)

@@ -352,3 +352,34 @@ def test_labels_half_irr(test_project_half_irr_data):
         labels.append(Label.objects.create(name=l, project=test_project_half_irr_data))
 
     return labels
+
+@pytest.fixture
+def test_project_all_irr_data(db, test_profile):
+    '''
+    Creates the test project with 100% irr and adds test data to it.
+    '''
+    project = create_project('test_project', test_profile, 100, 2)
+    test_data = read_test_data_backend(file='./core/data/test_files/test_no_labels.csv')
+    add_data(project, test_data)
+    return project
+
+@pytest.fixture
+def test_all_irr_all_queues(db, test_project_all_irr_data):
+    '''
+    A queue containing data from the test project, with length set to
+    the global len.
+    '''
+    normal_q =  add_queue(test_project_all_irr_data, TEST_QUEUE_LEN)
+    admin_q = add_queue(test_project_all_irr_data, TEST_QUEUE_LEN, type="admin")
+    irr_q = add_queue(test_project_all_irr_data, MAX_DATA_LEN, type="irr")
+    return [normal_q, admin_q, irr_q]
+
+@pytest.fixture
+def test_labels_all_irr(test_project_all_irr_data):
+    '''
+    A list of labels that correspond to SEED_LABELS
+    '''
+    labels = []
+    for l in SEED_LABELS:
+        labels.append(Label.objects.create(name=l, project=test_project_all_irr_data))
+    return labels

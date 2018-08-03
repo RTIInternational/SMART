@@ -608,17 +608,22 @@ def get_irr_metrics(request, pk):
     #of labels for each datum
     all_data = []
     project = Project.objects.get(pk=pk)
-    try:
-        if project.num_users_irr > 2:
-            kappa, perc_agreement = util.fleiss_kappa(project)
-        else:
-            kappa, perc_agreement = util.cohens_kappa(project)
-        kappa = round(kappa,3)
-        perc_agreement = str(round(perc_agreement,5)*100)+"%"
-    except ValueError:
-        kappa = "No irr data processed"
-        perc_agreement = "No irr data processed"
-    return Response({'kappa':kappa, 'percent agreement':perc_agreement})
+    profile = request.user.profile
+
+    if project_extras.proj_permission_level(project, profile) > 1:
+        try:
+            if project.num_users_irr > 2:
+                kappa, perc_agreement = util.fleiss_kappa(project)
+            else:
+                kappa, perc_agreement = util.cohens_kappa(project)
+            kappa = round(kappa,3)
+            perc_agreement = str(round(perc_agreement,5)*100)+"%"
+        except ValueError:
+            kappa = "No irr data processed"
+            perc_agreement = "No irr data processed"
+        return Response({'kappa':kappa, 'percent agreement':perc_agreement})
+    else:
+        return Response({'error':"Invalid permission. Must be an admin"})
 
 @api_view(['GET'])
 def perc_agree_table(request,pk):
@@ -628,11 +633,16 @@ def perc_agree_table(request,pk):
     '''
     project = Project.objects.get(pk=pk)
     irr_data = set(IRRLog.objects.filter(data__project=project).values_list('data', flat=True))
-    if len(irr_data) == 0:
-        return Response({'data':[]})
+    profile = request.user.profile
 
-    user_agree = util.perc_agreement_table_data(project)
-    return Response({'data':user_agree})
+    if project_extras.proj_permission_level(project, profile) > 1:
+        if len(irr_data) == 0:
+            return Response({'data':[]})
+
+        user_agree = util.perc_agreement_table_data(project)
+        return Response({'data':user_agree})
+    else:
+        return Response({'error':"Invalid permission. Must be an admin"})
 
 @api_view(['GET'])
 def heat_map_data(request,pk):
@@ -648,18 +658,22 @@ def heat_map_data(request,pk):
 
     '''
     project = Project.objects.get(pk=pk)
-    heatmap_data = util.irr_heatmap_data(project)
-    labels = list(Label.objects.all().filter(project=project).values_list('name',flat=True))
-    labels.append("Skip")
-    coders = []
-    profiles = ProjectPermissions.objects.filter(project=project)
-    coders.append({'name':str(project.creator),'pk':project.creator.pk})
-    for p in profiles:
-        coders.append({'name':str(p.profile), 'pk':p.profile.pk})
+    profile = request.user.profile
+
+    if project_extras.proj_permission_level(project, profile) > 1:
+        heatmap_data = util.irr_heatmap_data(project)
+        labels = list(Label.objects.all().filter(project=project).values_list('name',flat=True))
+        labels.append("Skip")
+        coders = []
+        profiles = ProjectPermissions.objects.filter(project=project)
+        coders.append({'name':str(project.creator),'pk':project.creator.pk})
+        for p in profiles:
+            coders.append({'name':str(p.profile), 'pk':p.profile.pk})
 
 
-    return Response({'data':heatmap_data, 'labels':labels , "coders":coders})
-
+        return Response({'data':heatmap_data, 'labels':labels , "coders":coders})
+    else:
+        return Response({'error':"Invalid permission. Must be an admin"})
 
 @api_view(['POST'])
 def skip_data(request, pk):
