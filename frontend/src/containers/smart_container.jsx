@@ -33,8 +33,8 @@ const mapDispatchToProps = (dispatch) => {
         annotateCard: (dataID, labelID, num_cards_left) => {
             dispatch(annotateCard(dataID, labelID, num_cards_left, PROJECT_ID))
         },
-        passCard: (dataID, num_cards_left) => {
-            dispatch(passCard(dataID, num_cards_left, PROJECT_ID))
+        passCard: (dataID, num_cards_left, is_admin) => {
+            dispatch(passCard(dataID, num_cards_left, is_admin, PROJECT_ID))
         },
         popCard: () => {
             dispatch(popCard())

@@ -2,11 +2,15 @@ from django.conf import settings
 
 from core.management.commands.seed import (
     SEED_PROJECT, SEED_USERNAME, SEED_EMAIL,
-    SEED_PASSWORD, SEED_LABELS)
+    SEED_PASSWORD, SEED_LABELS, SEED_USERNAME2, SEED_PASSWORD2)
 from core.pagination import SmartPagination
-from core.models import (Project)
+from core.models import (Project, Profile, ProjectPermissions)
+
+from core.util import fill_queue, get_assignments, assign_datum
 
 from test.util import read_test_data_api
+import re
+import pandas as pd
 
 # Need a hashable dict so we can put them in a set
 class HashableDict(dict):
@@ -78,6 +82,7 @@ def test_get_auth_users(seeded_database, admin_client):
     response = admin_client.get('/api/auth_users/')
     compare_get_response(response, [
         { 'username': SEED_USERNAME, 'email': SEED_EMAIL },
+        { 'username': SEED_USERNAME2, 'email': SEED_EMAIL },
         # Special user created for the admin_client to run tests
         { 'username': 'admin', 'email': 'admin@example.com' }
     ], ['username', 'email'])
@@ -101,3 +106,172 @@ def test_get_data(seeded_database, admin_client):
 
     response = admin_client.get('/api/data/?page_size={}'.format(len(expected)))
     compare_get_response(response, expected, ['text'])
+
+def test_get_irr_metrics(seeded_database, client, admin_client, test_project_half_irr_data, test_half_irr_all_queues, test_labels_half_irr):
+    '''
+    This tests the irr metrics api call.
+    Note: the exact values are checked in the util tests.
+    '''
+
+    #sign in users
+    labels = test_labels_half_irr
+    normal_queue, admin_queue, irr_queue = test_half_irr_all_queues
+    project = test_project_half_irr_data
+
+    client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
+    client_profile = Profile.objects.get(user__username=SEED_USERNAME)
+    ProjectPermissions.objects.create(profile=client_profile,
+                                          project=project,
+                                          permission='CODER')
+    admin_client.login(username=SEED_USERNAME2, password=SEED_PASSWORD2)
+    admin_profile = Profile.objects.get(user__username=SEED_USERNAME2)
+    ProjectPermissions.objects.create(profile=admin_profile,
+                                          project=project,
+                                          permission='ADMIN')
+    third_profile = Profile.objects.get(user__username="test_profile")
+    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size )
+
+    #non-admin should not be able to call the test
+    response = client.get('/api/get_irr_metrics/'+str(project.pk)+'/')
+    assert 403 == response.status_code and "Invalid permission. Must be an admin" in str(response.content)
+
+    #initially, should have no irr data processed
+    response = admin_client.get('/api/get_irr_metrics/'+str(project.pk)+'/').json()
+    assert 'error' not in response
+    assert 'kappa' in response and response['kappa'] == "No irr data processed"
+    assert 'percent agreement' in response and response['percent agreement'] == "No irr data processed"
+
+    #have each person label three irr data
+    data = get_assignments(client_profile, project, 3)
+    data2 = get_assignments(admin_profile, project, 3)
+    for i in range(3):
+        response = client.post('/api/annotate_data/'+str(data[i].pk)+'/', {
+        "labelID": labels[i].pk,
+        "labeling_time": 3
+        })
+        assert 'error' not in response.json()
+        response = admin_client.post('/api/annotate_data/'+str(data2[i].pk)+'/', {
+        "labelID": labels[(i+1)%3].pk,
+        "labeling_time": 3
+        })
+        assert 'error' not in response.json()
+
+    response = admin_client.get('/api/get_irr_metrics/'+str(project.pk)+'/').json()
+    #the percent agreement should be a number between 0 and 100 with a %
+    assert 'percent agreement' in response
+    percent = float(response['percent agreement'][:len(response['percent agreement']) - 1])
+    assert percent <= 100 and percent >= 0 and '%' == response['percent agreement'][-1]
+    #kappa should be a value between -1 and 1
+    assert 'kappa' in response and response['kappa'] >=-1 and response['kappa'] <= 1
+
+def test_percent_agree_table(seeded_database, client, admin_client, test_project_all_irr_data, test_all_irr_all_queues, test_labels_all_irr):
+    '''
+    This tests that the percent agree table can be called and returns correctly.
+    Note: the exact values of the table are checked in the util tests.
+    '''
+    labels = test_labels_all_irr
+    normal_queue, admin_queue, irr_queue = test_all_irr_all_queues
+    project = test_project_all_irr_data
+
+    client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
+    client_profile = Profile.objects.get(user__username=SEED_USERNAME)
+    ProjectPermissions.objects.create(profile=client_profile,
+                                          project=project,
+                                          permission='CODER')
+    admin_client.login(username=SEED_USERNAME2, password=SEED_PASSWORD2)
+    admin_profile = Profile.objects.get(user__username=SEED_USERNAME2)
+    ProjectPermissions.objects.create(profile=admin_profile,
+                                          project=project,
+                                          permission='ADMIN')
+    third_profile = Profile.objects.get(user__username="test_profile")
+    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size )
+
+    #non-admin should not be able to call the test
+    response = client.get('/api/perc_agree_table/'+str(project.pk)+'/')
+    assert 403 == response.status_code and "Invalid permission. Must be an admin" in str(response.content)
+
+    data = get_assignments(client_profile, project, 15)
+    data2 = get_assignments(admin_profile, project, 15)
+    for i in range(15):
+        response = admin_client.post('/api/annotate_data/'+str(data[i].pk)+'/', {
+        "labelID": labels[i%3].pk,
+        "labeling_time": 3
+        })
+        assert 'error' not in response.json()
+        response = client.post('/api/annotate_data/'+str(data2[i].pk)+'/', {
+        "labelID": labels[i%3].pk,
+        "labeling_time": 3
+        })
+        assert 'error' not in response.json()
+    #check that the three user pairs are in table
+    response = admin_client.get('/api/perc_agree_table/'+str(project.pk)+'/').json()
+    assert 'data' in response
+    response_frame = pd.DataFrame(response['data'])
+    #should have combination [adm, cl] [adm, u3], [cl, u3]
+    assert response_frame['First Coder'].tolist() == [SEED_USERNAME, SEED_USERNAME, SEED_USERNAME2]
+    assert response_frame['Second Coder'].tolist() == [SEED_USERNAME2, str(third_profile), str(third_profile)]
+
+    #check that the table has just those three combinations
+    assert len(response_frame) == 3
+
+    #should have "no samples" for combos with user3
+    assert response_frame.loc[response_frame['Second Coder'] == str(third_profile)]["Percent Agreement"].tolist() == ["No samples", "No samples"]
+
+    #check that the percent agreement matches n%, n between 0 and 100
+    perc = response_frame["Percent Agreement"].tolist()[0]
+    assert float(perc[:len(perc)-1]) <= 100 and float(perc[:len(perc)-1]) >= 0
+
+def test_heat_map_data(seeded_database, client, admin_client, test_project_all_irr_data, test_all_irr_all_queues, test_labels_all_irr):
+    '''
+    This tests the heat map api call.
+    Note: the exact values of the data are tested in util.
+    '''
+
+    #sign in the users
+    labels = test_labels_all_irr
+    normal_queue, admin_queue, irr_queue = test_all_irr_all_queues
+    project = test_project_all_irr_data
+
+    client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
+    client_profile = Profile.objects.get(user__username=SEED_USERNAME)
+    ProjectPermissions.objects.create(profile=client_profile,
+                                          project=project,
+                                          permission='CODER')
+    admin_client.login(username=SEED_USERNAME2, password=SEED_PASSWORD2)
+    admin_profile = Profile.objects.get(user__username=SEED_USERNAME2)
+    ProjectPermissions.objects.create(profile=admin_profile,
+                                          project=project,
+                                          permission='ADMIN')
+    third_profile = Profile.objects.get(user__username="test_profile")
+    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size )
+
+    #non-admin should not be able to call the test
+    response = client.get('/api/heat_map_data/'+str(project.pk)+'/')
+    assert 403 == response.status_code and "Invalid permission. Must be an admin" in str(response.content)
+
+    #get the heatmap. Check that the list of coders and list of labels match
+    response = admin_client.get('/api/heat_map_data/'+str(project.pk)+'/').json()
+    project_labels = [label.name for label in labels]
+    project_labels.append("Skip")
+    assert_collections_equal(response['labels'], project_labels)
+
+    coder_dict_list = []
+    for prof in [admin_profile, client_profile, third_profile]:
+        coder_dict_list.append({'name':prof.user.username, 'pk':prof.pk})
+    assert_collections_equal(response['coders'],coder_dict_list)
+
+    #check that the heatmap has all combinations of users
+    project_coders = [admin_profile.pk, client_profile.pk, third_profile.pk]
+    for user1 in project_coders:
+        for user2 in project_coders:
+            user_combo = str(user1) + "_" + str(user2)
+            assert user_combo in response['data']
+            #check that for each combo of users there is each combo of labels
+            assert len(response['data'][user_combo]) == len(project_labels)**2
+            label_frame = pd.DataFrame(response['data'][user_combo])
+            label_frame["comb"] = label_frame['label1']+"_"+label_frame['label2']
+            comb_list = []
+            for lab1 in project_labels:
+                for lab2 in project_labels:
+                    comb_list.append(lab1+"_"+lab2)
+            assert_collections_equal(label_frame['comb'].tolist(), comb_list)

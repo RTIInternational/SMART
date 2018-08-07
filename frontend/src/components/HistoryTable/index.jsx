@@ -5,6 +5,11 @@ import {Button, ButtonToolbar, Tooltip, OverlayTrigger} from "react-bootstrap";
 
 const columns = [
   {
+    Header: "edit",
+    accessor: "edit",
+    show: false
+  },
+  {
     Header: "id",
     accessor: "id",
     show: false
@@ -79,6 +84,9 @@ class HistoryTable extends React.Component {
         pageSizeOptions={page_sizes}
         pageSize={(table_data.length < 50) ? table_data.length : 50}
         SubComponent={row => {
+
+        if(row.row.edit === "yes")
+        {
           return (
             <div className="sub-row">
               <p>{row.row.data}</p>
@@ -118,6 +126,15 @@ class HistoryTable extends React.Component {
               </ButtonToolbar>
             </div>
           );
+          }
+          else {
+            return (
+              <div className="sub-row">
+                <p>{row.row.data}</p>
+                <p id="irr_history_message">Note: This is Inter-rater Reliability data and is not editable.</p>
+              </div>
+            );
+          }
         }}
         filterable={true}
         defaultSorted={[{

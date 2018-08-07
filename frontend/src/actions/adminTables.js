@@ -35,7 +35,7 @@ export const getUnlabeled = (projectID) => {
             for (let i = 0; i < response.data.length; i++) {
                 const row = {
                     id: response.data[i].ID,
-                    data: response.data[i].Text,
+                    data: response.data[i].Text
                 }
                 all_data.push(row);
             }
@@ -123,6 +123,7 @@ export const getAdmin = (projectID) => {
                 const row = {
                     id: response.data[i].ID,
                     data: response.data[i].Text,
+                    irr: response.data[i].IRR
                 }
                 all_data.push(row);
             }

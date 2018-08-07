@@ -102,7 +102,7 @@ class ProjectDetail(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         return project_extras.proj_permission_level(project, self.request.user.profile) > 0
 
 
-def upload_data(form_data, project, queue=None):
+def upload_data(form_data, project, queue=None, irr_queue=None, batch_size = 30):
     """Perform data upload given validated form_data.
 
     1. Add data to database
@@ -113,7 +113,8 @@ def upload_data(form_data, project, queue=None):
     """
     data_objs = util.add_data(project, form_data)
     if queue:
-        util.fill_queue(queue, orderby='random')
+        util.fill_queue(queue=queue, irr_queue=irr_queue, orderby='random', irr_percent = project.percentage_irr, batch_size = batch_size)
+
 
     # Since User can upload Labeled Data and this data is added to current training_set
     # we need to check_and_trigger model.  However since training model requires
@@ -252,6 +253,8 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
             proj_obj.batch_size = batch_size
             proj_obj.learning_method = advanced_data["learning_method"]
+            proj_obj.percentage_irr = advanced_data["percentage_irr"]
+            proj_obj.num_users_irr = advanced_data["num_users_irr"]
             proj_obj.classifier = advanced_data["classifier"]
             proj_obj.save()
 
@@ -271,14 +274,15 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             num_coders = len([x for x in permissions if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True]) + 1
             q_length = util.find_queue_length(batch_size, num_coders)
 
-            queue = util.add_queue(project=proj_obj, length=q_length, admin=False)
+            queue = util.add_queue(project=proj_obj, length=q_length)
 
 
             # Data
             f_data = data.cleaned_data['data']
             data_length = len(f_data)
-            admin_queue = util.add_queue(project=proj_obj, length=data_length, admin=True)
-            upload_data(f_data, proj_obj, queue)
+            admin_queue = util.add_queue(project=proj_obj, length=data_length, type="admin")
+            irr_queue = util.add_queue(project=proj_obj, length=2000000, type="irr")
+            upload_data(f_data, proj_obj, queue, irr_queue, batch_size)
 
         return HttpResponseRedirect(proj_obj.get_absolute_url())
 
@@ -329,7 +333,7 @@ class ProjectUpdate(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
                 # Data
                 f_data = form.cleaned_data.get('data', False)
                 if isinstance(f_data, pd.DataFrame):
-                    upload_data(f_data, self.object)
+                    upload_data(f_data, self.object, batch_size = self.object.batch_size)
 
                 # CodeBook
                 cb_data = form.cleaned_data.get('cb_data',False)

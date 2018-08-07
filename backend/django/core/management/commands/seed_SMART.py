@@ -22,10 +22,11 @@ def seed_users():
 
     return Profile.objects.get(user=root_auth), Profile.objects.get(user=user1_auth), Profile.objects.get(user=test_user_auth)
 
-def seed_project(creator, name, description, data_file, label_list, perm_list):
+def seed_project(creator, name, description, data_file, label_list, perm_list, classifier):
     project = Project.objects.create(name=name,
         description=description,
-        creator=creator
+        creator=creator,
+        classifier=classifier
     )
 
     training_set = TrainingSet.objects.create(project=project, set_number=0)
@@ -39,18 +40,22 @@ def seed_project(creator, name, description, data_file, label_list, perm_list):
         permissions.append(ProjectPermissions.objects.create(profile=perm, project=project, permission='CODER'))
 
     batch_size = 10 * len(labels)
+    project.batch_size = batch_size
+    project.save()
+
     num_coders = len(permissions) + 1
     q_length = find_queue_length(batch_size, num_coders)
 
-    queue = add_queue(project=project, length=q_length, admin=False)
+    queue = add_queue(project=project, length=q_length, type="normal")
 
 
     # Data
     f_data = read_test_data_backend(file=data_file)
     data_length = len(f_data)
-    admin_queue = add_queue(project=project,length=data_length, admin=True)
+    admin_queue = add_queue(project=project,length=data_length, type="admin")
+    irr_queue = add_queue(project=project,length=2000000, type="irr")
     data_objs = add_data(project, f_data)
-    fill_queue(queue, orderby='random')
+    fill_queue(queue, irr_queue = irr_queue, orderby='random', batch_size = batch_size)
     save_data_file(f_data, project.pk)
 
     tasks.send_tfidf_creation_task.apply(args=[DataSerializer(data_objs, many=True).data, project.pk])
@@ -60,6 +65,7 @@ def seed_project(creator, name, description, data_file, label_list, perm_list):
 
 def label_project(project, profile, num_labels):
     labels = project.labels.all()
+
     current_training_set = project.get_current_training_set()
 
     assignments = get_assignments(profile, project, num_labels)
@@ -87,21 +93,24 @@ class Command(BaseCommand):
                 description="This is a project for only the root user. The root user is the creator.  This project's data file has labels.",
                 data_file='./core/data/test_files/test_some_labels.csv',
                 label_list=['FAVOR', 'AGAINST', 'NONE'],
-                perm_list=[]
+                perm_list=[],
+                classifier='logistic regression'
             )
             multi_user_project = seed_project(creator=root,
                 name='Three User Project',
                 description="This is a project that is coded by three different users.  No labels were in the data file to begin with.",
                 data_file='./core/data/test_files/test_no_labels.csv',
                 label_list=['Good', 'Bad'],
-                perm_list=[user1, test_user]
+                perm_list=[user1, test_user],
+                classifier='logistic regression'
             )
             no_data_project = seed_project(creator=root,
                 name='No Label Project',
                 description="This project has no labels, all charts should say No Data Available",
                 data_file='./core/data/test_files/test_no_labels.csv',
                 label_list=['Good', 'Bad', 'Neutral'],
-                perm_list=[]
+                perm_list=[],
+                classifier='logistic regression'
             )
 
             print('Test labels...')

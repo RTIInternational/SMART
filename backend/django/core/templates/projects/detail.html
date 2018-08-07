@@ -33,7 +33,6 @@
         </div>
       </div>
     </div>
-
     <div class="row">
       <div class="col-md-8">
         <div class="panel panel-default">
@@ -97,13 +96,26 @@
                   <dt>Batch Size</dt>
                   <dd>{{ project.batch_size }}</dd>
                 </li>
+                {% if project.percentage_irr == 0.0 %}
+                <li class="list-group-item">
+                  <dt>No IRR being used</dt>
+                </li>
+                {% else %}
+                <li class="list-group-item">
+                  <dt>Percent IRR</dt>
+                  <dd>{{ project.percentage_irr }}%</dd>
+                </li>
+                <li class="list-group-item">
+                  <dt>Number of users for IRR</dt>
+                  <dd>{{ project.num_users_irr }}</dd>
+                </li>
+                {% endif %}
               </ul>
             </div>
           </div>
         </div>
       </div>
     </div>
-
     <div class="row">
       <div class="col-md-12">
         <div class="panel panel-default">
@@ -129,7 +141,6 @@
         </div>
       </div>
     </div>
-
     <div class="row">
       <div class="col-md-12">
         <div class="panel panel-default">
@@ -152,7 +163,6 @@
         </div>
       </div>
     </div>
-
     <div class="row">
       <div class="col-md-12">
         <div class="btn-group" role="group" aria-label="Project Controls">
@@ -188,6 +198,7 @@
           {% endif %}
         </div>
       </div>
+    </div>
     </div>
   </div>
 </div>
@@ -243,7 +254,5 @@ $("#download_btn").on("click", function() {
     xhttp.responseType = 'blob';
     xhttp.send();
 });
-
-
 </script>
 {% endblock %}

@@ -177,7 +177,7 @@ class ProjectWizardForm(forms.ModelForm):
 class AdvancedWizardForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ['learning_method', 'batch_size', 'classifier']
+        fields = ['learning_method','percentage_irr','num_users_irr', 'batch_size', 'classifier']
 
     use_active_learning = forms.BooleanField(initial=True, required=False)
     active_l_choices = copy.deepcopy(Project.ACTIVE_L_CHOICES)
@@ -187,18 +187,22 @@ class AdvancedWizardForm(forms.ModelForm):
         widget=RadioSelect(), choices=active_l_choices,
         initial="least confident", required=False
     )
+    use_irr = forms.BooleanField(initial=False, required=False)
+    percentage_irr = forms.FloatField(initial=10.0, min_value=0.0, max_value=100.0)
+    num_users_irr = forms.IntegerField(initial=2, min_value=2)
     use_default_batch_size = forms.BooleanField(initial=True, required=False)
     batch_size = forms.IntegerField(initial=30, min_value=10, max_value=1000)
 
     use_model = forms.BooleanField(initial=True, required=False)
     classifier = forms.ChoiceField(
         widget=RadioSelect(), choices=Project.CLASSIFIER_CHOICES,
-        initial="logistic_regression", required=False
+        initial="logistic regression", required=False
     )
 
     def clean(self):
         use_active_learning = self.cleaned_data.get("use_active_learning")
         use_default_batch_size = self.cleaned_data.get("use_default_batch_size")
+        use_irr = self.cleaned_data.get("use_irr")
         #if they are not using active learning, the selection method is random
         if not use_active_learning:
             self.cleaned_data['learning_method'] = 'random'
@@ -208,6 +212,8 @@ class AdvancedWizardForm(forms.ModelForm):
 
         if use_default_batch_size:
             self.cleaned_data['batch_size'] = 0
+        if not use_irr:
+            self.cleaned_data['percentage_irr'] = 0
         return self.cleaned_data
 
 

@@ -72,6 +72,35 @@
                   </div>
                 </div>
               </div>
+
+              <div class="panel panel-default">
+                <div class="panel-heading">
+                  <h5 class="panel-title">
+                    <a data-toggle="collapse" href="#irr-panel" class="accordion-toggle collapsed">
+                      Inter-rater Reliability (IRR) Settings
+                    </a>
+                  </h5>
+                </div>
+                <div id="irr-panel" class="panel-collapse collapse">
+                  <div class="panel-body">
+                    <div id = "choose_irr_or_not">
+                      <p>Under IRR, a certain percentage of the data is labeled by
+                        multiple coders. The project admin can then examine the
+                        consistency of the labels across different coders. The options
+                        below allow you to set what percentage of the data is coded
+                        multiple times, and how many coders must code data designated
+                        for IRR before it is analyzed.
+                      </p>
+                      {{ wizard.form.use_irr }} Use Inter-rater Reliability
+                    </div>
+                    <div id="IRR_options">
+                      Percent of batch marked IRR (must be between 0 and 100):{{ wizard.form.percentage_irr }}%
+                      <br />
+                      Number of coders needed (minimum of 2): {{ wizard.form.num_users_irr }}
+                    </div>
+                  </div>
+                </div>
+              </div>
               <div class="panel panel-default">
                 <div class="panel-heading">
                   <h5 class="panel-title">
@@ -110,9 +139,17 @@
 {% block scripts_body %}
 <script type="text/javascript">
 var methods_box = $("div#choose_method_box");
+var irr_box = $("div#IRR_options");
 var batch_field = $('#choose_batch_size');
 var use_model = $("#use_model_div");
 var class_choice = $("#classifier_radios");
+if($('input#id_advanced-use_irr').prop('checked') == true)
+{
+  irr_box.show();
+}
+else {
+  irr_box.hide();
+}
 if ($('input#id_advanced-use_active_learning').prop('checked') == true) {
   methods_box.show();
   use_model.hide();
@@ -157,6 +194,14 @@ $('input#id_advanced-use_model').change(function(){
   } else {
     class_choice.hide();
   }
+});
+
+$('input#id_advanced-use_irr').change(function(){
+  if ($(this).prop('checked') == true) {
+        irr_box.show();
+    } else {
+        irr_box.hide();
+    }
 });
 
 </script>
