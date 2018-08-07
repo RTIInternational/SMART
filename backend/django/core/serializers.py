@@ -40,7 +40,7 @@ class LabelSerializer(serializers.ModelSerializer):
 class DataSerializer(serializers.ModelSerializer):
     class Meta:
         model = Data
-        fields = ('pk', 'text', 'project', 'hash', 'upload_id_hash')
+        fields = ('pk', 'text', 'project', 'irr_ind', 'hash', 'upload_id_hash')
 
 class DataLabelSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
