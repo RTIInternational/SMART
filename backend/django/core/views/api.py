@@ -20,6 +20,8 @@ import os
 import math
 import random
 import pandas as pd
+import zipfile
+import tempfile
 from django.utils import timezone
 
 from postgres_stats.aggregates import Percentile
@@ -73,6 +75,71 @@ def download_data(request, pk):
     response['Content-Disposition'] = 'attachment;'
 
     return response
+
+@api_view(['GET'])
+def download_model(request, pk):
+    """This function gets the labeled data and makes it available for download
+
+    Args:
+        request: The POST request
+        pk: Primary key of the project
+    Returns:
+        an HttpResponse containing the requested data
+    """
+    project = Project.objects.get(pk=pk)
+    data_objs = Data.objects.filter(project=pk)
+    project_labels = Label.objects.filter(project=pk)
+
+    #https://stackoverflow.com/questions/12881294/django-create-a-zip-of-multiple-files-and-make-it-downloadable
+    zip_subdir = 'model_project'+str(pk)
+    zip_filename = 'model_project'+str(pk)+".zip"
+
+    #readme_file = 'README.txt'
+    num_proj_files = len([f for f in os.listdir(settings.PROJECT_FILE_PATH)
+                          if f.startswith('project_'+str(pk))])
+
+    tfidf_path = os.path.join(settings.TF_IDF_PATH, str(pk) + '.npz')
+    readme_path = './core/data/README.txt'
+    current_training_set = project.get_current_training_set()
+    model_path = os.path.join(settings.MODEL_PICKLE_PATH, 'project_' + str(pk) + '_training_' + str(current_training_set.set_number - 1) + '.pkl')
+
+    #get the data labels
+    data = []
+    for label in project_labels:
+        labeled_data = DataLabel.objects.filter(label=label)
+        for d in labeled_data:
+            temp = {}
+            temp['ID'] = d.data.upload_id
+            temp['Text'] = d.data.text
+            temp['Label'] = label.name
+            data.append(temp)
+
+    #open the tempfile and write the label data to it
+    temp_labelfile = tempfile.NamedTemporaryFile(mode='w', delete=False, dir=settings.DATA_DIR)
+    temp_labelfile.seek(0)
+    wr = csv.DictWriter(temp_labelfile, fieldnames=['ID','Text', 'Label'], quoting=csv.QUOTE_ALL)
+    wr.writeheader()
+    wr.writerows(data)
+    temp_labelfile.flush()
+    temp_labelfile.close()
+
+    s = io.BytesIO()
+    #open the zip folder
+    zip_file =  zipfile.ZipFile(s, "w")
+    for path in [tfidf_path, readme_path, model_path, temp_labelfile.name]:
+        fdir, fname = os.path.split(path)
+        if path == temp_labelfile.name:
+            fname = "project_"+str(pk)+"_labels.csv"
+        #write the file to the zip folder
+        zip_path = os.path.join(zip_subdir, fname)
+        zip_file.write(path, zip_path)
+    zip_file.close()
+
+    response = HttpResponse(s.getvalue(), content_type="application/x-zip-compressed")
+    response['Content-Disposition'] = 'attachment;'
+
+    return response
+
 
 @api_view(['GET'])
 def label_distribution_inverted(request, pk):

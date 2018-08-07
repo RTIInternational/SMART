@@ -73,6 +73,12 @@ class Project(models.Model):
             return 1
         else:
             return 0
+            
+    def has_model(self):
+        if self.model_set.count() > 0:
+            return True
+        else:
+            return False
 
 class ProjectPermissions(models.Model):
     class Meta:
