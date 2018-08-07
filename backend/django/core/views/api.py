@@ -846,16 +846,17 @@ def skip_data(request, data_pk):
     if data.irr_ind or num_history > 0:
         #log the data and check IRR but don't put in admin queue yet
         IRRLog.objects.create(data=data, profile=profile, label = None, timestamp = timezone.now())
-        #if the IRR history has more than the needed number of labels , it is
-        #already processed so don't do anything else
+
         #unassign the skipped item
         assignment = AssignedData.objects.get(data=data,profile=profile)
         assignment.delete()
+
+        #if the IRR history has more than the needed number of labels , it is
+        #already processed so don't do anything else
         if num_history <= project.num_users_irr:
             util.process_irr_label(data, None)
-
     else:
-        #if it is normal data, move it to the correct places
+        #the data is not IRR so treat it as normal
         util.move_skipped_to_admin_queue(data, profile, project)
 
     #for all data, check if we need to refill queue

@@ -4,7 +4,7 @@ from core.management.commands.seed import (
     SEED_PROJECT, SEED_USERNAME, SEED_EMAIL,
     SEED_PASSWORD, SEED_LABELS, SEED_USERNAME2, SEED_PASSWORD2)
 from core.pagination import SmartPagination
-from core.models import (Project, Profile, ProjectPermissions)
+from core.models import (Project, Profile, ProjectPermissions, DataQueue, AssignedData)
 
 from core.util import fill_queue, get_assignments, assign_datum
 
@@ -275,6 +275,78 @@ def test_heat_map_data(seeded_database, client, admin_client, test_project_all_i
                 for lab2 in project_labels:
                     comb_list.append(lab1+"_"+lab2)
             assert_collections_equal(label_frame['comb'].tolist(), comb_list)
+
+def test_queue_refills_after_empty(seeded_database, client, test_project_half_irr_data, test_half_irr_all_queues, test_labels_half_irr):
+    '''
+    This tests that the queue refills when it should.
+    '''
+
+    #sign in users
+    labels = test_labels_half_irr
+    normal_queue, admin_queue, irr_queue = test_half_irr_all_queues
+    project = test_project_half_irr_data
+
+    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size )
+
+    client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
+    client_profile = Profile.objects.get(user__username=SEED_USERNAME)
+    ProjectPermissions.objects.create(profile=client_profile,
+                                          project=project,
+                                          permission='CODER')
+
+    #get the card deck
+    response = client.get('/api/get_card_deck/'+str(project.pk)+'/').json()
+    assert len(response['data']) > 0
+    #label all of the cards
+    i = 0
+    for card in response['data']:
+        response = client.post('/api/annotate_data/'+str(card["pk"])+'/', {
+        "labelID": labels[i%3].pk,
+        "labeling_time": 3
+        })
+        i+=1
+
+    #get the card deck again
+    response = client.get('/api/get_card_deck/'+str(project.pk)+'/').json()
+
+    #should have cards
+    assert len(response['data']) > 0
+
+
+def test_skip_data(seeded_database, client, test_project_half_irr_data, test_half_irr_all_queues, test_labels_half_irr):
+    '''
+    This tests that skipping works properly from the api side
+    '''
+    #sign in users
+    labels = test_labels_half_irr
+    normal_queue, admin_queue, irr_queue = test_half_irr_all_queues
+    project = test_project_half_irr_data
+
+    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size )
+
+    client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
+    client_profile = Profile.objects.get(user__username=SEED_USERNAME)
+    ProjectPermissions.objects.create(profile=client_profile,
+                                          project=project,
+                                          permission='CODER')
+
+    #get the card deck
+    response = client.get('/api/get_card_deck/'+str(project.pk)+'/').json()
+    assert len(response['data']) > 0
+
+    #for each card in the deck, skip it
+    for card in response['data']:
+        response = client.post('/api/skip_data/'+str(card["pk"])+'/')
+        if card["irr_ind"]:
+            #if it was irr data, check that it is not in admin queue
+            assert DataQueue.objects.filter(data__pk=card["pk"],queue=admin_queue).count() == 0
+            assert DataQueue.objects.filter(data__pk=card["pk"],queue=irr_queue).count() == 1
+            assert AssignedData.objects.filter(data__pk=card["pk"], profile=client_profile).count() == 0
+        else:
+            #if it is not irr data, check that it is in admin queue
+            assert DataQueue.objects.filter(data__pk=card["pk"],queue=admin_queue).count() == 1
+            assert DataQueue.objects.filter(data__pk=card["pk"],queue=irr_queue).count() == 0
+            assert AssignedData.objects.filter(data__pk=card["pk"], profile=client_profile).count() == 0
 
 def test_multiple_admin_on_admin_annotation(seeded_database, client, admin_client, test_project_all_irr_data, test_all_irr_all_queues, test_labels_all_irr):
     '''
