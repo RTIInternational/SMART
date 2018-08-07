@@ -39,18 +39,22 @@ def seed_project(creator, name, description, data_file, label_list, perm_list):
         permissions.append(ProjectPermissions.objects.create(profile=perm, project=project, permission='CODER'))
 
     batch_size = 10 * len(labels)
+    project.batch_size = batch_size
+    project.save()
+
     num_coders = len(permissions) + 1
     q_length = find_queue_length(batch_size, num_coders)
 
-    queue = add_queue(project=project, length=q_length, admin=False)
+    queue = add_queue(project=project, length=q_length, type="normal")
 
 
     # Data
     f_data = read_test_data_backend(file=data_file)
     data_length = len(f_data)
-    admin_queue = add_queue(project=project,length=data_length, admin=True)
+    admin_queue = add_queue(project=project,length=data_length, type="admin")
+    irr_queue = add_queue(project=project,length=2000000, type="irr")
     data_objs = add_data(project, f_data)
-    fill_queue(queue, orderby='random')
+    fill_queue(queue, irr_queue = irr_queue, orderby='random', batch_size = batch_size)
     save_data_file(f_data, project.pk)
 
     tasks.send_tfidf_creation_task.apply(args=[DataSerializer(data_objs, many=True).data, project.pk])
@@ -60,6 +64,7 @@ def seed_project(creator, name, description, data_file, label_list, perm_list):
 
 def label_project(project, profile, num_labels):
     labels = project.labels.all()
+
     current_training_set = project.get_current_training_set()
 
     assignments = get_assignments(profile, project, num_labels)

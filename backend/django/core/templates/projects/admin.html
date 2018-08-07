@@ -16,6 +16,9 @@
                 <li class="nav-item">
                     <a data-toggle="tab" href="#model" class="nav-link">Active Learning Model</a>
                 </li>
+                <li class="nav-item" id="irr_tab_navitem">
+                    <a data-toggle="tab" href="#irr_tab" class="nav-link">IRR</a>
+                </li>
             </ul>
         </div>
         <div class="tab-content">
@@ -97,6 +100,40 @@
                     </div>
                 </div>
             </div>
+            <div id="irr_tab" class="tab-pane fade in">
+                <div class="row">
+                    <div class="col-md-12">
+                        <h3>IRR Metrics</h3>
+                        <p id="kappa"></p>
+                        <p id="percent_agree"></p>
+
+                        <table id="pairwise_perc_agreement_table" class="table table-hover table-striped table-bordered" cellspacing="0" width="100%">
+                            <thead>
+                                <tr>
+                                    <th>First Coder</th>
+                                    <th>Second Coder</th>
+                                    <th>Percent Agreement</th>
+                                </tr>
+                            </thead>
+                        </table>
+                        <h3>Coder Label Heatmap</h3>
+                        <p>The chart below shows the frequency with which pairs of coders agreed or disagreed on labels</p>
+                        <table>
+                          <tr>
+                            <td>
+                              First Coder (top):<select class="form-control" id="coder1_select">
+                              </select>
+                            </td>
+                            <td>
+                              Second Coder (left):<select class="form-control" id="coder2_select">
+                              </select>
+                            </td>
+                          </tr>
+                        </table>
+                        <div id="heatmap_chart"></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -105,6 +142,202 @@
 
 {% block scripts_body %}
 <script>
+
+if({{project.percentage_irr}} == 0)
+{
+  $("#irr_tab").hide();
+  $("#irr_tab_navitem").addClass("hidden");
+}
+
+
+function drawHeatmap(response)
+{
+  var coders = response["coders"]
+  var labels = response["labels"]
+  var coder1 = $('#coder1_select').val();
+  var coder2 = $('#coder2_select').val();
+  var comb1 = coder1.toString()+"_"+coder2.toString();
+  var comb2 = coder2.toString()+"_"+coder1.toString();
+  if(comb1 in response['data'])
+  {
+    var data = response['data'][comb1];
+  }
+  else{
+    var data = response['data'][comb2];
+  }
+
+  var all_zero = true;
+  //don't draw the heatmap if there is no data
+  var most_data = 0;
+  for(var i = 0; i < data.length; i++)
+  {
+    if(data[i]["count"] > most_data)
+    {
+      most_data = data[i]["count"];
+    }
+    if(data[i]["count"] > 0)
+    {
+      all_zero = false;
+    }
+  }
+
+
+  var coder1_name = "";
+  var coder2_name = "";
+  //get the coder names to use for the axis labels
+  coders.forEach(function(coder){
+    if(coder.pk.toString() === coder1)
+    {
+      coder1_name = coder.name;
+    }
+    if(coder.pk.toString() === coder2)
+    {
+      coder2_name = coder.name;
+    }
+
+  });
+
+  //Code adapted from blocks example:
+  //http://bl.ocks.org/tjdecke/5558084
+  var margin = { top: 100, right: 100, bottom: 200, left: 100 };
+  if(labels.length > 10)
+  {
+    var width = labels.length*50;
+    var height = labels.length*50;
+  }
+  else {
+    var width = 500;
+    var height = labels.length*50;
+  }
+
+  var colors = ["#f7fbff","#deebf7","#c6dbef","#9ecae1","#6baed6","#4292c6","#2171b5","#08519c","#08306b"];
+  if(most_data >= 9)
+  {
+    var buckets = 9;
+  }
+  else {
+    var buckets = most_data + 1;
+    colors = colors.slice(0, buckets);
+
+  }
+
+  var gridSize = 50,
+      legendElementWidth = 30;
+
+
+
+  //delete the old chart
+  d3.select('#heatmap').remove();
+
+  if(!all_zero)
+  {
+    //append the new svg to put everything in
+    var svg = d3.select("#heatmap_chart").append("svg")
+        .attr("id","heatmap")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    //add the y axis labels
+    var vertLabels = svg.selectAll(".vertLabel")
+        .data(labels)
+        .enter().append("text")
+        .text(function (d) { return d.slice(0,5); })
+        .attr("x", 0)
+        .attr("y", function (d, i) { return i * gridSize; })
+        .style("text-anchor", "end")
+        .attr("transform", "translate(-6," + gridSize / 1.5 + ")")
+        .attr("class", function (d, i) { return ((i >= 0 && i <= 4) ? "vertLabel mono axis axis-workweek" : "vertLabel mono axis"); });
+
+    //add the x axis labels
+    var horzLabels = svg.selectAll(".horzLabel")
+        .data(labels)
+        .enter().append("text")
+        .text(function(d) { return d.slice(0,5); })
+        .attr("x", function(d, i) { return i * gridSize; })
+        .attr("y", 0)
+        .style("text-anchor", "middle")
+        .attr("transform", "translate(" + gridSize / 2 + ", -6)")
+        .attr("class", function(d, i) { return ((i >= 7 && i <= 16) ? "horzLabel mono axis axis-worktime" : "horzLabel mono axis"); });
+
+    var colorScale = d3.scale.quantile()
+        .domain([0, most_data+1])
+        .range(colors);
+
+    var cards = svg.selectAll(".label2")
+          .data(data, function(d) {return d.label1+':'+d.label2;});
+    cards.append("title");
+
+    cards.enter().append("rect")
+         .attr("x", function(d) { return (labels.indexOf(d.label1) * gridSize); })
+         .attr("y", function(d) { return (labels.indexOf(d.label2) * gridSize); })
+         .attr("rx", 4)
+         .attr("ry", 4)
+         .attr("class", "hour bordered")
+         .attr("width", gridSize)
+         .attr("height", gridSize)
+         .style("fill", function(d) {
+           //Manually calculate the colors since the quantiles
+           //can have roundoff errors (ex: 1.00000001)
+           var quantiles = [0].concat(colorScale.quantiles());
+           for(var i = 0; i < quantiles.length; i++)
+           {
+             if(d.count <= Math.round(quantiles[i]))
+             {
+               return colors[i];
+             }
+           }
+           return "#000000";
+
+         });
+
+
+    cards.select("title").text(function(d) { return d.count; });
+
+    //Axis code found at https://bl.ocks.org/d3noob/23e42c8f67210ac6c678db2cd07a747e
+    // text label for the x axis
+    svg.append("text")
+        .attr("transform",
+              "translate(" + (width/5) + " ," +
+                             (-50) + ")")
+        .style("text-anchor", "middle")
+        .text(coder1_name);
+    // text label for the y axis
+    svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", -70)
+        .attr("x",0 - (height / 5))
+        .attr("dy", "1em")
+        .style("text-anchor", "middle")
+        .text(coder2_name);
+
+    cards.exit().remove();
+
+    var legend = svg.selectAll(".legend")
+        .data([0].concat(colorScale.quantiles()), function(d) { return d; });
+
+    legend.enter().append("g")
+        .attr("class", "legend");
+
+    legend.append("rect")
+        .attr("x", function(d, i) { return legendElementWidth * i; })
+        .attr("y", height + margin.top)
+        .attr("width", legendElementWidth)
+        .attr("height", gridSize / 2)
+        .style("fill", function(d, i) { return colors[i]; });
+
+    legend.append("text")
+        .attr("class", "mono")
+        .text(function(d) { return "≥ " + Math.round(d); })
+        .attr("x", function(d, i) { return legendElementWidth * i; })
+        .attr("y", height + gridSize + margin.top);
+
+    legend.exit().remove();
+  }
+
+}
+
 /*
  *  Make ajax call to `label_distribution` route.  This will fetch data to
  *  populate the discrete multi bar chart and show the label distribution
@@ -184,6 +417,69 @@ $.ajax({
     }
 });
 
+/*
+ *  Make ajax call to `get_irr_metrics` route.  This will fetch the
+ *  common irr metrics to be displayed for the user
+ */
+$.ajax({
+    method: "GET",
+    url: '/api/get_irr_metrics/' + {{ project.pk }} + '/',
+    success: function (response) {
+        $('#kappa').text("Kappa: "+response.kappa.toString());
+        $('#percent_agree').text("Percent Overall Agreement: "+response['percent agreement'].toString());
+    },
+    error: function (error) {
+        console.log(error);
+    }
+});
+
+
+/*
+ *  Make ajax call to get the data for the heatmap.
+ */
+$.ajax({
+    method: "GET",
+    url: '/api/heat_map_data/' + {{ project.pk }} + '/',
+    success: function (response) {
+      var coders = response['coders'];
+
+      if(coders.length >= 2)
+      {
+        coders.map(function(coder){
+          $('#coder1_select').append('<option value="'+coder.pk.toString()+'">'+coder.name+'</option>');
+          $('#coder2_select').append('<option value="'+coder.pk.toString()+'">'+coder.name+'</option>');
+        })
+        drawHeatmap(response);
+      }
+    },
+    error: function (error) {
+        console.log(error);
+    }
+});
+$('#coder1_select').change(function () {
+    $.ajax({
+        method: 'GET',
+        url: '/api/heat_map_data/' + {{ project.pk }} + '/',
+        success: function (response) {
+            drawHeatmap(response);
+        },
+        error: function (error) {
+            console.log(error);
+        }
+    });
+});
+$('#coder2_select').change(function () {
+    $.ajax({
+        method: 'GET',
+        url: '/api/heat_map_data/' + {{ project.pk }} + '/',
+        success: function (response) {
+            drawHeatmap(response);
+        },
+        error: function (error) {
+            console.log(error);
+        }
+    });
+});
 
 /*
  *  Make ajax call to `model_metrics` route.  This will fetch data to populate
@@ -268,11 +564,15 @@ $.ajax({
               $('[data-toggle="tooltip"]').tooltip()
             });
         });
+
+
+
     },
     error: function (error) {
         console.log(error);
     }
 });
+
 
 $(document).ready(function() {
     /*
@@ -326,6 +626,25 @@ $(document).ready(function() {
         },
         "rowCallback": function (row, data) {
           $('td:nth-child(1)',row).addClass('showData');
+        }
+    });
+
+    /*
+     *  Activate DataTable script to create the labeled data DataTable
+     */
+    $('#pairwise_perc_agreement_table').DataTable({
+        "ajax": '/api/perc_agree_table/' + {{ project.pk }} + '/',
+        "columns": [
+            { "data": "First Coder", "searchable": false},
+            { "data": "Second Coder", "searchable": false},
+            { "data": "Percent Agreement", "searchable": false}
+        ],
+        "oLanguage": {
+            "sEmptyTable": "No irr data processed"
+        },
+        "initComplete": function (settings, json) {
+            $this = $(this)
+            $this.css({'table-layout':'fixed'});
         }
     });
 
