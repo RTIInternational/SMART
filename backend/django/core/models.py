@@ -206,3 +206,8 @@ class TrainingSet(models.Model):
 class RecycleBin(models.Model):
     data = models.ForeignKey('Data')
     timestamp = models.DateTimeField(default = timezone.now)
+
+class AdminProgress(models.Model):
+    project = models.ForeignKey('Project')
+    profile = models.ForeignKey('Profile')
+    timestamp = models.DateTimeField(default = timezone.now)

@@ -8,11 +8,45 @@ export const SET_UNLABELED_DATA = 'SET_UNLABELED_DATA';
 export const SET_LABEL_COUNTS = 'SET_LABEL_COUNTS';
 export const SET_ADMIN_DATA = 'SET_ADMIN_DATA';
 export const SET_DISCARDED_DATA = 'SET_DISCARDED_DATA';
+export const SET_AVAILABLE = 'SET_AVAILABLE';
 
 export const set_unlabeled_data = createAction(SET_UNLABELED_DATA);
 export const set_label_counts = createAction(SET_LABEL_COUNTS);
 export const set_admin_data = createAction(SET_ADMIN_DATA);
 export const set_discarded_data = createAction(SET_DISCARDED_DATA);
+export const set_available = createAction(SET_AVAILABLE);
+
+//check if another admin is already using the admin tabs
+export const getAdminTabsAvailable = (projectID) => {
+  let apiURL = `/api/check_admin_in_progress/${projectID}/`;
+  return dispatch => {
+    return fetch(apiURL, getConfig())
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            }
+            else {
+                const error = new Error(response.statusText)
+                error.response = response;
+                throw error;
+            }
+        })
+        .then(response => {
+            // If error was in the response then set that message
+            if ('error' in response) console.log(response);
+            if(response.available == 0)
+            {
+              dispatch(set_available(false));
+            }
+            else {
+              dispatch(set_available(true));
+            }
+
+        })
+        .catch(err => console.log("Error: ", err));
+  }
+};
+
 //Get the data for the skew table
 export const getUnlabeled = (projectID) => {
   let apiURL = `/api/data_unlabeled_table/${projectID}/`;

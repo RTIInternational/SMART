@@ -104,6 +104,7 @@ class Smart extends React.Component {
 
   componentWillMount() {
     this.props.fetchCards();
+    this.props.getAdminTabsAvailable();
   }
 
   render(){
@@ -112,7 +113,8 @@ class Smart extends React.Component {
     changeToSkip, getUnlabeled, unlabeled_data,
     skewLabel, getLabelCounts, label_counts, getAdmin, admin_data,
     adminLabel, discardData, getDiscarded, discarded_data,
-    restoreData, labels} = this.props;
+    restoreData, labels, available} = this.props;
+
     if(labels && labels.length > 0)
     {
       var label_list = labels[0];
@@ -180,45 +182,73 @@ class Smart extends React.Component {
         );
     }
 
-    var adminTab1 = (
-      <Tab eventKey={3} title="Fix Skew" className="full card">
-        <div className="cardContent">
-          <Skew
-          getUnlabeled={getUnlabeled}
-          unlabeled_data={unlabeled_data}
-          labels={label_list}
-          skewLabel={skewLabel}
-          getLabelCounts={getLabelCounts}
-          label_counts={label_counts}
-          />
-        </div>
-      </Tab>
-    );
-    var adminTab2 = (
-      <Tab eventKey={4} title="Skipped Cards" className="full card">
-        <div className="cardContent">
-          <AdminTable
-          getAdmin={getAdmin}
-          admin_data={admin_data}
-          labels={label_list}
-          adminLabel={adminLabel}
-          discardData={discardData}
-          />
-        </div>
-      </Tab>
-    );
+    if(available)
+    {
+      var adminTab1 = (
+        <Tab eventKey={3} title="Fix Skew" className="full card">
+          <div className="cardContent">
+            <Skew
+            getUnlabeled={getUnlabeled}
+            unlabeled_data={unlabeled_data}
+            labels={label_list}
+            skewLabel={skewLabel}
+            getLabelCounts={getLabelCounts}
+            label_counts={label_counts}
+            />
+          </div>
+        </Tab>
+      );
+      var adminTab2 = (
+        <Tab eventKey={4} title="Skipped Cards" className="full card">
+          <div className="cardContent">
+            <AdminTable
+            getAdmin={getAdmin}
+            admin_data={admin_data}
+            labels={label_list}
+            adminLabel={adminLabel}
+            discardData={discardData}
+            />
+          </div>
+        </Tab>
+      );
 
-    var adminTab3 = (
-      <Tab eventKey={5} title={<Glyphicon glyph="trash"/>} className="full card">
-        <div className="cardContent">
-          <RecycleBinTable
-          getDiscarded = {getDiscarded}
-          discarded_data = {discarded_data}
-          restoreData = {restoreData}
-          />
-        </div>
-      </Tab>
-    );
+      var adminTab3 = (
+        <Tab eventKey={5} title={<Glyphicon glyph="trash"/>} className="full card">
+          <div className="cardContent">
+            <RecycleBinTable
+            getDiscarded = {getDiscarded}
+            discarded_data = {discarded_data}
+            restoreData = {restoreData}
+            />
+          </div>
+        </Tab>
+      );
+    }
+    else {
+      adminTab1 = (
+        <Tab eventKey={3} title="Fix Skew" className="full card">
+          <div className="cardContent">
+            <h2>Another admin is currently using this page. Please check back later.</h2>
+          </div>
+        </Tab>
+      );
+      adminTab2 = (
+        <Tab eventKey={4} title="Skipped Cards" className="full card">
+          <div className="cardContent">
+            <h2>Another admin is currently using this page. Please check back later.</h2>
+          </div>
+        </Tab>
+      );
+
+      adminTab3 = (
+        <Tab eventKey={5} title={<Glyphicon glyph="trash"/>} className="full card">
+          <div className="cardContent">
+            <h2>Another admin is currently using this page. Please check back later.</h2>
+          </div>
+        </Tab>
+      );
+    }
+
 
     return (
       <Tabs defaultActiveKey={1} id="data_tabs" >
@@ -262,6 +292,8 @@ Smart.propTypes = {
     changeToSkip: PropTypes.func.isRequired,
     getUnlabeled: PropTypes.func.isRequired,
     unlabeled_data: PropTypes.arrayOf(PropTypes.object),
+    available: PropTypes.bool,
+    getAdminTabsAvailable: PropTypes.func.isRequired,
     label_counts: PropTypes.arrayOf(PropTypes.object),
     skewLabel: PropTypes.func.isRequired,
     getLabelCounts: PropTypes.func.isRequired,

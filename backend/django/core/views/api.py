@@ -36,7 +36,8 @@ from core.serializers import (ProfileSerializer, AuthUserGroupSerializer,
                               LabelChangeLogSerializer)
 from core.models import (Profile, Project, Model, Data, Label, DataLabel,
                          DataPrediction, Queue, DataQueue, AssignedData, TrainingSet,
-                         LabelChangeLog, RecycleBin, IRRLog, ProjectPermissions)
+                         LabelChangeLog, RecycleBin, IRRLog, ProjectPermissions,
+                         AdminProgress)
 import core.util as util
 from core.pagination import SmartPagination
 from core.templatetags import project_extras
@@ -984,7 +985,6 @@ def modify_label(request, data_pk):
 
     return Response(response)
 
-
 @api_view(['POST'])
 @permission_classes((IsCoder, ))
 def modify_label_to_skip(request, data_pk):
@@ -1019,9 +1019,45 @@ def modify_label_to_skip(request, data_pk):
 
     return Response(response)
 
+@api_view(['GET'])
+@permission_classes((IsAdminOrCreator, ))
+def check_admin_in_progress(request, project_pk):
+    '''
+    This api is called by the admin tabs on the annotate page to check
+    if it is alright to show the data.
+    '''
+    profile = request.user.profile
+    project = Project.objects.get(pk=project_pk)
+
+    #if nobody ELSE is there yet, return True
+    if AdminProgress.objects.filter(project=project).count() == 0:
+        return Response({"available":1})
+    if AdminProgress.objects.filter(project=project, profile=profile).count() == 0:
+        return Response({"available":0})
+    else:
+        return Response({"available":1})
 
 @api_view(['GET'])
-def leave_coding_page(request):
+def enter_coding_page(request, project_pk):
+    """API request meant to be sent when a user navigates onto the coding page
+       captured with 'beforeload' event.
+    Args:
+        request: The GET request
+    Returns:
+        {}
+    """
+    profile = request.user.profile
+    project = Project.objects.get(pk=project_pk)
+    #check that no other admin is using it. If they are not, give this admin permission
+    if project_extras.proj_permission_level(project, profile) > 1:
+        if AdminProgress.objects.filter(project=project).count() == 0:
+            AdminProgress.objects.create(project=project, profile=profile, timestamp = timezone.now())
+    return Response({})
+
+
+
+@api_view(['GET'])
+def leave_coding_page(request, project_pk):
     """API request meant to be sent when a user navigates away from the coding page
        captured with 'beforeunload' event.  This should use assign_data to remove
        any data currently assigned to the user and re-add it to redis
@@ -1032,11 +1068,16 @@ def leave_coding_page(request):
         {}
     """
     profile = request.user.profile
+    project = Project.objects.get(pk=project_pk)
     assigned_data = AssignedData.objects.filter(profile=profile)
 
     for assignment in assigned_data:
         util.unassign_datum(assignment.data, profile)
 
+    if project_extras.proj_permission_level(project, profile) > 1:
+        if AdminProgress.objects.filter(project=project, profile=profile).count() > 0:
+            prog = AdminProgress.objects.get(project=project, profile=profile)
+            prog.delete()
     return Response({})
 
 
