@@ -120,7 +120,7 @@ def download_data(request, project_pk):
 
 @api_view(['GET'])
 @permission_classes((IsAdminOrCreator, ))
-def download_model(request, pk):
+def download_model(request, project_pk):
     """This function gets the labeled data and makes it available for download
 
     Args:
@@ -129,22 +129,22 @@ def download_model(request, pk):
     Returns:
         an HttpResponse containing the requested data
     """
-    project = Project.objects.get(pk=pk)
-    data_objs = Data.objects.filter(project=pk)
-    project_labels = Label.objects.filter(project=pk)
+    project = Project.objects.get(pk=project_pk)
+    data_objs = Data.objects.filter(project=project)
+    project_labels = Label.objects.filter(project=project)
 
     #https://stackoverflow.com/questions/12881294/django-create-a-zip-of-multiple-files-and-make-it-downloadable
-    zip_subdir = 'model_project'+str(pk)
-    zip_filename = 'model_project'+str(pk)+".zip"
+    zip_subdir = 'model_project'+str(project_pk)
+    zip_filename = 'model_project'+str(project_pk)+".zip"
 
     #readme_file = 'README.txt'
     num_proj_files = len([f for f in os.listdir(settings.PROJECT_FILE_PATH)
-                          if f.startswith('project_'+str(pk))])
+                          if f.startswith('project_'+str(project_pk))])
 
-    tfidf_path = os.path.join(settings.TF_IDF_PATH, str(pk) + '.npz')
+    tfidf_path = os.path.join(settings.TF_IDF_PATH, str(project_pk) + '.npz')
     readme_path = './core/data/README.txt'
     current_training_set = project.get_current_training_set()
-    model_path = os.path.join(settings.MODEL_PICKLE_PATH, 'project_' + str(pk) + '_training_' + str(current_training_set.set_number - 1) + '.pkl')
+    model_path = os.path.join(settings.MODEL_PICKLE_PATH, 'project_' + str(project_pk) + '_training_' + str(current_training_set.set_number - 1) + '.pkl')
 
     #get the data labels
     data = []
@@ -172,7 +172,7 @@ def download_model(request, pk):
     for path in [tfidf_path, readme_path, model_path, temp_labelfile.name]:
         fdir, fname = os.path.split(path)
         if path == temp_labelfile.name:
-            fname = "project_"+str(pk)+"_labels.csv"
+            fname = "project_"+str(project_pk)+"_labels.csv"
         #write the file to the zip folder
         zip_path = os.path.join(zip_subdir, fname)
         zip_file.write(path, zip_path)
