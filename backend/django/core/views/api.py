@@ -552,14 +552,8 @@ def data_admin_counts(request, project_pk):
     project = Project.objects.get(pk=project_pk)
     queue = Queue.objects.filter(project=project,type="admin")
     data_objs = DataQueue.objects.filter(queue=queue)
-    irr_count = 0
-    skip_count = 0
-    for d in data_objs:
-        if d.data.irr_ind:
-            irr_count += 1
-        else:
-            skip_count += 1
-
+    irr_count = data_objs.filter(data__irr_ind=True).count()
+    skip_count = data_objs.filter(data__irr_ind=False).count()
     return Response({'data': {"IRR":irr_count, "SKIP":skip_count}})
 
 @api_view(['GET'])

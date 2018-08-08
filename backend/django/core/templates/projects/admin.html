@@ -13,12 +13,16 @@
                 <li class="nav-item active">
                     <a data-toggle="tab" href="#label" class="nav-link">Labeled Data</a>
                 </li>
+                {% if project.classifier != None %}
                 <li class="nav-item" id="al_tab">
                     <a data-toggle="tab" href="#model" class="nav-link">Active Learning Model</a>
                 </li>
+                {% endif %}
+                {% if project.percentage_irr > 0 %}
                 <li class="nav-item" id="irr_tab_navitem">
                     <a data-toggle="tab" href="#irr_tab" class="nav-link">IRR</a>
                 </li>
+                {% endif %}
             </ul>
         </div>
         <div class="tab-content">
@@ -53,7 +57,7 @@
                     </div>
                 </div>
             </div>
-            {% if project.has_classifier == 1 %}
+            {% if project.classifier != None %}
             <div id="model" class="tab-pane fade in">
                 <div class="row">
                     <div class="col-md-12">
@@ -145,19 +149,7 @@
 {% block scripts_body %}
 <script>
 
-//if there is no classifier, make the tab invisible
-if({{project.has_classifier}} == 0)
-{
-  $("#al_tab").addClass('invisible');
-}
-
-if({{project.percentage_irr}} == 0)
-{
-  $("#irr_tab").hide();
-  $("#irr_tab_navitem").addClass("hidden");
-}
-
-
+{% if project.percentage_irr > 0 %}
 function drawHeatmap(response)
 {
   var coders = response["coders"]
@@ -345,6 +337,7 @@ function drawHeatmap(response)
   }
 
 }
+{% endif %}
 
 /*
  *  Make ajax call to `label_distribution` route.  This will fetch data to
@@ -425,6 +418,7 @@ $.ajax({
     }
 });
 
+{% if project.percentage_irr > 0 %}
 /*
  *  Make ajax call to `get_irr_metrics` route.  This will fetch the
  *  common irr metrics to be displayed for the user
@@ -488,13 +482,13 @@ $('#coder2_select').change(function () {
         }
     });
 });
+{% endif %}
 
 /*
  *  Make ajax call to `model_metrics` route.  This will fetch data to populate
  *  the line chart and show how well the model is training over time.
  */
- if({{project.has_classifier}} == 1)
- {
+{% if project.classifier != None %}
     $.ajax({
         method: 'GET',
         url: '/api/model_metrics/' + {{ project.pk }} + '/?metric=accuracy',
@@ -579,7 +573,7 @@ $('#coder2_select').change(function () {
             console.log(error);
         }
     });
-}
+{% endif %}
 
 
 
@@ -611,8 +605,7 @@ $(document).ready(function() {
     /*
      *  Activate DataTable script to create the predicted data DataTable
      */
-     if({{project.has_classifier}} == 1)
-     {
+     {% if project.classifier != None %}
         $('#predicted_data_table').DataTable({
             "ajax": '/api/data_predicted_table/' + {{ project.pk }} + '/',
             "columns": [
@@ -639,26 +632,28 @@ $(document).ready(function() {
               $('td:nth-child(1)',row).addClass('showData');
             }
         });
-    }
+    {% endif %}
 
     /*
      *  Activate DataTable script to create the labeled data DataTable
      */
-    $('#pairwise_perc_agreement_table').DataTable({
-        "ajax": '/api/perc_agree_table/' + {{ project.pk }} + '/',
-        "columns": [
-            { "data": "First Coder", "searchable": false},
-            { "data": "Second Coder", "searchable": false},
-            { "data": "Percent Agreement", "searchable": false}
-        ],
-        "oLanguage": {
-            "sEmptyTable": "No irr data processed"
-        },
-        "initComplete": function (settings, json) {
-            $this = $(this)
-            $this.css({'table-layout':'fixed'});
-        }
-    });
+    {% if project.percentage_irr > 0 %}
+      $('#pairwise_perc_agreement_table').DataTable({
+          "ajax": '/api/perc_agree_table/' + {{ project.pk }} + '/',
+          "columns": [
+              { "data": "First Coder", "searchable": false},
+              { "data": "Second Coder", "searchable": false},
+              { "data": "Percent Agreement", "searchable": false}
+          ],
+          "oLanguage": {
+              "sEmptyTable": "No irr data processed"
+          },
+          "initComplete": function (settings, json) {
+              $this = $(this)
+              $this.css({'table-layout':'fixed'});
+          }
+      });
+    {% endif %}
 
     $(function () {
        $('[data-toggle="tooltip"]').tooltip()

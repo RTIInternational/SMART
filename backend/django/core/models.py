@@ -71,12 +71,6 @@ class Project(models.Model):
     def labeled_data_count(self):
         return self.data_set.all().filter(datalabel__isnull=False).count()
 
-    def has_classifier(self):
-        if self.classifier is not None:
-            return 1
-        else:
-            return 0
-
     def has_model(self):
         if self.model_set.count() > 0:
             return True

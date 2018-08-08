@@ -21,17 +21,17 @@
 
             <h1>Advanced Settings</h1>
             <div class="form-group">
-              <div class="panel panel-default">
+              <div class="panel panel-default" id="al_tab">
                 <div class="panel-heading">
                   <h5 class="panel-title">
-                    <a data-toggle="collapse" href="#al-panel" class="accordion-toggle collapsed">
+                    <a data-toggle="collapse" href="#al-panel" class="accordion-toggle">
                       Active Learning
                     </a>
                   </h5>
                 </div>
-                <div id="al-panel" class="panel-collapse collapse">
+                <div id="al-panel" class="panel-collapse collapse in">
                   <div class="panel-body">
-                    <div class="choose_al_or_not">
+                    <div>
                     {{ wizard.form.use_active_learning }} Use Active Learning to select data to label
                     </div>
                     <div id="choose_method_box">
@@ -47,16 +47,17 @@
               <div class="panel panel-default">
                 <div class="panel-heading">
                   <h5 class="panel-title">
-                    <a data-toggle="collapse" href="#c-panel" class="accordion-toggle collapsed">
+                    <a data-toggle="collapse" href="#c-panel" class="accordion-toggle">
                       Model Selection
                     </a>
                   </h5>
                 </div>
-                <div id="c-panel" class="panel-collapse collapse">
+                <div id="c-panel" class="panel-collapse collapse in">
                   <div class="panel-body">
                     <div id="choose_classifier_box">
                       <div id="use_model_div">
                         <p>Train and display results for a model: {{ wizard.form.use_model }}</p>
+                        <p>NOTE: If you uncheck this option, you cannot use Active Learning</p>
                         <br />
                       </div>
                       <div id="classifier_radios">
@@ -76,12 +77,12 @@
               <div class="panel panel-default">
                 <div class="panel-heading">
                   <h5 class="panel-title">
-                    <a data-toggle="collapse" href="#irr-panel" class="accordion-toggle collapsed">
+                    <a data-toggle="collapse" href="#irr-panel" class="accordion-toggle">
                       Inter-rater Reliability (IRR) Settings
                     </a>
                   </h5>
                 </div>
-                <div id="irr-panel" class="panel-collapse collapse">
+                <div id="irr-panel" class="panel-collapse collapse in">
                   <div class="panel-body">
                     <div id = "choose_irr_or_not">
                       <p>Under IRR, a certain percentage of the data is labeled by
@@ -104,12 +105,12 @@
               <div class="panel panel-default">
                 <div class="panel-heading">
                   <h5 class="panel-title">
-                    <a data-toggle="collapse" href="#b-panel" class="accordion-toggle collapsed">
+                    <a data-toggle="collapse" href="#b-panel" class="accordion-toggle">
                       Batch Settings
                     </a>
                   </h5>
                 </div>
-                <div id="b-panel" class="panel-collapse collapse">
+                <div id="b-panel" class="panel-collapse collapse in">
                   <div class="panel-body">
                     <div id="use_default_size">
                       Use default size (10 times the number of labels): {{ wizard.form.use_default_batch_size}}
@@ -122,7 +123,7 @@
               </div>
             </div>
 
-          <div>
+          <div class="wizard_nav_bar">
             <button class="btn btn-info" name="wizard_goto_step" type="submit" value="project">1. Info</button>
             <button class="btn btn-info" name="wizard_goto_step" type="submit" value="labels">2. Labels</button>
             <button class="btn btn-info" name="wizard_goto_step" type="submit" value="permissions">3. Permissions</button>
@@ -143,6 +144,7 @@ var irr_box = $("div#IRR_options");
 var batch_field = $('#choose_batch_size');
 var use_model = $("#use_model_div");
 var class_choice = $("#classifier_radios");
+var al_tab = $("#al_tab");
 if($('input#id_advanced-use_irr').prop('checked') == true)
 {
   irr_box.show();
@@ -166,8 +168,10 @@ if ($('input#id_advanced-use_default_batch_size').prop('checked') == true) {
 
 if ($('input#id_advanced-use_model').prop('checked') == true) {
   class_choice.show();
+  al_tab.show();
 } else {
   class_choice.hide();
+  al_tab.hide();
 }
 
 $('input#id_advanced-use_active_learning').change(function(){
@@ -191,8 +195,10 @@ $('input#id_advanced-use_default_batch_size').change(function(){
 $('input#id_advanced-use_model').change(function(){
   if ($(this).prop('checked') == true) {
     class_choice.show();
+    al_tab.show();
   } else {
     class_choice.hide();
+    al_tab.hide();
   }
 });
 
