@@ -4,7 +4,7 @@ import moment from 'moment';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
 import { getHistory } from './history';
-import { getLabelCounts, getAdmin } from './adminTables';
+import { getLabelCounts, getAdmin, getAdminCounts } from './adminTables';
 
 export const POP_CARD = 'POP_CARD';
 export const PUSH_CARD = 'PUSH_CARD';
@@ -83,6 +83,7 @@ export const annotateCard = (card, labelID, num_cards_left, projectID, is_admin)
 
                     if (is_admin)  {
                         dispatch(getAdmin(projectID))
+                        dispatch(getAdminCounts(projectID))
                         dispatch(getLabelCounts(projectID))
                     }
                     if(num_cards_left <=1) dispatch(fetchCards(projectID));
@@ -116,7 +117,11 @@ export const passCard = (card, num_cards_left, is_admin, projectID ) => {
                 else {
                     dispatch(popCard())
                     dispatch(getHistory(projectID))
-                    if (is_admin) dispatch(getAdmin(projectID))
+                    if (is_admin)
+                    {
+                      dispatch(getAdmin(projectID))
+                      dispatch(getAdminCounts(projectID))
+                    }
                     if(num_cards_left <=1) dispatch(fetchCards(projectID))
                 }
             })

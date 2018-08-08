@@ -5,7 +5,7 @@ import { fetchCards, annotateCard, passCard, popCard } from '../actions/classifi
 import { getHistory, changeLabel, changeToSkip } from '../actions/history';
 import { getUnlabeled, skewLabel, getLabelCounts,
          adminLabel, getAdmin, discardData, getDiscarded,
-         restoreData, getAdminTabsAvailable} from '../actions/adminTables';
+         restoreData, getAdminTabsAvailable, getAdminCounts} from '../actions/adminTables';
 import Smart from '../components/Smart';
 
 const PROJECT_ID = window.PROJECT_ID;
@@ -22,7 +22,8 @@ const mapStateToProps = (state) => {
         admin_data: state.adminTables.admin_data,
         discarded_data: state.adminTables.discarded_data,
         available: state.adminTables.available,
-        labels: state.classifier.labels
+        labels: state.classifier.labels,
+        admin_counts: state.adminTables.admin_counts
     };
 };
 
@@ -75,6 +76,9 @@ const mapDispatchToProps = (dispatch) => {
         },
         getDiscarded: () => {
             dispatch(getDiscarded(PROJECT_ID))
+        },
+        getAdminCounts: () => {
+            dispatch(getAdminCounts(PROJECT_ID))
         }
     };
 };

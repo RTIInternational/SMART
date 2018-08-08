@@ -113,7 +113,7 @@ class Smart extends React.Component {
     changeToSkip, getUnlabeled, unlabeled_data,
     skewLabel, getLabelCounts, label_counts, getAdmin, admin_data,
     adminLabel, discardData, getDiscarded, discarded_data,
-    restoreData, labels, available} = this.props;
+    restoreData, labels, available, getAdminCounts, admin_counts} = this.props;
 
     if(labels && labels.length > 0)
     {
@@ -207,6 +207,8 @@ class Smart extends React.Component {
             labels={label_list}
             adminLabel={adminLabel}
             discardData={discardData}
+            getAdminCounts={getAdminCounts}
+            admin_counts={admin_counts}
             />
           </div>
         </Tab>

@@ -541,6 +541,29 @@ def data_admin_table(request, project_pk):
 
 @api_view(['GET'])
 @permission_classes((IsAdminOrCreator, ))
+def data_admin_counts(request, project_pk):
+    """This returns the number of irr and admin objects
+    Args:
+        request: The POST request
+        project_pk: Primary key of the project
+    Returns:
+        data: a list of data information
+    """
+    project = Project.objects.get(pk=project_pk)
+    queue = Queue.objects.filter(project=project,type="admin")
+    data_objs = DataQueue.objects.filter(queue=queue)
+    irr_count = 0
+    skip_count = 0
+    for d in data_objs:
+        if d.data.irr_ind:
+            irr_count += 1
+        else:
+            skip_count += 1
+
+    return Response({'data': {"IRR":irr_count, "SKIP":skip_count}})
+
+@api_view(['GET'])
+@permission_classes((IsAdminOrCreator, ))
 def recycle_bin_table(request, project_pk):
     """This returns the elements in the recycle bin
 

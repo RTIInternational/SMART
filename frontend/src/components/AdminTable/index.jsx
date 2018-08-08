@@ -7,11 +7,11 @@ class AdminTable extends React.Component {
 
   componentWillMount() {
       this.props.getAdmin();
+      this.props.getAdminCounts();
   }
 
   render() {
-  const {admin_data, labels, adminLabel, discardData} = this.props;
-
+  const {admin_data, labels, adminLabel, discardData, admin_counts} = this.props;
   if(admin_data && admin_data.length > 0)
   {
     var table_data = admin_data[0];
@@ -92,7 +92,31 @@ class AdminTable extends React.Component {
 
   return (
     <div>
-    <h3>Instructions</h3>
+    <table>
+      <tbody>
+        <tr>
+          <td className="col-md-2">
+            <h3>Instructions</h3>
+          </td>
+          <td className="col-md-6">
+            <table className="table table-bordered" id="admin_count_table">
+              <thead className="thead-dark">
+                <tr>
+                  <th>IRR</th>
+                  <th>SKIP</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{admin_counts.IRR}</td>
+                  <td>{admin_counts.SKIP}</td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
     <p>This page allows an admin to label data that was skipped by labelers.</p>
       <ReactTable
         data={table_data}
@@ -113,7 +137,9 @@ AdminTable.propTypes = {
   admin_data: PropTypes.arrayOf(PropTypes.object),
   labels: PropTypes.arrayOf(PropTypes.object),
   adminLabel: PropTypes.func.isRequired,
-  discardData: PropTypes.func.isRequired
+  discardData: PropTypes.func.isRequired,
+  getAdminCounts: PropTypes.func.isRequired,
+  admin_counts: PropTypes.arrayOf(PropTypes.object)
 };
 
 export default AdminTable;
