@@ -142,7 +142,7 @@ def download_model(request, project_pk):
                           if f.startswith('project_'+str(project_pk))])
 
     tfidf_path = os.path.join(settings.TF_IDF_PATH, str(project_pk) + '.pkl')
-    readme_path = './core/data/README.txt'
+    readme_path = os.path.join(settings.BASE_DIR,'core', 'data', 'README.txt')
     current_training_set = project.get_current_training_set()
     model_path = os.path.join(settings.MODEL_PICKLE_PATH, 'project_' + str(project_pk) + '_training_' + str(current_training_set.set_number - 1) + '.pkl')
 
