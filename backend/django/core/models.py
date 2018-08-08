@@ -5,6 +5,7 @@ from django.urls import reverse
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.postgres.fields import JSONField
+from django.core.validators import MaxValueValidator, MinValueValidator
 
 class Profile(models.Model):
     # Link to the auth user, since we're basically just extending it
@@ -29,6 +30,8 @@ class Project(models.Model):
     name = models.TextField()
     description = models.TextField(blank=True)
     creator = models.ForeignKey('Profile')
+    percentage_irr = models.FloatField(default=10.0, validators=[MinValueValidator(0.0), MaxValueValidator(100.0)])
+    num_users_irr = models.IntegerField(default=2, validators=[MinValueValidator(2)])
     codebook_file = models.TextField(default='')
     batch_size = models.IntegerField(default=30)
     #####Advanced options#####
@@ -41,14 +44,14 @@ class Project(models.Model):
     ]
 
     CLASSIFIER_CHOICES = [
-        ("logistic_regression","Logistic Regression (default)"),
+        ("logistic regression","Logistic Regression (default)"),
         ("svm","Support Vector Machine (warning: slower for large datasets)"),
-        ("random_forest","Random Forest"),
+        ("random forest","Random Forest"),
         ("gnb","Gaussian Naive Bayes")
     ]
 
     learning_method = models.CharField(max_length = 15, default='least confident', choices=ACTIVE_L_CHOICES)
-    classifier = models.CharField(max_length = 19, default="logistic_regression", choices = CLASSIFIER_CHOICES)
+    classifier = models.CharField(max_length = 19, default="logistic regression", choices = CLASSIFIER_CHOICES)
 
     def get_absolute_url(self):
         return reverse('projects:project_detail', kwargs={'pk': self.pk})
@@ -95,6 +98,7 @@ class Data(models.Model):
     text = models.TextField()
     hash = models.CharField(max_length=128)
     project = models.ForeignKey('Project')
+    irr_ind = models.BooleanField(default=False)
     upload_id = models.CharField(max_length=128)
     upload_id_hash = models.CharField(max_length=128)
 
@@ -110,6 +114,14 @@ class Label(models.Model):
 
     def __str__(self):
         return self.name
+
+class IRRLog(models.Model):
+    class Meta:
+        unique_together = (('data', 'profile'))
+    data = models.ForeignKey('Data')
+    profile = models.ForeignKey('Profile')
+    label = models.ForeignKey('Label', null=True)
+    timestamp = models.DateTimeField(null=True, default= None)
 
 class DataLabel(models.Model):
     class Meta:
@@ -149,7 +161,12 @@ class DataUncertainty(models.Model):
 class Queue(models.Model):
     profile = models.ForeignKey('Profile', blank=True, null=True)
     project = models.ForeignKey('Project')
-    admin = models.BooleanField(default=False)
+    QUEUE_TYPES = (
+        ('admin', 'Admin'),
+        ('irr', 'IRR'),
+        ('normal','Normal')
+    )
+    type = models.CharField(max_length = 6, default='normal', choices=QUEUE_TYPES)
     length = models.IntegerField()
     data = models.ManyToManyField(
         'Data', related_name='queues', through='DataQueue'

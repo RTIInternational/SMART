@@ -27,11 +27,11 @@ const mapDispatchToProps = (dispatch) => {
         fetchCards: () => {
             dispatch(fetchCards(PROJECT_ID))
         },
-        annotateCard: (dataID, labelID, num_cards_left) => {
-            dispatch(annotateCard(dataID, labelID, num_cards_left, PROJECT_ID))
+        annotateCard: (dataID, labelID, num_cards_left, is_admin) => {
+            dispatch(annotateCard(dataID, labelID, num_cards_left, PROJECT_ID, is_admin))
         },
-        passCard: (dataID, num_cards_left) => {
-            dispatch(passCard(dataID, num_cards_left, PROJECT_ID))
+        passCard: (dataID, num_cards_left, is_admin) => {
+            dispatch(passCard(dataID, num_cards_left, PROJECT_ID, is_admin))
         },
         popCard: () => {
             dispatch(popCard())
