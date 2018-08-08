@@ -14,6 +14,7 @@ import math
 import numpy as np
 import hashlib
 import pandas as pd
+import pickle
 import statsmodels.stats.inter_rater as raters
 from collections import defaultdict
 from itertools import combinations
@@ -1077,11 +1078,15 @@ def create_tfidf_matrix(data, max_df=0.95, min_df=0.05):
     Returns:
         tf_idf_matrix: CSR-format tf-idf matrix
     """
-    data_list = list(Data.objects.values_list('text', flat=True).order_by('upload_id_hash'))
+    id_list = list(data.values_list('upload_id', flat=True).order_by('upload_id_hash'))
+    data_list = list(data.values_list('text', flat=True).order_by('upload_id_hash'))
+
     vectorizer = TfidfVectorizer(max_df=max_df, min_df=min_df, stop_words='english')
     tf_idf_matrix = vectorizer.fit_transform(data_list)
 
-    return tf_idf_matrix
+    new_dict = dict(zip(id_list, np.matrix.tolist(sparse.csr_matrix.todense(tf_idf_matrix))))
+
+    return new_dict
 
 
 def save_tfidf_matrix(matrix, project_pk):
@@ -1094,9 +1099,8 @@ def save_tfidf_matrix(matrix, project_pk):
     Returns:
         file: The filepath to the saved matrix
     """
-    fpath = os.path.join(settings.TF_IDF_PATH, str(project_pk) + '.npz')
-
-    sparse.save_npz(fpath, matrix)
+    fpath = os.path.join(settings.TF_IDF_PATH, str(project_pk) + '.pkl')
+    pickle.dump(matrix, open(fpath, "wb"))
 
     return fpath
 
@@ -1109,10 +1113,10 @@ def load_tfidf_matrix(project_pk):
     Returns:
         matrix or None
     """
-    fpath = os.path.join(settings.TF_IDF_PATH, str(project_pk) + '.npz')
+    fpath = os.path.join(settings.TF_IDF_PATH, str(project_pk) + '.pkl')
 
     if os.path.isfile(fpath):
-        return sparse.load_npz(fpath)
+        return pickle.load(open(fpath,"rb"))#sparse.load_npz(fpath)
     else:
         raise ValueError('There was no tfidf matrix found for project: ' + str(project_pk))
 
@@ -1188,9 +1192,6 @@ def check_and_trigger_model(datum, profile=None):
     else:
         return_str = 'no trigger'
 
-
-
-
     return return_str
 
 
@@ -1212,20 +1213,19 @@ def train_and_save_model(project):
         clf = GaussianNB()
     else:
         raise ValueError('There was no valid classifier for project: ' + str(project.pk))
-    tf_idf = load_tfidf_matrix(project.pk).A
+    tf_idf = load_tfidf_matrix(project.pk)
+
     current_training_set = project.get_current_training_set()
 
     # In order to train need X (tf-idf vector) and Y (label) for every labeled datum
     # Order both X and Y by upload_id_hash to ensure the tf-idf vector corresponds to the correct
     # label
-    labeled_data = DataLabel.objects.filter(data__project=project)
-    #get the list of all data sorted by identifier
-    all_data = list(Data.objects.filter(project=project).values_list('pk', flat=True).order_by('upload_id_hash'))
-    labeled_indices = [all_data.index(x.data.pk) for x in labeled_data]
 
+    labeled_data = DataLabel.objects.filter(data__project=project)
+    unique_ids = list(labeled_data.values_list("data__upload_id", flat=True).order_by('data__upload_id_hash'))
     labeled_values = list(labeled_data.values_list('label', flat=True).order_by('data__upload_id_hash'))
 
-    X = tf_idf[labeled_indices]
+    X = [tf_idf[id] for id in unique_ids]
     Y = labeled_values
     clf.fit(X, Y)
 
@@ -1318,17 +1318,18 @@ def predict_data(project, model):
         predictions: List of DataPrediction objects
     """
     clf = joblib.load(model.pickle_path)
-    tf_idf = load_tfidf_matrix(project.pk).A
+    tf_idf = load_tfidf_matrix(project.pk)
+
+
 
     # In order to predict need X (tf-idf vector) for every unlabeled datum. Order
     # X by upload_id_hash to ensure the tf-idf vector corresponds to the correct datum
     recycle_data = RecycleBin.objects.filter(data__project=project).values_list('pk',flat=True)
     unlabeled_data = project.data_set.filter(datalabel__isnull=True).exclude(pk__in=recycle_data).order_by('upload_id_hash')
-    #get the list of all data sorted by identifier
-    all_data = list(Data.objects.filter(project=project).values_list('pk', flat=True).order_by('upload_id_hash'))
-    unlabeled_indices = [all_data.index(x.pk) for x in unlabeled_data]
+    unique_ids = list(unlabeled_data.values_list("upload_id", flat=True).order_by('upload_id_hash'))
 
-    X = tf_idf[unlabeled_indices]
+    #get the list of all data sorted by identifier
+    X = [tf_idf[id] for id in unique_ids]
     predictions = clf.predict_proba(X)
 
     label_obj = [Label.objects.get(pk=label) for label in clf.classes_]
