@@ -948,7 +948,7 @@ def discard_data(request, data_pk):
     # Make sure coder is an admin
     if project_extras.proj_permission_level(data.project, profile) > 1:
         #remove it from the admin queue
-        queue = Queue.objects.get(project=project,admin=True)
+        queue = Queue.objects.get(project=project, type="admin")
         DataQueue.objects.get(data=data, queue=queue).delete()
 
         RecycleBin.objects.create(data=data, timestamp=timezone.now())
