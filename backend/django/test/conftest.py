@@ -399,3 +399,105 @@ def test_labels_all_irr(test_project_all_irr_data):
     for l in SEED_LABELS:
         labels.append(Label.objects.create(name=l, project=test_project_all_irr_data))
     return labels
+
+'''Fixtures for the QBC tests'''
+
+@pytest.fixture
+def test_project_labeled_and_tfidf_model_qbc_lr(test_profile, tmpdir, settings):
+    '''A project with logistic regression and qbc'''
+    project = create_project('test_project', test_profile, 0, 2, learning_method = "qbc", classifier = "logistic regression")
+    for l in SEED_LABELS:
+        Label.objects.create(name=l, project=project)
+
+    test_data = read_test_data_backend(file='./core/data/test_files/test_some_labels.csv')
+    add_data(project, test_data)
+
+    matrix = create_tfidf_matrix(test_data)
+    data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
+    settings.TF_IDF_PATH = str(data_temp)
+    fpath = save_tfidf_matrix(matrix, project.pk)
+
+    add_queue(project, TEST_QUEUE_LEN)
+    add_queue(project, TEST_QUEUE_LEN, type="admin")
+    add_queue(project, MAX_DATA_LEN, type="irr")
+
+    temp_pickle_path = tmpdir.listdir()[0].mkdir('model_pickles')
+    settings.MODEL_PICKLE_PATH = str(temp_pickle_path)
+    train_and_save_model(project)
+
+    return project
+
+@pytest.fixture
+def test_project_labeled_and_tfidf_model_qbc_svm(test_profile, tmpdir, settings):
+    '''A project with SVM and qbc'''
+    project = create_project('test_project', test_profile, 0, 2, learning_method = "qbc", classifier = "svm")
+    for l in SEED_LABELS:
+        Label.objects.create(name=l, project=project)
+
+    test_data = read_test_data_backend(file='./core/data/test_files/test_some_labels.csv')
+    add_data(project, test_data)
+
+    matrix = create_tfidf_matrix(test_data)
+    data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
+    settings.TF_IDF_PATH = str(data_temp)
+    fpath = save_tfidf_matrix(matrix, project.pk)
+
+    add_queue(project, TEST_QUEUE_LEN)
+    add_queue(project, TEST_QUEUE_LEN, type="admin")
+    add_queue(project, MAX_DATA_LEN, type="irr")
+
+    temp_pickle_path = tmpdir.listdir()[0].mkdir('model_pickles')
+    settings.MODEL_PICKLE_PATH = str(temp_pickle_path)
+    train_and_save_model(project)
+
+    return project
+
+@pytest.fixture
+def test_project_labeled_and_tfidf_model_qbc_rf(test_profile, tmpdir, settings):
+    '''A project with Random Forest and qbc'''
+    project = create_project('test_project', test_profile, 0, 2, learning_method = "qbc", classifier = "random forest")
+    for l in SEED_LABELS:
+        Label.objects.create(name=l, project=project)
+
+    test_data = read_test_data_backend(file='./core/data/test_files/test_some_labels.csv')
+    add_data(project, test_data)
+
+    matrix = create_tfidf_matrix(test_data)
+    data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
+    settings.TF_IDF_PATH = str(data_temp)
+    fpath = save_tfidf_matrix(matrix, project.pk)
+
+    add_queue(project, TEST_QUEUE_LEN)
+    add_queue(project, TEST_QUEUE_LEN, type="admin")
+    add_queue(project, MAX_DATA_LEN, type="irr")
+
+    temp_pickle_path = tmpdir.listdir()[0].mkdir('model_pickles')
+    settings.MODEL_PICKLE_PATH = str(temp_pickle_path)
+    train_and_save_model(project)
+
+    return project
+
+@pytest.fixture
+def test_project_labeled_and_tfidf_model_qbc_gnb(test_profile, tmpdir, settings):
+    '''A project with Gaussian Naiive Bayes and qbc'''
+    project = create_project('test_project', test_profile, 0, 2, learning_method = "qbc", classifier = "gnb")
+    for l in SEED_LABELS:
+        Label.objects.create(name=l, project=project)
+
+    test_data = read_test_data_backend(file='./core/data/test_files/test_some_labels.csv')
+    add_data(project, test_data)
+
+    matrix = create_tfidf_matrix(test_data)
+    data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
+    settings.TF_IDF_PATH = str(data_temp)
+    fpath = save_tfidf_matrix(matrix, project.pk)
+
+    add_queue(project, TEST_QUEUE_LEN)
+    add_queue(project, TEST_QUEUE_LEN, type="admin")
+    add_queue(project, MAX_DATA_LEN, type="irr")
+
+    temp_pickle_path = tmpdir.listdir()[0].mkdir('model_pickles')
+    settings.MODEL_PICKLE_PATH = str(temp_pickle_path)
+    train_and_save_model(project)
+
+    return project

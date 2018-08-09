@@ -193,13 +193,15 @@ def sync_redis_objects(queue, orderby):
             settings.REDIS.rpush(redis_serialize_queue(queue), *ordered_data_ids)
 
 
-def create_project(name, creator, percentage_irr=10,num_users_irr=2):
+def create_project(name, creator, percentage_irr=10,num_users_irr=2, classifier="logistic regression", learning_method='least confident'):
     '''
     Create a project with the given name and creator.
     '''
     proj = Project.objects.create(name=name, creator=creator,
                                    percentage_irr = percentage_irr,
-                                    num_users_irr = num_users_irr)
+                                    num_users_irr = num_users_irr,
+                                     classifier = classifier,
+                                      learning_method = learning_method)
     training_set = TrainingSet.objects.create(project=proj, set_number=0)
 
     return proj
@@ -1290,34 +1292,29 @@ def entropy(probs):
         x = -sum(p * log(p))
         the sum is sumation across p's
     Args:
-        probs: List of predicted probabilities
+        probs: List of predicted probabilities, or a row
+        with the class assignments from each classifier
+        ex: [5, 4, 5, 5, 3]
     Returns:
         x
     """
-    if not isinstance(probs, np.ndarray):
+    if isinstance(probs, pd.Series):
+        #it is being called by qbc with a row format
+        class_votes = probs.value_counts().to_dict()
+        #pandas count automatically does not include 0 counts
+        votes = list(class_votes.values())
+        if len(votes) == 0:
+            raise ValueError('Should not be empty array')
+        non_zero_probs = [c/len(votes) for c in votes]
+    elif not isinstance(probs, np.ndarray):
         raise ValueError('Probs should be a numpy array')
-
-    non_zero_probs = (p for p in probs if p > 0)
+    else:
+        non_zero_probs = (p for p in probs if p > 0)
 
     total = 0
     for p in non_zero_probs:
         total += p * math.log10(p)
-
     return -total
-
-def get_entropy(row):
-    '''
-    This function finds the entropy for a particular row over all possible classes and assignements by the committee
-    Args:
-        param row: a row of one element per assignment from a member of the committee
-    return: the disagreement for that row
-    '''
-    # For each unlabeled element get the entropy -sum( votes_class_i/C * log(votes_class_i/C))
-    class_votes = row.value_counts().to_dict()
-    total = 0
-    for c in class_votes:
-        total += (class_votes[c]/len(row))*math.log10(class_votes[c]/len(row))
-    return -1 * total
 
 def train_and_apply_committee(project, unlabeled_X, com_size = 5):
     """Given a project where query by committee is the metric, reads in
@@ -1363,7 +1360,7 @@ def train_and_apply_committee(project, unlabeled_X, com_size = 5):
         predictions.append(np.reshape(y_pred,(len(y_pred),1)))
 
     all_predictions = np.concatenate(predictions, axis=1)
-    scores = pd.DataFrame(all_predictions).apply(get_entropy, axis=1)
+    scores = pd.DataFrame(all_predictions).apply(entropy, axis=1)
 
     return scores
 

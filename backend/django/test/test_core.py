@@ -28,7 +28,8 @@ from core.util import (redis_serialize_queue, redis_serialize_data, redis_serial
                        least_confident, margin_sampling, entropy,
                        check_and_trigger_model, get_ordered_data,
                        find_queue_length, cohens_kappa, fleiss_kappa,
-                       irr_heatmap_data, perc_agreement_table_data, md5_hash)
+                       irr_heatmap_data, perc_agreement_table_data, md5_hash,
+                       train_and_apply_committee)
 
 from test.util import read_test_data_backend, assert_obj_exists, assert_redis_matches_db
 from test.conftest import TEST_QUEUE_LEN
@@ -1748,3 +1749,98 @@ def test_percent_agreement_table(setup_celery, test_project_all_irr_3_coders_dat
     table_data_perc = pd.DataFrame(perc_agreement_table_data(project))["Percent Agreement"].tolist()
     # goes in the order [prof2,prof3], [prof2, prof], [prof3, prof]
     assert (table_data_perc[0] == "33.3%") and (table_data_perc[1] == "66.7%") and (table_data_perc[2] == "33.3%")
+
+
+
+def test_entropy_qbc():
+    '''
+    This tests the qbc usage of the entropy function, which provides a
+    series with class labels instead of the counts directly
+    '''
+    #send empty Series, should return 0
+    with pytest.raises(ValueError) as excinfo:
+        entropy(pd.Series([]))
+    assert 'Should not be empty array' in str(excinfo.value)
+
+    #send Series with [7 7 7 7 7 7 7] should return -5.9156
+    all_same = pd.Series([7,7,7,7,7,7,7])
+    np.testing.assert_almost_equal(entropy(all_same), -5.91568628)
+
+    #send Series with [1 2 3 4 5] should return 0.6989700
+    all_different = pd.Series([1,2,3,4,5])
+    np.testing.assert_almost_equal(entropy(all_different), 0.698970004)
+
+def run_qbc_project_test(project):
+    '''
+    This is a helper function for testing qbc with various classifiers
+    '''
+    #for committee sizes 5, 10, 20, 100
+    tf_idf = load_tfidf_matrix(project.pk).A
+    unlabeled_data = project.data_set.filter(datalabel__isnull=True).order_by('upload_id_hash')
+    all_data = list(Data.objects.filter(project=project).values_list('pk', flat=True).order_by('upload_id_hash'))
+    unlabeled_indices = [all_data.index(x.pk) for x in unlabeled_data]
+    X = tf_idf[unlabeled_indices]
+
+    for com_size in [5,10,50,100]:
+        results = train_and_apply_committee(project,X,com_size)
+        # result should be a pandas series of length unlabeled data
+        assert isinstance(results, pd.Series)
+        assert len(results) == len(unlabeled_indices)
+
+    current_set = project.get_current_training_set()
+    model = Model.objects.get(training_set = current_set)
+    predictions = predict_data(project, model)
+
+    unc_values = DataUncertainty.objects.filter(data__project=project, model=model)
+    assert len(unc_values) == len(unlabeled_indices)
+    # check that the QBC elements are not all 0 for DataUncertainty
+    assert np.sum(list(unc_values.values_list("qbc",flat=True))) != 0
+
+    # fill the queue. Check that the elements are in order by QBC
+    normal_queue = Queue.objects.get(project=project,type="normal")
+    fill_queue(normal_queue, 'qbc')
+
+    data_list = get_ordered_data(normal_queue.data.all(), 'qbc')
+
+    previous_qbc = data_list[0].datauncertainty_set.get().qbc
+    for datum in data_list:
+        assert len(datum.datalabel_set.all()) == 0
+        assert_obj_exists(DataUncertainty, {
+            'data': datum
+        })
+        assert datum.datauncertainty_set.get().qbc <= previous_qbc
+        previous_qbc = datum.datauncertainty_set.get().qbc
+
+
+def test_train_and_apply_committee_lr(setup_celery, test_project_labeled_and_tfidf_model_qbc_lr,
+                                       test_profile, test_redis, tmpdir, settings):
+    '''
+    This tests the train_and_apply_committee function with logistic regression as
+    the classifier.
+    '''
+    run_qbc_project_test(test_project_labeled_and_tfidf_model_qbc_lr)
+
+
+def test_train_and_apply_committee_svm(setup_celery, test_project_labeled_and_tfidf_model_qbc_svm,
+                                       test_profile, test_redis, tmpdir, settings):
+    '''
+    This tests the train_and_apply_committee function with SVM as
+    the classifier.
+    '''
+    run_qbc_project_test(test_project_labeled_and_tfidf_model_qbc_svm)
+
+def test_train_and_apply_committee_rf(setup_celery, test_project_labeled_and_tfidf_model_qbc_rf,
+                                       test_profile, test_redis, tmpdir, settings):
+    '''
+    This tests the train_and_apply_committee function with random forest as
+    the classifier.
+    '''
+    run_qbc_project_test(test_project_labeled_and_tfidf_model_qbc_rf)
+
+def test_train_and_apply_committee_gnb(setup_celery, test_project_labeled_and_tfidf_model_qbc_gnb,
+                                       test_profile, test_redis, tmpdir, settings):
+    '''
+    This tests the train_and_apply_committee function with Gausian Naive Bayes as
+    the classifier.
+    '''
+    run_qbc_project_test(test_project_labeled_and_tfidf_model_qbc_gnb)
