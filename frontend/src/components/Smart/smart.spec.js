@@ -35,6 +35,8 @@ describe('<Smart />', () => {
                 annotateCard = {fn}
                 passCard =  {fn}
                 popCard = {fn}
+                admin_counts = {data}
+                getAdminCounts = {fn}
               />
             );
         });

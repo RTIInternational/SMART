@@ -234,6 +234,8 @@ Smart.propTypes = {
     annotateCard: PropTypes.func.isRequired,
     passCard: PropTypes.func.isRequired,
     popCard: PropTypes.func.isRequired,
+    admin_counts: PropTypes.arrayOf(PropTypes.object),
+    getAdminCounts: PropTypes.func.isRequired
 };
 
 export default Smart;
