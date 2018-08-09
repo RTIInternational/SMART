@@ -184,16 +184,17 @@
           <a class="btn btn-primary" href = "{% static project.codebook_file %}" target = "_blank" id="download_cb_btn">View CodeBook</a>
           {% endif %}
           {% if project|proj_permission_level:request.user.profile > 1 %}
+            <a class="btn btn-primary" href="{% url 'projects:project_admin' project.pk %}" role="button">
+              Admin Page
+            </a>
+          {% if project.has_model %}
+            <a class="btn btn-primary" id="download_model_btn">Download Model and Labeled Data</a>
+          {% else %}
             {% if project.labeled_data_count > 0 %}
             <a class="btn btn-primary" id="download_btn">Download Labeled Data</a>
             {% else %}
             <a class="btn btn-primary disabled" id="download_btn">No Labeled Data to Download</a>
             {% endif %}
-            <a class="btn btn-primary" href="{% url 'projects:project_admin' project.pk %}" role="button">
-              Admin Page
-            </a>
-          {% if project.has_model %}
-            <a class="btn btn-primary" id="download_model_btn">Download Model</a>
           {% endif %}
           {% endif %}
         </div>
