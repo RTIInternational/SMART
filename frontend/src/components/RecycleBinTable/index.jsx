@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import ReactTable from 'react-table';
 import {Button, ButtonToolbar, Tooltip, OverlayTrigger} from "react-bootstrap";
-
+import CodebookLabelMenu from '../CodebookLabelMenu';
 class RecycleBinTable extends React.Component {
 
   componentWillMount() {
@@ -10,11 +10,11 @@ class RecycleBinTable extends React.Component {
   }
 
   render() {
-  const {discarded_data, restoreData} = this.props;
+  const {discarded_data, restoreData, labels} = this.props;
 
-  if(discarded_data && discarded_data.length > 0)
+  if(discarded_data)
   {
-    var table_data = discarded_data[0];
+    var table_data = discarded_data;
   }
   else {
     table_data = [];
@@ -47,11 +47,14 @@ class RecycleBinTable extends React.Component {
     <p>This page displays all data that has been discarded by an admin.</p>
     <p>All data in this table has been removed from the set of unlabeled data to be predicted, and will not be assigned to anyone for labeling.</p>
     <p>To add a datum back into the project, click the Restore button next to the datum.</p>
+    <CodebookLabelMenu
+      labels={labels}
+    />
     <ReactTable
       data={table_data}
       columns={columns}
-      pageSizeOptions={[1,5,10,20,30,50,100]}
-      defaultPageSize={1}
+      showPageSizeOptions={false}
+      pageSize={(table_data.length < 50) ? table_data.length : 50}
       filterable={true}
       SubComponent={row => {
         return (
@@ -83,7 +86,8 @@ class RecycleBinTable extends React.Component {
 RecycleBinTable.propTypes = {
   getDiscarded: PropTypes.func.isRequired,
   discarded_data: PropTypes.arrayOf(PropTypes.object),
-  restoreData: PropTypes.func.isRequired
+  restoreData: PropTypes.func.isRequired,
+  labels: PropTypes.arrayOf(PropTypes.object)
 };
 
 export default RecycleBinTable;

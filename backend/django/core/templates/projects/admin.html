@@ -596,6 +596,7 @@ $(document).ready(function() {
             $this = $(this)
             $this.css({'table-layout':'fixed'});
             $this.find('tr td:first-child').addClass('showData');
+            window.dispatchEvent(new Event('resize'));
         },
         "rowCallback": function (row, data) {
           $('td:nth-child(1)',row).addClass('showData');
@@ -627,6 +628,7 @@ $(document).ready(function() {
                 $this = $(this)
                 $this.css({'table-layout':'fixed'});
                 $this.find('tr td:first-child').addClass('showData');
+                window.dispatchEvent(new Event('resize'));
             },
             "rowCallback": function (row, data) {
               $('td:nth-child(1)',row).addClass('showData');

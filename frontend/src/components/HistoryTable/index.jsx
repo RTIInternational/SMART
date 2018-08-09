@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import ReactTable from 'react-table';
 import {Button, ButtonToolbar, Tooltip, OverlayTrigger} from "react-bootstrap";
-
+import CodebookLabelMenu from '../CodebookLabelMenu';
 const columns = [
   {
     Header: "edit",
@@ -56,13 +56,14 @@ class HistoryTable extends React.Component {
   render() {
   const {history_data, labels, changeLabel, changeToSkip} = this.props;
 
-  if(history_data && history_data.length > 0)
+  if(history_data)
   {
-    var table_data = history_data[0]
+    var table_data = history_data
   }
   else {
     table_data = []
   }
+
   var page_sizes = [1];
   var counter = 1;
   for(var i = 5; i < table_data.length; i+=5*counter)
@@ -78,71 +79,65 @@ class HistoryTable extends React.Component {
     <p>This page allows a coder to change past labels.</p>
     <p>To annotate, click on a data entry below and select the label from the expanded list of labels. The chart will then update with the new label and current timestamp </p>
     <p><strong>NOTE:</strong> Data labels that are changed on this page will not effect past model accuracy or data selected by active learning in the past. The training data will only be updated for the next run of the model</p>
-      <ReactTable
-        data={table_data}
-        columns={columns}
-        pageSizeOptions={page_sizes}
-        pageSize={(table_data.length < 50) ? table_data.length : 50}
-        SubComponent={row => {
+    <CodebookLabelMenu
+      labels={labels}
+    />
+    <ReactTable
+      data={table_data}
+      columns={columns}
+      pageSize={(table_data.length < 50) ? table_data.length : 50}
+      showPageSizeOptions={false}
+      SubComponent={row => {
 
-        if(row.row.edit === "yes")
-        {
+      if(row.row.edit === "yes")
+      {
+        return (
+          <div className="sub-row">
+            <p>{row.row.data}</p>
+            <ButtonToolbar bsClass="btn-toolbar pull-right">
+              {labels.map( (label) => {
+                return (
+                  <Button key={label.pk.toString() + "_" + row.row.id.toString()}
+                  onClick={() => {
+                    if(!(row.row.old_label_id === label.pk))
+                    {
+                      changeLabel(row.row.id,row.row.old_label_id,label.pk)
+                    }
+                  }}
+                  bsStyle="primary"
+                  >{label.name}</Button>
+              )})}
+              <OverlayTrigger
+              placement = "top"
+              overlay={
+                <Tooltip id="skip_tooltip">
+                  Clicking this button will send this document to an administrator for review
+                </Tooltip>
+              }>
+              <Button onClick={() => changeToSkip(row.row.id,row.row.old_label_id)}
+              bsStyle="info"
+              >Skip</Button>
+              </OverlayTrigger>
+            </ButtonToolbar>
+          </div>
+        );
+        }
+        else {
           return (
             <div className="sub-row">
               <p>{row.row.data}</p>
-              <ButtonToolbar bsClass="btn-toolbar pull-right">
-                {labels.map( (label) => {
-                  return (
-                    <OverlayTrigger
-                    key={label['pk']+"__"+row.row.id+"__tooltip"}
-                    placement = "top"
-                    overlay={
-                      <Tooltip id="label_tooltip">
-                        {label['description']}
-                      </Tooltip>
-                    }>
-                    <Button key={label.pk.toString() + "_" + row.row.id.toString()}
-                    onClick={() => {
-                      if(!(row.row.old_label_id === label.pk))
-                      {
-                        changeLabel(row.row.id,row.row.old_label_id,label.pk)
-                      }
-                    }}
-                    bsStyle="primary"
-                    >{label.name}</Button>
-                    </OverlayTrigger>
-                )})}
-                <OverlayTrigger
-                placement = "top"
-                overlay={
-                  <Tooltip id="skip_tooltip">
-                    Clicking this button will send this document to an administrator for review
-                  </Tooltip>
-                }>
-                <Button onClick={() => changeToSkip(row.row.id,row.row.old_label_id)}
-                bsStyle="info"
-                >Skip</Button>
-                </OverlayTrigger>
-              </ButtonToolbar>
+              <p id="irr_history_message">Note: This is Inter-rater Reliability data and is not editable.</p>
             </div>
           );
-          }
-          else {
-            return (
-              <div className="sub-row">
-                <p>{row.row.data}</p>
-                <p id="irr_history_message">Note: This is Inter-rater Reliability data and is not editable.</p>
-              </div>
-            );
-          }
-        }}
-        filterable={true}
-        defaultSorted={[{
-          id: "timestamp",
-          desc: true
-        }]}
+        }
+      }}
+      filterable={true}
+      defaultSorted={[{
+        id: "timestamp",
+        desc: true
+      }]}
 
-      />
+    />
     </div>
   )
   }

@@ -1304,6 +1304,26 @@ def entropy(probs):
 
     return -total
 
+def get_labeled_data(project):
+    """Given a project, get the list of labeled data
+
+    Args:
+        project: Project object
+    Returns:
+        data: a list of the labeled data
+    """
+    project_labels = Label.objects.filter(project=project)
+    #get the data labels
+    data = []
+    for label in project_labels:
+        labeled_data = DataLabel.objects.filter(label=label)
+        for d in labeled_data:
+            temp = {}
+            temp['ID'] = d.data.upload_id
+            temp['Text'] = d.data.text
+            temp['Label'] = label.name
+            data.append(temp)
+    return data
 
 def predict_data(project, model):
     """Given a project and its model, predict any unlabeled data and create
@@ -1319,8 +1339,6 @@ def predict_data(project, model):
     """
     clf = joblib.load(model.pickle_path)
     tf_idf = load_tfidf_matrix(project.pk)
-
-
 
     # In order to predict need X (tf-idf vector) for every unlabeled datum. Order
     # X by upload_id_hash to ensure the tf-idf vector corresponds to the correct datum

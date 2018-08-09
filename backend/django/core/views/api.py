@@ -94,17 +94,10 @@ def download_data(request, project_pk):
     Returns:
         an HttpResponse containing the requested data
     """
+    project = Project.objects.get(pk=project_pk)
     data_objs = Data.objects.filter(project=project_pk)
     project_labels = Label.objects.filter(project=project_pk)
-    data = []
-    for label in project_labels:
-        labeled_data = DataLabel.objects.filter(label=label)
-        for d in labeled_data:
-            temp = {}
-            temp['ID'] = d.data.upload_id
-            temp['Text'] = d.data.text
-            temp['Label'] = label.name
-            data.append(temp)
+    data = util.get_labeled_data(project)
 
     buffer = io.StringIO()
     wr = csv.DictWriter(buffer, fieldnames=['ID','Text', 'Label'], quoting=csv.QUOTE_ALL)
@@ -116,7 +109,6 @@ def download_data(request, project_pk):
     response['Content-Disposition'] = 'attachment;'
 
     return response
-
 
 @api_view(['GET'])
 @permission_classes((IsAdminOrCreator, ))
@@ -131,7 +123,6 @@ def download_model(request, project_pk):
     """
     project = Project.objects.get(pk=project_pk)
     data_objs = Data.objects.filter(project=project)
-    project_labels = Label.objects.filter(project=project)
 
     #https://stackoverflow.com/questions/12881294/django-create-a-zip-of-multiple-files-and-make-it-downloadable
     zip_subdir = 'model_project'+str(project_pk)
@@ -146,17 +137,7 @@ def download_model(request, project_pk):
     current_training_set = project.get_current_training_set()
     model_path = os.path.join(settings.MODEL_PICKLE_PATH, 'project_' + str(project_pk) + '_training_' + str(current_training_set.set_number - 1) + '.pkl')
 
-    #get the data labels
-    data = []
-    for label in project_labels:
-        labeled_data = DataLabel.objects.filter(label=label)
-        for d in labeled_data:
-            temp = {}
-            temp['ID'] = d.data.upload_id
-            temp['Text'] = d.data.text
-            temp['Label'] = label.name
-            data.append(temp)
-
+    data = util.get_labeled_data(project)
     #open the tempfile and write the label data to it
     temp_labelfile = tempfile.NamedTemporaryFile(mode='w', delete=False, dir=settings.DATA_DIR)
     temp_labelfile.seek(0)
@@ -530,10 +511,14 @@ def data_admin_table(request, project_pk):
 
     data = []
     for d in data_objs:
+        if d.data.irr_ind:
+            reason = "IRR"
+        else:
+            reason = "Skipped"
         temp = {
             'Text': d.data.text,
             'ID': d.data.id,
-            'IRR': str(d.data.irr_ind)
+            'Reason': reason
         }
         data.append(temp)
 
@@ -554,7 +539,11 @@ def data_admin_counts(request, project_pk):
     data_objs = DataQueue.objects.filter(queue=queue)
     irr_count = data_objs.filter(data__irr_ind=True).count()
     skip_count = data_objs.filter(data__irr_ind=False).count()
-    return Response({'data': {"IRR":irr_count, "SKIP":skip_count}})
+    #only give both counts if both counts are relevent
+    if project.percentage_irr == 0:
+        return Response({'data': {"SKIP":skip_count}})
+    else:
+        return Response({'data': {"IRR":irr_count, "SKIP":skip_count}})
 
 @api_view(['GET'])
 @permission_classes((IsAdminOrCreator, ))
@@ -1071,8 +1060,6 @@ def enter_coding_page(request, project_pk):
         if AdminProgress.objects.filter(project=project).count() == 0:
             AdminProgress.objects.create(project=project, profile=profile, timestamp = timezone.now())
     return Response({})
-
-
 
 @api_view(['GET'])
 def leave_coding_page(request, project_pk):

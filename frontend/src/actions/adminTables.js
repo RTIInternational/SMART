@@ -159,7 +159,7 @@ export const getAdmin = (projectID) => {
                 const row = {
                     id: response.data[i].ID,
                     data: response.data[i].Text,
-                    irr: response.data[i].IRR
+                    reason: response.data[i].Reason
                 }
                 all_data.push(row);
             }

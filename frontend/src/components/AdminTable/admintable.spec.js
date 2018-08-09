@@ -17,8 +17,6 @@ describe('<AdminTable />', () => {
                   labels={labels}
                   adminLabel = {fn}
                   discardData = {fn}
-                  getAdminCounts = {fn}
-                  admin_counts = {data}
                 />
             );
         });

@@ -14,6 +14,7 @@ describe('<RecycleBinTable />', () => {
                   getDiscarded = {fn}
                   discarded_data = {data}
                   restoreData = {fn}
+                  labels = {data}
                 />
             );
         });
