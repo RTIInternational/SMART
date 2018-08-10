@@ -1318,7 +1318,9 @@ def get_labeled_data(project):
     project_labels = Label.objects.filter(project=project)
     #get the data labels
     data = []
+    labels = []
     for label in project_labels:
+        labels.append({"Name":label.name, "Label_ID":label.pk})
         labeled_data = DataLabel.objects.filter(label=label)
         for d in labeled_data:
             temp = {}
@@ -1326,7 +1328,10 @@ def get_labeled_data(project):
             temp['Text'] = d.data.text
             temp['Label'] = label.name
             data.append(temp)
-    return data
+    labeled_data_frame  = pd.DataFrame(data)
+    label_frame = pd.DataFrame(labels)
+
+    return labeled_data_frame, label_frame
 
 def predict_data(project, model):
     """Given a project and its model, predict any unlabeled data and create

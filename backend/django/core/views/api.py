@@ -97,13 +97,13 @@ def download_data(request, project_pk):
     project = Project.objects.get(pk=project_pk)
     data_objs = Data.objects.filter(project=project_pk)
     project_labels = Label.objects.filter(project=project_pk)
-    data = util.get_labeled_data(project)
+    data, labels = util.get_labeled_data(project)
+    data = data.to_dict("records")
 
     buffer = io.StringIO()
     wr = csv.DictWriter(buffer, fieldnames=['ID','Text', 'Label'], quoting=csv.QUOTE_ALL)
     wr.writeheader()
     wr.writerows(data)
-
     buffer.seek(0)
     response = HttpResponse(buffer, content_type='text/csv')
     response['Content-Disposition'] = 'attachment;'
@@ -137,13 +137,14 @@ def download_model(request, project_pk):
     current_training_set = project.get_current_training_set()
     model_path = os.path.join(settings.MODEL_PICKLE_PATH, 'project_' + str(project_pk) + '_training_' + str(current_training_set.set_number - 1) + '.pkl')
 
-    data = util.get_labeled_data(project)
+    data, label_data = util.get_labeled_data(project)
     #open the tempfile and write the label data to it
-    temp_labelfile = tempfile.NamedTemporaryFile(mode='w', delete=False, dir=settings.DATA_DIR)
+    temp_labelfile = tempfile.NamedTemporaryFile(mode='w', suffix=".xlsx",delete=False, dir=settings.DATA_DIR)
     temp_labelfile.seek(0)
-    wr = csv.DictWriter(temp_labelfile, fieldnames=['ID','Text', 'Label'], quoting=csv.QUOTE_ALL)
-    wr.writeheader()
-    wr.writerows(data)
+    writer = pd.ExcelWriter(temp_labelfile.name)
+    data.to_excel(writer,"Labeled Data", index=False)
+    label_data.to_excel(writer,"Label Dictionary", index=False)
+    writer.save()
     temp_labelfile.flush()
     temp_labelfile.close()
 
@@ -153,7 +154,7 @@ def download_model(request, project_pk):
     for path in [tfidf_path, readme_path, model_path, temp_labelfile.name]:
         fdir, fname = os.path.split(path)
         if path == temp_labelfile.name:
-            fname = "project_"+str(project_pk)+"_labels.csv"
+            fname = "project_"+str(project_pk)+"_labels.xlsx"
         #write the file to the zip folder
         zip_path = os.path.join(zip_subdir, fname)
         zip_file.write(path, zip_path)
