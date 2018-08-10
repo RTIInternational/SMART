@@ -44,7 +44,7 @@ def send_tfidf_creation_task(response, project_pk):
     hashes = [od['hash'] for od in response]
     data = Data.objects.filter(hash__in=hashes)
 
-    tf_idf = create_tfidf_matrix(data)
+    tf_idf = create_tfidf_matrix(data, project_pk)
     file = save_tfidf_matrix(tf_idf, project_pk)
 
     return file

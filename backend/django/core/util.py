@@ -1069,7 +1069,7 @@ def save_codebook_file(data, project_pk):
         outputFile.write(data.read())
     return fpath.replace("/data/code_books/","")
 
-def create_tfidf_matrix(data, max_df=0.95, min_df=0.05):
+def create_tfidf_matrix(data, project_pk, max_df=0.95, min_df=0.05):
     """Create a TF-IDF matrix. Make sure to order the data by upload_id_hash so that we
         can sync the data up again when training the model
 
@@ -1078,8 +1078,9 @@ def create_tfidf_matrix(data, max_df=0.95, min_df=0.05):
     Returns:
         tf_idf_matrix: CSR-format tf-idf matrix
     """
-    id_list = list(data.values_list('upload_id', flat=True).order_by('upload_id_hash'))
-    data_list = list(data.values_list('text', flat=True).order_by('upload_id_hash'))
+    project_data = Data.objects.filter(project__pk=project_pk)
+    id_list = list(project_data.values_list('upload_id', flat=True).order_by('upload_id_hash'))
+    data_list = list(project_data.values_list('text', flat=True).order_by('upload_id_hash'))
 
     vectorizer = TfidfVectorizer(max_df=max_df, min_df=min_df, stop_words='english')
     tf_idf_matrix = vectorizer.fit_transform(data_list)
@@ -1100,7 +1101,8 @@ def save_tfidf_matrix(matrix, project_pk):
         file: The filepath to the saved matrix
     """
     fpath = os.path.join(settings.TF_IDF_PATH, str(project_pk) + '.pkl')
-    pickle.dump(matrix, open(fpath, "wb"))
+    with open(fpath, "wb") as tfidf_file:
+        pickle.dump(matrix, tfidf_file)
 
     return fpath
 
@@ -1116,7 +1118,8 @@ def load_tfidf_matrix(project_pk):
     fpath = os.path.join(settings.TF_IDF_PATH, str(project_pk) + '.pkl')
 
     if os.path.isfile(fpath):
-        return pickle.load(open(fpath,"rb"))#sparse.load_npz(fpath)
+        with open(fpath,"rb") as file:
+            return pickle.load(file)
     else:
         raise ValueError('There was no tfidf matrix found for project: ' + str(project_pk))
 
