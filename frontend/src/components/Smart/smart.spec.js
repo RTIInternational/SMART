@@ -11,25 +11,32 @@ describe('<Smart />', () => {
             const message = "";
             const wrapper = shallow(
               <Smart
+                cards =  {data}
+                message = {message}
                 history_data = {data}
                 getHistory = {fn}
                 changeLabel = {fn}
                 changeToSkip = {fn}
-                labels = {fn}
                 getUnlabeled = {fn}
                 unlabeled_data = {data}
+                available = {false}
+                getAdminTabsAvailable = {fn}
                 label_counts = {data}
                 skewLabel = {fn}
                 getLabelCounts = {fn}
                 getAdmin = {fn}
                 admin_data = {data}
                 adminLabel = {fn}
+                discardData = {fn}
+                restoreData = {fn}
+                discarded_data = {data}
+                getDiscarded = {fn}
                 fetchCards = {fn}
                 annotateCard = {fn}
                 passCard =  {fn}
                 popCard = {fn}
-                cards =  {data}
-                message = {message}
+                admin_counts = {data}
+                getAdminCounts = {fn}
               />
             );
         });

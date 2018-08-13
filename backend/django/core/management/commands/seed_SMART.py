@@ -22,10 +22,11 @@ def seed_users():
 
     return Profile.objects.get(user=root_auth), Profile.objects.get(user=user1_auth), Profile.objects.get(user=test_user_auth)
 
-def seed_project(creator, name, description, data_file, label_list, perm_list):
+def seed_project(creator, name, description, data_file, label_list, perm_list, classifier):
     project = Project.objects.create(name=name,
         description=description,
-        creator=creator
+        creator=creator,
+        classifier=classifier
     )
 
     training_set = TrainingSet.objects.create(project=project, set_number=0)
@@ -92,21 +93,24 @@ class Command(BaseCommand):
                 description="This is a project for only the root user. The root user is the creator.  This project's data file has labels.",
                 data_file='./core/data/test_files/test_some_labels.csv',
                 label_list=['FAVOR', 'AGAINST', 'NONE'],
-                perm_list=[]
+                perm_list=[],
+                classifier='logistic regression'
             )
             multi_user_project = seed_project(creator=root,
                 name='Three User Project',
                 description="This is a project that is coded by three different users.  No labels were in the data file to begin with.",
                 data_file='./core/data/test_files/test_no_labels.csv',
                 label_list=['Good', 'Bad'],
-                perm_list=[user1, test_user]
+                perm_list=[user1, test_user],
+                classifier='logistic regression'
             )
             no_data_project = seed_project(creator=root,
                 name='No Label Project',
                 description="This project has no labels, all charts should say No Data Available",
                 data_file='./core/data/test_files/test_no_labels.csv',
                 label_list=['Good', 'Bad', 'Neutral'],
-                perm_list=[]
+                perm_list=[],
+                classifier='logistic regression'
             )
 
             print('Test labels...')

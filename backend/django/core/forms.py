@@ -193,6 +193,7 @@ class AdvancedWizardForm(forms.ModelForm):
     use_default_batch_size = forms.BooleanField(initial=True, required=False)
     batch_size = forms.IntegerField(initial=30, min_value=10, max_value=1000)
 
+    use_model = forms.BooleanField(initial=True, required=False)
     classifier = forms.ChoiceField(
         widget=RadioSelect(), choices=Project.CLASSIFIER_CHOICES,
         initial="logistic regression", required=False
@@ -202,8 +203,15 @@ class AdvancedWizardForm(forms.ModelForm):
         use_active_learning = self.cleaned_data.get("use_active_learning")
         use_default_batch_size = self.cleaned_data.get("use_default_batch_size")
         use_irr = self.cleaned_data.get("use_irr")
+        use_model = self.cleaned_data.get("use_model")
+
         #if they are not using active learning, the selection method is random
         if not use_active_learning:
+            self.cleaned_data['learning_method'] = 'random'
+
+        #if they are not using a model, they cannot use active learning
+        if not use_model:
+            self.cleaned_data['classifier'] = None
             self.cleaned_data['learning_method'] = 'random'
 
         if use_default_batch_size:

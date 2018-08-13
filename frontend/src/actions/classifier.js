@@ -4,21 +4,19 @@ import moment from 'moment';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
 import { getHistory } from './history';
-import { getLabelCounts, getAdmin } from './adminTables';
+import { getLabelCounts, getAdmin, getAdminCounts } from './adminTables';
 
 export const POP_CARD = 'POP_CARD';
 export const PUSH_CARD = 'PUSH_CARD';
 export const SET_LABEL = 'SET_LABEL';
 export const SET_MESSAGE = 'SET_MESSAGE';
 export const CLEAR_DECK = 'CLEAR_DECK';
-export const SET_URL = 'SET_URL';
 
 export const popCard = createAction(POP_CARD);
 export const pushCard = createAction(PUSH_CARD);
 export const setLabel = createAction(SET_LABEL);
 export const setMessage = createAction(SET_MESSAGE);
 export const clearDeck = createAction(CLEAR_DECK);
-export const setURL = createAction(SET_URL);
 
 // Create cards by reading from a queue
 export const fetchCards = (projectID) => {
@@ -83,6 +81,7 @@ export const annotateCard = (card, labelID, num_cards_left, projectID, is_admin)
 
                     if (is_admin)  {
                         dispatch(getAdmin(projectID))
+                        dispatch(getAdminCounts(projectID))
                         dispatch(getLabelCounts(projectID))
                     }
                     if(num_cards_left <=1) dispatch(fetchCards(projectID));
@@ -92,7 +91,7 @@ export const annotateCard = (card, labelID, num_cards_left, projectID, is_admin)
 }
 
 //skip a card and put it in the admin table
-export const passCard = (card, num_cards_left, projectID, is_admin) => {
+export const passCard = (card, num_cards_left, is_admin, projectID ) => {
     let payload = {
     }
     let apiURL = `/api/skip_data/${card.text.pk}/`;
@@ -116,8 +115,11 @@ export const passCard = (card, num_cards_left, projectID, is_admin) => {
                 else {
                     dispatch(popCard())
                     dispatch(getHistory(projectID))
-
-                    if (is_admin) dispatch(getAdmin(projectID))
+                    if (is_admin)
+                    {
+                      dispatch(getAdmin(projectID))
+                      dispatch(getAdminCounts(projectID))
+                    }
                     if(num_cards_left <=1) dispatch(fetchCards(projectID))
                 }
             })

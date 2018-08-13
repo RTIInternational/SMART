@@ -21,54 +21,109 @@
 
             <h1>Advanced Settings</h1>
             <div class="form-group">
-              <h2>Active Learning</h2>
-              <div class="choose_al_or_not">
-              {{ wizard.form.use_active_learning }} Use Active Learning to select data to label
-              </div>
-              <div id="choose_method_box">
-                {% for radio in wizard.form.learning_method %}
-                <div class="choose_method" name = "al_choice" id={{radio.value}}>
-                  {{radio}}
+              <div class="panel panel-default" id="al_tab">
+                <div class="panel-heading">
+                  <h5 class="panel-title">
+                    <a data-toggle="collapse" href="#al-panel" class="accordion-toggle">
+                      Active Learning
+                    </a>
+                  </h5>
                 </div>
-                {% endfor %}
-              </div>
-              <div id = "choose_irr_or_not">
-                <h2>Inter-rater Reliability (IRR) Options</h2>
-                <p>Under IRR, a certain percentage of the data is labeled by
-                  multiple coders. The project admin can then examine the
-                  consistency of the labels across different coders. The options
-                  below allow you to set what percentage of the data is coded
-                  multiple times, and how many coders must code data designated
-                  for IRR before it is analyzed.
-                </p>
-                {{ wizard.form.use_irr }} Use Inter-rater Reliability
-              </div>
-              <div id="IRR_options">
-                Percent of batch marked IRR (must be between 0 and 100):{{ wizard.form.percentage_irr }}%
-                <br />
-                Number of coders needed (minimum of 2): {{ wizard.form.num_users_irr }}
-              </div>
-              <div id="choose_classifier_box">
-                <h2>Model Selection</h2>
-                <p>Choose the classification algorithm used by active learning algorithms.</p>
-                {% for radio2 in wizard.form.classifier %}
-                <div class="choose_classifier" name="classifier_choice" id="{{radio2.value}}">
-                  {{radio2}}
+                <div id="al-panel" class="panel-collapse collapse in">
+                  <div class="panel-body">
+                    <div>
+                    {{ wizard.form.use_active_learning }} Use Active Learning to select data to label
+                    </div>
+                    <div id="choose_method_box">
+                      {% for radio in wizard.form.learning_method %}
+                      <div class="choose_method" name = "al_choice" id={{radio.value}}>
+                        {{radio}}
+                      </div>
+                      {% endfor %}
+                    </div>
+                  </div>
                 </div>
-                {% endfor %}
-                <p>{{ wizard.form.classifier.errors }}</p>
+              </div>
+              <div class="panel panel-default">
+                <div class="panel-heading">
+                  <h5 class="panel-title">
+                    <a data-toggle="collapse" href="#c-panel" class="accordion-toggle">
+                      Model Selection
+                    </a>
+                  </h5>
+                </div>
+                <div id="c-panel" class="panel-collapse collapse in">
+                  <div class="panel-body">
+                    <div id="choose_classifier_box">
+                      <div id="use_model_div">
+                        <p>Train and display results for a model: {{ wizard.form.use_model }}</p>
+                        <p>NOTE: If you uncheck this option, you cannot use Active Learning</p>
+                        <br />
+                      </div>
+                      <div id="classifier_radios">
+                        <p>Choose the classification algorithm used by active learning algorithms and for general prediction.</p>
+                        {% for radio2 in wizard.form.classifier %}
+                        <div class="choose_classifier" name="classifier_choice" id="{{radio2.value}}">
+                          {{radio2}}
+                        </div>
+                        {% endfor %}
+                      </div>
+                      <p>{{ wizard.form.classifier.errors }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
+              <div class="panel panel-default">
+                <div class="panel-heading">
+                  <h5 class="panel-title">
+                    <a data-toggle="collapse" href="#irr-panel" class="accordion-toggle">
+                      Inter-rater Reliability (IRR) Settings
+                    </a>
+                  </h5>
+                </div>
+                <div id="irr-panel" class="panel-collapse collapse in">
+                  <div class="panel-body">
+                    <div id = "choose_irr_or_not">
+                      <p>Under IRR, a certain percentage of the data is labeled by
+                        multiple coders. The project admin can then examine the
+                        consistency of the labels across different coders. The options
+                        below allow you to set what percentage of the data is coded
+                        multiple times, and how many coders must code data designated
+                        for IRR before it is analyzed.
+                      </p>
+                      {{ wizard.form.use_irr }} Use Inter-rater Reliability
+                    </div>
+                    <div id="IRR_options">
+                      Percent of batch marked IRR (must be between 0 and 100):{{ wizard.form.percentage_irr }}%
+                      <br />
+                      Number of coders needed (minimum of 2): {{ wizard.form.num_users_irr }}
+                    </div>
+                  </div>
+                </div>
               </div>
-              <h2>Batch Settings</h2>
-              <div id="use_default_size">
-                Use default size (10 times the number of labels): {{ wizard.form.use_default_batch_size}}
-              </div>
-              <div id="choose_batch_size">
-                Batch size (must be between 10 and 1000): {{ wizard.form.batch_size}}
+              <div class="panel panel-default">
+                <div class="panel-heading">
+                  <h5 class="panel-title">
+                    <a data-toggle="collapse" href="#b-panel" class="accordion-toggle">
+                      Batch Settings
+                    </a>
+                  </h5>
+                </div>
+                <div id="b-panel" class="panel-collapse collapse in">
+                  <div class="panel-body">
+                    <div id="use_default_size">
+                      Use default size (10 times the number of labels): {{ wizard.form.use_default_batch_size}}
+                    </div>
+                    <div id="choose_batch_size">
+                      Batch size (must be between 10 and 1000): {{ wizard.form.batch_size}}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
-          <div>
+          <div class="wizard_nav_bar">
             <button class="btn btn-info" name="wizard_goto_step" type="submit" value="project">1. Info</button>
             <button class="btn btn-info" name="wizard_goto_step" type="submit" value="labels">2. Labels</button>
             <button class="btn btn-info" name="wizard_goto_step" type="submit" value="permissions">3. Permissions</button>
@@ -87,6 +142,9 @@
 var methods_box = $("div#choose_method_box");
 var irr_box = $("div#IRR_options");
 var batch_field = $('#choose_batch_size');
+var use_model = $("#use_model_div");
+var class_choice = $("#classifier_radios");
+var al_tab = $("#al_tab");
 if($('input#id_advanced-use_irr').prop('checked') == true)
 {
   irr_box.show();
@@ -96,8 +154,10 @@ else {
 }
 if ($('input#id_advanced-use_active_learning').prop('checked') == true) {
   methods_box.show();
+  use_model.hide();
 } else {
   methods_box.hide();
+  use_model.show();
 }
 
 if ($('input#id_advanced-use_default_batch_size').prop('checked') == true) {
@@ -106,11 +166,21 @@ if ($('input#id_advanced-use_default_batch_size').prop('checked') == true) {
   batch_field.show();
 }
 
+if ($('input#id_advanced-use_model').prop('checked') == true) {
+  class_choice.show();
+  al_tab.show();
+} else {
+  class_choice.hide();
+  al_tab.hide();
+}
+
 $('input#id_advanced-use_active_learning').change(function(){
   if ($(this).prop('checked') == true) {
     methods_box.show();
+    use_model.hide();
   } else {
     methods_box.hide();
+    use_model.show();
   }
 });
 
@@ -122,6 +192,16 @@ $('input#id_advanced-use_default_batch_size').change(function(){
   }
 });
 
+$('input#id_advanced-use_model').change(function(){
+  if ($(this).prop('checked') == true) {
+    class_choice.show();
+    al_tab.show();
+  } else {
+    class_choice.hide();
+    al_tab.hide();
+  }
+});
+
 $('input#id_advanced-use_irr').change(function(){
   if ($(this).prop('checked') == true) {
         irr_box.show();
@@ -129,5 +209,6 @@ $('input#id_advanced-use_irr').change(function(){
         irr_box.hide();
     }
 });
+
 </script>
 {% endblock %}
