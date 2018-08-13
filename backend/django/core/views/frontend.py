@@ -111,7 +111,7 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size = 30)
     4. Create tf_idf file
     5. Check and Trigger model
     """
-    data_objs = util.add_data(project, form_data)
+    data_objs, new_df = util.add_data(project, form_data)
     if queue:
         util.fill_queue(queue=queue, irr_queue=irr_queue, orderby='random', irr_percent = project.percentage_irr, batch_size = batch_size)
 
@@ -121,7 +121,7 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size = 30)
     # tf_idf to be created we must create a chord which garuntees that tfidf
     # creation task is completed before check and trigger model task
     if len(data_objs) > 0:
-        util.save_data_file(form_data, project.pk)
+        util.save_data_file(new_df, project.pk)
         chord(
               tasks.send_tfidf_creation_task.s(DataSerializer(data_objs, many=True).data, project.pk),
               tasks.send_check_and_trigger_model_task.si(project.pk)

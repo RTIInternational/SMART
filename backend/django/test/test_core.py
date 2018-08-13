@@ -743,6 +743,8 @@ def test_save_data_file_no_labels_csv(test_project, tmpdir, settings):
     settings.PROJECT_FILE_PATH = str(temp_data_file_path)
 
     data = pd.read_csv(test_file)
+    data["ID"] = data.index.tolist()
+    data = data[["ID", "Text", "Label"]]
 
     fname = save_data_file(data, test_project.pk)
 
@@ -760,6 +762,8 @@ def test_save_data_file_some_labels_csv(test_project, tmpdir, settings):
     settings.PROJECT_FILE_PATH = str(temp_data_file_path)
 
     data = pd.read_csv(test_file)
+    data["ID"] = data.index.tolist()
+    data = data[["ID", "Text", "Label"]]
 
     fname = save_data_file(data, test_project.pk)
 
@@ -777,6 +781,7 @@ def test_save_data_file_multiple_files(test_project, tmpdir, settings):
     settings.PROJECT_FILE_PATH = str(temp_data_file_path)
 
     data = pd.read_csv(test_file)
+    data["ID"] = data.index.tolist()
 
     fname1 = save_data_file(data, test_project.pk)
     fname2 = save_data_file(data, test_project.pk)

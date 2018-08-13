@@ -259,7 +259,7 @@ def add_data(project, df):
              for i, row in labeled_df.iterrows()]
         )
 
-    return data
+    return data, df
 
 
 def find_queue_length(batch_size, num_coders):
@@ -1050,7 +1050,7 @@ def save_data_file(df, project_pk):
                           if f.startswith('project_'+str(project_pk))])
     fpath = os.path.join(settings.PROJECT_FILE_PATH, 'project_' + str(project_pk) + '_data_' + str(num_proj_files) + '.csv')
 
-    df = df[['Text', 'Label']]
+    df = df[['ID','Text', 'Label']]
     df.to_csv(fpath, index=False)
 
     return fpath
