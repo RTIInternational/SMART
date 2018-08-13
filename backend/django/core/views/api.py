@@ -21,9 +21,9 @@ import os
 import math
 import random
 import pandas as pd
+import zipfile
+import tempfile
 import numpy as np
-
-
 from django.utils import timezone
 
 from postgres_stats.aggregates import Percentile
@@ -36,7 +36,8 @@ from core.serializers import (ProfileSerializer, AuthUserGroupSerializer,
                               LabelChangeLogSerializer)
 from core.models import (Profile, Project, Model, Data, Label, DataLabel,
                          DataPrediction, Queue, DataQueue, AssignedData, TrainingSet,
-                         LabelChangeLog, IRRLog, ProjectPermissions)
+                         LabelChangeLog, RecycleBin, IRRLog, ProjectPermissions,
+                         AdminProgress)
 import core.util as util
 from core.pagination import SmartPagination
 from core.templatetags import project_extras
@@ -47,6 +48,7 @@ class IsAdminOrCreator(permissions.BasePermission):
     Checks if the requestor of the endpoint is admin or creator of a project
     """
     message = 'Invalid permission. Must be an admin'
+
 
     def has_permission(self, request, view):
         if 'project_pk' in view.kwargs:
@@ -92,29 +94,83 @@ def download_data(request, project_pk):
     Returns:
         an HttpResponse containing the requested data
     """
+    project = Project.objects.get(pk=project_pk)
     data_objs = Data.objects.filter(project=project_pk)
     project_labels = Label.objects.filter(project=project_pk)
-    data = []
-    for label in project_labels:
-        labeled_data = DataLabel.objects.filter(label=label)
-        for d in labeled_data:
-            temp = {}
-            temp['ID'] = d.data.upload_id
-            temp['Text'] = d.data.text
-            temp['Label'] = label.name
-            data.append(temp)
+    data, labels = util.get_labeled_data(project)
+    data = data.to_dict("records")
 
     buffer = io.StringIO()
     wr = csv.DictWriter(buffer, fieldnames=['ID','Text', 'Label'], quoting=csv.QUOTE_ALL)
     wr.writeheader()
     wr.writerows(data)
-
     buffer.seek(0)
     response = HttpResponse(buffer, content_type='text/csv')
     response['Content-Disposition'] = 'attachment;'
 
     return response
 
+@api_view(['GET'])
+@permission_classes((IsAdminOrCreator, ))
+def download_model(request, project_pk):
+    """This function gets the labeled data and makes it available for download
+
+    Args:
+        request: The POST request
+        pk: Primary key of the project
+    Returns:
+        an HttpResponse containing the requested data
+    """
+    project = Project.objects.get(pk=project_pk)
+    data_objs = Data.objects.filter(project=project)
+
+    #https://stackoverflow.com/questions/12881294/django-create-a-zip-of-multiple-files-and-make-it-downloadable
+    zip_subdir = 'model_project'+str(project_pk)
+    zip_filename = 'model_project'+str(project_pk)+".zip"
+
+    #readme_file = 'README.txt'
+    num_proj_files = len([f for f in os.listdir(settings.PROJECT_FILE_PATH)
+                          if f.startswith('project_'+str(project_pk))])
+
+    tfidf_path = os.path.join(settings.TF_IDF_PATH, 'project_'+str(project_pk) + '_tfidf_matrix.pkl')
+    tfidf_vectorizer_path = os.path.join(settings.TF_IDF_PATH, 'project_'+str(project_pk) + '_vectorizer.pkl')
+    readme_path = os.path.join(settings.BASE_DIR,'core', 'data', 'README.pdf')
+    current_training_set = project.get_current_training_set()
+    model_path = os.path.join(settings.MODEL_PICKLE_PATH, 'project_' + str(project_pk) + '_training_' + str(current_training_set.set_number - 1) + '.pkl')
+
+    data, label_data = util.get_labeled_data(project)
+    #open the tempfile and write the label data to it
+    temp_labeleddata_file = tempfile.NamedTemporaryFile(mode='w', suffix=".csv",delete=False, dir=settings.DATA_DIR)
+    temp_labeleddata_file.seek(0)
+    data.to_csv(temp_labeleddata_file.name, index=False)
+    temp_labeleddata_file.flush()
+    temp_labeleddata_file.close()
+
+    temp_label_file = tempfile.NamedTemporaryFile(mode='w', suffix=".csv",delete=False, dir=settings.DATA_DIR)
+    temp_label_file.seek(0)
+    label_data.to_csv(temp_label_file.name, index=False)
+    temp_label_file.flush()
+    temp_label_file.close()
+
+
+    s = io.BytesIO()
+    #open the zip folder
+    zip_file =  zipfile.ZipFile(s, "w")
+    for path in [tfidf_path, tfidf_vectorizer_path, readme_path, model_path, temp_labeleddata_file.name, temp_label_file.name]:
+        fdir, fname = os.path.split(path)
+        if path == temp_label_file.name:
+            fname = "project_"+str(project_pk)+"_labels.csv"
+        elif path == temp_labeleddata_file.name:
+            fname = "project_"+str(project_pk)+"_labeled_data.csv"
+        #write the file to the zip folder
+        zip_path = os.path.join(zip_subdir, fname)
+        zip_file.write(path, zip_path)
+    zip_file.close()
+
+    response = HttpResponse(s.getvalue(), content_type="application/x-zip-compressed")
+    response['Content-Disposition'] = 'attachment;'
+
+    return response
 
 @api_view(['GET'])
 @permission_classes((IsAdminOrCreator, ))
@@ -432,7 +488,8 @@ def data_unlabeled_table(request, project_pk):
     stuff_in_queue = DataQueue.objects.filter(queue__project=project)
     queued_ids = [queued.data.id for queued in stuff_in_queue]
 
-    unlabeled_data = project.data_set.filter(datalabel__isnull=True).exclude(id__in=queued_ids)
+    recycle_ids = RecycleBin.objects.filter(data__project=project).values_list('data__pk',flat=True)
+    unlabeled_data = project.data_set.filter(datalabel__isnull=True).exclude(id__in=queued_ids).exclude(id__in=recycle_ids)
     data = []
     for d in unlabeled_data:
         temp = {
@@ -462,15 +519,63 @@ def data_admin_table(request, project_pk):
 
     data = []
     for d in data_objs:
+        if d.data.irr_ind:
+            reason = "IRR"
+        else:
+            reason = "Skipped"
         temp = {
             'Text': d.data.text,
             'ID': d.data.id,
-            'IRR': str(d.data.irr_ind)
+            'Reason': reason
         }
         data.append(temp)
 
     return Response({'data': data})
 
+@api_view(['GET'])
+@permission_classes((IsAdminOrCreator, ))
+def data_admin_counts(request, project_pk):
+    """This returns the number of irr and admin objects
+    Args:
+        request: The POST request
+        project_pk: Primary key of the project
+    Returns:
+        data: a list of data information
+    """
+    project = Project.objects.get(pk=project_pk)
+    queue = Queue.objects.filter(project=project,type="admin")
+    data_objs = DataQueue.objects.filter(queue=queue)
+    irr_count = data_objs.filter(data__irr_ind=True).count()
+    skip_count = data_objs.filter(data__irr_ind=False).count()
+    #only give both counts if both counts are relevent
+    if project.percentage_irr == 0:
+        return Response({'data': {"SKIP":skip_count}})
+    else:
+        return Response({'data': {"IRR":irr_count, "SKIP":skip_count}})
+
+@api_view(['GET'])
+@permission_classes((IsAdminOrCreator, ))
+def recycle_bin_table(request, project_pk):
+    """This returns the elements in the recycle bin
+
+    Args:
+        request: The POST request
+        pk: Primary key of the project
+    Returns:
+        data: a list of data information
+    """
+    project = Project.objects.get(pk=project_pk)
+    data_objs = RecycleBin.objects.filter(data__project=project)
+
+    data = []
+    for d in data_objs:
+        temp = {
+            'Text': d.data.text,
+            'ID': d.data.id
+        }
+        data.append(temp)
+
+    return Response({'data': data})
 
 @api_view(['POST'])
 @permission_classes((IsAdminOrCreator, ))
@@ -752,14 +857,16 @@ def skip_data(request, data_pk):
     #if the data is IRR or processed IRR, dont add to admin queue yet
     num_history = IRRLog.objects.filter(data=data).count()
 
-    if data.irr_ind or num_history > 0:
-        #log the data and check IRR but don't put in admin queue yet
-        IRRLog.objects.create(data=data, profile=profile, label = None, timestamp = timezone.now())
-
+    if RecycleBin.objects.filter(data=data).count() > 0:
+        assignment = AssignedData.objects.get(data=data,profile=profile)
+        assignment.delete()
+    elif data.irr_ind or num_history > 0:
         #unassign the skipped item
         assignment = AssignedData.objects.get(data=data,profile=profile)
         assignment.delete()
 
+        #log the data and check IRR but don't put in admin queue yet
+        IRRLog.objects.create(data=data, profile=profile, label = None, timestamp = timezone.now())
         #if the IRR history has more than the needed number of labels , it is
         #already processed so don't do anything else
         if num_history <= project.num_users_irr:
@@ -796,9 +903,14 @@ def annotate_data(request, data_pk):
     labeling_time = request.data['labeling_time']
 
     num_history = IRRLog.objects.filter(data=data).count()
-    #if the IRR history has more than the needed number of labels , it is
-    #already processed so just add this label to the history.
-    if num_history >= project.num_users_irr:
+
+    if RecycleBin.objects.filter(data=data).count() > 0:
+        #this data is no longer in use. delete it
+        assignment = AssignedData.objects.get(data=data,profile=profile)
+        assignment.delete()
+    elif num_history >= project.num_users_irr:
+        #if the IRR history has more than the needed number of labels , it is
+        #already processed so just add this label to the history.
         IRRLog.objects.create(data=data, profile=profile, label=label, timestamp = timezone.now())
         assignment = AssignedData.objects.get(data=data,profile=profile)
         assignment.delete()
@@ -813,6 +925,64 @@ def annotate_data(request, data_pk):
 
     return Response(response)
 
+
+@api_view(['POST'])
+@permission_classes((IsAdminOrCreator, ))
+def discard_data(request, data_pk):
+    """Move a datum to the RecycleBin. This removes it from
+       the admin dataqueue. This is used only in the skew table by the admin.
+
+    Args:
+        request: The POST request
+        pk: Primary key of the data
+    Returns:
+        {}
+    """
+    data = Data.objects.get(pk=data_pk)
+    profile = request.user.profile
+    project = data.project
+    response = {}
+
+    # Make sure coder is an admin
+    if project_extras.proj_permission_level(data.project, profile) > 1:
+        #remove it from the admin queue
+        queue = Queue.objects.get(project=project, type="admin")
+        DataQueue.objects.get(data=data, queue=queue).delete()
+
+        RecycleBin.objects.create(data=data, timestamp=timezone.now())
+
+        #remove any IRR log data
+        irr_records = IRRLog.objects.filter(data=data)
+        irr_records.delete()
+
+    else:
+        response['error'] = 'Invalid credentials. Must be an admin.'
+
+    return Response(response)
+
+@api_view(['POST'])
+@permission_classes((IsAdminOrCreator, ))
+def restore_data(request, data_pk):
+    """Move a datum out of the RecycleBin.
+    Args:
+        request: The POST request
+        pk: Primary key of the data
+    Returns:
+        {}
+    """
+    data = Data.objects.get(pk=data_pk)
+    profile = request.user.profile
+    project = data.project
+    response = {}
+
+    # Make sure coder is an admin
+    if project_extras.proj_permission_level(data.project, profile) > 1:
+        #remove it from the recycle bin
+        RecycleBin.objects.get(data=data).delete()
+    else:
+        response['error'] = 'Invalid credentials. Must be an admin.'
+
+    return Response(response)
 
 @api_view(['POST'])
 @permission_classes((IsCoder, ))
@@ -841,7 +1011,6 @@ def modify_label(request, data_pk):
         old_label=old_label.name, new_label = label.name, change_timestamp = timezone.now())
 
     return Response(response)
-
 
 @api_view(['POST'])
 @permission_classes((IsCoder, ))
@@ -877,9 +1046,43 @@ def modify_label_to_skip(request, data_pk):
 
     return Response(response)
 
+@api_view(['GET'])
+@permission_classes((IsAdminOrCreator, ))
+def check_admin_in_progress(request, project_pk):
+    '''
+    This api is called by the admin tabs on the annotate page to check
+    if it is alright to show the data.
+    '''
+    profile = request.user.profile
+    project = Project.objects.get(pk=project_pk)
+
+    #if nobody ELSE is there yet, return True
+    if AdminProgress.objects.filter(project=project).count() == 0:
+        return Response({"available":1})
+    if AdminProgress.objects.filter(project=project, profile=profile).count() == 0:
+        return Response({"available":0})
+    else:
+        return Response({"available":1})
 
 @api_view(['GET'])
-def leave_coding_page(request):
+def enter_coding_page(request, project_pk):
+    """API request meant to be sent when a user navigates onto the coding page
+       captured with 'beforeload' event.
+    Args:
+        request: The GET request
+    Returns:
+        {}
+    """
+    profile = request.user.profile
+    project = Project.objects.get(pk=project_pk)
+    #check that no other admin is using it. If they are not, give this admin permission
+    if project_extras.proj_permission_level(project, profile) > 1:
+        if AdminProgress.objects.filter(project=project).count() == 0:
+            AdminProgress.objects.create(project=project, profile=profile, timestamp = timezone.now())
+    return Response({})
+
+@api_view(['GET'])
+def leave_coding_page(request, project_pk):
     """API request meant to be sent when a user navigates away from the coding page
        captured with 'beforeunload' event.  This should use assign_data to remove
        any data currently assigned to the user and re-add it to redis
@@ -890,11 +1093,16 @@ def leave_coding_page(request):
         {}
     """
     profile = request.user.profile
+    project = Project.objects.get(pk=project_pk)
     assigned_data = AssignedData.objects.filter(profile=profile)
 
     for assignment in assigned_data:
         util.unassign_datum(assignment.data, profile)
 
+    if project_extras.proj_permission_level(project, profile) > 1:
+        if AdminProgress.objects.filter(project=project, profile=profile).count() > 0:
+            prog = AdminProgress.objects.get(project=project, profile=profile)
+            prog.delete()
     return Response({})
 
 

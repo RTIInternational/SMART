@@ -13,12 +13,16 @@
                 <li class="nav-item active">
                     <a data-toggle="tab" href="#label" class="nav-link">Labeled Data</a>
                 </li>
-                <li class="nav-item">
+                {% if project.classifier != None %}
+                <li class="nav-item" id="al_tab">
                     <a data-toggle="tab" href="#model" class="nav-link">Active Learning Model</a>
                 </li>
+                {% endif %}
+                {% if project.percentage_irr > 0 %}
                 <li class="nav-item" id="irr_tab_navitem">
                     <a data-toggle="tab" href="#irr_tab" class="nav-link">IRR</a>
                 </li>
+                {% endif %}
             </ul>
         </div>
         <div class="tab-content">
@@ -53,6 +57,7 @@
                     </div>
                 </div>
             </div>
+            {% if project.classifier != None %}
             <div id="model" class="tab-pane fade in">
                 <div class="row">
                     <div class="col-md-12">
@@ -84,6 +89,7 @@
                         </div>
                     </div>
                 </div>
+                {% if project.learning_method != "random" %}
                 <hr>
                 <div class="row">
                     <div class="col-md-12">
@@ -99,7 +105,9 @@
                         </table>
                     </div>
                 </div>
+                {% endif %}
             </div>
+            {% endif %}
             <div id="irr_tab" class="tab-pane fade in">
                 <div class="row">
                     <div class="col-md-12">
@@ -143,13 +151,7 @@
 {% block scripts_body %}
 <script>
 
-if({{project.percentage_irr}} == 0)
-{
-  $("#irr_tab").hide();
-  $("#irr_tab_navitem").addClass("hidden");
-}
-
-
+{% if project.percentage_irr > 0 %}
 function drawHeatmap(response)
 {
   var coders = response["coders"]
@@ -337,6 +339,7 @@ function drawHeatmap(response)
   }
 
 }
+{% endif %}
 
 /*
  *  Make ajax call to `label_distribution` route.  This will fetch data to
@@ -417,6 +420,7 @@ $.ajax({
     }
 });
 
+{% if project.percentage_irr > 0 %}
 /*
  *  Make ajax call to `get_irr_metrics` route.  This will fetch the
  *  common irr metrics to be displayed for the user
@@ -480,98 +484,99 @@ $('#coder2_select').change(function () {
         }
     });
 });
+{% endif %}
 
 /*
  *  Make ajax call to `model_metrics` route.  This will fetch data to populate
  *  the line chart and show how well the model is training over time.
  */
-$.ajax({
-    method: 'GET',
-    url: '/api/model_metrics/' + {{ project.pk }} + '/?metric=accuracy',
-    success: function (response) {
-        var chart;
-        nv.addGraph(function() {
-            chart = nv.models.lineChart()
-                .options({
-                    duration: 300,
-                    useInteractiveGuideline: true,
-                    forceY: [0, 1]
-                })
-            ;
-            chart.xAxis
-                .axisLabel("Run ID")
-            ;
+{% if project.classifier != None %}
+    $.ajax({
+        method: 'GET',
+        url: '/api/model_metrics/' + {{ project.pk }} + '/?metric=accuracy',
+        success: function (response) {
+            var chart;
+            nv.addGraph(function() {
+                chart = nv.models.lineChart()
+                    .options({
+                        duration: 300,
+                        useInteractiveGuideline: true,
+                        forceY: [0, 1]
+                    })
+                ;
+                chart.xAxis
+                    .axisLabel("Run ID")
+                ;
 
-            chart.yAxis
-                .axisLabel('Metric')
-                .tickFormat(function(d) {
-                    return d3.format(',.2f')(d);
-                })
-            ;
-            chart.noData("Insufficient training data -- please code more documents");
-            d3.select('#metric_chart svg')
-                .datum(response)
-                .call(chart);
-            nv.utils.windowResize(chart.update);
-            return chart;
-        });
-        $('#metric_select').change(function () {
-            $.ajax({
-                method: 'GET',
-                url: '/api/model_metrics/' + {{ project.pk }} + '/?metric=' + $(this).val(),
-                success: function (response) {
-                    d3.select('#metric_chart svg').datum(response).transition().duration(300).call(chart);
-                    nv.utils.windowResize(chart.update);
-                },
-                error: function (error) {
-                    console.log(error);
+                chart.yAxis
+                    .axisLabel('Metric')
+                    .tickFormat(function(d) {
+                        return d3.format(',.2f')(d);
+                    })
+                ;
+                chart.noData("Insufficient training data -- please code more documents");
+                d3.select('#metric_chart svg')
+                    .datum(response)
+                    .call(chart);
+                nv.utils.windowResize(chart.update);
+                return chart;
+            });
+            $('#metric_select').change(function () {
+                $.ajax({
+                    method: 'GET',
+                    url: '/api/model_metrics/' + {{ project.pk }} + '/?metric=' + $(this).val(),
+                    success: function (response) {
+                        d3.select('#metric_chart svg').datum(response).transition().duration(300).call(chart);
+                        nv.utils.windowResize(chart.update);
+                    },
+                    error: function (error) {
+                        console.log(error);
+                    }
+                });
+                var choice = $(this).val();
+                var children = $("#model_metrics").children();
+                if(choice === "accuracy")
+                {
+                  $("#model_metrics").text("Model Metrics: Accuracy ");
+                  $("#model_metrics").append(children);
+                  $("#model_metric_icon").attr("title","The percent guessed correctly by the model.")
                 }
+                else if(choice === "f1")
+                {
+                  $("#model_metrics").text("Model Metrics: F1 Score ");
+                  $("#model_metrics").append(children);
+                  $("#model_metric_icon").attr("title","A common model evaluation "
+                  +"metric with a similar interpretation to accuracy but penalizes "
+                  +"for poor precision or recall. This is an important consideration"
+                  +" when predicting rare classes. Formula: 2*((Precision * Recall)/(Precision + Recall))")
+                }
+                else if(choice === "precision")
+                {
+                  $("#model_metrics").text("Model Metrics: Precision ");
+                  $("#model_metrics").append(children);
+                  $("#model_metric_icon").attr("title","Indicates how precise the"
+                  +" active learning model is at correctly predicting the category"
+                  +" in the test set. Formula:  True Positives/(True Positives + False Positives)")
+                }
+                else {
+                  $("#model_metrics").text("Model Metrics: Recall ");
+                  $("#model_metrics").append(children);
+                  $("#model_metric_icon").attr("title","Indicates how comprehensive"
+                  +" the active learning model is at identifying documents of a "
+                  +"particular category in the test set.  Formula:  "
+                  +"True Positives/(True Positives + False Negatives)")
+                }
+                $(function () {
+                  $('[data-toggle="tooltip"]').tooltip()
+                });
             });
-            var choice = $(this).val();
-            var children = $("#model_metrics").children();
-            if(choice === "accuracy")
-            {
-              $("#model_metrics").text("Model Metrics: Accuracy ");
-              $("#model_metrics").append(children);
-              $("#model_metric_icon").attr("title","The percent guessed correctly by the model.")
-            }
-            else if(choice === "f1")
-            {
-              $("#model_metrics").text("Model Metrics: F1 Score ");
-              $("#model_metrics").append(children);
-              $("#model_metric_icon").attr("title","A common model evaluation "
-              +"metric with a similar interpretation to accuracy but penalizes "
-              +"for poor precision or recall. This is an important consideration"
-              +" when predicting rare classes. Formula: 2*((Precision * Recall)/(Precision + Recall))")
-            }
-            else if(choice === "precision")
-            {
-              $("#model_metrics").text("Model Metrics: Precision ");
-              $("#model_metrics").append(children);
-              $("#model_metric_icon").attr("title","Indicates how precise the"
-              +" active learning model is at correctly predicting the category"
-              +" in the test set. Formula:  True Positives/(True Positives + False Positives)")
-            }
-            else {
-              $("#model_metrics").text("Model Metrics: Recall ");
-              $("#model_metrics").append(children);
-              $("#model_metric_icon").attr("title","Indicates how comprehensive"
-              +" the active learning model is at identifying documents of a "
-              +"particular category in the test set.  Formula:  "
-              +"True Positives/(True Positives + False Negatives)")
-            }
-            $(function () {
-              $('[data-toggle="tooltip"]').tooltip()
-            });
-        });
+        },
+        error: function (error) {
+            console.log(error);
+        }
+    });
+{% endif %}
 
-
-
-    },
-    error: function (error) {
-        console.log(error);
-    }
-});
 
 
 $(document).ready(function() {
@@ -593,6 +598,7 @@ $(document).ready(function() {
             $this = $(this)
             $this.css({'table-layout':'fixed'});
             $this.find('tr td:first-child').addClass('showData');
+            window.dispatchEvent(new Event('resize'));
         },
         "rowCallback": function (row, data) {
           $('td:nth-child(1)',row).addClass('showData');
@@ -602,51 +608,56 @@ $(document).ready(function() {
     /*
      *  Activate DataTable script to create the predicted data DataTable
      */
-    $('#predicted_data_table').DataTable({
-        "ajax": '/api/data_predicted_table/' + {{ project.pk }} + '/',
-        "columns": [
-            { "data": "Text", "width": "70%" },
-            { "data": "Probability",
-              "searchable": false,
-              "width": "15%",
-              "render": function (data, type, row) {
-                return d3.format('.2%')(data);
-              },
+     {% if project.classifier != None and project.learning_method != "random" %}
+        $('#predicted_data_table').DataTable({
+            "ajax": '/api/data_predicted_table/' + {{ project.pk }} + '/',
+            "columns": [
+                { "data": "Text", "width": "70%" },
+                { "data": "Probability",
+                  "searchable": false,
+                  "width": "15%",
+                  "render": function (data, type, row) {
+                    return d3.format('.2%')(data);
+                  },
+                },
+                { "data": "Label", "searchable": false, "width": "15%" }
+            ],
+            "oLanguage": {
+                "sSearch": "Filter Text: ",
+                "sEmptyTable": "Insufficient training data -- please code more documents"
             },
-            { "data": "Label", "searchable": false, "width": "15%" }
-        ],
-        "oLanguage": {
-            "sSearch": "Filter Text: ",
-            "sEmptyTable": "Insufficient training data -- please code more documents"
-        },
-        "initComplete": function (settings, json) {
-            $this = $(this)
-            $this.css({'table-layout':'fixed'});
-            $this.find('tr td:first-child').addClass('showData');
-        },
-        "rowCallback": function (row, data) {
-          $('td:nth-child(1)',row).addClass('showData');
-        }
-    });
+            "initComplete": function (settings, json) {
+                $this = $(this)
+                $this.css({'table-layout':'fixed'});
+                $this.find('tr td:first-child').addClass('showData');
+                window.dispatchEvent(new Event('resize'));
+            },
+            "rowCallback": function (row, data) {
+              $('td:nth-child(1)',row).addClass('showData');
+            }
+        });
+    {% endif %}
 
     /*
      *  Activate DataTable script to create the labeled data DataTable
      */
-    $('#pairwise_perc_agreement_table').DataTable({
-        "ajax": '/api/perc_agree_table/' + {{ project.pk }} + '/',
-        "columns": [
-            { "data": "First Coder", "searchable": false},
-            { "data": "Second Coder", "searchable": false},
-            { "data": "Percent Agreement", "searchable": false}
-        ],
-        "oLanguage": {
-            "sEmptyTable": "No irr data processed"
-        },
-        "initComplete": function (settings, json) {
-            $this = $(this)
-            $this.css({'table-layout':'fixed'});
-        }
-    });
+    {% if project.percentage_irr > 0 %}
+      $('#pairwise_perc_agreement_table').DataTable({
+          "ajax": '/api/perc_agree_table/' + {{ project.pk }} + '/',
+          "columns": [
+              { "data": "First Coder", "searchable": false},
+              { "data": "Second Coder", "searchable": false},
+              { "data": "Percent Agreement", "searchable": false}
+          ],
+          "oLanguage": {
+              "sEmptyTable": "No irr data processed"
+          },
+          "initComplete": function (settings, json) {
+              $this = $(this)
+              $this.css({'table-layout':'fixed'});
+          }
+      });
+    {% endif %}
 
     $(function () {
        $('[data-toggle="tooltip"]').tooltip()

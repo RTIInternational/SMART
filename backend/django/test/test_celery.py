@@ -75,7 +75,7 @@ def test_tfidf_creation_task(test_project_data, tmpdir, settings):
     file = tasks.send_tfidf_creation_task.delay(DataSerializer(data, many=True).data, project.pk).get()
 
     assert os.path.isfile(file)
-    assert file == os.path.join(str(data_temp), str(test_project_data.pk) + '.npz')
+    assert file == os.path.join(str(data_temp), 'project_'+str(test_project_data.pk) + '_tfidf_matrix.pkl')
 
 
 def test_model_task_redis_no_dupes_data_left_in_queue(test_project_labeled_and_tfidf, test_queue_labeled, test_irr_queue_labeled, test_admin_queue_labeled, test_redis, tmpdir, settings):

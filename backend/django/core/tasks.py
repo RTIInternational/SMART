@@ -16,36 +16,37 @@ def send_model_task(project_pk):
     project = Project.objects.get(pk=project_pk)
     queue = project.queue_set.get(type="normal")
     irr_queue = project.queue_set.get(type="irr")
+    al_method = project.learning_method
+    batch_size = project.batch_size
 
     model = train_and_save_model(project)
-    predictions = predict_data(project, model)
+    if al_method != "random":
+        predictions = predict_data(project, model)
     new_training_set = TrainingSet.objects.create(project=project,
                                set_number=project.get_current_training_set().set_number+1)
 
     # Determine if queue size has changed (num_coders changed) and re-fill queue
-    batch_size = project.batch_size
     num_coders = len(project.projectpermissions_set.all()) + 1
     q_length = find_queue_length(batch_size, num_coders)
-
     if q_length != queue.length:
         queue.length = q_length
         queue.save()
 
-    al_method = project.learning_method
     fill_queue(queue, irr_queue = irr_queue, orderby = al_method, irr_percent = project.percentage_irr, batch_size = batch_size)
 
 @shared_task
 def send_tfidf_creation_task(response, project_pk):
     """Create and Save tfidf"""
-    from core.util import create_tfidf_matrix, save_tfidf_matrix
+    from core.util import create_tfidf_matrix, save_tfidf_matrix, save_tfidf_vectorizer
     from core.models import Data
 
     # since data is serialized objects need to validate, then retrieve the actual objects
     hashes = [od['hash'] for od in response]
     data = Data.objects.filter(hash__in=hashes)
 
-    tf_idf = create_tfidf_matrix(data)
+    tf_idf, vectorizer = create_tfidf_matrix(data, project_pk)
     file = save_tfidf_matrix(tf_idf, project_pk)
+    save_tfidf_vectorizer(vectorizer, project_pk)
 
     return file
 

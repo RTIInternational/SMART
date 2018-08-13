@@ -14,6 +14,7 @@ import math
 import numpy as np
 import hashlib
 import pandas as pd
+import pickle
 import statsmodels.stats.inter_rater as raters
 from collections import defaultdict
 from itertools import combinations
@@ -33,7 +34,7 @@ from django.conf import settings
 
 from core.models import (Project, Data, Queue, DataQueue, Profile, Label,
                          AssignedData, DataLabel, Model, DataPrediction,
-                         DataUncertainty, TrainingSet, IRRLog, ProjectPermissions)
+                         DataUncertainty, TrainingSet, RecycleBin, IRRLog, ProjectPermissions)
 from core import tasks
 
 
@@ -340,6 +341,7 @@ def fill_queue(queue, orderby,  irr_queue = None, irr_percent = 10, batch_size =
         raise ValueError('orderby parameter must be one of the following: ' +
                          ' '.join(ORDERBY_VALUE))
 
+    recycled_data = RecycleBin.objects.filter(data__project=queue.project).values_list('data__pk',flat=True)
     data_filters = {
         'project': queue.project,
         'labelers': None,
@@ -347,7 +349,8 @@ def fill_queue(queue, orderby,  irr_queue = None, irr_percent = 10, batch_size =
         'irr_ind': False
     }
 
-    eligible_data = Data.objects.filter(**data_filters)
+    eligible_data = Data.objects.filter(**data_filters).exclude(pk__in=recycled_data)
+
     cte_sql, cte_params = eligible_data.query.sql_with_params()
 
     #get the join clause that controls how the data is selected
@@ -1066,7 +1069,7 @@ def save_codebook_file(data, project_pk):
         outputFile.write(data.read())
     return fpath.replace("/data/code_books/","")
 
-def create_tfidf_matrix(data, max_df=0.95, min_df=0.05):
+def create_tfidf_matrix(data, project_pk, max_df=0.995, min_df=0.005):
     """Create a TF-IDF matrix. Make sure to order the data by upload_id_hash so that we
         can sync the data up again when training the model
 
@@ -1075,11 +1078,18 @@ def create_tfidf_matrix(data, max_df=0.95, min_df=0.05):
     Returns:
         tf_idf_matrix: CSR-format tf-idf matrix
     """
-    data_list = list(Data.objects.values_list('text', flat=True).order_by('upload_id_hash'))
-    vectorizer = TfidfVectorizer(max_df=max_df, min_df=min_df, stop_words='english')
-    tf_idf_matrix = vectorizer.fit_transform(data_list)
+    project_data = Data.objects.filter(project__pk=project_pk)
+    id_list = list(project_data.values_list('upload_id', flat=True).order_by('upload_id_hash'))
+    data_list = list(project_data.values_list('text', flat=True).order_by('upload_id_hash'))
 
-    return tf_idf_matrix
+    vectorizer = TfidfVectorizer(max_df=max_df, min_df=min_df, stop_words='english')
+    fitted_vectorizer = vectorizer.fit(data_list)
+
+    tf_idf_matrix = fitted_vectorizer.transform(data_list)
+
+    new_dict = dict(zip(id_list, np.matrix.tolist(sparse.csr_matrix.todense(tf_idf_matrix))))
+
+    return new_dict, fitted_vectorizer
 
 
 def save_tfidf_matrix(matrix, project_pk):
@@ -1092,10 +1102,25 @@ def save_tfidf_matrix(matrix, project_pk):
     Returns:
         file: The filepath to the saved matrix
     """
-    fpath = os.path.join(settings.TF_IDF_PATH, str(project_pk) + '.npz')
+    fpath = os.path.join(settings.TF_IDF_PATH, 'project_'+str(project_pk) + '_tfidf_matrix.pkl')
+    with open(fpath, "wb") as tfidf_file:
+        pickle.dump(matrix, tfidf_file)
 
-    sparse.save_npz(fpath, matrix)
+    return fpath
 
+def save_tfidf_vectorizer(vectorizer, project_pk):
+    """Save tf-idf matrix to persistent volume storage defined in settings as
+        TF_IDF_PATH
+
+    Args:
+        matrix: CSR-format tf-idf matrix
+        project_pk: The project pk the data comes from
+    Returns:
+        file: The filepath to the saved matrix
+    """
+    fpath = os.path.join(settings.TF_IDF_PATH, 'project_'+str(project_pk) + '_vectorizer.pkl')
+    with open(fpath, "wb") as tfidf_file:
+        pickle.dump(vectorizer, tfidf_file)
     return fpath
 
 
@@ -1107,10 +1132,11 @@ def load_tfidf_matrix(project_pk):
     Returns:
         matrix or None
     """
-    fpath = os.path.join(settings.TF_IDF_PATH, str(project_pk) + '.npz')
+    fpath = os.path.join(settings.TF_IDF_PATH, 'project_'+str(project_pk) + '_tfidf_matrix.pkl')
 
     if os.path.isfile(fpath):
-        return sparse.load_npz(fpath)
+        with open(fpath,"rb") as file:
+            return pickle.load(file)
     else:
         raise ValueError('There was no tfidf matrix found for project: ' + str(project_pk))
 
@@ -1159,7 +1185,7 @@ def check_and_trigger_model(datum, profile=None):
     if current_training_set.celery_task_id != '':
         return_str = 'task already running'
     elif labeled_data_count >= batch_size:
-        if labels_count < project.labels.count():
+        if labels_count < project.labels.count() or project.classifier is None:
             queue = project.queue_set.get(type="normal")
             fill_queue(queue = queue, orderby = 'random', batch_size=batch_size)
             return_str = 'random'
@@ -1186,9 +1212,6 @@ def check_and_trigger_model(datum, profile=None):
     else:
         return_str = 'no trigger'
 
-
-
-
     return return_str
 
 
@@ -1209,21 +1232,20 @@ def train_and_save_model(project):
     elif project.classifier == "gnb":
         clf = GaussianNB()
     else:
-        raise ValueError('There was no valid classifier for project: ' + str(project_pk))
-    tf_idf = load_tfidf_matrix(project.pk).A
+        raise ValueError('There was no valid classifier for project: ' + str(project.pk))
+    tf_idf = load_tfidf_matrix(project.pk)
+
     current_training_set = project.get_current_training_set()
 
     # In order to train need X (tf-idf vector) and Y (label) for every labeled datum
     # Order both X and Y by upload_id_hash to ensure the tf-idf vector corresponds to the correct
     # label
-    labeled_data = DataLabel.objects.filter(data__project=project)
-    #get the list of all data sorted by identifier
-    all_data = list(Data.objects.filter(project=project).values_list('pk', flat=True).order_by('upload_id_hash'))
-    labeled_indices = [all_data.index(x.data.pk) for x in labeled_data]
 
+    labeled_data = DataLabel.objects.filter(data__project=project)
+    unique_ids = list(labeled_data.values_list("data__upload_id", flat=True).order_by('data__upload_id_hash'))
     labeled_values = list(labeled_data.values_list('label', flat=True).order_by('data__upload_id_hash'))
 
-    X = tf_idf[labeled_indices]
+    X = [tf_idf[id] for id in unique_ids]
     Y = labeled_values
     clf.fit(X, Y)
 
@@ -1302,6 +1324,31 @@ def entropy(probs):
 
     return -total
 
+def get_labeled_data(project):
+    """Given a project, get the list of labeled data
+
+    Args:
+        project: Project object
+    Returns:
+        data: a list of the labeled data
+    """
+    project_labels = Label.objects.filter(project=project)
+    #get the data labels
+    data = []
+    labels = []
+    for label in project_labels:
+        labels.append({"Name":label.name, "Label_ID":label.pk})
+        labeled_data = DataLabel.objects.filter(label=label)
+        for d in labeled_data:
+            temp = {}
+            temp['ID'] = d.data.upload_id
+            temp['Text'] = d.data.text
+            temp['Label'] = label.name
+            data.append(temp)
+    labeled_data_frame  = pd.DataFrame(data)
+    label_frame = pd.DataFrame(labels)
+
+    return labeled_data_frame, label_frame
 
 def predict_data(project, model):
     """Given a project and its model, predict any unlabeled data and create
@@ -1316,16 +1363,16 @@ def predict_data(project, model):
         predictions: List of DataPrediction objects
     """
     clf = joblib.load(model.pickle_path)
-    tf_idf = load_tfidf_matrix(project.pk).A
+    tf_idf = load_tfidf_matrix(project.pk)
 
     # In order to predict need X (tf-idf vector) for every unlabeled datum. Order
     # X by upload_id_hash to ensure the tf-idf vector corresponds to the correct datum
-    unlabeled_data = project.data_set.filter(datalabel__isnull=True).order_by('upload_id_hash')
-    #get the list of all data sorted by identifier
-    all_data = list(Data.objects.filter(project=project).values_list('pk', flat=True).order_by('upload_id_hash'))
-    unlabeled_indices = [all_data.index(x.pk) for x in unlabeled_data]
+    recycle_data = RecycleBin.objects.filter(data__project=project).values_list('pk',flat=True)
+    unlabeled_data = project.data_set.filter(datalabel__isnull=True).exclude(pk__in=recycle_data).order_by('upload_id_hash')
+    unique_ids = list(unlabeled_data.values_list("upload_id", flat=True).order_by('upload_id_hash'))
 
-    X = tf_idf[unlabeled_indices]
+    #get the list of all data sorted by identifier
+    X = [tf_idf[id] for id in unique_ids]
     predictions = clf.predict_proba(X)
 
     label_obj = [Label.objects.get(pk=label) for label in clf.classes_]
