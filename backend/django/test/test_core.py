@@ -792,9 +792,12 @@ def test_save_data_file_multiple_files(test_project, tmpdir, settings):
 
 
 def test_create_tfidf_matrix(test_tfidf_matrix):
-    assert type(test_tfidf_matrix) == scipy.sparse.csr.csr_matrix
-    assert test_tfidf_matrix.shape == (285, 11)
-    assert test_tfidf_matrix.dtype == np.float64
+    #UPDATE: is now saved as a dictionary of lists
+    assert type(test_tfidf_matrix) == type({})
+    assert len(test_tfidf_matrix) == 285
+    for key in test_tfidf_matrix:
+        assert len(test_tfidf_matrix[key]) == 307
+        assert np.all([type(val) == float for val in test_tfidf_matrix[key]])
 
 
 def test_save_tfidf_matrix(test_project_data, test_tfidf_matrix, tmpdir, settings):
@@ -804,13 +807,15 @@ def test_save_tfidf_matrix(test_project_data, test_tfidf_matrix, tmpdir, setting
     file = save_tfidf_matrix(test_tfidf_matrix, test_project_data.pk)
 
     assert os.path.isfile(file)
-    assert file == os.path.join(settings.TF_IDF_PATH, str(test_project_data.pk) + '.npz')
+    assert file == os.path.join(settings.TF_IDF_PATH, 'project_'+str(test_project_data.pk) + '_tfidf_matrix.pkl')
 
 
 def test_load_tfidf_matrix(test_project_labeled_and_tfidf, test_tfidf_matrix_labeled, tmpdir, settings):
     matrix = load_tfidf_matrix(test_project_labeled_and_tfidf.pk)
 
-    assert np.allclose(matrix.A, test_tfidf_matrix_labeled.A)
+    for key in matrix:
+        assert key in test_tfidf_matrix_labeled
+        assert np.allclose(matrix[key], test_tfidf_matrix_labeled[key])
 
 
 def test_least_confident_notarray():
@@ -1775,24 +1780,25 @@ def run_qbc_project_test(project):
     This is a helper function for testing qbc with various classifiers
     '''
     #for committee sizes 5, 10, 20, 100
-    tf_idf = load_tfidf_matrix(project.pk).A
+    tf_idf = load_tfidf_matrix(project.pk)
     unlabeled_data = project.data_set.filter(datalabel__isnull=True).order_by('upload_id_hash')
-    all_data = list(Data.objects.filter(project=project).values_list('pk', flat=True).order_by('upload_id_hash'))
-    unlabeled_indices = [all_data.index(x.pk) for x in unlabeled_data]
-    X = tf_idf[unlabeled_indices]
+    unique_ids = list(unlabeled_data.values_list("upload_id", flat=True).order_by('upload_id_hash'))
+
+    #get the list of all data sorted by identifier
+    X = [tf_idf[id] for id in unique_ids]
 
     for com_size in [5,10,50,100]:
         results = train_and_apply_committee(project,X,com_size)
         # result should be a pandas series of length unlabeled data
         assert isinstance(results, pd.Series)
-        assert len(results) == len(unlabeled_indices)
+        assert len(results) == len(unique_ids)
 
     current_set = project.get_current_training_set()
     model = Model.objects.get(training_set = current_set)
     predictions = predict_data(project, model)
 
     unc_values = DataUncertainty.objects.filter(data__project=project, model=model)
-    assert len(unc_values) == len(unlabeled_indices)
+    assert len(unc_values) == len(unique_ids)
     # check that the QBC elements are not all 0 for DataUncertainty
     assert np.sum(list(unc_values.values_list("qbc",flat=True))) != 0
 

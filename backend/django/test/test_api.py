@@ -347,3 +347,52 @@ def test_skip_data(seeded_database, client, test_project_half_irr_data, test_hal
             assert DataQueue.objects.filter(data__pk=card["pk"],queue=admin_queue).count() == 1
             assert DataQueue.objects.filter(data__pk=card["pk"],queue=irr_queue).count() == 0
             assert AssignedData.objects.filter(data__pk=card["pk"], profile=client_profile).count() == 0
+
+def test_multiple_admin_on_admin_annotation(seeded_database, client, admin_client, test_project_all_irr_data, test_all_irr_all_queues, test_labels_all_irr):
+    '''
+    This tests the functions that prevent the race condition of multiple admin
+    editing any of the three admin-only tables by only allowing one admin at a time
+    to view them.
+    '''
+    labels = test_labels_all_irr
+    normal_queue, admin_queue, irr_queue = test_all_irr_all_queues
+    project = test_project_all_irr_data
+
+    client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
+    a1_prof = Profile.objects.get(user__username=SEED_USERNAME)
+    ProjectPermissions.objects.create(profile=a1_prof,
+                                          project=project,
+                                          permission='ADMIN')
+    admin_client.login(username=SEED_USERNAME2, password=SEED_PASSWORD2)
+    a2_prof = Profile.objects.get(user__username=SEED_USERNAME2)
+    ProjectPermissions.objects.create(profile=a2_prof,
+                                          project=project,
+                                          permission='ADMIN')
+
+    #first, have both admin sign in and enter the page
+    response = client.get('/api/enter_coding_page/'+str(project.pk)+'/').json()
+    response2 = admin_client.get('/api/enter_coding_page/'+str(project.pk)+'/').json()
+
+    assert 'error' not in response and 'error' not in response2
+
+    #the first admin should have permission to view, the second should not
+    response = client.get('/api/check_admin_in_progress/'+str(project.pk)+'/').json()
+    response2 = admin_client.get('/api/check_admin_in_progress/'+str(project.pk)+'/').json()
+
+    assert response['available'] == 1
+    assert response2['available'] == 0
+
+    #have the first admin leave the page, and the second leave then enter
+    response = client.get('/api/leave_coding_page/'+str(project.pk)+'/').json()
+
+    response2 = admin_client.get('/api/leave_coding_page/'+str(project.pk)+'/').json()
+    response2 = admin_client.get('/api/enter_coding_page/'+str(project.pk)+'/').json()
+
+    #the second should now have permission to see the page
+    response2 = admin_client.get('/api/check_admin_in_progress/'+str(project.pk)+'/').json()
+    assert response2['available'] == 1
+
+    #have the first admin enter again. They should not be able to see the page
+    response = client.get('/api/enter_coding_page/'+str(project.pk)+'/').json()
+    response = client.get('/api/check_admin_in_progress/'+str(project.pk)+'/').json()
+    assert response['available'] == 0

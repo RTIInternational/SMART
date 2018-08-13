@@ -12,7 +12,8 @@ from core.models import (Profile, Label, Model, DataLabel, Data)
 from core.util import (create_project, add_queue,
                        create_profile, add_data,
                        create_tfidf_matrix, save_tfidf_matrix,
-                       train_and_save_model, predict_data)
+                       train_and_save_model, predict_data,
+                       save_tfidf_vectorizer)
 
 from test.util import read_test_data_backend
 
@@ -180,7 +181,7 @@ def test_tfidf_matrix(test_project_data):
     A CSR-format tf-idf matrix created from the data of test_project_data
     '''
     data = Data.objects.filter(project=test_project_data)
-    return create_tfidf_matrix(data)
+    return create_tfidf_matrix(data, test_project_data.pk)[0]
 
 @pytest.fixture
 def test_tfidf_matrix_labeled(test_project_labeled):
@@ -188,7 +189,7 @@ def test_tfidf_matrix_labeled(test_project_labeled):
     A CSR-format tf-idf matrix created from the data of test_project_data
     '''
     data = Data.objects.filter(project=test_project_labeled)
-    return create_tfidf_matrix(data)
+    return create_tfidf_matrix(data, test_project_labeled.pk)[0]
 
 @pytest.fixture
 def test_labels(test_project_data):
@@ -412,7 +413,7 @@ def test_project_labeled_and_tfidf_model_qbc_lr(test_profile, tmpdir, settings):
     test_data = read_test_data_backend(file='./core/data/test_files/test_some_labels.csv')
     add_data(project, test_data)
 
-    matrix = create_tfidf_matrix(test_data)
+    matrix = create_tfidf_matrix(test_data, project.pk)[0]
     data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
     settings.TF_IDF_PATH = str(data_temp)
     fpath = save_tfidf_matrix(matrix, project.pk)
@@ -437,7 +438,7 @@ def test_project_labeled_and_tfidf_model_qbc_svm(test_profile, tmpdir, settings)
     test_data = read_test_data_backend(file='./core/data/test_files/test_some_labels.csv')
     add_data(project, test_data)
 
-    matrix = create_tfidf_matrix(test_data)
+    matrix = create_tfidf_matrix(test_data, project.pk)[0]
     data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
     settings.TF_IDF_PATH = str(data_temp)
     fpath = save_tfidf_matrix(matrix, project.pk)
@@ -462,7 +463,7 @@ def test_project_labeled_and_tfidf_model_qbc_rf(test_profile, tmpdir, settings):
     test_data = read_test_data_backend(file='./core/data/test_files/test_some_labels.csv')
     add_data(project, test_data)
 
-    matrix = create_tfidf_matrix(test_data)
+    matrix = create_tfidf_matrix(test_data, project.pk)[0]
     data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
     settings.TF_IDF_PATH = str(data_temp)
     fpath = save_tfidf_matrix(matrix, project.pk)
@@ -487,7 +488,7 @@ def test_project_labeled_and_tfidf_model_qbc_gnb(test_profile, tmpdir, settings)
     test_data = read_test_data_backend(file='./core/data/test_files/test_some_labels.csv')
     add_data(project, test_data)
 
-    matrix = create_tfidf_matrix(test_data)
+    matrix = create_tfidf_matrix(test_data, project.pk)[0]
     data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
     settings.TF_IDF_PATH = str(data_temp)
     fpath = save_tfidf_matrix(matrix, project.pk)

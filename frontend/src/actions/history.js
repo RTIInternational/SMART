@@ -3,7 +3,7 @@ import 'whatwg-fetch';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
 import { setMessage } from './classifier';
-import { getLabelCounts, getAdmin } from './adminTables';
+import { getLabelCounts, getAdmin, getAdminCounts } from './adminTables';
 export const SET_HIST_DATA = 'SET_HIST_DATA';
 export const set_hist_data = createAction(SET_HIST_DATA);
 
@@ -100,6 +100,7 @@ export const changeToSkip = (dataID, oldLabelID, projectID) => {
               else {
                   dispatch(getHistory(projectID))
                   dispatch(getAdmin(projectID))
+                  dispatch(getAdminCounts(projectID))
               }
           })
   }

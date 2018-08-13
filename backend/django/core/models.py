@@ -52,7 +52,7 @@ class Project(models.Model):
     ]
 
     learning_method = models.CharField(max_length = 15, default='least confident', choices=ACTIVE_L_CHOICES)
-    classifier = models.CharField(max_length = 19, default="logistic regression", choices = CLASSIFIER_CHOICES)
+    classifier = models.CharField(max_length = 19, default="logistic regression", choices = CLASSIFIER_CHOICES, null=True)
 
     def get_absolute_url(self):
         return reverse('projects:project_detail', kwargs={'pk': self.pk})
@@ -71,6 +71,12 @@ class Project(models.Model):
 
     def labeled_data_count(self):
         return self.data_set.all().filter(datalabel__isnull=False).count()
+
+    def has_model(self):
+        if self.model_set.count() > 0:
+            return True
+        else:
+            return False
 
 class ProjectPermissions(models.Model):
     class Meta:
@@ -192,3 +198,12 @@ class TrainingSet(models.Model):
     project = models.ForeignKey('Project')
     set_number = models.IntegerField()
     celery_task_id = models.TextField(blank=True)
+
+class RecycleBin(models.Model):
+    data = models.ForeignKey('Data')
+    timestamp = models.DateTimeField(default = timezone.now)
+
+class AdminProgress(models.Model):
+    project = models.ForeignKey('Project')
+    profile = models.ForeignKey('Profile')
+    timestamp = models.DateTimeField(default = timezone.now)

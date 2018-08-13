@@ -188,14 +188,18 @@
           <a class="btn btn-primary" href = "{% static project.codebook_file %}" target = "_blank" id="download_cb_btn">View CodeBook</a>
           {% endif %}
           {% if project|proj_permission_level:request.user.profile > 1 %}
+            <a class="btn btn-primary" href="{% url 'projects:project_admin' project.pk %}" role="button">
+              Admin Page
+            </a>
+          {% if project.has_model %}
+            <a class="btn btn-primary" id="download_model_btn">Download Model and Labeled Data</a>
+          {% else %}
             {% if project.labeled_data_count > 0 %}
             <a class="btn btn-primary" id="download_btn">Download Labeled Data</a>
             {% else %}
             <a class="btn btn-primary disabled" id="download_btn">No Labeled Data to Download</a>
             {% endif %}
-            <a class="btn btn-primary" href="{% url 'projects:project_admin' project.pk %}" role="button">
-              Admin Page
-            </a>
+          {% endif %}
           {% endif %}
         </div>
       </div>
@@ -207,6 +211,30 @@
 
 {% block scripts_body %}
 <script>
+
+/*When the download model button is pressed, download a zip file
+*with a README, the model, labeled data, and tfidf matrix
+*/
+$("#download_model_btn").on("click", function() {
+  xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+      var a, today;
+      if (xhttp.readyState === 4 && xhttp.status === 200) {
+          a = document.createElement('a');
+          a.href = window.URL.createObjectURL(xhttp.response);
+          today = new Date();
+          a.download = "project_" + {{ project.pk }} + '_model_' + today.toDateString().split(" ").join("_") + ".zip";
+          a.style.display = 'none';
+          document.body.appendChild(a);
+          return a.click();
+      }
+  };
+  xhttp.open("GET", "/api/download_model/" + {{ project.pk }} + "/", true);
+  xhttp.setRequestHeader("Content-Type", "application/json");
+  xhttp.responseType = 'blob';
+  xhttp.send();
+});
+
 /*
  *  When download button is pressed request the csv file, add the data as a blob
  *  to a new anchor element, and trigger a click event on that anchor element

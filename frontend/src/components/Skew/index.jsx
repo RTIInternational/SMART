@@ -4,6 +4,7 @@ import ReactTable from 'react-table';
 import { Button, ButtonToolbar, Panel, Table } from "react-bootstrap";
 import NVD3Chart from "react-nvd3";
 import d3 from 'd3';
+import CodebookLabelMenu from '../CodebookLabelMenu';
 
 const columns = [
   {
@@ -45,25 +46,18 @@ class Skew extends React.Component {
 
 
   var label_data = [];
-  if(label_counts.length > 0)
+  if(label_counts)
   {
-    label_data = label_counts[0];
+    label_data = label_counts;
   }
-  if(unlabeled_data && unlabeled_data.length > 0)
+
+  if(unlabeled_data)
   {
-    var table_data = unlabeled_data[0]
+    var table_data = unlabeled_data
   }
   else {
     table_data = []
   }
-  var page_sizes = [1];
-  var counter = 1;
-  for(var i = 5; i < table_data.length; i+=5*counter)
-  {
-    page_sizes.push(i);
-    counter +=1;
-  }
-  page_sizes.push(table_data.length);
 
   return (
     <div>
@@ -107,11 +101,15 @@ class Skew extends React.Component {
         </tr>
       </tbody>
     </Table>
+    <CodebookLabelMenu
+      labels={labels}
+    />
     <ReactTable
         data={table_data}
         columns={columns}
         filterable={true}
-        pageSizeOptions={page_sizes}
+        showPageSizeOptions={false}
+        pageSize={(table_data.length < 50) ? table_data.length : 50}
         SubComponent={row => {
           return (
             <div className="sub-row">
@@ -119,7 +117,7 @@ class Skew extends React.Component {
               <div id="skew_buttons">
                 <ButtonToolbar bsClass="btn-toolbar pull-right">
                   {labels.map( (label) => (
-                    <Button key={label.pk.toString() + "_skew_" + row.row.id.toString()}
+                    <Button key={label.pk.toString() + "_" + row.row.id.toString()}
                     onClick={() => skewLabel(row.row.id,label.pk)}
                     bsStyle="primary"
                     >{label.name}</Button>
