@@ -1069,7 +1069,7 @@ def save_codebook_file(data, project_pk):
         outputFile.write(data.read())
     return fpath.replace("/data/code_books/","")
 
-def create_tfidf_matrix(data, project_pk, max_df=0.95, min_df=0.05):
+def create_tfidf_matrix(data, project_pk, max_df=0.995, min_df=0.005):
     """Create a TF-IDF matrix. Make sure to order the data by upload_id_hash so that we
         can sync the data up again when training the model
 
@@ -1083,11 +1083,13 @@ def create_tfidf_matrix(data, project_pk, max_df=0.95, min_df=0.05):
     data_list = list(project_data.values_list('text', flat=True).order_by('upload_id_hash'))
 
     vectorizer = TfidfVectorizer(max_df=max_df, min_df=min_df, stop_words='english')
-    tf_idf_matrix = vectorizer.fit_transform(data_list)
+    fitted_vectorizer = vectorizer.fit(data_list)
+
+    tf_idf_matrix = fitted_vectorizer.transform(data_list)
 
     new_dict = dict(zip(id_list, np.matrix.tolist(sparse.csr_matrix.todense(tf_idf_matrix))))
 
-    return new_dict
+    return new_dict, fitted_vectorizer
 
 
 def save_tfidf_matrix(matrix, project_pk):
@@ -1100,10 +1102,25 @@ def save_tfidf_matrix(matrix, project_pk):
     Returns:
         file: The filepath to the saved matrix
     """
-    fpath = os.path.join(settings.TF_IDF_PATH, str(project_pk) + '.pkl')
+    fpath = os.path.join(settings.TF_IDF_PATH, 'project_'+str(project_pk) + '_tfidf_matrix.pkl')
     with open(fpath, "wb") as tfidf_file:
         pickle.dump(matrix, tfidf_file)
 
+    return fpath
+
+def save_tfidf_vectorizer(vectorizer, project_pk):
+    """Save tf-idf matrix to persistent volume storage defined in settings as
+        TF_IDF_PATH
+
+    Args:
+        matrix: CSR-format tf-idf matrix
+        project_pk: The project pk the data comes from
+    Returns:
+        file: The filepath to the saved matrix
+    """
+    fpath = os.path.join(settings.TF_IDF_PATH, 'project_'+str(project_pk) + '_vectorizer.pkl')
+    with open(fpath, "wb") as tfidf_file:
+        pickle.dump(vectorizer, tfidf_file)
     return fpath
 
 
@@ -1115,7 +1132,7 @@ def load_tfidf_matrix(project_pk):
     Returns:
         matrix or None
     """
-    fpath = os.path.join(settings.TF_IDF_PATH, str(project_pk) + '.pkl')
+    fpath = os.path.join(settings.TF_IDF_PATH, 'project_'+str(project_pk) + '_tfidf_matrix.pkl')
 
     if os.path.isfile(fpath):
         with open(fpath,"rb") as file:

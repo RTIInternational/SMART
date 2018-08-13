@@ -132,29 +132,36 @@ def download_model(request, project_pk):
     num_proj_files = len([f for f in os.listdir(settings.PROJECT_FILE_PATH)
                           if f.startswith('project_'+str(project_pk))])
 
-    tfidf_path = os.path.join(settings.TF_IDF_PATH, str(project_pk) + '.pkl')
+    tfidf_path = os.path.join(settings.TF_IDF_PATH, 'project_'+str(project_pk) + '_tfidf_matrix.pkl')
+    tfidf_vectorizer_path = os.path.join(settings.TF_IDF_PATH, 'project_'+str(project_pk) + '_vectorizer.pkl')
     readme_path = os.path.join(settings.BASE_DIR,'core', 'data', 'README.pdf')
     current_training_set = project.get_current_training_set()
     model_path = os.path.join(settings.MODEL_PICKLE_PATH, 'project_' + str(project_pk) + '_training_' + str(current_training_set.set_number - 1) + '.pkl')
 
     data, label_data = util.get_labeled_data(project)
     #open the tempfile and write the label data to it
-    temp_labelfile = tempfile.NamedTemporaryFile(mode='w', suffix=".xlsx",delete=False, dir=settings.DATA_DIR)
-    temp_labelfile.seek(0)
-    writer = pd.ExcelWriter(temp_labelfile.name)
-    data.to_excel(writer,"Labeled Data", index=False)
-    label_data.to_excel(writer,"Label Dictionary", index=False)
-    writer.save()
-    temp_labelfile.flush()
-    temp_labelfile.close()
+    temp_labeleddata_file = tempfile.NamedTemporaryFile(mode='w', suffix=".csv",delete=False, dir=settings.DATA_DIR)
+    temp_labeleddata_file.seek(0)
+    data.to_csv(temp_labeleddata_file.name, index=False)
+    temp_labeleddata_file.flush()
+    temp_labeleddata_file.close()
+
+    temp_label_file = tempfile.NamedTemporaryFile(mode='w', suffix=".csv",delete=False, dir=settings.DATA_DIR)
+    temp_label_file.seek(0)
+    label_data.to_csv(temp_label_file.name, index=False)
+    temp_label_file.flush()
+    temp_label_file.close()
+
 
     s = io.BytesIO()
     #open the zip folder
     zip_file =  zipfile.ZipFile(s, "w")
-    for path in [tfidf_path, readme_path, model_path, temp_labelfile.name]:
+    for path in [tfidf_path, tfidf_vectorizer_path, readme_path, model_path, temp_labeleddata_file.name, temp_label_file.name]:
         fdir, fname = os.path.split(path)
-        if path == temp_labelfile.name:
-            fname = "project_"+str(project_pk)+"_labels.xlsx"
+        if path == temp_label_file.name:
+            fname = "project_"+str(project_pk)+"_labels.csv"
+        elif path == temp_labeleddata_file.name:
+            fname = "project_"+str(project_pk)+"_labeled_data.csv"
         #write the file to the zip folder
         zip_path = os.path.join(zip_subdir, fname)
         zip_file.write(path, zip_path)
