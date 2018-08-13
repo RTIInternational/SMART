@@ -60,14 +60,15 @@ The following sample code can be used to preprocess new data and get it in a for
 
 ```
 with open(<<project_#_vectorizer.pkl>>,"rb") as tfidf_vectorizer:
-	 #load the vectorizer
+    # load the vectorizer
     tfidf_transformer = pickle.load(tfidf_vectorizer)
-    new_data = ["This is new data","that needs to be formatted", "In the same way that the other data was before"]
-    
-    #apply it to new data
-    transformed_data = tfidf_transformer.transform(new_data)
-    
+
+new_data = ["This is new data","that needs to be formatted", "In the same way that the other data was before"]
+
+# apply it to new data
+transformed_data = tfidf_transformer.transform(new_data)
 ```
+
 **Note:** to see what words the fields in the transformed TFIDF matrix are based off of, just call ```print(tfidf_transformer.vocablulary_)```. This will print a dictionary of the words that were used and their counts in the training data.
 
 ###B. Applying the model to predict new data
@@ -81,29 +82,29 @@ import pandas as pd
 import pickle
 from sklearn.externals import joblib
 
-#read in the TFIDF matrix and the labeled data
+# read in the TFIDF matrix and the labeled data
 labeled_frame = pd.read_csv(<<project_#_labeled_data.csv>>)
 with open(<<project_#_tfidf_matrix.pkl>>,"rb") as tfidf_file:
     tfidf_dict = pickle.load(tfidf_file)
 
-#Subset the TFIDF matrix by the unlabeled data and get as 2D list
+# Subset the TFIDF matrix by the unlabeled data and get as 2D list
 labeled_ids = labeled_frame["ID"].tolist()
 unlabeled = [tfidf_dict[key] for key in tfidf_dict if key not in labeled_ids]
 
-#read in the model from the pickle file
+# read in the model from the pickle file
 model = joblib.load(<<project_#_training.pkl>>)
 
-#apply the model to the unlabeled data
+# apply the model to the unlabeled data
 predictions = model.predict(unlabeled)
 
-#print the results
+# print the results
 print(predictions)
 
-#open the label dictionary to translate label ID's to their corrosponding text
+# open the label dictionary to translate label ID's to their corrosponding text
 labels_frame = pd.read_csv(<<project_#_labels.csv>>)
 label_dict = labels_frame.set_index("Label_ID").to_dict()["Name"]
 
-#get the predictions as actual labels
+# get the predictions as actual labels
 predictions = [label_dict[pred] for pred in predictions]
-print([predictions])
+print(predictions)
 ```
