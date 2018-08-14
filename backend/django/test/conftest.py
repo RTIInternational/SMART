@@ -181,7 +181,7 @@ def test_tfidf_matrix(test_project_data):
     A CSR-format tf-idf matrix created from the data of test_project_data
     '''
     data = Data.objects.filter(project=test_project_data)
-    return create_tfidf_matrix(data, test_project_data.pk)[0]
+    return create_tfidf_matrix(test_project_data.pk)[0]
 
 @pytest.fixture
 def test_tfidf_matrix_labeled(test_project_labeled):
@@ -189,7 +189,7 @@ def test_tfidf_matrix_labeled(test_project_labeled):
     A CSR-format tf-idf matrix created from the data of test_project_data
     '''
     data = Data.objects.filter(project=test_project_labeled)
-    return create_tfidf_matrix(data, test_project_labeled.pk)[0]
+    return create_tfidf_matrix(test_project_labeled.pk)[0]
 
 @pytest.fixture
 def test_labels(test_project_data):

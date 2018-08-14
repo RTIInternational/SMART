@@ -125,7 +125,7 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size = 30)
         util.save_data_file(form_data, project.pk)
         if project.classifier is not None:
             chord(
-                  tasks.send_tfidf_creation_task.s(DataSerializer(data_objs, many=True).data, project.pk),
+                  tasks.send_tfidf_creation_task.s(project.pk),
                   tasks.send_check_and_trigger_model_task.si(project.pk)
             ).apply_async()
 

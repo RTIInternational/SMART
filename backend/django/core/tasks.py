@@ -35,16 +35,11 @@ def send_model_task(project_pk):
     fill_queue(queue, irr_queue = irr_queue, orderby = al_method, irr_percent = project.percentage_irr, batch_size = batch_size)
 
 @shared_task
-def send_tfidf_creation_task(response, project_pk):
+def send_tfidf_creation_task(project_pk):
     """Create and Save tfidf"""
     from core.util import create_tfidf_matrix, save_tfidf_matrix, save_tfidf_vectorizer
-    from core.models import Data
 
-    # since data is serialized objects need to validate, then retrieve the actual objects
-    hashes = [od['hash'] for od in response]
-    data = Data.objects.filter(hash__in=hashes)
-
-    tf_idf, vectorizer = create_tfidf_matrix(data, project_pk)
+    tf_idf, vectorizer = create_tfidf_matrix(project_pk)
     file = save_tfidf_matrix(tf_idf, project_pk)
     save_tfidf_vectorizer(vectorizer, project_pk)
 

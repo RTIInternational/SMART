@@ -1069,12 +1069,12 @@ def save_codebook_file(data, project_pk):
         outputFile.write(data.read())
     return fpath.replace("/data/code_books/","")
 
-def create_tfidf_matrix(data, project_pk, max_df=0.995, min_df=0.005):
+def create_tfidf_matrix(project_pk, max_df=0.995, min_df=0.005):
     """Create a TF-IDF matrix. Make sure to order the data by upload_id_hash so that we
         can sync the data up again when training the model
 
     Args:
-        data: List of data objs
+        project_pk: The pk of the project
     Returns:
         tf_idf_matrix: CSR-format tf-idf matrix
     """

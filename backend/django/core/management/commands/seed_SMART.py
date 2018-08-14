@@ -58,7 +58,7 @@ def seed_project(creator, name, description, data_file, label_list, perm_list, c
     fill_queue(queue, irr_queue = irr_queue, orderby='random', batch_size = batch_size)
     save_data_file(f_data, project.pk)
 
-    tasks.send_tfidf_creation_task.apply(args=[DataSerializer(data_objs, many=True).data, project.pk])
+    tasks.send_tfidf_creation_task.apply(args=[project.pk])
     tasks.send_check_and_trigger_model_task.apply(args=[project.pk])
 
     return project
