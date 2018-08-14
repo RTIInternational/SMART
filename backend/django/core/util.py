@@ -1141,6 +1141,36 @@ def load_tfidf_matrix(project_pk):
         raise ValueError('There was no tfidf matrix found for project: ' + str(project_pk))
 
 
+def handle_empty_queue(profile, project):
+    """Given a profile and project, check if there is any data left for the user to code,
+        if not then refill the queue
+
+    Args:
+        profile: user profile object
+        project: project object
+    """
+    queue = Queue.objects.get(project=project, type='normal')
+    irr_queue = Queue.objects.get(project=project, type='irr')
+
+    queue_count = DataQueue.objects.filter(queue=queue).count()
+    irr_count = DataQueue.objects.filter(queue=irr_queue).count()
+    assigned_toOthers_count = AssignedData.objects.filter(queue=queue).exclude(profile=profile).count()
+    irr_labeled_count = IRRLog.objects.filter(profile=profile, data__project=project).count()\
+        + DataLabel.objects.filter(profile=profile, data__dataqueue__queue=irr_queue).count()
+
+    if queue_count - assigned_toOthers_count == 0 and irr_count == irr_labeled_count:
+        # if there is a model, use the orderby of the project, otherwise random
+        if len(Model.objects.filter(project=project)) > 0:
+            fill_queue(queue=queue, orderby = project.learning_method,
+                       irr_queue = irr_queue, irr_percent = project.percentage_irr,
+                       batch_size = project.batch_size )
+            return_str = project.learning_method
+        else:
+            fill_queue(queue=queue, orderby = 'random',
+                       irr_queue = irr_queue, irr_percent = project.percentage_irr,
+                       batch_size = project.batch_size )
+
+
 def check_and_trigger_model(datum, profile=None):
     """Given a recently assigned datum check if the project it belong to needs
        its model ran.  It the model needs to be run, start the model run and
@@ -1160,55 +1190,23 @@ def check_and_trigger_model(datum, profile=None):
     labeled_data_count = labeled_data.count()
     labels_count = labeled_data.distinct('label').count()
 
-    #if both the normal and irr queue are empty or the user
-    #has labeled all of the irr
-    if profile:
-        queue = Queue.objects.get(project=project,type="normal")
-        irr_queue = Queue.objects.get(project=project,type="irr")
-        queue_count = DataQueue.objects.filter(queue=queue).count()
-        #get the number of items that the profile has not labeled/skipped in irr
-        irr_data = DataQueue.objects.filter(queue=irr_queue)
-        irr_count = 0
-        for d in irr_data:
-            #if they have already labeled it
-            if len(DataLabel.objects.filter(data=d.data,profile=profile)) > 0:
-                continue
-            #if they skipped it
-            if len(IRRLog.objects.filter(data=d.data,profile=profile)) > 0:
-                continue
-            irr_count += 1
-    else:
-        #this data was not labeled, so there isn't a profile attached
-        queue_count = 1
-        irr_count = 1
-
     if current_training_set.celery_task_id != '':
         return_str = 'task already running'
     elif labeled_data_count >= batch_size:
         if labels_count < project.labels.count() or project.classifier is None:
             queue = project.queue_set.get(type="normal")
-            fill_queue(queue = queue, orderby = 'random', batch_size=batch_size)
+            fill_queue(queue = queue, orderby = 'random', batch_size=project.batch_size)
             return_str = 'random'
         else:
             task_num = tasks.send_model_task.delay(project.pk)
             current_training_set.celery_task_id = task_num
             current_training_set.save()
             return_str = 'model running'
-    elif (irr_count == 0) and (queue_count == 0):
-        #check if the user has any unlabeled stuff left. If not,
-        #we need to refil the queue
+    elif profile:
+        # Model is not running, check if user needs more data
+        handle_empty_queue(profile, project)
 
-        #if there is a model, use the orderby of the project, otherwise random
-        if len(Model.objects.filter(project=project)) > 0:
-            fill_queue(queue=queue, orderby = project.learning_method,
-                       irr_queue = irr_queue, irr_percent = project.percentage_irr,
-                       batch_size = batch_size )
-            return_str = project.learning_method
-        else:
-            fill_queue(queue=queue, orderby = 'random',
-                       irr_queue = irr_queue, irr_percent = project.percentage_irr,
-                       batch_size = batch_size )
-            return_str = 'random'
+        return_str = 'user queue refill'
     else:
         return_str = 'no trigger'
 
