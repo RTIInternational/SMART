@@ -1853,21 +1853,3 @@ def test_train_and_apply_committee_gnb(setup_celery, test_project_labeled_and_tf
     the classifier.
     '''
     run_qbc_project_test(test_project_labeled_and_tfidf_model_qbc_gnb)
-
-def test_train_and_apply_committee_big_dataset(setup_celery, test_project_labeled_and_tfidf_model_qbc_movies,
-                                       test_profile, test_redis, tmpdir, settings):
-    '''
-    This tests the train_and_apply_committee function with the large movies dataset.
-    '''
-    project = test_project_labeled_and_tfidf_model_qbc_movies
-    tf_idf = load_tfidf_matrix(project.pk)
-    unlabeled_data = project.data_set.filter(datalabel__isnull=True).order_by('upload_id_hash')
-    unique_ids = list(unlabeled_data.values_list("upload_id", flat=True).order_by('upload_id_hash'))
-
-    #get the list of all data sorted by identifier
-    X = [tf_idf[id] for id in unique_ids]
-
-    results = train_and_apply_committee(project,X,5)
-    # result should be a pandas series of length unlabeled data
-    assert isinstance(results, pd.Series)
-    assert len(results) == len(unique_ids)
