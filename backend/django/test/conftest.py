@@ -8,7 +8,7 @@ from django.contrib.auth import get_user_model
 from smart.celery import app as celery_app
 from core.management.commands.seed import (
     seed_database, SEED_USERNAME, SEED_LABELS)
-from core.models import (Profile, Label, Model, DataLabel, Data)
+from core.models import (Profile, Label, Model, DataLabel, Data, TrainingSet)
 from core.util import (create_project, add_queue,
                        create_profile, add_data,
                        create_tfidf_matrix, save_tfidf_matrix,
@@ -184,6 +184,14 @@ def test_tfidf_matrix_labeled(test_project_labeled):
     return create_tfidf_matrix(data, test_project_labeled.pk)[0]
 
 @pytest.fixture
+def test_tfidf_vectorizer_labeled(test_project_labeled):
+    '''
+    A CSR-format tf-idf matrix created from the data of test_project_data
+    '''
+    data = Data.objects.filter(project=test_project_labeled)
+    return create_tfidf_matrix(data, test_project_labeled.pk)[1]
+
+@pytest.fixture
 def test_labels(test_project_data):
     '''
     A list of labels that correspond to SEED_LABELS
@@ -219,10 +227,11 @@ def test_project_labeled(test_project):
 
 
 @pytest.fixture
-def test_project_labeled_and_tfidf(test_project_labeled, test_tfidf_matrix_labeled, tmpdir, settings):
+def test_project_labeled_and_tfidf(test_project_labeled, test_tfidf_matrix_labeled, test_tfidf_vectorizer_labeled, tmpdir, settings):
     data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
     settings.TF_IDF_PATH = str(data_temp)
     fpath = save_tfidf_matrix(test_tfidf_matrix_labeled, test_project_labeled.pk)
+    save_tfidf_vectorizer(test_tfidf_vectorizer_labeled, test_project_labeled.pk)
     return test_project_labeled
 
 @pytest.fixture
@@ -244,7 +253,10 @@ def test_project_with_trained_model(test_project_labeled_and_tfidf, tmpdir):
     settings.MODEL_PICKLE_PATH = str(temp_pickle_path)
 
     trained_model = train_and_save_model(test_project_labeled_and_tfidf)
-
+    #update the training set number
+    training_set_number = test_project_labeled_and_tfidf.get_current_training_set().set_number
+    TrainingSet.objects.create(project=test_project_labeled_and_tfidf,
+                               set_number=training_set_number+1)
     return test_project_labeled_and_tfidf
 
 @pytest.fixture

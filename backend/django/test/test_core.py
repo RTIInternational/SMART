@@ -29,7 +29,8 @@ from core.util import (redis_serialize_queue, redis_serialize_data, redis_serial
                        check_and_trigger_model, get_ordered_data,
                        find_queue_length, save_codebook_file, md5_hash,
                        cohens_kappa, fleiss_kappa,
-                       irr_heatmap_data, perc_agreement_table_data)
+                       irr_heatmap_data, perc_agreement_table_data,
+                       get_labeled_data)
 
 from test.util import read_test_data_backend, assert_obj_exists, assert_redis_matches_db
 from test.conftest import TEST_QUEUE_LEN
@@ -1906,3 +1907,27 @@ def test_percent_agreement_table(setup_celery, test_project_all_irr_3_coders_dat
     table_data_perc = pd.DataFrame(perc_agreement_table_data(project))["Percent Agreement"].tolist()
     # goes in the order [prof2,prof3], [prof2, prof], [prof3, prof]
     assert (table_data_perc[0] == "33.3%") and (table_data_perc[1] == "66.7%") and (table_data_perc[2] == "33.3%")
+
+def test_get_labeled_data(setup_celery, test_profile, test_project_labeled, test_queue_labeled, test_irr_queue_labeled,
+                          test_admin_queue_labeled, test_redis, tmpdir, settings):
+    '''
+    This tests that the labeled data is pulled correctly
+    '''
+    #This tests labeled data util call
+    project = test_project_labeled
+    project_labels = Label.objects.filter(project=project)
+    fill_queue(test_queue_labeled, 'random', test_irr_queue_labeled, project.percentage_irr, project.batch_size )
+
+    #get the labeled data and the labels
+    labeled_data, labels = get_labeled_data(project)
+    assert isinstance(labeled_data, pd.DataFrame)
+    assert isinstance(labels, pd.DataFrame)
+
+    #should have the same number of labels and labeled data as in project
+    assert len(labels) == len(project_labels)
+
+    project_labeled = DataLabel.objects.filter(data__project=project)
+    assert len(labeled_data) == len(project_labeled)
+
+    #check that the labeled data is returned matches the stuff in DataLabel
+    assert len(set(project_labeled.values_list("data__upload_id",flat=True)) & set(labeled_data["ID"].tolist())) == len(labeled_data)

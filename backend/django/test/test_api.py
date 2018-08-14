@@ -1367,3 +1367,61 @@ def test_admin_counts(seeded_database, client, admin_client, test_project_data,
     response = admin_client.get('/api/data_admin_counts/'+str(projects[1].pk)+'/').json()
     assert 'detail' not in response and len(response["data"]) == 1
     assert response['data']['SKIP'] == 60
+
+def test_download_model(seeded_database, client, admin_client, test_project_with_trained_model, test_queue_labeled, test_irr_queue_labeled, test_admin_queue_labeled):
+    '''
+    This tests the download model api call
+    '''
+    project = test_project_with_trained_model
+    fill_queue(test_queue_labeled, 'random', test_irr_queue_labeled, project.percentage_irr, project.batch_size )
+
+    admin_client.login(username=SEED_USERNAME2, password=SEED_PASSWORD2)
+    admin_profile = Profile.objects.get(user__username=SEED_USERNAME2)
+    ProjectPermissions.objects.create(profile=admin_profile,
+                                      project=project,
+                                      permission='ADMIN')
+
+    client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
+    client_profile = Profile.objects.get(user__username=SEED_USERNAME)
+
+    ProjectPermissions.objects.create(profile=client_profile,
+                                      project=project,
+                                      permission='CODER')
+
+    #check admin priviledges
+    response = client.get('/api/download_model/'+str(project.pk)+'/').json()
+    assert 'detail' in response and 'Invalid permission. Must be an admin' in response['detail']
+
+    #check that the response is the correct type
+    response = admin_client.get('/api/download_model/'+str(project.pk)+'/')
+    assert 'detail' not in response
+    assert response.get("Content-Type") == "application/x-zip-compressed"
+
+
+def test_download_labeled_data(seeded_database, client, admin_client, test_project_labeled, test_queue_labeled, test_irr_queue_labeled, test_admin_queue_labeled):
+    '''
+    This tests the download labeled data api call
+    '''
+    project = test_project_labeled
+    fill_queue(test_queue_labeled, 'random', test_irr_queue_labeled, project.percentage_irr, project.batch_size )
+
+    admin_client.login(username=SEED_USERNAME2, password=SEED_PASSWORD2)
+    admin_profile = Profile.objects.get(user__username=SEED_USERNAME2)
+    ProjectPermissions.objects.create(profile=admin_profile,
+                                      project=project,
+                                      permission='ADMIN')
+
+    client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
+    client_profile = Profile.objects.get(user__username=SEED_USERNAME)
+
+    ProjectPermissions.objects.create(profile=client_profile,
+                                      project=project,
+                                      permission='CODER')
+    #check admin priviledges
+    response = client.get('/api/download_data/'+str(project.pk)+'/').json()
+    assert 'detail' in response and 'Invalid permission. Must be an admin' in response['detail']
+
+    #check that the response is the correct type
+    response = admin_client.get('/api/download_data/'+str(project.pk)+'/')
+    assert 'detail' not in response
+    assert response.get("Content-Type") == "text/csv"
