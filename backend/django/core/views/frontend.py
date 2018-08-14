@@ -279,8 +279,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
             # Data
             f_data = data.cleaned_data['data']
-            data_length = len(f_data)
-            admin_queue = util.add_queue(project=proj_obj, length=data_length, type="admin")
+            admin_queue = util.add_queue(project=proj_obj, length=2000000, type="admin")
             irr_queue = util.add_queue(project=proj_obj, length=2000000, type="irr")
             upload_data(f_data, proj_obj, queue, irr_queue, batch_size)
 
