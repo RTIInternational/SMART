@@ -30,7 +30,7 @@
               <textarea class="form-control" id="{{ wizard.form.description.id_for_label }}" name="{{ wizard.form.description.html_name }}">{{ form.description.value|default_if_none:'' }}</textarea>
               <div class="error-messages">{{ wizard.form.description.errors }}</div>
             </div>
-          <div>
+          <div class="wizard_nav_bar">
             <input class="btn btn-primary" type="submit" value="Next Step"/>
             <p class="pull-right">Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
           </div>

@@ -19,7 +19,14 @@
        $.ajax({
          type: 'GET',
          async: false,
-         url: '/api/leave_coding_page/',
+         url: '/api/leave_coding_page/'+{{ pk }}+'/',
+       });
+    };
+    window.onload = function (e) {
+       $.ajax({
+         type: 'GET',
+         async: false,
+         url: '/api/enter_coding_page/'+{{ pk }}+'/',
        });
     };
   </script>

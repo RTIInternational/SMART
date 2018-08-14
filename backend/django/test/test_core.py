@@ -792,9 +792,12 @@ def test_save_data_file_multiple_files(test_project, tmpdir, settings):
 
 
 def test_create_tfidf_matrix(test_tfidf_matrix):
-    assert type(test_tfidf_matrix) == scipy.sparse.csr.csr_matrix
-    assert test_tfidf_matrix.shape == (285, 11)
-    assert test_tfidf_matrix.dtype == np.float64
+    #UPDATE: is now saved as a dictionary of lists
+    assert type(test_tfidf_matrix) == type({})
+    assert len(test_tfidf_matrix) == 285
+    for key in test_tfidf_matrix:
+        assert len(test_tfidf_matrix[key]) == 307
+        assert np.all([type(val) == float for val in test_tfidf_matrix[key]])
 
 
 def test_save_tfidf_matrix(test_project_data, test_tfidf_matrix, tmpdir, settings):
@@ -804,13 +807,15 @@ def test_save_tfidf_matrix(test_project_data, test_tfidf_matrix, tmpdir, setting
     file = save_tfidf_matrix(test_tfidf_matrix, test_project_data.pk)
 
     assert os.path.isfile(file)
-    assert file == os.path.join(settings.TF_IDF_PATH, str(test_project_data.pk) + '.npz')
+    assert file == os.path.join(settings.TF_IDF_PATH, 'project_'+str(test_project_data.pk) + '_tfidf_matrix.pkl')
 
 
 def test_load_tfidf_matrix(test_project_labeled_and_tfidf, test_tfidf_matrix_labeled, tmpdir, settings):
     matrix = load_tfidf_matrix(test_project_labeled_and_tfidf.pk)
 
-    assert np.allclose(matrix.A, test_tfidf_matrix_labeled.A)
+    for key in matrix:
+        assert key in test_tfidf_matrix_labeled
+        assert np.allclose(matrix[key], test_tfidf_matrix_labeled[key])
 
 
 def test_least_confident_notarray():

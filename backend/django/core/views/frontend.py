@@ -120,12 +120,14 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size = 30)
     # we need to check_and_trigger model.  However since training model requires
     # tf_idf to be created we must create a chord which garuntees that tfidf
     # creation task is completed before check and trigger model task
+
     if len(data_objs) > 0:
         util.save_data_file(form_data, project.pk)
-        chord(
-              tasks.send_tfidf_creation_task.s(DataSerializer(data_objs, many=True).data, project.pk),
-              tasks.send_check_and_trigger_model_task.si(project.pk)
-        ).apply_async()
+        if project.classifier is not None:
+            chord(
+                  tasks.send_tfidf_creation_task.s(DataSerializer(data_objs, many=True).data, project.pk),
+                  tasks.send_check_and_trigger_model_task.si(project.pk)
+            ).apply_async()
 
 class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
     file_storage = FileSystemStorage(location=settings.DATA_DIR)

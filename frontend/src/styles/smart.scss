@@ -21,7 +21,16 @@ header {
         color: $primary-color-text;
         font-size: 1.5rem;
         font-weight: 300;
+        margin-bottom: 20px;
     }
+}
+
+h1, h2, h3, h4, h5 {
+    font-family: Roboto Slab;
+}
+
+p, a, label, input, button, li, th, textarea, dt, dd, select, text, .progress-bar, .ReactTable, .dataTables_wrapper {
+    font-family: Lato;
 }
 
 .full {
@@ -341,4 +350,28 @@ li.disabled {
 
 #chart_panel div.panel_body {
     height: 350px;
+}
+
+#al_tab .invisible{
+    visibility: hidden;
+}
+
+#admin_count_table {
+    width: 50px;
+}
+
+.wizard_nav_bar {
+    margin-bottom: 40px;
+}
+
+#label_group_buttons {
+    margin-left: 0px;
+    margin-right: 0px;
+}
+
+.badge {
+    background-color: #1565B4;
+    margin-left: 5px;
+    margin-right: 5px;
+    font-size: 10px;
 }
