@@ -502,3 +502,28 @@ def test_project_labeled_and_tfidf_model_qbc_gnb(test_profile, tmpdir, settings)
     train_and_save_model(project)
 
     return project
+
+@pytest.fixture
+def test_project_labeled_and_tfidf_model_qbc_movies(test_profile, tmpdir, settings):
+    '''A project with Gaussian Naiive Bayes and qbc'''
+    project = create_project('test_project', test_profile, 0, 2, learning_method = "qbc", classifier = "gnb")
+    for l in ["Positive", "Negative"]:
+        Label.objects.create(name=l, project=project)
+
+    test_data = read_test_data_backend(file='./core/data/test_files/test_movies_100_labels.csv')
+    add_data(project, test_data)
+
+    matrix = create_tfidf_matrix(test_data, project.pk)[0]
+    data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
+    settings.TF_IDF_PATH = str(data_temp)
+    fpath = save_tfidf_matrix(matrix, project.pk)
+
+    add_queue(project, TEST_QUEUE_LEN)
+    add_queue(project, TEST_QUEUE_LEN, type="admin")
+    add_queue(project, MAX_DATA_LEN, type="irr")
+
+    temp_pickle_path = tmpdir.listdir()[0].mkdir('model_pickles')
+    settings.MODEL_PICKLE_PATH = str(temp_pickle_path)
+    train_and_save_model(project)
+
+    return project

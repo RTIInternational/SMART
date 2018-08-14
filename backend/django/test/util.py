@@ -4,6 +4,7 @@ import pandas as pd
 from core.management.commands.seed import (SEED_FILE_PATH)
 from core.models import Queue
 from core.util import md5_hash
+from io import StringIO
 
 def assert_obj_exists(model, filter_):
     '''
@@ -39,7 +40,7 @@ def read_test_data_api(file=SEED_FILE_PATH):
     Read the test data from its file and store as list of dicts.  Used for API
     tests.
     '''
-    with open(file) as f:
+    with open(file, encoding="utf8" ,errors="ignore") as f:
         return [{'Text': d['Text'], 'Label': d['Label']} for d in csv.DictReader(f)]
 
 def read_test_data_backend(file=SEED_FILE_PATH):
@@ -47,4 +48,5 @@ def read_test_data_backend(file=SEED_FILE_PATH):
     Read the test data from its file and store as dataframe.  Used for backend
     tests.
     '''
-    return pd.read_csv(file)
+    with open(file, encoding="utf8" ,errors="ignore") as f:
+        return pd.read_csv(StringIO(f.read())).dropna(axis=0, how="all")
