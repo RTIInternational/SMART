@@ -1162,7 +1162,7 @@ def test_discard_data(seeded_database, client, admin_client, test_project_data, 
     assert not all(datum.data.irr_ind == False for datum in admin_data)
     assert not all(datum.data.irr_ind == True for datum in admin_data)
 
-    #check for admin privaledges
+    #check for admin privalidges
     response = client.post('/api/discard_data/'+str(admin_data[0].data.pk)+'/').json()
     assert 'detail' in response and 'Invalid permission. Must be an admin' in response['detail']
 
@@ -1222,7 +1222,7 @@ def test_restore_data(seeded_database, client, admin_client, test_project_data, 
     for datum in admin_data:
         admin_client.post('/api/discard_data/'+str(datum.data.pk)+'/')
 
-    #check for admin privaledges
+    #check for admin privalidges
     response = client.post('/api/restore_data/'+str(admin_data[0].data.pk)+'/').json()
     assert 'detail' in response and 'Invalid permission. Must be an admin' in response['detail']
 
@@ -1231,3 +1231,139 @@ def test_restore_data(seeded_database, client, admin_client, test_project_data, 
         admin_client.post('/api/restore_data/'+str(datum.data.pk)+'/')
         assert RecycleBin.objects.filter(data=datum.data).count() == 0
         assert Data.objects.get(pk=datum.data.pk).irr_ind == False
+
+def test_recycle_bin_table(seeded_database, client, admin_client, test_project_data, test_queue, test_irr_queue, test_labels, test_admin_queue):
+    '''
+    This tests that the recycle bin table is populated correctly
+    '''
+    project = test_project_data
+    fill_queue(test_queue, 'random', test_irr_queue, project.percentage_irr, project.batch_size )
+
+    admin_client.login(username=SEED_USERNAME2, password=SEED_PASSWORD2)
+    admin_profile = Profile.objects.get(user__username=SEED_USERNAME2)
+    ProjectPermissions.objects.create(profile=admin_profile,
+                                      project=project,
+                                      permission='ADMIN')
+
+    client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
+    client_profile = Profile.objects.get(user__username=SEED_USERNAME)
+
+    ProjectPermissions.objects.create(profile=client_profile,
+                                      project=project,
+                                      permission='CODER')
+
+    #check for admin privalidges
+    response = client.get('/api/recycle_bin_table/'+str(project.pk)+'/').json()
+    assert 'detail' in response and 'Invalid permission. Must be an admin' in response['detail']
+
+    #check that the table is currently empty
+    response = admin_client.get('/api/recycle_bin_table/'+str(project.pk)+'/').json()
+    assert 'detail' not in response
+    assert len(response["data"]) == 0
+
+    #assign a batch of data. Should be IRR and non-IRR
+    irr_count = 0
+    non_irr_count = 0
+    data = get_assignments(client_profile, project, 30)
+    for i in range(30):
+        if data[i].irr_ind:
+            irr_count += 1
+        else:
+            non_irr_count += 1
+        response = client.post('/api/skip_data/'+str(data[i].pk)+'/')
+
+    #have the admin also get a batch and call skip on everything
+    data = get_assignments(admin_profile, project, 30)
+    for i in range(30):
+        if not data[i].irr_ind:
+            non_irr_count += 1
+        response = admin_client.post('/api/skip_data/'+str(data[i].pk)+'/')
+
+    admin_data = DataQueue.objects.filter(data__project=project, queue = test_admin_queue)
+    #discard all data
+    for datum in admin_data:
+        admin_client.post('/api/discard_data/'+str(datum.data.pk)+'/')
+
+    #check that the table has 30 elements that match the discarded data
+    response = admin_client.get('/api/recycle_bin_table/'+str(project.pk)+'/').json()
+    assert 'detail' not in response
+    assert len(response["data"]) == non_irr_count + irr_count
+    assert_collections_equal([d["ID"] for d in response["data"]], RecycleBin.objects.filter(data__project=project).values_list("data__pk",flat=True))
+
+    #restore all data
+    for datum in admin_data:
+        admin_client.post('/api/restore_data/'+str(datum.data.pk)+'/')
+
+    #check that the table is empty again
+    response = admin_client.get('/api/recycle_bin_table/'+str(project.pk)+'/').json()
+    assert 'detail' not in response
+    assert len(response["data"]) == 0
+
+def test_admin_counts(seeded_database, client, admin_client, test_project_data,
+                      test_queue, test_irr_queue, test_labels, test_admin_queue,
+                      test_project_no_irr_data, test_no_irr_all_queues, test_labels_no_irr):
+    '''
+    This tests the admin counts api
+    '''
+    projects = [test_project_data, test_project_no_irr_data]
+    normal_queues = [test_queue, test_no_irr_all_queues[0]]
+    irr_queues = [test_irr_queue, test_no_irr_all_queues[2]]
+
+    #log in the users into both projects
+    client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
+    admin_client.login(username=SEED_USERNAME2, password=SEED_PASSWORD2)
+    client_profile = Profile.objects.get(user__username=SEED_USERNAME)
+    admin_profile = Profile.objects.get(user__username=SEED_USERNAME2)
+    for i in range(2):
+        fill_queue(normal_queues[i], 'random', irr_queues[i], projects[i].percentage_irr, projects[i].batch_size )
+        ProjectPermissions.objects.create(profile=admin_profile,
+                                          project=projects[i],
+                                          permission='ADMIN')
+        ProjectPermissions.objects.create(profile=client_profile,
+                                          project=projects[i],
+                                          permission='CODER')
+        #check for admin priviledges
+        response = client.get('/api/data_admin_counts/'+str(projects[i].pk)+'/').json()
+        assert 'detail' in response and 'Invalid permission. Must be an admin' in response['detail']
+
+    #counts should be 0 for both projects. IRR project should have two counts.
+    response = admin_client.get('/api/data_admin_counts/'+str(projects[0].pk)+'/').json()
+    assert 'detail' not in response and len(response["data"]) == 2
+    assert list(response['data'].values()) == [0,0]
+
+    response = admin_client.get('/api/data_admin_counts/'+str(projects[1].pk)+'/').json()
+    assert 'detail' not in response and len(response["data"]) == 1
+    assert list(response['data'].values()) == [0]
+
+    #have admin and non_admin skip everything. The count should be 30 for non-irr project
+    irr_count = 0
+    non_irr_count = 0
+    data = get_assignments(client_profile, projects[0], 30)
+    for i in range(30):
+        if data[i].irr_ind:
+            irr_count += 1
+        else:
+            non_irr_count += 1
+        response = client.post('/api/skip_data/'+str(data[i].pk)+'/')
+    data = get_assignments(admin_profile, projects[0], 30)
+    for i in range(30):
+        if not data[i].irr_ind:
+            non_irr_count += 1
+        response = admin_client.post('/api/skip_data/'+str(data[i].pk)+'/')
+
+    response = admin_client.get('/api/data_admin_counts/'+str(projects[0].pk)+'/').json()
+    assert 'detail' not in response and len(response["data"]) == 2
+    assert response['data']['IRR'] == irr_count
+    assert response['data']['SKIP'] == non_irr_count
+
+    #the counts should be split with the non-irr project
+    data = get_assignments(client_profile, projects[1], 30)
+    for i in range(30):
+        response = client.post('/api/skip_data/'+str(data[i].pk)+'/')
+    data = get_assignments(admin_profile, projects[1], 30)
+    for i in range(30):
+        response = admin_client.post('/api/skip_data/'+str(data[i].pk)+'/')
+
+    response = admin_client.get('/api/data_admin_counts/'+str(projects[1].pk)+'/').json()
+    assert 'detail' not in response and len(response["data"]) == 1
+    assert response['data']['SKIP'] == 60
