@@ -946,7 +946,8 @@ def discard_data(request, data_pk):
         #remove it from the admin queue
         queue = Queue.objects.get(project=project, type="admin")
         DataQueue.objects.get(data=data, queue=queue).delete()
-
+        IRRLog.objects.filter(data=data).delete()
+        Data.objects.filter(pk=data_pk).update(irr_ind = False)
         RecycleBin.objects.create(data=data, timestamp=timezone.now())
     else:
         response['error'] = 'Invalid credentials. Must be an admin.'

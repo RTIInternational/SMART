@@ -6,7 +6,8 @@ from core.management.commands.seed import (
     SEED_PASSWORD2)
 from core.pagination import SmartPagination
 from core.models import (Project, Profile, DataQueue, DataLabel, Data, Queue, ProjectPermissions,
-                         LabelChangeLog, Label, DataPrediction, TrainingSet, Model, AssignedData)
+                         LabelChangeLog, Label, DataPrediction, TrainingSet, Model, AssignedData,
+                         IRRLog, RecycleBin)
 from django.utils.html import escape
 from test.util import read_test_data_api
 import re
@@ -1118,3 +1119,115 @@ def test_multiple_admin_on_admin_annotation(seeded_database, client, admin_clien
     response = client.get('/api/enter_coding_page/'+str(project.pk)+'/').json()
     response = client.get('/api/check_admin_in_progress/'+str(project.pk)+'/').json()
     assert response['available'] == 0
+
+def test_discard_data(seeded_database, client, admin_client, test_project_data, test_queue, test_irr_queue, test_labels, test_admin_queue):
+    '''
+    This tests that data can be discarded
+    '''
+    project = test_project_data
+    fill_queue(test_queue, 'random', test_irr_queue, project.percentage_irr, project.batch_size )
+
+    admin_client.login(username=SEED_USERNAME2, password=SEED_PASSWORD2)
+    admin_profile = Profile.objects.get(user__username=SEED_USERNAME2)
+    ProjectPermissions.objects.create(profile=admin_profile,
+                                      project=project,
+                                      permission='ADMIN')
+
+    client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
+    client_profile = Profile.objects.get(user__username=SEED_USERNAME)
+
+    ProjectPermissions.objects.create(profile=client_profile,
+                                      project=project,
+                                      permission='CODER')
+
+    #assign a batch of data. Should be IRR and non-IRR
+    data = get_assignments(client_profile, project, 30)
+    assert not all(datum.irr_ind == False for datum in data)
+    assert not all(datum.irr_ind == True for datum in data)
+
+    #call skip data on a full batch of data
+    for i in range(30):
+        response = client.post('/api/skip_data/'+str(data[i].pk)+'/')
+
+    #have the admin also get a batch and call skip on everything
+    data = get_assignments(admin_profile, project, 30)
+    assert not all(datum.irr_ind == False for datum in data)
+    assert not all(datum.irr_ind == True for datum in data)
+
+    #call skip data on a full batch of data
+    for i in range(30):
+        response = admin_client.post('/api/skip_data/'+str(data[i].pk)+'/')
+
+    admin_data = DataQueue.objects.filter(data__project=project, queue = test_admin_queue)
+    assert not all(datum.data.irr_ind == False for datum in admin_data)
+    assert not all(datum.data.irr_ind == True for datum in admin_data)
+
+    #check for admin privaledges
+    response = client.post('/api/discard_data/'+str(admin_data[0].data.pk)+'/').json()
+    assert 'detail' in response and 'Invalid permission. Must be an admin' in response['detail']
+
+    #get irr data and discard it. Check that the data is not in IRRLog, AssignedData DataQueue, in RecycleBin
+    irr_data = admin_data.filter(data__irr_ind = True)
+    for datum in irr_data:
+        assert IRRLog.objects.filter(data=datum.data).count() > 0
+        admin_client.post('/api/discard_data/'+str(datum.data.pk)+'/')
+        assert IRRLog.objects.filter(data=datum.data).count() == 0
+        assert DataQueue.objects.filter(data=datum.data).count() == 0
+        assert AssignedData.objects.filter(data=datum.data).count() == 0
+        assert RecycleBin.objects.filter(data=datum.data).count() == 1
+        assert RecycleBin.objects.get(data=datum.data).data.irr_ind == False
+
+
+    #get normal data and discard it. Check that the data is not in IRRLog, AssignedData DataQueue, in RecycleBin
+    non_irr_data = admin_data.filter(data__irr_ind = False)
+    for datum in non_irr_data:
+        admin_client.post('/api/discard_data/'+str(datum.data.pk)+'/')
+        assert DataQueue.objects.filter(data=datum.data).count() == 0
+        assert AssignedData.objects.filter(data=datum.data).count() == 0
+        assert RecycleBin.objects.filter(data=datum.data).count() == 1
+
+
+def test_restore_data(seeded_database, client, admin_client, test_project_data, test_queue, test_irr_queue, test_labels, test_admin_queue):
+    '''
+    This tests that data can be restored after it is discarded
+    '''
+    project = test_project_data
+    fill_queue(test_queue, 'random', test_irr_queue, project.percentage_irr, project.batch_size )
+
+    admin_client.login(username=SEED_USERNAME2, password=SEED_PASSWORD2)
+    admin_profile = Profile.objects.get(user__username=SEED_USERNAME2)
+    ProjectPermissions.objects.create(profile=admin_profile,
+                                      project=project,
+                                      permission='ADMIN')
+
+    client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
+    client_profile = Profile.objects.get(user__username=SEED_USERNAME)
+
+    ProjectPermissions.objects.create(profile=client_profile,
+                                      project=project,
+                                      permission='CODER')
+
+    #assign a batch of data. Should be IRR and non-IRR
+    data = get_assignments(client_profile, project, 30)
+    for i in range(30):
+        response = client.post('/api/skip_data/'+str(data[i].pk)+'/')
+
+    #have the admin also get a batch and call skip on everything
+    data = get_assignments(admin_profile, project, 30)
+    for i in range(30):
+        response = admin_client.post('/api/skip_data/'+str(data[i].pk)+'/')
+
+    admin_data = DataQueue.objects.filter(data__project=project, queue = test_admin_queue)
+    #discard all data
+    for datum in admin_data:
+        admin_client.post('/api/discard_data/'+str(datum.data.pk)+'/')
+
+    #check for admin privaledges
+    response = client.post('/api/restore_data/'+str(admin_data[0].data.pk)+'/').json()
+    assert 'detail' in response and 'Invalid permission. Must be an admin' in response['detail']
+
+    #restore all data. It should not be in recycle bin
+    for datum in admin_data:
+        admin_client.post('/api/restore_data/'+str(datum.data.pk)+'/')
+        assert RecycleBin.objects.filter(data=datum.data).count() == 0
+        assert Data.objects.get(pk=datum.data.pk).irr_ind == False
