@@ -1320,15 +1320,7 @@ def entropy(probs):
     Returns:
         x
     """
-    if isinstance(probs, pd.Series):
-        #it is being called by qbc with a row format
-        class_votes = probs.value_counts().to_dict()
-        #pandas count automatically does not include 0 counts
-        votes = list(class_votes.values())
-        if len(votes) == 0:
-            raise ValueError('Should not be empty array')
-        non_zero_probs = [c/len(votes) for c in votes]
-    elif not isinstance(probs, np.ndarray):
+    if not isinstance(probs, np.ndarray):
         raise ValueError('Probs should be a numpy array')
     else:
         non_zero_probs = (p for p in probs if p > 0)
@@ -1337,6 +1329,25 @@ def entropy(probs):
     for p in non_zero_probs:
         total += p * math.log10(p)
     return -total
+
+def qbc_entropy(row):
+    """QBC Entropy - Query by Committee
+        x = -sum(p * log(p))
+        the sum is sumation across p's
+    Args:
+        row: a row with the class assignments from each classifier
+        ex: [5, 4, 5, 5, 3]
+    Returns:
+        x
+    """
+    #it is being called by qbc with a row format
+    class_votes = row.value_counts().to_dict()
+    #pandas count automatically does not include 0 counts
+    votes = list(class_votes.values())
+    if len(votes) == 0:
+        raise ValueError('Should not be empty array')
+    non_zero_probs = np.asarray([c/len(votes) for c in votes])
+    return entropy(non_zero_probs)
 
 def train_and_apply_committee(project, unlabeled_X, com_size = 5):
     """Given a project where query by committee is the metric, reads in
@@ -1382,7 +1393,7 @@ def train_and_apply_committee(project, unlabeled_X, com_size = 5):
         predictions.append(np.reshape(y_pred,(len(y_pred),1)))
 
     all_predictions = np.concatenate(predictions, axis=1)
-    scores = pd.DataFrame(all_predictions).apply(entropy, axis=1)
+    scores = pd.DataFrame(all_predictions).apply(qbc_entropy, axis=1)
 
     return scores
 
@@ -1448,8 +1459,7 @@ def predict_data(project, model):
     for datum, prediction in zip(unlabeled_data, predictions):
         if project.learning_method == "qbc":
             qbc_score = float(qbc_predictions.iloc[counter])
-        else:
-            qbc_score = 0
+
         counter += 1
         # each prediction is an array of probabilities.  Each index in that array
         # corresponds to the label of the same index in clf.classes_
@@ -1463,12 +1473,19 @@ def predict_data(project, model):
         ms = margin_sampling(prediction)
         e = entropy(prediction)
 
-        DataUncertainty.objects.create(data=datum,
-                                       model=model,
-                                       least_confident=lc,
-                                       margin_sampling=ms,
-                                       entropy=e,
-                                       qbc = qbc_score)
+        if project.learning_method == "qbc":
+            DataUncertainty.objects.create(data=datum,
+                                           model=model,
+                                           least_confident=lc,
+                                           margin_sampling=ms,
+                                           entropy=e,
+                                           qbc = qbc_score)
+        else:
+            DataUncertainty.objects.create(data=datum,
+                                           model=model,
+                                           least_confident=lc,
+                                           margin_sampling=ms,
+                                           entropy=e)
 
     prediction_objs = DataPrediction.objects.bulk_create(bulk_predictions)
 

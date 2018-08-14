@@ -164,7 +164,7 @@ class DataUncertainty(models.Model):
     least_confident = models.FloatField()
     margin_sampling = models.FloatField()
     entropy = models.FloatField()
-    qbc = models.FloatField(default=0.0)
+    qbc = models.FloatField(null=True)
 
 class Queue(models.Model):
     profile = models.ForeignKey('Profile', blank=True, null=True)

@@ -29,7 +29,7 @@ from core.util import (redis_serialize_queue, redis_serialize_data, redis_serial
                        check_and_trigger_model, get_ordered_data,
                        find_queue_length, cohens_kappa, fleiss_kappa,
                        irr_heatmap_data, perc_agreement_table_data, md5_hash,
-                       train_and_apply_committee)
+                       train_and_apply_committee, qbc_entropy)
 
 from test.util import read_test_data_backend, assert_obj_exists, assert_redis_matches_db
 from test.conftest import TEST_QUEUE_LEN
@@ -1764,16 +1764,16 @@ def test_entropy_qbc():
     '''
     #send empty Series, should return 0
     with pytest.raises(ValueError) as excinfo:
-        entropy(pd.Series([]))
+        qbc_entropy(pd.Series([]))
     assert 'Should not be empty array' in str(excinfo.value)
 
     #send Series with [7 7 7 7 7 7 7] should return -5.9156
     all_same = pd.Series([7,7,7,7,7,7,7])
-    np.testing.assert_almost_equal(entropy(all_same), -5.91568628)
+    np.testing.assert_almost_equal(qbc_entropy(all_same), -5.91568628)
 
     #send Series with [1 2 3 4 5] should return 0.6989700
     all_different = pd.Series([1,2,3,4,5])
-    np.testing.assert_almost_equal(entropy(all_different), 0.698970004)
+    np.testing.assert_almost_equal(qbc_entropy(all_different), 0.698970004)
 
 def run_qbc_project_test(project):
     '''
@@ -1800,7 +1800,10 @@ def run_qbc_project_test(project):
     unc_values = DataUncertainty.objects.filter(data__project=project, model=model)
     assert len(unc_values) == len(unique_ids)
     # check that the QBC elements are not all 0 for DataUncertainty
-    assert np.sum(list(unc_values.values_list("qbc",flat=True))) != 0
+    assert not all(x == 0 for x in unc_values.values_list('qbc', flat=True))
+
+    # check that the QBC elements are not all not null for DataUncertainty
+    assert not any(x is None for x in unc_values.values_list('qbc', flat=True))
 
     # fill the queue. Check that the elements are in order by QBC
     normal_queue = Queue.objects.get(project=project,type="normal")
