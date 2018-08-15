@@ -102,7 +102,7 @@ class ProjectDetail(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         return project_extras.proj_permission_level(project, self.request.user.profile) > 0
 
 
-def upload_data(form_data, project, queue=None, irr_queue=None, batch_size = 30):
+def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
     """Perform data upload given validated form_data.
 
     1. Add data to database
@@ -113,8 +113,8 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size = 30)
     """
     data_objs = util.add_data(project, form_data)
     if queue:
-        util.fill_queue(queue=queue, irr_queue=irr_queue, orderby='random', irr_percent = project.percentage_irr, batch_size = batch_size)
-
+        util.fill_queue(queue=queue, irr_queue=irr_queue, orderby='random',
+                        irr_percent=project.percentage_irr, batch_size=batch_size)
 
     # Since User can upload Labeled Data and this data is added to current training_set
     # we need to check_and_trigger model.  However since training model requires
@@ -125,9 +125,11 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size = 30)
         util.save_data_file(form_data, project.pk)
         if project.classifier is not None:
             chord(
-                  tasks.send_tfidf_creation_task.s(DataSerializer(data_objs, many=True).data, project.pk),
-                  tasks.send_check_and_trigger_model_task.si(project.pk)
+                tasks.send_tfidf_creation_task.s(DataSerializer(
+                    data_objs, many=True).data, project.pk),
+                tasks.send_check_and_trigger_model_task.si(project.pk)
             ).apply_async()
+
 
 class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
     file_storage = FileSystemStorage(location=settings.DATA_DIR)
@@ -143,8 +145,8 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         'project': 'projects/create_wizard_overview.html',
         'labels': 'projects/create_wizard_labels.html',
         'permissions': 'projects/create_wizard_permissions.html',
-        'advanced':'projects/create_wizard_advanced.html',
-        'codebook':'projects/create_wizard_codebook.html',
+        'advanced': 'projects/create_wizard_advanced.html',
+        'codebook': 'projects/create_wizard_codebook.html',
         'data': 'projects/create_wizard_data.html'
     }
 
@@ -240,14 +242,15 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             proj_pk = proj_obj.pk
             # Save the codebook file
 
-            cb_data =  codebook_data.cleaned_data['data']
+            cb_data = codebook_data.cleaned_data['data']
             if cb_data != "":
                 cb_filepath = util.save_codebook_file(cb_data, proj_pk)
             else:
                 cb_filepath = ""
             proj_obj.codebook_file = cb_filepath
             if advanced_data["batch_size"] == 0:
-                batch_size = 10 * len([x for x in labels if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True])
+                batch_size = 10 * len([x for x in labels if x.cleaned_data
+                                       != {} and not x.cleaned_data['DELETE']])
             else:
                 batch_size = advanced_data["batch_size"]
 
@@ -271,11 +274,11 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
             # Queue
 
-            num_coders = len([x for x in permissions if x.cleaned_data != {} and x.cleaned_data['DELETE'] != True]) + 1
+            num_coders = len([x for x in permissions if x.cleaned_data
+                              != {} and not x.cleaned_data['DELETE']]) + 1
             q_length = util.find_queue_length(batch_size, num_coders)
 
             queue = util.add_queue(project=proj_obj, length=q_length)
-
 
             # Data
             f_data = data.cleaned_data['data']
@@ -302,19 +305,24 @@ class ProjectUpdate(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     def get_form_kwargs(self):
         form_kwargs = super(ProjectUpdate, self).get_form_kwargs()
 
-        form_kwargs['labels'] = list(Label.objects.filter(project=form_kwargs['instance']).values_list('name', flat=True))
+        form_kwargs['labels'] = list(Label.objects.filter(
+            project=form_kwargs['instance']).values_list('name', flat=True))
 
         return form_kwargs
 
     def get_context_data(self, **kwargs):
         data = super(ProjectUpdate, self).get_context_data(**kwargs)
         if self.request.POST:
-            data['permissions'] = PermissionsFormSet(self.request.POST, instance=data['project'], prefix='permissions_set', form_kwargs={'action': 'update', 'creator':data['project'].creator, 'profile': self.request.user.profile})
-            data['label_descriptions'] = LabelDescriptionFormSet(self.request.POST, instance=data['project'], prefix='label_descriptions_set', form_kwargs={'action': 'update'})
+            data['permissions'] = PermissionsFormSet(self.request.POST, instance=data['project'], prefix='permissions_set', form_kwargs={
+                                                     'action': 'update', 'creator': data['project'].creator, 'profile': self.request.user.profile})
+            data['label_descriptions'] = LabelDescriptionFormSet(
+                self.request.POST, instance=data['project'], prefix='label_descriptions_set', form_kwargs={'action': 'update'})
         else:
             data['num_data'] = Data.objects.filter(project=data['project']).count()
-            data['permissions'] = PermissionsFormSet(instance=data['project'], prefix='permissions_set', form_kwargs={'action': 'update', 'creator':data['project'].creator, 'profile': self.request.user.profile})
-            data['label_descriptions'] = LabelDescriptionFormSet(instance=data['project'], prefix='label_descriptions_set', form_kwargs={'action': 'update'})
+            data['permissions'] = PermissionsFormSet(instance=data['project'], prefix='permissions_set', form_kwargs={
+                                                     'action': 'update', 'creator': data['project'].creator, 'profile': self.request.user.profile})
+            data['label_descriptions'] = LabelDescriptionFormSet(
+                instance=data['project'], prefix='label_descriptions_set', form_kwargs={'action': 'update'})
         return data
 
     def form_valid(self, form):
@@ -333,10 +341,10 @@ class ProjectUpdate(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
                 # Data
                 f_data = form.cleaned_data.get('data', False)
                 if isinstance(f_data, pd.DataFrame):
-                    upload_data(f_data, self.object, batch_size = self.object.batch_size)
+                    upload_data(f_data, self.object, batch_size=self.object.batch_size)
 
                 # CodeBook
-                cb_data = form.cleaned_data.get('cb_data',False)
+                cb_data = form.cleaned_data.get('cb_data', False)
                 if cb_data and cb_data != "":
                     cb_filepath = util.save_codebook_file(cb_data, self.object.pk)
                     self.object.codebook_file = cb_filepath

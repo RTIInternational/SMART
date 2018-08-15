@@ -5,6 +5,7 @@ from core.management.commands.seed import (SEED_FILE_PATH)
 from core.models import Queue
 from core.util import md5_hash
 
+
 def assert_obj_exists(model, filter_):
     '''
     See if an instance of the given model matching the given filter
@@ -24,14 +25,14 @@ def assert_redis_matches_db(test_redis):
         data_count = q.data.count()
 
         if data_count > 0:
-            assert test_redis.exists('queue:'+str(q.pk))
-            assert test_redis.llen('queue:'+str(q.pk)) == data_count
-            assert test_redis.exists('set:'+str(q.pk))
-            assert test_redis.scard('set:'+str(q.pk)) == data_count
+            assert test_redis.exists('queue:' + str(q.pk))
+            assert test_redis.llen('queue:' + str(q.pk)) == data_count
+            assert test_redis.exists('set:' + str(q.pk))
+            assert test_redis.scard('set:' + str(q.pk)) == data_count
         else:
             # Empty lists don't exist in redis
-            assert not test_redis.exists('queue:'+str(q.pk))
-            assert not test_redis.exists('set:'+str(q.pk))
+            assert not test_redis.exists('queue:' + str(q.pk))
+            assert not test_redis.exists('set:' + str(q.pk))
 
 
 def read_test_data_api(file=SEED_FILE_PATH):
@@ -41,6 +42,7 @@ def read_test_data_api(file=SEED_FILE_PATH):
     '''
     with open(file) as f:
         return [{'Text': d['Text'], 'Label': d['Label']} for d in csv.DictReader(f)]
+
 
 def read_test_data_backend(file=SEED_FILE_PATH):
     '''
