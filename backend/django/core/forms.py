@@ -10,7 +10,6 @@ from io import StringIO
 from core.util import md5_hash
 
 
-
 def clean_data_helper(data, supplied_labels):
     ALLOWED_TYPES = [
         'text/csv',
@@ -27,36 +26,39 @@ def clean_data_helper(data, supplied_labels):
     ALLOWED_HEADER_ID = ['ID', 'Text', 'Label']
     MAX_FILE_SIZE = 4 * 1000 * 1000 * 1000
 
-
     if data.size > MAX_FILE_SIZE:
-        raise ValidationError("File is too large.  Received {0} but max size is {1}."\
+        raise ValidationError("File is too large.  Received {0} but max size is {1}."
                               .format(data.size, MAX_FILE_SIZE))
 
     try:
         if data.content_type == 'text/tab-separated-values':
-            data = pd.read_csv(StringIO(data.read().decode('utf8','ignore')), sep='\t').dropna(axis=0, how="all")
+            data = pd.read_csv(StringIO(data.read().decode('utf8', 'ignore')),
+                               sep='\t').dropna(axis=0, how="all")
         elif data.content_type == 'text/csv':
-            data = pd.read_csv(StringIO(data.read().decode('utf8','ignore'))).dropna(axis=0, how="all")
+            data = pd.read_csv(StringIO(data.read().decode('utf8', 'ignore'))
+                               ).dropna(axis=0, how="all")
         elif data.content_type.startswith('application/vnd') and data.name.endswith('.csv'):
-            data = pd.read_csv(StringIO(data.read().decode('utf8','ignore'))).dropna(axis=0, how="all")
+            data = pd.read_csv(StringIO(data.read().decode('utf8', 'ignore'))
+                               ).dropna(axis=0, how="all")
         elif data.content_type.startswith('application/vnd') and data.name.endswith('.xlsx'):
             data = pd.read_excel(data).dropna(axis=0, how="all")
         else:
-            raise ValidationError("File type is not supported.  Received {0} but only {1} are supported."\
-                              .format(data.content_type, ', '.join(ALLOWED_TYPES)))
+            raise ValidationError("File type is not supported.  Received {0} but only {1} are supported."
+                                  .format(data.content_type, ', '.join(ALLOWED_TYPES)))
     except ParserError:
         # If there was an error while parsing then raise invalid file error
         raise ValidationError("Unable to read file.  Please ensure it passes all the requirments")
     except UnicodeDecodeError:
         # Some files are not in utf-8, let's just reject those.
-        raise ValidationError("Unable to read the file.  Please ensure that the file is encoded in UTF-8.")
+        raise ValidationError(
+            "Unable to read the file.  Please ensure that the file is encoded in UTF-8.")
 
     if (len(data.columns) != len(ALLOWED_HEADER)) and len(data.columns) != len(ALLOWED_HEADER_ID):
-        raise ValidationError("File has incorrect number of columns.  Received {0} but expected {1} or {2}."\
+        raise ValidationError("File has incorrect number of columns.  Received {0} but expected {1} or {2}."
                               .format(len(data.columns), len(ALLOWED_HEADER), len(ALLOWED_HEADER_ID)))
 
     if (data.columns.tolist() != ALLOWED_HEADER) and (data.columns.tolist() != ALLOWED_HEADER_ID):
-        raise ValidationError("File headers are incorrect.  Received {0} but header must be {1} or {2}."\
+        raise ValidationError("File headers are incorrect.  Received {0} but header must be {1} or {2}."
                               .format(', '.join(data.columns), ', '.join(ALLOWED_HEADER), ', '.join(ALLOWED_HEADER_ID)))
 
     if len(data) < 1:
@@ -77,21 +79,22 @@ def clean_data_helper(data, supplied_labels):
         )
 
     if len(data.columns) == len(ALLOWED_HEADER_ID):
-        #there should be no null values
+        # there should be no null values
         if data["ID"].isnull().sum() > 0:
             raise ValidationError("Unique ID field cannot have missing values.")
 
         data_lens = data["ID"].astype(str).apply(lambda x: len(x))
-        #check that the ID follow the character limit
-        if np.any(np.greater(data_lens,[128]*len(data_lens))):
+        # check that the ID follow the character limit
+        if np.any(np.greater(data_lens, [128] * len(data_lens))):
             raise ValidationError("Unique ID should not be greater than 128 characters.")
 
         data["id_hash"] = data["ID"].astype(str).apply(md5_hash)
-        #they have an id column, check for duplicates
+        # they have an id column, check for duplicates
         if len(data["id_hash"].tolist()) > len(data["id_hash"].unique()):
             raise ValidationError("Unique ID provided contains duplicates.")
 
     return data
+
 
 def cleanCodebookDataHelper(data):
     if not (data.content_type == "application/pdf"):
@@ -116,12 +119,11 @@ class ProjectUpdateForm(forms.ModelForm):
     def clean_data(self):
         data = self.cleaned_data.get('data', False)
         labels = self.project_labels
-        cb_data = self.cleaned_data.get('cb_data',False)
+        cb_data = self.cleaned_data.get('cb_data', False)
         if data:
             return clean_data_helper(data, labels)
         if cb_data:
             return cleanCodebookDataHelper(cb_data)
-
 
 
 class LabelForm(forms.ModelForm):
@@ -132,10 +134,11 @@ class LabelForm(forms.ModelForm):
     name = forms.CharField()
     description = forms.CharField(required=False, initial="", widget=Textarea())
 
+
 class LabelDescriptionForm(forms.ModelForm):
     class Meta:
         model = Label
-        fields = ['name','description']
+        fields = ['name', 'description']
 
     name = forms.CharField(disabled=True)
     description = forms.CharField(required=False, widget=Textarea())
@@ -143,7 +146,6 @@ class LabelDescriptionForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.action = kwargs.pop('action', None)
         super(LabelDescriptionForm, self).__init__(*args, **kwargs)
-
 
 
 class ProjectPermissionsForm(forms.ModelForm):
@@ -159,14 +161,20 @@ class ProjectPermissionsForm(forms.ModelForm):
         # If creator is set, then the project is being updated and we want to make sure to exclude creator
         # If creator is not set, then project is being created and we want to make sure to exclude the current user (as they are the creator)
         if self.creator:
-            self.fields['profile']._set_queryset(self.fields['profile'].choices.queryset.exclude(user__profile=self.creator))
+            self.fields['profile']._set_queryset(
+                self.fields['profile'].choices.queryset.exclude(user__profile=self.creator))
         else:
-            self.fields['profile']._set_queryset(self.fields['profile'].choices.queryset.exclude(user__profile=self.profile))
+            self.fields['profile']._set_queryset(
+                self.fields['profile'].choices.queryset.exclude(user__profile=self.profile))
 
 
-LabelFormSet = forms.inlineformset_factory(Project, Label, form=LabelForm, min_num=2, validate_min=True, extra=0, can_delete=True)
-LabelDescriptionFormSet = forms.inlineformset_factory(Project, Label, form=LabelDescriptionForm, can_delete=False, extra=0)
-PermissionsFormSet = forms.inlineformset_factory(Project, ProjectPermissions, form=ProjectPermissionsForm, extra=1, can_delete=True)
+LabelFormSet = forms.inlineformset_factory(
+    Project, Label, form=LabelForm, min_num=2, validate_min=True, extra=0, can_delete=True)
+LabelDescriptionFormSet = forms.inlineformset_factory(
+    Project, Label, form=LabelDescriptionForm, can_delete=False, extra=0)
+PermissionsFormSet = forms.inlineformset_factory(
+    Project, ProjectPermissions, form=ProjectPermissionsForm, extra=1, can_delete=True)
+
 
 class ProjectWizardForm(forms.ModelForm):
     class Meta:
@@ -177,12 +185,12 @@ class ProjectWizardForm(forms.ModelForm):
 class AdvancedWizardForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ['learning_method','percentage_irr','num_users_irr', 'batch_size', 'classifier']
+        fields = ['learning_method', 'percentage_irr', 'num_users_irr', 'batch_size', 'classifier']
 
     use_active_learning = forms.BooleanField(initial=True, required=False)
     active_l_choices = copy.deepcopy(Project.ACTIVE_L_CHOICES)
-    #remove random from the options
-    active_l_choices.remove(("random","Randomly (No Active Learning)"))
+    # remove random from the options
+    active_l_choices.remove(("random", "Randomly (No Active Learning)"))
     learning_method = forms.ChoiceField(
         widget=RadioSelect(), choices=active_l_choices,
         initial="least confident", required=False
@@ -205,11 +213,11 @@ class AdvancedWizardForm(forms.ModelForm):
         use_irr = self.cleaned_data.get("use_irr")
         use_model = self.cleaned_data.get("use_model")
 
-        #if they are not using active learning, the selection method is random
+        # if they are not using active learning, the selection method is random
         if not use_active_learning:
             self.cleaned_data['learning_method'] = 'random'
 
-        #if they are not using a model, they cannot use active learning
+        # if they are not using a model, they cannot use active learning
         if not use_model:
             self.cleaned_data['classifier'] = None
             self.cleaned_data['learning_method'] = 'random'
@@ -232,6 +240,7 @@ class DataWizardForm(forms.Form):
         data = self.cleaned_data.get('data', False)
         labels = self.supplied_labels
         return clean_data_helper(data, labels)
+
 
 class CodeBookWizardForm(forms.Form):
     data = forms.FileField(required=False)

@@ -24,4 +24,6 @@ def proj_permission_level(project, profile):
         return 1
     else:
         return 0
+
+
 proj_permission_level = register.filter('proj_permission_level', proj_permission_level)

@@ -17,10 +17,12 @@ from core.util import assign_datum, fill_queue, get_assignments
 from django.contrib.auth import get_user_model
 AuthUser = get_user_model()
 
-# Need a hashable dict so we can put them in a set
+
 class HashableDict(dict):
+    # Need a hashable dict so we can put them in a set
     def __hash__(self):
         return hash(frozenset(self))
+
 
 def subset_keys(dict_, keys):
     '''
@@ -74,8 +76,9 @@ def compare_get_response(response, expected, significant_keys):
 
     assert_collections_equal(significant_expected, significant_response)
 
-def sign_in_and_fill_queue(project, test_queue, client, admin_client = None):
-    fill_queue(test_queue,'random')
+
+def sign_in_and_fill_queue(project, test_queue, client, admin_client=None):
+    fill_queue(test_queue, 'random')
 
     if admin_client is not None:
         admin_client.login(username=SEED_USERNAME2, password=SEED_PASSWORD2)
@@ -87,9 +90,7 @@ def sign_in_and_fill_queue(project, test_queue, client, admin_client = None):
         admin_profile = None
     client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
 
-
     client_profile = Profile.objects.get(user__username=SEED_USERNAME)
-
 
     ProjectPermissions.objects.create(profile=client_profile,
                                       project=project,
@@ -97,78 +98,86 @@ def sign_in_and_fill_queue(project, test_queue, client, admin_client = None):
 
     return client_profile, admin_profile
 
+
 def test_get_projects(seeded_database, admin_client):
     response = admin_client.get('/api/projects/')
-    compare_get_response(response, [{ 'name': SEED_PROJECT }], ['name'])
+    compare_get_response(response, [{'name': SEED_PROJECT}], ['name'])
+
 
 def test_get_users(seeded_database, admin_client):
     response = admin_client.get('/api/users/')
     compare_get_response(response, [{}], [])
 
+
 def test_get_auth_users(seeded_database, admin_client):
     response = admin_client.get('/api/auth_users/')
     compare_get_response(response, [
-        { 'username': SEED_USERNAME, 'email': SEED_EMAIL },
-        { 'username': SEED_USERNAME2, 'email': SEED_EMAIL },
+        {'username': SEED_USERNAME, 'email': SEED_EMAIL},
+        {'username': SEED_USERNAME2, 'email': SEED_EMAIL},
         # Special user created for the admin_client to run tests
-        { 'username': 'admin', 'email': 'admin@example.com' }
+        {'username': 'admin', 'email': 'admin@example.com'}
     ], ['username', 'email'])
+
 
 def test_login(seeded_database, client, db):
     assert client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
 
+
 def test_get_labels(seeded_database, admin_client):
     response = admin_client.get('/api/labels/')
     compare_get_response(response, [
-        { 'name': label } for label in SEED_LABELS
+        {'name': label} for label in SEED_LABELS
     ], ['name'])
+
 
 def test_get_data(seeded_database, admin_client):
     expected = read_test_data_api()
     expected = [{'text': x['Text']} for x in expected]
 
     assert SmartPagination.max_page_size >= len(expected), \
-            "SmartPagination's max_page_size setting must be larger than the " \
-            "size of the sample dataset for this test to run properly."
+        "SmartPagination's max_page_size setting must be larger than the " \
+        "size of the sample dataset for this test to run properly."
 
     response = admin_client.get('/api/data/?page_size={}'.format(len(expected)))
     compare_get_response(response, expected, ['text'])
+
 
 def test_get_label_history(seeded_database, admin_client, client, test_project_data, test_queue, test_labels, test_admin_queue, test_irr_queue):
     '''This tests the function that returns the elements
     that user has already labeled'''
     project = test_project_data
-    client_profile, admin_profile = sign_in_and_fill_queue(project, test_queue, client, admin_client)
-    #before anything has been labeled, the history table should be empty
-    response = admin_client.get('/api/get_label_history/'+str(project.pk)+'/')
+    client_profile, admin_profile = sign_in_and_fill_queue(
+        project, test_queue, client, admin_client)
+    # before anything has been labeled, the history table should be empty
+    response = admin_client.get('/api/get_label_history/' + str(project.pk) + '/')
     assert response.json()['data'] == []
 
-    #skip an item. Should still be empty
+    # skip an item. Should still be empty
     data = get_assignments(client_profile, project, 2)
     datum = data[0]
     assert datum is not None
-    response = client.post('/api/skip_data/'+str(datum.pk)+'/')
+    response = client.post('/api/skip_data/' + str(datum.pk) + '/')
     assert 'error' not in response.json() and 'detail' not in response.json()
 
-    response = client.get('/api/get_label_history/'+str(project.pk)+'/')
+    response = client.get('/api/get_label_history/' + str(project.pk) + '/')
     assert response.json()['data'] == []
 
-    #have one user label something. Call label history on two users.
+    # have one user label something. Call label history on two users.
     request_info = {
-    "labelID": test_labels[0].pk,
-    "labeling_time": 3
+        "labelID": test_labels[0].pk,
+        "labeling_time": 3
     }
     datum = data[1]
-    response = client.post('/api/annotate_data/'+str(datum.pk)+'/', request_info)
+    response = client.post('/api/annotate_data/' + str(datum.pk) + '/', request_info)
     assert 'error' not in response.json() and 'detail' not in response.json()
 
-    response_client = client.get('/api/get_label_history/'+str(project.pk)+'/')
+    response_client = client.get('/api/get_label_history/' + str(project.pk) + '/')
     assert response_client.json()['data'] != []
 
-    response_admin = admin_client.get('/api/get_label_history/'+str(project.pk)+'/')
+    response_admin = admin_client.get('/api/get_label_history/' + str(project.pk) + '/')
     assert response_admin.json()['data'] == []
 
-    #the label should be in the correct person's history
+    # the label should be in the correct person's history
     response_data = response_client.json()['data'][0]
     assert response_data["id"] == datum.pk
     assert response_data["labelID"] == test_labels[0].pk
@@ -176,21 +185,21 @@ def test_get_label_history(seeded_database, admin_client, client, test_project_d
 
 def test_annotate_data(seeded_database, client, test_project_data, test_queue, test_labels, test_admin_queue, test_irr_queue):
     '''This tests the basic ability to annotate a datum'''
-    #get a datum from the queue
+    # get a datum from the queue
     project = test_project_data
-    fill_queue(test_queue,'random')
+    fill_queue(test_queue, 'random')
     request_info = {
-    "labelID": test_labels[0].pk,
-    "labeling_time": 3
+        "labelID": test_labels[0].pk,
+        "labeling_time": 3
     }
     permission_message = 'Account disabled by administrator.  Please contact project owner for details'
-    #call annotate data without the user having permission. Check that
-    #the data is not annotated and the response has an error.
+    # call annotate data without the user having permission. Check that
+    # the data is not annotated and the response has an error.
     client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
     client_profile = Profile.objects.get(user__username=SEED_USERNAME)
 
     data = get_assignments(client_profile, project, 1)
-    response = client.post('/api/annotate_data/'+str(data[0].pk)+'/', request_info)
+    response = client.post('/api/annotate_data/' + str(data[0].pk) + '/', request_info)
     assert 'detail' in response.json() and permission_message in response.json()['detail']
 
     assert DataLabel.objects.filter(data=data[0]).count() == 0
@@ -198,113 +207,117 @@ def test_annotate_data(seeded_database, client, test_project_data, test_queue, t
                                       project=project,
                                       permission='CODER')
 
-    #give the user permission and call annotate again
-    #The data should be labeled and in the proper places
-    #check that the response was {} (no error)
-    response = client.post('/api/annotate_data/'+str(data[0].pk)+'/', request_info)
+    # give the user permission and call annotate again
+    # The data should be labeled and in the proper places
+    # check that the response was {} (no error)
+    response = client.post('/api/annotate_data/' + str(data[0].pk) + '/', request_info)
     assert 'error' not in response.json() and 'detail' not in response.json()
     assert DataLabel.objects.filter(data=data[0]).count() == 1
     assert DataQueue.objects.filter(data=data[0]).count() == 0
+
 
 def test_skip_data(seeded_database, client, test_project_data, test_queue, test_irr_queue, test_labels, test_admin_queue):
     '''
     This tests that the skip data api works
     '''
     project = test_project_data
-    fill_queue(test_queue,'random')
+    fill_queue(test_queue, 'random')
     permission_message = 'Account disabled by administrator.  Please contact project owner for details'
-    #call skip data without the user having permission. Check that
-    #the data is not in admin and the response has an error.
+    # call skip data without the user having permission. Check that
+    # the data is not in admin and the response has an error.
     client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
     client_profile = Profile.objects.get(user__username=SEED_USERNAME)
 
     data = get_assignments(client_profile, project, 1)
-    response = client.post('/api/skip_data/'+str(data[0].pk)+'/')
+    response = client.post('/api/skip_data/' + str(data[0].pk) + '/')
     assert 'detail' in response.json() and permission_message in response.json()['detail']
 
-    assert DataQueue.objects.filter(data=data[0], queue = test_queue).count() == 1
-    assert DataQueue.objects.filter(data=data[0], queue = test_admin_queue).count() == 0
+    assert DataQueue.objects.filter(data=data[0], queue=test_queue).count() == 1
+    assert DataQueue.objects.filter(data=data[0], queue=test_admin_queue).count() == 0
     ProjectPermissions.objects.create(profile=client_profile,
                                       project=project,
                                       permission='CODER')
 
-    #have someone skip something with permission. Should
-    #be in admin queue, not in normal queue, not in datalabel
-    response = client.post('/api/skip_data/'+str(data[0].pk)+'/')
+    # have someone skip something with permission. Should
+    # be in admin queue, not in normal queue, not in datalabel
+    response = client.post('/api/skip_data/' + str(data[0].pk) + '/')
     assert 'error' not in response.json() and 'detail' not in response.json()
 
-    assert DataQueue.objects.filter(data=data[0], queue = test_queue).count() == 0
-    assert DataQueue.objects.filter(data=data[0], queue = test_admin_queue).count() == 1
+    assert DataQueue.objects.filter(data=data[0], queue=test_queue).count() == 0
+    assert DataQueue.objects.filter(data=data[0], queue=test_admin_queue).count() == 1
     assert DataLabel.objects.filter(data=data[0]).count() == 0
+
 
 def test_modify_label(seeded_database, client, test_project_data, test_queue, test_labels, test_irr_queue, test_admin_queue):
     '''
     This tests the history table's ability to modify a label
     '''
     request_info = {
-    "labelID": test_labels[0].pk,
-    "labeling_time": 3
+        "labelID": test_labels[0].pk,
+        "labeling_time": 3
     }
     project = test_project_data
     client_profile, admin_profile = sign_in_and_fill_queue(project, test_queue, client)
-    #have a user annotate some data
+    # have a user annotate some data
     data = get_assignments(client_profile, project, 1)[0]
     assert data is not None
-    response = client.post('/api/annotate_data/'+str(data.pk)+'/', request_info)
+    response = client.post('/api/annotate_data/' + str(data.pk) + '/', request_info)
     assert DataLabel.objects.filter(data=data).count() == 1
-    #call modify label to change it to the same thing
+    # call modify label to change it to the same thing
     change_info = {
-    "dataID": data.pk,
-    "oldLabelID": test_labels[0].pk,
-    "labelID": test_labels[0].pk
+        "dataID": data.pk,
+        "oldLabelID": test_labels[0].pk,
+        "labelID": test_labels[0].pk
     }
-    response = client.post('/api/modify_label/'+str(data.pk)+'/',change_info).json()
+    response = client.post('/api/modify_label/' + str(data.pk) + '/', change_info).json()
     assert response != {}
-    #check that there is an error
+    # check that there is an error
     assert 'error' in response and 'Invalid. The new label should be different' in response['error']
-    #call modify label to change it to something else
+    # call modify label to change it to something else
     change_info = {
-    "dataID": data.pk,
-    "oldLabelID": test_labels[0].pk,
-    "labelID": test_labels[1].pk
+        "dataID": data.pk,
+        "oldLabelID": test_labels[0].pk,
+        "labelID": test_labels[1].pk
     }
-    response = client.post('/api/modify_label/'+str(data.pk)+'/',change_info)
+    response = client.post('/api/modify_label/' + str(data.pk) + '/', change_info)
     assert 'error' not in response.json() and 'detail' not in response.json()
-    #check that the label is updated and it's in the correct places
-    #check that there are no duplicate labels
+    # check that the label is updated and it's in the correct places
+    # check that there are no duplicate labels
     assert DataLabel.objects.filter(data=data).count() == 1
     assert DataLabel.objects.get(data=data).label.pk == test_labels[1].pk
-    #check it's in change log
+    # check it's in change log
     assert LabelChangeLog.objects.filter(data=data).count() == 1
+
 
 def test_modify_label_to_skip(seeded_database, client, test_project_data, test_queue, test_irr_queue, test_labels, test_admin_queue):
     '''This tests the history table's ability to change labeled items
     to skipped items.'''
     request_info = {
-    "labelID": test_labels[0].pk,
-    "labeling_time": 3
+        "labelID": test_labels[0].pk,
+        "labeling_time": 3
     }
     project = test_project_data
     client_profile, admin_profile = sign_in_and_fill_queue(project, test_queue, client)
-    #have a user annotate some data
+    # have a user annotate some data
     data = get_assignments(client_profile, project, 1)[0]
     assert data is not None
-    response = client.post('/api/annotate_data/'+str(data.pk)+'/', request_info)
+    response = client.post('/api/annotate_data/' + str(data.pk) + '/', request_info)
     assert DataLabel.objects.filter(data=data).count() == 1
 
-    #Call the change to skip function. Should now be in admin table, not be
-    #in history table.
+    # Call the change to skip function. Should now be in admin table, not be
+    # in history table.
     change_info = {
-    "dataID": data.pk,
-    "oldLabelID": test_labels[0].pk
+        "dataID": data.pk,
+        "oldLabelID": test_labels[0].pk
     }
-    response = client.post('/api/modify_label_to_skip/'+str(data.pk)+'/', change_info)
+    response = client.post('/api/modify_label_to_skip/' + str(data.pk) + '/', change_info)
     assert 'error' not in response.json() and 'detail' not in response.json()
 
     assert DataLabel.objects.filter(data=data).count() == 0
     assert DataQueue.objects.filter(queue=test_admin_queue).count() == 1
-    #check it's in change log
-    assert LabelChangeLog.objects.filter(data=data,new_label="skip").count() == 1
+    # check it's in change log
+    assert LabelChangeLog.objects.filter(data=data, new_label="skip").count() == 1
+
 
 def test_skew_label(seeded_database, admin_client, client, test_project_data, test_queue, test_labels, test_irr_queue, test_admin_queue):
     '''
@@ -312,31 +325,32 @@ def test_skew_label(seeded_database, admin_client, client, test_project_data, te
     unnasigned data and labels it.
     '''
     request_info = {
-    "labelID": test_labels[0].pk,
-    "labeling_time": 3
+        "labelID": test_labels[0].pk,
+        "labeling_time": 3
     }
     project = test_project_data
     admin_client.login(username=SEED_USERNAME2, password=SEED_PASSWORD2)
     admin_profile = Profile.objects.get(user__username=SEED_USERNAME2)
     ProjectPermissions.objects.create(profile=admin_profile,
-                                          project=project,
-                                          permission='ADMIN')
+                                      project=project,
+                                      permission='ADMIN')
     client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
     client_profile = Profile.objects.get(user__username=SEED_USERNAME)
     ProjectPermissions.objects.create(profile=client_profile,
                                       project=project,
                                       permission='CODER')
 
-
-    #have a regular coder try and label things. Should not be allowed.
+    # have a regular coder try and label things. Should not be allowed.
     data = Data.objects.filter(project=project)[0]
     assert data is not None
-    response = client.post('/api/label_skew_label/'+str(data.pk)+'/', request_info)
-    assert 'detail' in response.json() and 'Invalid permission. Must be an admin' in response.json()['detail']
-    #have an admin try and label. Should be allowed.
-    response = admin_client.post('/api/label_skew_label/'+str(data.pk)+'/', request_info)
+    response = client.post('/api/label_skew_label/' + str(data.pk) + '/', request_info)
+    assert 'detail' in response.json() and 'Invalid permission. Must be an admin' in response.json()[
+        'detail']
+    # have an admin try and label. Should be allowed.
+    response = admin_client.post('/api/label_skew_label/' + str(data.pk) + '/', request_info)
     assert 'error' not in response.json() and 'detail' not in response.json()
     assert DataLabel.objects.filter(data=data).count() == 1
+
 
 def test_get_irr_metrics(seeded_database, client, admin_client, test_project_half_irr_data, test_half_irr_all_queues, test_labels_half_irr):
     '''
@@ -344,7 +358,7 @@ def test_get_irr_metrics(seeded_database, client, admin_client, test_project_hal
     Note: the exact values are checked in the util tests.
     '''
 
-    #sign in users
+    # sign in users
     labels = test_labels_half_irr
     normal_queue, admin_queue, irr_queue = test_half_irr_all_queues
     project = test_project_half_irr_data
@@ -352,49 +366,51 @@ def test_get_irr_metrics(seeded_database, client, admin_client, test_project_hal
     client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
     client_profile = Profile.objects.get(user__username=SEED_USERNAME)
     ProjectPermissions.objects.create(profile=client_profile,
-                                          project=project,
-                                          permission='CODER')
+                                      project=project,
+                                      permission='CODER')
     admin_client.login(username=SEED_USERNAME2, password=SEED_PASSWORD2)
     admin_profile = Profile.objects.get(user__username=SEED_USERNAME2)
     ProjectPermissions.objects.create(profile=admin_profile,
-                                          project=project,
-                                          permission='ADMIN')
+                                      project=project,
+                                      permission='ADMIN')
 
     third_profile = Profile.objects.get(user__username="test_profile")
-    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size )
+    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size)
 
-    #non-admin should not be able to call the test
-    response = client.get('/api/get_irr_metrics/'+str(project.pk)+'/')
-    assert 403 == response.status_code and "Invalid permission. Must be an admin" in str(response.content)
+    # non-admin should not be able to call the test
+    response = client.get('/api/get_irr_metrics/' + str(project.pk) + '/')
+    assert 403 == response.status_code and "Invalid permission. Must be an admin" in str(
+        response.content)
 
-    #initially, should have no irr data processed
-    response = admin_client.get('/api/get_irr_metrics/'+str(project.pk)+'/').json()
+    # initially, should have no irr data processed
+    response = admin_client.get('/api/get_irr_metrics/' + str(project.pk) + '/').json()
     assert 'error' not in response and 'detail' not in response
     assert 'kappa' in response and response['kappa'] == "No irr data processed"
     assert 'percent agreement' in response and response['percent agreement'] == "No irr data processed"
 
-    #have each person label three irr data
+    # have each person label three irr data
     data = get_assignments(client_profile, project, 3)
     data2 = get_assignments(admin_profile, project, 3)
     for i in range(3):
-        response = client.post('/api/annotate_data/'+str(data[i].pk)+'/', {
-        "labelID": labels[i].pk,
-        "labeling_time": 3
-        })
+        response = client.post('/api/annotate_data/' + str(data[i].pk) + '/', {
+                               "labelID": labels[i].pk,
+                               "labeling_time": 3
+                               })
         assert 'error' not in response.json() and 'detail' not in response.json()
-        response = admin_client.post('/api/annotate_data/'+str(data2[i].pk)+'/', {
-        "labelID": labels[(i+1)%3].pk,
-        "labeling_time": 3
-        })
+        response = admin_client.post('/api/annotate_data/' + str(data2[i].pk) + '/', {
+                                     "labelID": labels[(i + 1) % 3].pk,
+                                     "labeling_time": 3
+                                     })
         assert 'error' not in response.json()
 
-    response = admin_client.get('/api/get_irr_metrics/'+str(project.pk)+'/').json()
-    #the percent agreement should be a number between 0 and 100 with a %
+    response = admin_client.get('/api/get_irr_metrics/' + str(project.pk) + '/').json()
+    # the percent agreement should be a number between 0 and 100 with a %
     assert 'percent agreement' in response
     percent = float(response['percent agreement'][:len(response['percent agreement']) - 1])
     assert percent <= 100 and percent >= 0 and '%' == response['percent agreement'][-1]
-    #kappa should be a value between -1 and 1
-    assert 'kappa' in response and response['kappa'] >=-1 and response['kappa'] <= 1
+    # kappa should be a value between -1 and 1
+    assert 'kappa' in response and response['kappa'] >= -1 and response['kappa'] <= 1
+
 
 def test_percent_agree_table(seeded_database, client, admin_client, test_project_all_irr_data, test_all_irr_all_queues, test_labels_all_irr):
     '''
@@ -408,50 +424,54 @@ def test_percent_agree_table(seeded_database, client, admin_client, test_project
     client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
     client_profile = Profile.objects.get(user__username=SEED_USERNAME)
     ProjectPermissions.objects.create(profile=client_profile,
-                                          project=project,
-                                          permission='CODER')
+                                      project=project,
+                                      permission='CODER')
     admin_client.login(username=SEED_USERNAME2, password=SEED_PASSWORD2)
     admin_profile = Profile.objects.get(user__username=SEED_USERNAME2)
     ProjectPermissions.objects.create(profile=admin_profile,
-                                          project=project,
-                                          permission='ADMIN')
+                                      project=project,
+                                      permission='ADMIN')
     third_profile = Profile.objects.get(user__username="test_profile")
-    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size )
+    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size)
 
-    #non-admin should not be able to call the test
-    response = client.get('/api/perc_agree_table/'+str(project.pk)+'/')
-    assert 403 == response.status_code and "Invalid permission. Must be an admin" in str(response.content)
+    # non-admin should not be able to call the test
+    response = client.get('/api/perc_agree_table/' + str(project.pk) + '/')
+    assert 403 == response.status_code and "Invalid permission. Must be an admin" in str(
+        response.content)
 
     data = get_assignments(client_profile, project, 15)
     data2 = get_assignments(admin_profile, project, 15)
     for i in range(15):
-        response = admin_client.post('/api/annotate_data/'+str(data[i].pk)+'/', {
-        "labelID": labels[i%3].pk,
-        "labeling_time": 3
-        })
+        response = admin_client.post('/api/annotate_data/' + str(data[i].pk) + '/', {
+                                     "labelID": labels[i % 3].pk,
+                                     "labeling_time": 3
+                                     })
         assert 'error' not in response.json() and 'detail' not in response.json()
-        response = client.post('/api/annotate_data/'+str(data2[i].pk)+'/', {
-        "labelID": labels[i%3].pk,
-        "labeling_time": 3
-        })
+        response = client.post('/api/annotate_data/' + str(data2[i].pk) + '/', {
+                               "labelID": labels[i % 3].pk,
+                               "labeling_time": 3
+                               })
         assert 'error' not in response.json() and 'detail' not in response.json()
-    #check that the three user pairs are in table
-    response = admin_client.get('/api/perc_agree_table/'+str(project.pk)+'/').json()
+    # check that the three user pairs are in table
+    response = admin_client.get('/api/perc_agree_table/' + str(project.pk) + '/').json()
     assert 'data' in response
     response_frame = pd.DataFrame(response['data'])
-    #should have combination [adm, cl] [adm, u3], [cl, u3]
+    # should have combination [adm, cl] [adm, u3], [cl, u3]
     assert response_frame['First Coder'].tolist() == [SEED_USERNAME, SEED_USERNAME, SEED_USERNAME2]
-    assert response_frame['Second Coder'].tolist() == [SEED_USERNAME2, str(third_profile), str(third_profile)]
+    assert response_frame['Second Coder'].tolist(
+    ) == [SEED_USERNAME2, str(third_profile), str(third_profile)]
 
-    #check that the table has just those three combinations
+    # check that the table has just those three combinations
     assert len(response_frame) == 3
 
-    #should have "no samples" for combos with user3
-    assert response_frame.loc[response_frame['Second Coder'] == str(third_profile)]["Percent Agreement"].tolist() == ["No samples", "No samples"]
+    # should have "no samples" for combos with user3
+    assert response_frame.loc[response_frame['Second Coder'] == str(
+        third_profile)]["Percent Agreement"].tolist() == ["No samples", "No samples"]
 
-    #check that the percent agreement matches n%, n between 0 and 100
+    # check that the percent agreement matches n%, n between 0 and 100
     perc = response_frame["Percent Agreement"].tolist()[0]
-    assert float(perc[:len(perc)-1]) <= 100 and float(perc[:len(perc)-1]) >= 0
+    assert float(perc[:len(perc) - 1]) <= 100 and float(perc[:len(perc) - 1]) >= 0
+
 
 def test_heat_map_data(seeded_database, client, admin_client, test_project_all_irr_data, test_all_irr_all_queues, test_labels_all_irr):
     '''
@@ -459,7 +479,7 @@ def test_heat_map_data(seeded_database, client, admin_client, test_project_all_i
     Note: the exact values of the data are tested in util.
     '''
 
-    #sign in the users
+    # sign in the users
     labels = test_labels_all_irr
     normal_queue, admin_queue, irr_queue = test_all_irr_all_queues
     project = test_project_all_irr_data
@@ -467,81 +487,83 @@ def test_heat_map_data(seeded_database, client, admin_client, test_project_all_i
     client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
     client_profile = Profile.objects.get(user__username=SEED_USERNAME)
     ProjectPermissions.objects.create(profile=client_profile,
-                                          project=project,
-                                          permission='CODER')
+                                      project=project,
+                                      permission='CODER')
     admin_client.login(username=SEED_USERNAME2, password=SEED_PASSWORD2)
     admin_profile = Profile.objects.get(user__username=SEED_USERNAME2)
     ProjectPermissions.objects.create(profile=admin_profile,
-                                          project=project,
-                                          permission='ADMIN')
+                                      project=project,
+                                      permission='ADMIN')
     third_profile = Profile.objects.get(user__username="test_profile")
-    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size )
+    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size)
 
-    #non-admin should not be able to call the test
-    response = client.get('/api/heat_map_data/'+str(project.pk)+'/')
-    assert 403 == response.status_code and "Invalid permission. Must be an admin" in str(response.content)
+    # non-admin should not be able to call the test
+    response = client.get('/api/heat_map_data/' + str(project.pk) + '/')
+    assert 403 == response.status_code and "Invalid permission. Must be an admin" in str(
+        response.content)
 
-    #get the heatmap. Check that the list of coders and list of labels match
-    response = admin_client.get('/api/heat_map_data/'+str(project.pk)+'/').json()
+    # get the heatmap. Check that the list of coders and list of labels match
+    response = admin_client.get('/api/heat_map_data/' + str(project.pk) + '/').json()
     project_labels = [label.name for label in labels]
     project_labels.append("Skip")
     assert_collections_equal(response['labels'], project_labels)
 
     coder_dict_list = []
     for prof in [admin_profile, client_profile, third_profile]:
-        coder_dict_list.append({'name':prof.user.username, 'pk':prof.pk})
-    assert_collections_equal(response['coders'],coder_dict_list)
+        coder_dict_list.append({'name': prof.user.username, 'pk': prof.pk})
+    assert_collections_equal(response['coders'], coder_dict_list)
 
-    #check that the heatmap has all combinations of users
+    # check that the heatmap has all combinations of users
     project_coders = [admin_profile.pk, client_profile.pk, third_profile.pk]
     for user1 in project_coders:
         for user2 in project_coders:
             user_combo = str(user1) + "_" + str(user2)
             assert user_combo in response['data']
-            #check that for each combo of users there is each combo of labels
+            # check that for each combo of users there is each combo of labels
             assert len(response['data'][user_combo]) == len(project_labels)**2
             label_frame = pd.DataFrame(response['data'][user_combo])
-            label_frame["comb"] = label_frame['label1']+"_"+label_frame['label2']
+            label_frame["comb"] = label_frame['label1'] + "_" + label_frame['label2']
             comb_list = []
             for lab1 in project_labels:
                 for lab2 in project_labels:
-                    comb_list.append(lab1+"_"+lab2)
+                    comb_list.append(lab1 + "_" + lab2)
             assert_collections_equal(label_frame['comb'].tolist(), comb_list)
+
 
 def test_queue_refills_after_empty(seeded_database, client, test_project_half_irr_data, test_half_irr_all_queues, test_labels_half_irr):
     '''
     This tests that the queue refills when it should.
     '''
 
-    #sign in users
+    # sign in users
     labels = test_labels_half_irr
     normal_queue, admin_queue, irr_queue = test_half_irr_all_queues
     project = test_project_half_irr_data
 
-    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size )
+    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size)
 
     client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
     client_profile = Profile.objects.get(user__username=SEED_USERNAME)
     ProjectPermissions.objects.create(profile=client_profile,
-                                          project=project,
-                                          permission='CODER')
+                                      project=project,
+                                      permission='CODER')
 
-    #get the card deck
-    response = client.get('/api/get_card_deck/'+str(project.pk)+'/').json()
+    # get the card deck
+    response = client.get('/api/get_card_deck/' + str(project.pk) + '/').json()
     assert len(response['data']) > 0
-    #label all of the cards
+    # label all of the cards
     i = 0
     for card in response['data']:
-        response = client.post('/api/annotate_data/'+str(card["pk"])+'/', {
-        "labelID": labels[i%3].pk,
-        "labeling_time": 3
-        })
-        i+=1
+        response = client.post('/api/annotate_data/' + str(card["pk"]) + '/', {
+                               "labelID": labels[i % 3].pk,
+                               "labeling_time": 3
+                               })
+        i += 1
 
-    #get the card deck again
-    response = client.get('/api/get_card_deck/'+str(project.pk)+'/').json()
+    # get the card deck again
+    response = client.get('/api/get_card_deck/' + str(project.pk) + '/').json()
 
-    #should have cards
+    # should have cards
     assert len(response['data']) > 0
 
 
@@ -549,67 +571,72 @@ def test_skip_data(seeded_database, client, test_project_half_irr_data, test_hal
     '''
     This tests that skipping works properly from the api side
     '''
-    #sign in users
+    # sign in users
     labels = test_labels_half_irr
     normal_queue, admin_queue, irr_queue = test_half_irr_all_queues
     project = test_project_half_irr_data
 
-    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size )
+    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size)
 
     client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
     client_profile = Profile.objects.get(user__username=SEED_USERNAME)
     ProjectPermissions.objects.create(profile=client_profile,
-                                          project=project,
-                                          permission='CODER')
+                                      project=project,
+                                      permission='CODER')
 
-    #get the card deck
-    response = client.get('/api/get_card_deck/'+str(project.pk)+'/').json()
+    # get the card deck
+    response = client.get('/api/get_card_deck/' + str(project.pk) + '/').json()
     assert len(response['data']) > 0
 
-    #for each card in the deck, skip it
+    # for each card in the deck, skip it
     for card in response['data']:
-        response = client.post('/api/skip_data/'+str(card["pk"])+'/')
+        response = client.post('/api/skip_data/' + str(card["pk"]) + '/')
         if card["irr_ind"]:
-            #if it was irr data, check that it is not in admin queue
-            assert DataQueue.objects.filter(data__pk=card["pk"],queue=admin_queue).count() == 0
-            assert DataQueue.objects.filter(data__pk=card["pk"],queue=irr_queue).count() == 1
-            assert AssignedData.objects.filter(data__pk=card["pk"], profile=client_profile).count() == 0
+            # if it was irr data, check that it is not in admin queue
+            assert DataQueue.objects.filter(data__pk=card["pk"], queue=admin_queue).count() == 0
+            assert DataQueue.objects.filter(data__pk=card["pk"], queue=irr_queue).count() == 1
+            assert AssignedData.objects.filter(
+                data__pk=card["pk"], profile=client_profile).count() == 0
         else:
-            #if it is not irr data, check that it is in admin queue
-            assert DataQueue.objects.filter(data__pk=card["pk"],queue=admin_queue).count() == 1
-            assert DataQueue.objects.filter(data__pk=card["pk"],queue=irr_queue).count() == 0
-            assert AssignedData.objects.filter(data__pk=card["pk"], profile=client_profile).count() == 0
+            # if it is not irr data, check that it is in admin queue
+            assert DataQueue.objects.filter(data__pk=card["pk"], queue=admin_queue).count() == 1
+            assert DataQueue.objects.filter(data__pk=card["pk"], queue=irr_queue).count() == 0
+            assert AssignedData.objects.filter(
+                data__pk=card["pk"], profile=client_profile).count() == 0
+
 
 def test_admin_label(seeded_database, admin_client, client, test_project_data, test_queue, test_labels, test_irr_queue, test_admin_queue):
     '''
     This tests the admin ability to label skipped items in the admin table
     '''
-    #fill queue. The admin queue should be empty
+    # fill queue. The admin queue should be empty
     project = test_project_data
-    client_profile, admin_profile = sign_in_and_fill_queue(project, test_queue, client, admin_client)
+    client_profile, admin_profile = sign_in_and_fill_queue(
+        project, test_queue, client, admin_client)
     assert DataQueue.objects.filter(queue=test_admin_queue).count() == 0
-    #have a normal client skip something and try to admin label. Should not
-    #be allowed
+    # have a normal client skip something and try to admin label. Should not
+    # be allowed
     data = get_assignments(client_profile, project, 1)[0]
-    response = client.post('/api/skip_data/'+str(data.pk)+'/')
+    response = client.post('/api/skip_data/' + str(data.pk) + '/')
     assert 'error' not in response.json() and 'detail' not in response.json()
 
-    payload = {'labelID':test_labels[0].pk}
-    response = client.post('/api/label_admin_label/'+str(data.pk)+'/',payload)
+    payload = {'labelID': test_labels[0].pk}
+    response = client.post('/api/label_admin_label/' + str(data.pk) + '/', payload)
 
-    assert 'detail' in response.json() and "Invalid permission. Must be an admin" in response.json()['detail']
+    assert 'detail' in response.json() and "Invalid permission. Must be an admin" in response.json()[
+        'detail']
 
-    #check datum is in proper places
+    # check datum is in proper places
     assert DataQueue.objects.filter(data=data, queue=test_admin_queue).count() == 1
     assert DataQueue.objects.filter(data=data, queue=test_queue).count() == 0
     assert DataLabel.objects.filter(data=data).count() == 0
 
-
-    #Let admin label datum. Should work. Check it is now in proper places
-    response = admin_client.post('/api/label_admin_label/'+str(data.pk)+'/',payload)
+    # Let admin label datum. Should work. Check it is now in proper places
+    response = admin_client.post('/api/label_admin_label/' + str(data.pk) + '/', payload)
     assert 'error' not in response.json() and 'detail' not in response.json()
     assert DataQueue.objects.filter(data=data, queue=test_admin_queue).count() == 0
     assert DataLabel.objects.filter(data=data).count() == 1
+
 
 def test_label_distribution(seeded_database, admin_client, client, test_project_data, test_queue, test_labels, test_irr_queue, test_admin_queue):
     '''
@@ -617,59 +644,61 @@ def test_label_distribution(seeded_database, admin_client, client, test_project_
     for the admin page
     '''
     project = test_project_data
-    client_profile, admin_profile = sign_in_and_fill_queue(project, test_queue, client, admin_client)
+    client_profile, admin_profile = sign_in_and_fill_queue(
+        project, test_queue, client, admin_client)
 
-    response = client.get('/api/label_distribution/'+str(project.pk)+'/')
-    assert 'detail' in response.json() and "Invalid permission. Must be an admin" in response.json()['detail']
-    #at the beginning, should return empty list
-    response = admin_client.get('/api/label_distribution/'+str(project.pk)+'/')
+    response = client.get('/api/label_distribution/' + str(project.pk) + '/')
+    assert 'detail' in response.json() and "Invalid permission. Must be an admin" in response.json()[
+        'detail']
+    # at the beginning, should return empty list
+    response = admin_client.get('/api/label_distribution/' + str(project.pk) + '/')
     assert len(response.json()) == 0
 
-    #have client label three things differently. Check values.
+    # have client label three things differently. Check values.
     data = get_assignments(client_profile, project, 3)
-    response = client.post('/api/annotate_data/'+str(data[0].pk)+'/',{
-    "labelID": test_labels[0].pk, "labeling_time": 3
-    })
-    response = client.post('/api/annotate_data/'+str(data[1].pk)+'/',{
-    "labelID": test_labels[1].pk, "labeling_time": 3
-    })
-    response = client.post('/api/annotate_data/'+str(data[2].pk)+'/',{
-    "labelID": test_labels[2].pk, "labeling_time": 3
-    })
+    response = client.post('/api/annotate_data/' + str(data[0].pk) + '/', {
+                           "labelID": test_labels[0].pk, "labeling_time": 3
+                           })
+    response = client.post('/api/annotate_data/' + str(data[1].pk) + '/', {
+                           "labelID": test_labels[1].pk, "labeling_time": 3
+                           })
+    response = client.post('/api/annotate_data/' + str(data[2].pk) + '/', {
+                           "labelID": test_labels[2].pk, "labeling_time": 3
+                           })
     assert DataLabel.objects.filter(data__in=data).count() == 3
 
-    response = admin_client.get('/api/label_distribution/'+str(project.pk)+'/').json()
+    response = admin_client.get('/api/label_distribution/' + str(project.pk) + '/').json()
     assert len(response) > 0
 
     for row in response:
         temp_dict = row['values']
         for label_dict in temp_dict:
-            assert label_dict['x'] in [str(admin_profile),str(client_profile), 'test_profile']
+            assert label_dict['x'] in [str(admin_profile), str(client_profile), 'test_profile']
             if label_dict['x'] == str(admin_profile) or label_dict['x'] == 'test_profile':
                 assert label_dict['y'] == 0
             else:
                 assert label_dict['y'] == 1
 
-    #Have admin label three things the same. Check values.
+    # Have admin label three things the same. Check values.
     data = get_assignments(admin_profile, project, 3)
-    response = admin_client.post('/api/annotate_data/'+str(data[0].pk)+'/',{
-    "labelID": test_labels[0].pk, "labeling_time": 3
-    })
-    response = admin_client.post('/api/annotate_data/'+str(data[1].pk)+'/',{
-    "labelID": test_labels[0].pk, "labeling_time": 3
-    })
-    response = admin_client.post('/api/annotate_data/'+str(data[2].pk)+'/',{
-    "labelID": test_labels[0].pk, "labeling_time": 3
-    })
+    response = admin_client.post('/api/annotate_data/' + str(data[0].pk) + '/', {
+                                 "labelID": test_labels[0].pk, "labeling_time": 3
+                                 })
+    response = admin_client.post('/api/annotate_data/' + str(data[1].pk) + '/', {
+                                 "labelID": test_labels[0].pk, "labeling_time": 3
+                                 })
+    response = admin_client.post('/api/annotate_data/' + str(data[2].pk) + '/', {
+                                 "labelID": test_labels[0].pk, "labeling_time": 3
+                                 })
 
-    response = admin_client.get('/api/label_distribution/'+str(project.pk)+'/').json()
+    response = admin_client.get('/api/label_distribution/' + str(project.pk) + '/').json()
     assert len(response) > 0
 
     for row in response:
         label = row['key']
         temp_dict = row['values']
         for label_dict in temp_dict:
-            assert label_dict['x'] in [str(admin_profile),str(client_profile), 'test_profile']
+            assert label_dict['x'] in [str(admin_profile), str(client_profile), 'test_profile']
             if label_dict['x'] == str(admin_profile):
                 if label == test_labels[0].name:
                     assert label_dict['y'] == 3
@@ -687,29 +716,31 @@ def test_label_distribution_inverted(seeded_database, admin_client, client, test
     the skew page. It is stacked differently than the previous.
     '''
     project = test_project_data
-    client_profile, admin_profile = sign_in_and_fill_queue(project, test_queue, client, admin_client)
+    client_profile, admin_profile = sign_in_and_fill_queue(
+        project, test_queue, client, admin_client)
 
-    #at the beginning, should return empty list
-    response = client.get('/api/label_distribution/'+str(project.pk)+'/')
-    assert 'detail' in response.json() and "Invalid permission. Must be an admin" in response.json()['detail']
+    # at the beginning, should return empty list
+    response = client.get('/api/label_distribution/' + str(project.pk) + '/')
+    assert 'detail' in response.json() and "Invalid permission. Must be an admin" in response.json()[
+        'detail']
 
-    response = admin_client.get('/api/label_distribution/'+str(project.pk)+'/')
+    response = admin_client.get('/api/label_distribution/' + str(project.pk) + '/')
     assert len(response.json()) == 0
 
-    #have client label three things differently. Check values.
+    # have client label three things differently. Check values.
     data = get_assignments(client_profile, project, 3)
-    response = client.post('/api/annotate_data/'+str(data[0].pk)+'/',{
-    "labelID": test_labels[0].pk, "labeling_time": 3
-    })
-    response = client.post('/api/annotate_data/'+str(data[1].pk)+'/',{
-    "labelID": test_labels[1].pk, "labeling_time": 3
-    })
-    response = client.post('/api/annotate_data/'+str(data[2].pk)+'/',{
-    "labelID": test_labels[2].pk, "labeling_time": 3
-    })
+    response = client.post('/api/annotate_data/' + str(data[0].pk) + '/', {
+                           "labelID": test_labels[0].pk, "labeling_time": 3
+                           })
+    response = client.post('/api/annotate_data/' + str(data[1].pk) + '/', {
+                           "labelID": test_labels[1].pk, "labeling_time": 3
+                           })
+    response = client.post('/api/annotate_data/' + str(data[2].pk) + '/', {
+                           "labelID": test_labels[2].pk, "labeling_time": 3
+                           })
     assert DataLabel.objects.filter(data__in=data).count() == 3
 
-    response = admin_client.get('/api/label_distribution_inverted/'+str(project.pk)+'/').json()
+    response = admin_client.get('/api/label_distribution_inverted/' + str(project.pk) + '/').json()
     assert len(response) > 0
 
     for row in response:
@@ -722,19 +753,19 @@ def test_label_distribution_inverted(seeded_database, admin_client, client, test
                 assert user in [str(admin_profile), 'test_profile']
                 assert label_row['y'] == 0
 
-    #Have admin label three things the same. Check values.
+    # Have admin label three things the same. Check values.
     data = get_assignments(admin_profile, project, 3)
-    response = admin_client.post('/api/annotate_data/'+str(data[0].pk)+'/',{
-    "labelID": test_labels[0].pk, "labeling_time": 3
-    })
-    response = admin_client.post('/api/annotate_data/'+str(data[1].pk)+'/',{
-    "labelID": test_labels[0].pk, "labeling_time": 3
-    })
-    response = admin_client.post('/api/annotate_data/'+str(data[2].pk)+'/',{
-    "labelID": test_labels[0].pk, "labeling_time": 3
-    })
+    response = admin_client.post('/api/annotate_data/' + str(data[0].pk) + '/', {
+                                 "labelID": test_labels[0].pk, "labeling_time": 3
+                                 })
+    response = admin_client.post('/api/annotate_data/' + str(data[1].pk) + '/', {
+                                 "labelID": test_labels[0].pk, "labeling_time": 3
+                                 })
+    response = admin_client.post('/api/annotate_data/' + str(data[2].pk) + '/', {
+                                 "labelID": test_labels[0].pk, "labeling_time": 3
+                                 })
 
-    response = admin_client.get('/api/label_distribution_inverted/'+str(project.pk)+'/').json()
+    response = admin_client.get('/api/label_distribution_inverted/' + str(project.pk) + '/').json()
     assert len(response) > 0
 
     for row in response:
@@ -751,31 +782,34 @@ def test_label_distribution_inverted(seeded_database, admin_client, client, test
             else:
                 assert label_row['y'] == 0
 
+
 def test_label_timing(seeded_database, admin_client, client, test_project_data, test_queue, test_admin_queue, test_irr_queue, test_labels):
-    #test that it starts out empty
+    # test that it starts out empty
     project = test_project_data
-    client_profile, admin_profile = sign_in_and_fill_queue(project, test_queue, client, admin_client)
+    client_profile, admin_profile = sign_in_and_fill_queue(
+        project, test_queue, client, admin_client)
 
-    response = client.get('/api/label_timing/'+str(project.pk)+'/')
-    assert 'detail' in response.json() and "Invalid permission. Must be an admin" in response.json()['detail']
+    response = client.get('/api/label_timing/' + str(project.pk) + '/')
+    assert 'detail' in response.json() and "Invalid permission. Must be an admin" in response.json()[
+        'detail']
 
-    response = admin_client.get('/api/label_timing/'+str(project.pk)+'/').json()
+    response = admin_client.get('/api/label_timing/' + str(project.pk) + '/').json()
     assert len(response['data']) == 0
     assert response['yDomain'] == 0
-    #have the client label three data with time=1
+    # have the client label three data with time=1
     data = get_assignments(client_profile, project, 3)
-    response = client.post('/api/annotate_data/'+str(data[0].pk)+'/',{
-    "labelID": test_labels[0].pk, "labeling_time": 1
-    })
-    response = client.post('/api/annotate_data/'+str(data[1].pk)+'/',{
-    "labelID": test_labels[1].pk, "labeling_time": 1
-    })
-    response = client.post('/api/annotate_data/'+str(data[2].pk)+'/',{
-    "labelID": test_labels[2].pk, "labeling_time": 1
-    })
+    response = client.post('/api/annotate_data/' + str(data[0].pk) + '/', {
+                           "labelID": test_labels[0].pk, "labeling_time": 1
+                           })
+    response = client.post('/api/annotate_data/' + str(data[1].pk) + '/', {
+                           "labelID": test_labels[1].pk, "labeling_time": 1
+                           })
+    response = client.post('/api/annotate_data/' + str(data[2].pk) + '/', {
+                           "labelID": test_labels[2].pk, "labeling_time": 1
+                           })
 
-    #check that the quartiles are all the same
-    response = admin_client.get('/api/label_timing/'+str(project.pk)+'/').json()
+    # check that the quartiles are all the same
+    response = admin_client.get('/api/label_timing/' + str(project.pk) + '/').json()
     assert len(response['data']) == 1
 
     quarts = response['data'][0]['values']
@@ -783,19 +817,19 @@ def test_label_timing(seeded_database, admin_client, client, test_project_data, 
     assert quarts['whisker_low'] == 1 and quarts['whisker_high'] == 1
     assert response['yDomain'] == 11
 
-    #have the client label three data with 0, 3, 10. Check quartiles
+    # have the client label three data with 0, 3, 10. Check quartiles
     data = get_assignments(client_profile, project, 3)
-    response = client.post('/api/annotate_data/'+str(data[0].pk)+'/',{
-    "labelID": test_labels[0].pk, "labeling_time": 0
-    })
-    response = client.post('/api/annotate_data/'+str(data[1].pk)+'/',{
-    "labelID": test_labels[1].pk, "labeling_time": 3
-    })
-    response = client.post('/api/annotate_data/'+str(data[2].pk)+'/',{
-    "labelID": test_labels[2].pk, "labeling_time": 10
-    })
+    response = client.post('/api/annotate_data/' + str(data[0].pk) + '/', {
+                           "labelID": test_labels[0].pk, "labeling_time": 0
+                           })
+    response = client.post('/api/annotate_data/' + str(data[1].pk) + '/', {
+                           "labelID": test_labels[1].pk, "labeling_time": 3
+                           })
+    response = client.post('/api/annotate_data/' + str(data[2].pk) + '/', {
+                           "labelID": test_labels[2].pk, "labeling_time": 10
+                           })
 
-    response = admin_client.get('/api/label_timing/'+str(project.pk)+'/').json()
+    response = admin_client.get('/api/label_timing/' + str(project.pk) + '/').json()
     assert len(response['data']) == 1
 
     quarts = response['data'][0]['values']
@@ -803,12 +837,12 @@ def test_label_timing(seeded_database, admin_client, client, test_project_data, 
     assert quarts['whisker_low'] == 0 and quarts['whisker_high'] == 10
     assert response['yDomain'] == 20
 
-    #have a client label with t=100. Check quartiles.
+    # have a client label with t=100. Check quartiles.
     data = get_assignments(client_profile, project, 1)
-    response = client.post('/api/annotate_data/'+str(data[0].pk)+'/',{
-    "labelID": test_labels[0].pk, "labeling_time": 100
-    })
-    response = admin_client.get('/api/label_timing/'+str(project.pk)+'/').json()
+    response = client.post('/api/annotate_data/' + str(data[0].pk) + '/', {
+                           "labelID": test_labels[0].pk, "labeling_time": 100
+                           })
+    response = admin_client.get('/api/label_timing/' + str(project.pk) + '/').json()
     quarts = response['data'][0]['values']
     assert quarts['Q1'] == 1 and quarts['Q2'] == 1 and quarts['Q3'] == 10
     assert quarts['whisker_low'] == 0 and quarts['whisker_high'] == 100
@@ -820,61 +854,65 @@ def test_model_metrics(seeded_database, admin_client, client, test_project_unlab
     This function tests the model metrics api
     '''
     project = test_project_unlabeled_and_tfidf
-    client_profile, admin_profile = sign_in_and_fill_queue(project, test_queue, client, admin_client)
-    #at the beginning, shouldn't have any
-    for metric in ['accuracy','f1','precision','recall']:
-        response = admin_client.get('/api/model_metrics/'+str(project.pk)+'/?metric='+metric).json()
+    client_profile, admin_profile = sign_in_and_fill_queue(
+        project, test_queue, client, admin_client)
+    # at the beginning, shouldn't have any
+    for metric in ['accuracy', 'f1', 'precision', 'recall']:
+        response = admin_client.get('/api/model_metrics/'
+                                    + str(project.pk) + '/?metric=' + metric).json()
         if len(response) == 1:
             assert response[0]['key'] == 'Accuracy'
         else:
             assert len(response) == len(test_labels)
         for temp_dict in response:
             assert len(temp_dict['values']) == 0
-    #label 30 items. The model should run.
+    # label 30 items. The model should run.
     data = get_assignments(client_profile, project, 30)
     for i in range(30):
-        response = client.post('/api/annotate_data/'+str(data[i].pk)+'/',{
-        "labelID": test_labels[i%3].pk, "labeling_time": 1
-        })
+        response = client.post('/api/annotate_data/' + str(data[i].pk) + '/', {
+                               "labelID": test_labels[i % 3].pk, "labeling_time": 1
+                               })
     assert DataLabel.objects.filter(data__in=data).count() == 30
 
-    #check that metrics were generated
-    #for metric in ['accuracy','f1','precision','recall']:
-    for metric in ['accuracy','f1','precision','recall']:
-        response = admin_client.get('/api/model_metrics/'+str(project.pk)+'/?metric='+metric).json()
+    # check that metrics were generated
+    # for metric in ['accuracy', 'f1', 'precision', 'recall']:
+    for metric in ['accuracy', 'f1', 'precision', 'recall']:
+        response = admin_client.get('/api/model_metrics/'
+                                    + str(project.pk) + '/?metric=' + metric).json()
         if len(response) == 1:
             assert response[0]['key'] == 'Accuracy'
         else:
             assert len(response) == len(test_labels)
 
-        #check there is some value for the first run
+        # check there is some value for the first run
         for temp_dict in response:
             assert len(temp_dict['values']) == 1
-    #do this again and check that a new metric is generated
+    # do this again and check that a new metric is generated
     fill_queue(test_queue, project.learning_method)
 
     data = get_assignments(client_profile, project, 30)
     for i in range(30):
-        response = client.post('/api/annotate_data/'+str(data[i].pk)+'/',{
-        "labelID": test_labels[i%3].pk, "labeling_time": 1
-        })
+        response = client.post('/api/annotate_data/' + str(data[i].pk) + '/', {
+                               "labelID": test_labels[i % 3].pk, "labeling_time": 1
+                               })
 
     fill_queue(test_queue, project.learning_method)
 
     data = get_assignments(client_profile, project, 10)
     for i in range(10):
-        response = client.post('/api/annotate_data/'+str(data[i].pk)+'/',{
-        "labelID": test_labels[i%3].pk, "labeling_time": 1
-        })
+        response = client.post('/api/annotate_data/' + str(data[i].pk) + '/', {
+                               "labelID": test_labels[i % 3].pk, "labeling_time": 1
+                               })
 
-    for metric in ['accuracy','f1','precision','recall']:
-        response = admin_client.get('/api/model_metrics/'+str(project.pk)+'/?metric='+metric).json()
+    for metric in ['accuracy', 'f1', 'precision', 'recall']:
+        response = admin_client.get('/api/model_metrics/'
+                                    + str(project.pk) + '/?metric=' + metric).json()
         if len(response) == 1:
             assert response[0]['key'] == 'Accuracy'
         else:
             assert len(response) == len(test_labels)
 
-        #check there is some value for the first run
+        # check there is some value for the first run
         for temp_dict in response:
             assert len(temp_dict['values']) == 2
 
@@ -884,104 +922,116 @@ def test_coded_table(seeded_database, client, admin_client, test_project_data, t
     This tests the table that displays the labeled table
     '''
     project = test_project_data
-    client_profile, admin_profile = sign_in_and_fill_queue(project, test_queue, client, admin_client)
+    client_profile, admin_profile = sign_in_and_fill_queue(
+        project, test_queue, client, admin_client)
 
-    #first, check that it is empty
-    response = client.get('/api/data_coded_table/'+str(project.pk)+'/')
-    assert 'detail' in response.json() and "Invalid permission. Must be an admin" in response.json()['detail']
+    # first, check that it is empty
+    response = client.get('/api/data_coded_table/' + str(project.pk) + '/')
+    assert 'detail' in response.json() and "Invalid permission. Must be an admin" in response.json()[
+        'detail']
 
-    response = admin_client.get('/api/data_coded_table/'+str(project.pk)+'/').json()
+    response = admin_client.get('/api/data_coded_table/' + str(project.pk) + '/').json()
     assert len(response['data']) == 0
-    #label a few things, and check that they are in the table
+    # label a few things, and check that they are in the table
     data = get_assignments(client_profile, project, 3)
     data_text = []
     label_names = []
     for i in range(3):
         data_text.append(escape(data[i].text))
         label_names.append(test_labels[i].name)
-        response = client.post('/api/annotate_data/'+str(data[i].pk)+'/',{
-        "labelID": test_labels[i].pk, "labeling_time": 1
-        })
-    response = admin_client.get('/api/data_coded_table/'+str(project.pk)+'/').json()
+        response = client.post('/api/annotate_data/' + str(data[i].pk) + '/', {
+                               "labelID": test_labels[i].pk, "labeling_time": 1
+                               })
+    response = admin_client.get('/api/data_coded_table/' + str(project.pk) + '/').json()
     assert len(response['data']) == 3
     for row in response['data']:
         assert row['Text'] in data_text
         assert row['Label'] in label_names
         assert row['Coder'] == str(client_profile)
 
+
 def test_predicted_table(seeded_database, admin_client, client, test_project_unlabeled_and_tfidf, test_queue, test_labels, test_irr_queue, test_admin_queue):
     '''
     This tests that the predicted table contains what it should
     '''
     project = test_project_unlabeled_and_tfidf
-    client_profile, admin_profile = sign_in_and_fill_queue(project, test_queue, client, admin_client)
-    #first, check that it is empty
-    response = client.get('/api/data_predicted_table/'+str(project.pk)+'/')
-    assert 'detail' in response.json() and "Invalid permission. Must be an admin" in response.json()['detail']
+    client_profile, admin_profile = sign_in_and_fill_queue(
+        project, test_queue, client, admin_client)
+    # first, check that it is empty
+    response = client.get('/api/data_predicted_table/' + str(project.pk) + '/')
+    assert 'detail' in response.json() and "Invalid permission. Must be an admin" in response.json()[
+        'detail']
 
-    response = admin_client.get('/api/data_predicted_table/'+str(project.pk)+'/').json()
+    response = admin_client.get('/api/data_predicted_table/' + str(project.pk) + '/').json()
     assert len(response['data']) == 0
 
-    #label 15 things and check that it is still empty
+    # label 15 things and check that it is still empty
     data = get_assignments(client_profile, project, 15)
     data_text = []
     label_names = []
     for i in range(15):
         data_text.append(escape(data[i].text))
-        label_names.append(test_labels[i%3].name)
-        response = client.post('/api/annotate_data/'+str(data[i].pk)+'/',{
-        "labelID": test_labels[i%3].pk, "labeling_time": 1
-        })
-    response = admin_client.get('/api/data_predicted_table/'+str(project.pk)+'/').json()
+        label_names.append(test_labels[i % 3].name)
+        response = client.post('/api/annotate_data/' + str(data[i].pk) + '/', {
+                               "labelID": test_labels[i % 3].pk, "labeling_time": 1
+                               })
+    response = admin_client.get('/api/data_predicted_table/' + str(project.pk) + '/').json()
     assert len(response['data']) == 0
-    #label 15 more things and let the predictions be created
-    #check that the unlabeled items are in the table
+    # label 15 more things and let the predictions be created
+    # check that the unlabeled items are in the table
     data = get_assignments(client_profile, project, 15)
     for i in range(15):
         data_text.append(escape(data[i].text))
-        label_names.append(test_labels[i%3].name)
-        response = client.post('/api/annotate_data/'+str(data[i].pk)+'/',{
-        "labelID": test_labels[i%3].pk, "labeling_time": 1
-        })
-    response = admin_client.get('/api/data_predicted_table/'+str(project.pk)+'/').json()
+        label_names.append(test_labels[i % 3].name)
+        response = client.post('/api/annotate_data/' + str(data[i].pk) + '/', {
+                               "labelID": test_labels[i % 3].pk, "labeling_time": 1
+                               })
+    response = admin_client.get('/api/data_predicted_table/' + str(project.pk) + '/').json()
 
-    training_set = TrainingSet.objects.get(set_number= project.get_current_training_set().set_number - 1)
+    training_set = TrainingSet.objects.get(
+        set_number=project.get_current_training_set().set_number - 1)
     model = Model.objects.get(training_set=training_set)
-    #check that the table holds the predicted data
-    assert len(response['data']) == (DataPrediction.objects.filter(data__project=project, model=model).count())//len(test_labels)
-    #check that the table has the number of unlabeled data
-    assert len(response['data']) == (Data.objects.filter(project=project).count() - DataLabel.objects.filter(data__project=project).count())
-    #check that the table does not have the labeled data
+    # check that the table holds the predicted data
+    assert len(response['data']) == (DataPrediction.objects.filter(
+        data__project=project, model=model).count()) // len(test_labels)
+    # check that the table has the number of unlabeled data
+    assert len(response['data']) == (Data.objects.filter(
+        project=project).count() - DataLabel.objects.filter(data__project=project).count())
+    # check that the table does not have the labeled data
     data_list = list(DataPrediction.objects.filter(data__project=project).values_list("data__text"))
     for d in data_text:
         assert d not in data_list
+
 
 def test_unlabeled_table(seeded_database, client, admin_client, test_project_unlabeled_and_tfidf, test_queue, test_admin_queue, test_irr_queue, test_labels):
     '''
     This tests that the unlabeled data table contains what it should
     '''
     project = test_project_unlabeled_and_tfidf
-    #first, check that it has all the unlabeled data
-    client_profile, admin_profile = sign_in_and_fill_queue(project, test_queue, client, admin_client)
-    response = client.get('/api/data_unlabeled_table/'+str(project.pk)+'/')
-    assert 'detail' in response.json() and "Invalid permission. Must be an admin" in response.json()['detail']
+    # first, check that it has all the unlabeled data
+    client_profile, admin_profile = sign_in_and_fill_queue(
+        project, test_queue, client, admin_client)
+    response = client.get('/api/data_unlabeled_table/' + str(project.pk) + '/')
+    assert 'detail' in response.json() and "Invalid permission. Must be an admin" in response.json()[
+        'detail']
 
-    response = admin_client.get('/api/data_unlabeled_table/'+str(project.pk)+'/').json()
+    response = admin_client.get('/api/data_unlabeled_table/' + str(project.pk) + '/').json()
     assert 'data' in response
-    assert len(response['data']) == Data.objects.filter(project=project).count() - DataQueue.objects.filter(data__project=project).count()
+    assert len(response['data']) == Data.objects.filter(project=project).count() - \
+        DataQueue.objects.filter(data__project=project).count()
 
-    #label something. Check it is not in the table.
+    # label something. Check it is not in the table.
     data = get_assignments(client_profile, project, 2)
-    response = client.post('/api/annotate_data/'+str(data[0].pk)+'/',{
-    "labelID": test_labels[0].pk, "labeling_time": 1
-    })
-    response = admin_client.get('/api/data_unlabeled_table/'+str(project.pk)+'/').json()
+    response = client.post('/api/annotate_data/' + str(data[0].pk) + '/', {
+                           "labelID": test_labels[0].pk, "labeling_time": 1
+                           })
+    response = admin_client.get('/api/data_unlabeled_table/' + str(project.pk) + '/').json()
     data_ids = [d["ID"] for d in response['data']]
     assert data[0].pk not in data_ids
 
-    #skip something. Check it is not in the table.
-    response = client.post('/api/skip_data/'+str(data[1].pk)+'/')
-    response = admin_client.get('/api/data_unlabeled_table/'+str(project.pk)+'/').json()
+    # skip something. Check it is not in the table.
+    response = client.post('/api/skip_data/' + str(data[1].pk) + '/')
+    response = admin_client.get('/api/data_unlabeled_table/' + str(project.pk) + '/').json()
     data_ids = [d["ID"] for d in response['data']]
     assert data[1].pk not in data_ids
 
@@ -991,85 +1041,89 @@ def test_admin_table(seeded_database, admin_client, client, test_project_data, t
     This tests that the admin table holds the correct items
     '''
     project = test_project_data
-    client_profile, admin_profile = sign_in_and_fill_queue(project, test_queue, client, admin_client)
-    #check that a non-admin can't get the table
-    response = client.get('/api/data_admin_table/'+str(project.pk)+'/').json()
+    client_profile, admin_profile = sign_in_and_fill_queue(
+        project, test_queue, client, admin_client)
+    # check that a non-admin can't get the table
+    response = client.get('/api/data_admin_table/' + str(project.pk) + '/').json()
     assert 'detail' in response and 'Invalid permission. Must be an admin' in response['detail']
 
-    response = admin_client.get('/api/data_admin_table/'+str(project.pk)+'/').json()
-    #first, check that it is empty
+    response = admin_client.get('/api/data_admin_table/' + str(project.pk) + '/').json()
+    # first, check that it is empty
     assert len(response['data']) == 0
 
-    #label something. Should still be empty.
+    # label something. Should still be empty.
     data = get_assignments(client_profile, project, 2)
-    response = client.post('/api/annotate_data/'+str(data[0].pk)+'/',{
-    "labelID": test_labels[0].pk, "labeling_time": 1
-    })
-    response = admin_client.get('/api/data_admin_table/'+str(project.pk)+'/').json()
+    response = client.post('/api/annotate_data/' + str(data[0].pk) + '/', {
+                           "labelID": test_labels[0].pk, "labeling_time": 1
+                           })
+    response = admin_client.get('/api/data_admin_table/' + str(project.pk) + '/').json()
     assert len(response['data']) == 0
 
-    #skip something. Should be in the table.
-    response = client.post('/api/skip_data/'+str(data[1].pk)+'/')
-    response = admin_client.get('/api/data_admin_table/'+str(project.pk)+'/').json()
+    # skip something. Should be in the table.
+    response = client.post('/api/skip_data/' + str(data[1].pk) + '/')
+    response = admin_client.get('/api/data_admin_table/' + str(project.pk) + '/').json()
     assert len(response['data']) == 1
     assert response['data'][0]['ID'] == data[1].pk
 
-    #admin annotate the data. Admin table should be empty again.
-    response = admin_client.post('/api/label_admin_label/'+str(data[1].pk)+'/',{
-    "labelID": test_labels[0].pk})
-    response = admin_client.get('/api/data_admin_table/'+str(project.pk)+'/').json()
+    # admin annotate the data. Admin table should be empty again.
+    response = admin_client.post('/api/label_admin_label/' + str(data[1].pk) + '/', {
+                                 "labelID": test_labels[0].pk})
+    response = admin_client.get('/api/data_admin_table/' + str(project.pk) + '/').json()
     assert len(response['data']) == 0
+
 
 def test_change_log_table(seeded_database, client, admin_client, test_project_data, test_queue, test_admin_queue, test_irr_queue, test_labels):
     '''
     This tests that the change log table records changes in the history table
     '''
     project = test_project_data
-    client_profile, admin_profile = sign_in_and_fill_queue(project, test_queue, client, admin_client)
+    client_profile, admin_profile = sign_in_and_fill_queue(
+        project, test_queue, client, admin_client)
     data = get_assignments(client_profile, project, 3)
-    #label three datum. Table should be empty.
+    # label three datum. Table should be empty.
     for i in range(3):
-        response = client.post('/api/annotate_data/'+str(data[i].pk)+'/',{
-        "labelID": test_labels[0].pk, "labeling_time": 1
-        })
-    response = client.get('/api/data_change_log_table/'+str(project.pk)+'/')
-    assert 'detail' in response.json() and "Invalid permission. Must be an admin" in response.json()['detail']
+        response = client.post('/api/annotate_data/' + str(data[i].pk) + '/', {
+                               "labelID": test_labels[0].pk, "labeling_time": 1})
+    response = client.get('/api/data_change_log_table/' + str(project.pk) + '/')
+    assert 'detail' in response.json() and "Invalid permission. Must be an admin" in response.json()[
+        'detail']
 
-    response = admin_client.get('/api/data_change_log_table/'+str(project.pk)+'/').json()
+    response = admin_client.get('/api/data_change_log_table/' + str(project.pk) + '/').json()
     assert len(response['data']) == 0
-    #change the first to itself. Should not be in the table.
+    # change the first to itself. Should not be in the table.
     change_info = {
-    "dataID": data[0].pk,
-    "oldLabelID": test_labels[0].pk,
-    "labelID": test_labels[0].pk
+        "dataID": data[0].pk,
+        "oldLabelID": test_labels[0].pk,
+        "labelID": test_labels[0].pk
     }
-    response = client.post('/api/modify_label/'+str(data[0].pk)+'/',change_info).json()
-    response = admin_client.get('/api/data_change_log_table/'+str(project.pk)+'/').json()
+    response = client.post('/api/modify_label/' + str(data[0].pk) + '/', change_info).json()
+    response = admin_client.get('/api/data_change_log_table/' + str(project.pk) + '/').json()
     assert len(response['data']) == 0
 
-    #skip the second one. Should be in the table with "skip"
+    # skip the second one. Should be in the table with "skip"
     change_info = {
-    "dataID": data[1].pk,
-    "oldLabelID": test_labels[0].pk
+        "dataID": data[1].pk,
+        "oldLabelID": test_labels[0].pk
     }
-    response = client.post('/api/modify_label_to_skip/'+str(data[1].pk)+'/', change_info)
+    response = client.post('/api/modify_label_to_skip/' + str(data[1].pk) + '/', change_info)
     assert 'error' not in response.json() and 'detail' not in response.json()
-    response = admin_client.get('/api/data_change_log_table/'+str(project.pk)+'/').json()
+    response = admin_client.get('/api/data_change_log_table/' + str(project.pk) + '/').json()
     assert len(response['data']) == 1
     assert response['data'][0]['New Label'] == 'skip'
     assert response['data'][0]['Text'] == escape(data[1].text)
 
-    #change the third one to something else. Should be in the table.
+    # change the third one to something else. Should be in the table.
     change_info = {
-    "dataID": data[2].pk,
-    "oldLabelID": test_labels[0].pk,
-    "labelID": test_labels[1].pk
+        "dataID": data[2].pk,
+        "oldLabelID": test_labels[0].pk,
+        "labelID": test_labels[1].pk
     }
-    response = client.post('/api/modify_label/'+str(data[2].pk)+'/',change_info).json()
-    response = admin_client.get('/api/data_change_log_table/'+str(project.pk)+'/').json()
+    response = client.post('/api/modify_label/' + str(data[2].pk) + '/', change_info).json()
+    response = admin_client.get('/api/data_change_log_table/' + str(project.pk) + '/').json()
     assert len(response['data']) == 2
     for item in response['data']:
-        assert item['New Label'] in ['skip',test_labels[1].name]
+        assert item['New Label'] in ['skip', test_labels[1].name]
+
 
 def test_multiple_admin_on_admin_annotation(seeded_database, client, admin_client, test_project_all_irr_data, test_all_irr_all_queues, test_labels_all_irr):
     '''
@@ -1084,48 +1138,49 @@ def test_multiple_admin_on_admin_annotation(seeded_database, client, admin_clien
     client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
     a1_prof = Profile.objects.get(user__username=SEED_USERNAME)
     ProjectPermissions.objects.create(profile=a1_prof,
-                                          project=project,
-                                          permission='ADMIN')
+                                      project=project,
+                                      permission='ADMIN')
     admin_client.login(username=SEED_USERNAME2, password=SEED_PASSWORD2)
     a2_prof = Profile.objects.get(user__username=SEED_USERNAME2)
     ProjectPermissions.objects.create(profile=a2_prof,
-                                          project=project,
-                                          permission='ADMIN')
+                                      project=project,
+                                      permission='ADMIN')
 
-    #first, have both admin sign in and enter the page
-    response = client.get('/api/enter_coding_page/'+str(project.pk)+'/').json()
-    response2 = admin_client.get('/api/enter_coding_page/'+str(project.pk)+'/').json()
+    # first, have both admin sign in and enter the page
+    response = client.get('/api/enter_coding_page/' + str(project.pk) + '/').json()
+    response2 = admin_client.get('/api/enter_coding_page/' + str(project.pk) + '/').json()
 
     assert 'error' not in response and 'error' not in response2
 
-    #the first admin should have permission to view, the second should not
-    response = client.get('/api/check_admin_in_progress/'+str(project.pk)+'/').json()
-    response2 = admin_client.get('/api/check_admin_in_progress/'+str(project.pk)+'/').json()
+    # the first admin should have permission to view, the second should not
+    response = client.get('/api/check_admin_in_progress/' + str(project.pk) + '/').json()
+    response2 = admin_client.get('/api/check_admin_in_progress/' + str(project.pk) + '/').json()
 
     assert response['available'] == 1
     assert response2['available'] == 0
 
-    #have the first admin leave the page, and the second leave then enter
-    response = client.get('/api/leave_coding_page/'+str(project.pk)+'/').json()
+    # have the first admin leave the page, and the second leave then enter
+    response = client.get('/api/leave_coding_page/' + str(project.pk) + '/').json()
 
-    response2 = admin_client.get('/api/leave_coding_page/'+str(project.pk)+'/').json()
-    response2 = admin_client.get('/api/enter_coding_page/'+str(project.pk)+'/').json()
+    response2 = admin_client.get('/api/leave_coding_page/' + str(project.pk) + '/').json()
+    response2 = admin_client.get('/api/enter_coding_page/' + str(project.pk) + '/').json()
 
-    #the second should now have permission to see the page
-    response2 = admin_client.get('/api/check_admin_in_progress/'+str(project.pk)+'/').json()
+    # the second should now have permission to see the page
+    response2 = admin_client.get('/api/check_admin_in_progress/' + str(project.pk) + '/').json()
     assert response2['available'] == 1
 
-    #have the first admin enter again. They should not be able to see the page
-    response = client.get('/api/enter_coding_page/'+str(project.pk)+'/').json()
-    response = client.get('/api/check_admin_in_progress/'+str(project.pk)+'/').json()
+    # have the first admin enter again. They should not be able to see the page
+    response = client.get('/api/enter_coding_page/' + str(project.pk) + '/').json()
+    response = client.get('/api/check_admin_in_progress/' + str(project.pk) + '/').json()
     assert response['available'] == 0
+
 
 def test_discard_data(seeded_database, client, admin_client, test_project_data, test_queue, test_irr_queue, test_labels, test_admin_queue):
     '''
     This tests that data can be discarded
     '''
     project = test_project_data
-    fill_queue(test_queue, 'random', test_irr_queue, project.percentage_irr, project.batch_size )
+    fill_queue(test_queue, 'random', test_irr_queue, project.percentage_irr, project.batch_size)
 
     admin_client.login(username=SEED_USERNAME2, password=SEED_PASSWORD2)
     admin_profile = Profile.objects.get(user__username=SEED_USERNAME2)
@@ -1140,48 +1195,47 @@ def test_discard_data(seeded_database, client, admin_client, test_project_data, 
                                       project=project,
                                       permission='CODER')
 
-    #assign a batch of data. Should be IRR and non-IRR
+    # assign a batch of data. Should be IRR and non-IRR
     data = get_assignments(client_profile, project, 30)
-    assert not all(datum.irr_ind == False for datum in data)
-    assert not all(datum.irr_ind == True for datum in data)
+    assert not all(not datum.irr_ind for datum in data)
+    assert not all(datum.irr_ind for datum in data)
 
-    #call skip data on a full batch of data
+    # call skip data on a full batch of data
     for i in range(30):
-        response = client.post('/api/skip_data/'+str(data[i].pk)+'/')
+        response = client.post('/api/skip_data/' + str(data[i].pk) + '/')
 
-    #have the admin also get a batch and call skip on everything
+    # have the admin also get a batch and call skip on everything
     data = get_assignments(admin_profile, project, 30)
-    assert not all(datum.irr_ind == False for datum in data)
-    assert not all(datum.irr_ind == True for datum in data)
+    assert not all(not datum.irr_ind for datum in data)
+    assert not all(datum.irr_ind for datum in data)
 
-    #call skip data on a full batch of data
+    # call skip data on a full batch of data
     for i in range(30):
-        response = admin_client.post('/api/skip_data/'+str(data[i].pk)+'/')
+        response = admin_client.post('/api/skip_data/' + str(data[i].pk) + '/')
 
-    admin_data = DataQueue.objects.filter(data__project=project, queue = test_admin_queue)
-    assert not all(datum.data.irr_ind == False for datum in admin_data)
-    assert not all(datum.data.irr_ind == True for datum in admin_data)
+    admin_data = DataQueue.objects.filter(data__project=project, queue=test_admin_queue)
+    assert not all(not datum.data.irr_ind for datum in admin_data)
+    assert not all(datum.data.irr_ind for datum in admin_data)
 
-    #check for admin privalidges
-    response = client.post('/api/discard_data/'+str(admin_data[0].data.pk)+'/').json()
+    # check for admin privalidges
+    response = client.post('/api/discard_data/' + str(admin_data[0].data.pk) + '/').json()
     assert 'detail' in response and 'Invalid permission. Must be an admin' in response['detail']
 
-    #get irr data and discard it. Check that the data is not in IRRLog, AssignedData DataQueue, in RecycleBin
-    irr_data = admin_data.filter(data__irr_ind = True)
+    # get irr data and discard it. Check that the data is not in IRRLog, AssignedData DataQueue, in RecycleBin
+    irr_data = admin_data.filter(data__irr_ind=True)
     for datum in irr_data:
         assert IRRLog.objects.filter(data=datum.data).count() > 0
-        admin_client.post('/api/discard_data/'+str(datum.data.pk)+'/')
+        admin_client.post('/api/discard_data/' + str(datum.data.pk) + '/')
         assert IRRLog.objects.filter(data=datum.data).count() == 0
         assert DataQueue.objects.filter(data=datum.data).count() == 0
         assert AssignedData.objects.filter(data=datum.data).count() == 0
         assert RecycleBin.objects.filter(data=datum.data).count() == 1
-        assert RecycleBin.objects.get(data=datum.data).data.irr_ind == False
+        assert not RecycleBin.objects.get(data=datum.data).data.irr_ind
 
-
-    #get normal data and discard it. Check that the data is not in IRRLog, AssignedData DataQueue, in RecycleBin
-    non_irr_data = admin_data.filter(data__irr_ind = False)
+    # get normal data and discard it. Check that the data is not in IRRLog, AssignedData DataQueue, in RecycleBin
+    non_irr_data = admin_data.filter(data__irr_ind=False)
     for datum in non_irr_data:
-        admin_client.post('/api/discard_data/'+str(datum.data.pk)+'/')
+        admin_client.post('/api/discard_data/' + str(datum.data.pk) + '/')
         assert DataQueue.objects.filter(data=datum.data).count() == 0
         assert AssignedData.objects.filter(data=datum.data).count() == 0
         assert RecycleBin.objects.filter(data=datum.data).count() == 1
@@ -1192,7 +1246,7 @@ def test_restore_data(seeded_database, client, admin_client, test_project_data, 
     This tests that data can be restored after it is discarded
     '''
     project = test_project_data
-    fill_queue(test_queue, 'random', test_irr_queue, project.percentage_irr, project.batch_size )
+    fill_queue(test_queue, 'random', test_irr_queue, project.percentage_irr, project.batch_size)
 
     admin_client.login(username=SEED_USERNAME2, password=SEED_PASSWORD2)
     admin_profile = Profile.objects.get(user__username=SEED_USERNAME2)
@@ -1207,37 +1261,38 @@ def test_restore_data(seeded_database, client, admin_client, test_project_data, 
                                       project=project,
                                       permission='CODER')
 
-    #assign a batch of data. Should be IRR and non-IRR
+    # assign a batch of data. Should be IRR and non-IRR
     data = get_assignments(client_profile, project, 30)
     for i in range(30):
-        response = client.post('/api/skip_data/'+str(data[i].pk)+'/')
+        response = client.post('/api/skip_data/' + str(data[i].pk) + '/')
 
-    #have the admin also get a batch and call skip on everything
+    # have the admin also get a batch and call skip on everything
     data = get_assignments(admin_profile, project, 30)
     for i in range(30):
-        response = admin_client.post('/api/skip_data/'+str(data[i].pk)+'/')
+        response = admin_client.post('/api/skip_data/' + str(data[i].pk) + '/')
 
-    admin_data = DataQueue.objects.filter(data__project=project, queue = test_admin_queue)
-    #discard all data
+    admin_data = DataQueue.objects.filter(data__project=project, queue=test_admin_queue)
+    # discard all data
     for datum in admin_data:
-        admin_client.post('/api/discard_data/'+str(datum.data.pk)+'/')
+        admin_client.post('/api/discard_data/' + str(datum.data.pk) + '/')
 
-    #check for admin privalidges
-    response = client.post('/api/restore_data/'+str(admin_data[0].data.pk)+'/').json()
+    # check for admin privalidges
+    response = client.post('/api/restore_data/' + str(admin_data[0].data.pk) + '/').json()
     assert 'detail' in response and 'Invalid permission. Must be an admin' in response['detail']
 
-    #restore all data. It should not be in recycle bin
+    # restore all data. It should not be in recycle bin
     for datum in admin_data:
-        admin_client.post('/api/restore_data/'+str(datum.data.pk)+'/')
+        admin_client.post('/api/restore_data/' + str(datum.data.pk) + '/')
         assert RecycleBin.objects.filter(data=datum.data).count() == 0
-        assert Data.objects.get(pk=datum.data.pk).irr_ind == False
+        assert not Data.objects.get(pk=datum.data.pk).irr_ind
+
 
 def test_recycle_bin_table(seeded_database, client, admin_client, test_project_data, test_queue, test_irr_queue, test_labels, test_admin_queue):
     '''
     This tests that the recycle bin table is populated correctly
     '''
     project = test_project_data
-    fill_queue(test_queue, 'random', test_irr_queue, project.percentage_irr, project.batch_size )
+    fill_queue(test_queue, 'random', test_irr_queue, project.percentage_irr, project.batch_size)
 
     admin_client.login(username=SEED_USERNAME2, password=SEED_PASSWORD2)
     admin_profile = Profile.objects.get(user__username=SEED_USERNAME2)
@@ -1252,16 +1307,16 @@ def test_recycle_bin_table(seeded_database, client, admin_client, test_project_d
                                       project=project,
                                       permission='CODER')
 
-    #check for admin privalidges
-    response = client.get('/api/recycle_bin_table/'+str(project.pk)+'/').json()
+    # check for admin privalidges
+    response = client.get('/api/recycle_bin_table/' + str(project.pk) + '/').json()
     assert 'detail' in response and 'Invalid permission. Must be an admin' in response['detail']
 
-    #check that the table is currently empty
-    response = admin_client.get('/api/recycle_bin_table/'+str(project.pk)+'/').json()
+    # check that the table is currently empty
+    response = admin_client.get('/api/recycle_bin_table/' + str(project.pk) + '/').json()
     assert 'detail' not in response
     assert len(response["data"]) == 0
 
-    #assign a batch of data. Should be IRR and non-IRR
+    # assign a batch of data. Should be IRR and non-IRR
     irr_count = 0
     non_irr_count = 0
     data = get_assignments(client_profile, project, 30)
@@ -1270,34 +1325,36 @@ def test_recycle_bin_table(seeded_database, client, admin_client, test_project_d
             irr_count += 1
         else:
             non_irr_count += 1
-        response = client.post('/api/skip_data/'+str(data[i].pk)+'/')
+        response = client.post('/api/skip_data/' + str(data[i].pk) + '/')
 
-    #have the admin also get a batch and call skip on everything
+    # have the admin also get a batch and call skip on everything
     data = get_assignments(admin_profile, project, 30)
     for i in range(30):
         if not data[i].irr_ind:
             non_irr_count += 1
-        response = admin_client.post('/api/skip_data/'+str(data[i].pk)+'/')
+        response = admin_client.post('/api/skip_data/' + str(data[i].pk) + '/')
 
-    admin_data = DataQueue.objects.filter(data__project=project, queue = test_admin_queue)
-    #discard all data
+    admin_data = DataQueue.objects.filter(data__project=project, queue=test_admin_queue)
+    # discard all data
     for datum in admin_data:
-        admin_client.post('/api/discard_data/'+str(datum.data.pk)+'/')
+        admin_client.post('/api/discard_data/' + str(datum.data.pk) + '/')
 
-    #check that the table has 30 elements that match the discarded data
-    response = admin_client.get('/api/recycle_bin_table/'+str(project.pk)+'/').json()
+    # check that the table has 30 elements that match the discarded data
+    response = admin_client.get('/api/recycle_bin_table/' + str(project.pk) + '/').json()
     assert 'detail' not in response
     assert len(response["data"]) == non_irr_count + irr_count
-    assert_collections_equal([d["ID"] for d in response["data"]], RecycleBin.objects.filter(data__project=project).values_list("data__pk",flat=True))
+    assert_collections_equal([d["ID"] for d in response["data"]], RecycleBin.objects.filter(
+        data__project=project).values_list("data__pk", flat=True))
 
-    #restore all data
+    # restore all data
     for datum in admin_data:
-        admin_client.post('/api/restore_data/'+str(datum.data.pk)+'/')
+        admin_client.post('/api/restore_data/' + str(datum.data.pk) + '/')
 
-    #check that the table is empty again
-    response = admin_client.get('/api/recycle_bin_table/'+str(project.pk)+'/').json()
+    # check that the table is empty again
+    response = admin_client.get('/api/recycle_bin_table/' + str(project.pk) + '/').json()
     assert 'detail' not in response
     assert len(response["data"]) == 0
+
 
 def test_admin_counts(seeded_database, client, admin_client, test_project_data,
                       test_queue, test_irr_queue, test_labels, test_admin_queue,
@@ -1309,33 +1366,34 @@ def test_admin_counts(seeded_database, client, admin_client, test_project_data,
     normal_queues = [test_queue, test_no_irr_all_queues[0]]
     irr_queues = [test_irr_queue, test_no_irr_all_queues[2]]
 
-    #log in the users into both projects
+    # log in the users into both projects
     client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
     admin_client.login(username=SEED_USERNAME2, password=SEED_PASSWORD2)
     client_profile = Profile.objects.get(user__username=SEED_USERNAME)
     admin_profile = Profile.objects.get(user__username=SEED_USERNAME2)
     for i in range(2):
-        fill_queue(normal_queues[i], 'random', irr_queues[i], projects[i].percentage_irr, projects[i].batch_size )
+        fill_queue(normal_queues[i], 'random', irr_queues[i],
+                   projects[i].percentage_irr, projects[i].batch_size)
         ProjectPermissions.objects.create(profile=admin_profile,
                                           project=projects[i],
                                           permission='ADMIN')
         ProjectPermissions.objects.create(profile=client_profile,
                                           project=projects[i],
                                           permission='CODER')
-        #check for admin priviledges
-        response = client.get('/api/data_admin_counts/'+str(projects[i].pk)+'/').json()
+        # check for admin priviledges
+        response = client.get('/api/data_admin_counts/' + str(projects[i].pk) + '/').json()
         assert 'detail' in response and 'Invalid permission. Must be an admin' in response['detail']
 
-    #counts should be 0 for both projects. IRR project should have two counts.
-    response = admin_client.get('/api/data_admin_counts/'+str(projects[0].pk)+'/').json()
+    # counts should be 0 for both projects. IRR project should have two counts.
+    response = admin_client.get('/api/data_admin_counts/' + str(projects[0].pk) + '/').json()
     assert 'detail' not in response and len(response["data"]) == 2
-    assert list(response['data'].values()) == [0,0]
+    assert list(response['data'].values()) == [0, 0]
 
-    response = admin_client.get('/api/data_admin_counts/'+str(projects[1].pk)+'/').json()
+    response = admin_client.get('/api/data_admin_counts/' + str(projects[1].pk) + '/').json()
     assert 'detail' not in response and len(response["data"]) == 1
     assert list(response['data'].values()) == [0]
 
-    #have admin and non_admin skip everything. The count should be 30 for non-irr project
+    # have admin and non_admin skip everything. The count should be 30 for non-irr project
     irr_count = 0
     non_irr_count = 0
     data = get_assignments(client_profile, projects[0], 30)
@@ -1344,36 +1402,38 @@ def test_admin_counts(seeded_database, client, admin_client, test_project_data,
             irr_count += 1
         else:
             non_irr_count += 1
-        response = client.post('/api/skip_data/'+str(data[i].pk)+'/')
+        response = client.post('/api/skip_data/' + str(data[i].pk) + '/')
     data = get_assignments(admin_profile, projects[0], 30)
     for i in range(30):
         if not data[i].irr_ind:
             non_irr_count += 1
-        response = admin_client.post('/api/skip_data/'+str(data[i].pk)+'/')
+        response = admin_client.post('/api/skip_data/' + str(data[i].pk) + '/')
 
-    response = admin_client.get('/api/data_admin_counts/'+str(projects[0].pk)+'/').json()
+    response = admin_client.get('/api/data_admin_counts/' + str(projects[0].pk) + '/').json()
     assert 'detail' not in response and len(response["data"]) == 2
     assert response['data']['IRR'] == irr_count
     assert response['data']['SKIP'] == non_irr_count
 
-    #the counts should be split with the non-irr project
+    # the counts should be split with the non-irr project
     data = get_assignments(client_profile, projects[1], 30)
     for i in range(30):
-        response = client.post('/api/skip_data/'+str(data[i].pk)+'/')
+        response = client.post('/api/skip_data/' + str(data[i].pk) + '/')
     data = get_assignments(admin_profile, projects[1], 30)
     for i in range(30):
-        response = admin_client.post('/api/skip_data/'+str(data[i].pk)+'/')
+        response = admin_client.post('/api/skip_data/' + str(data[i].pk) + '/')
 
-    response = admin_client.get('/api/data_admin_counts/'+str(projects[1].pk)+'/').json()
+    response = admin_client.get('/api/data_admin_counts/' + str(projects[1].pk) + '/').json()
     assert 'detail' not in response and len(response["data"]) == 1
     assert response['data']['SKIP'] == 60
+
 
 def test_download_model(seeded_database, client, admin_client, test_project_with_trained_model, test_queue_labeled, test_irr_queue_labeled, test_admin_queue_labeled):
     '''
     This tests the download model api call
     '''
     project = test_project_with_trained_model
-    fill_queue(test_queue_labeled, 'random', test_irr_queue_labeled, project.percentage_irr, project.batch_size )
+    fill_queue(test_queue_labeled, 'random', test_irr_queue_labeled,
+               project.percentage_irr, project.batch_size)
 
     admin_client.login(username=SEED_USERNAME2, password=SEED_PASSWORD2)
     admin_profile = Profile.objects.get(user__username=SEED_USERNAME2)
@@ -1388,12 +1448,12 @@ def test_download_model(seeded_database, client, admin_client, test_project_with
                                       project=project,
                                       permission='CODER')
 
-    #check admin priviledges
-    response = client.get('/api/download_model/'+str(project.pk)+'/').json()
+    # check admin priviledges
+    response = client.get('/api/download_model/' + str(project.pk) + '/').json()
     assert 'detail' in response and 'Invalid permission. Must be an admin' in response['detail']
 
-    #check that the response is the correct type
-    response = admin_client.get('/api/download_model/'+str(project.pk)+'/')
+    # check that the response is the correct type
+    response = admin_client.get('/api/download_model/' + str(project.pk) + '/')
     assert 'detail' not in response
     assert response.get("Content-Type") == "application/x-zip-compressed"
 
@@ -1403,7 +1463,8 @@ def test_download_labeled_data(seeded_database, client, admin_client, test_proje
     This tests the download labeled data api call
     '''
     project = test_project_labeled
-    fill_queue(test_queue_labeled, 'random', test_irr_queue_labeled, project.percentage_irr, project.batch_size )
+    fill_queue(test_queue_labeled, 'random', test_irr_queue_labeled,
+               project.percentage_irr, project.batch_size)
 
     admin_client.login(username=SEED_USERNAME2, password=SEED_PASSWORD2)
     admin_profile = Profile.objects.get(user__username=SEED_USERNAME2)
@@ -1417,11 +1478,11 @@ def test_download_labeled_data(seeded_database, client, admin_client, test_proje
     ProjectPermissions.objects.create(profile=client_profile,
                                       project=project,
                                       permission='CODER')
-    #check admin priviledges
-    response = client.get('/api/download_data/'+str(project.pk)+'/').json()
+    # check admin priviledges
+    response = client.get('/api/download_data/' + str(project.pk) + '/').json()
     assert 'detail' in response and 'Invalid permission. Must be an admin' in response['detail']
 
-    #check that the response is the correct type
-    response = admin_client.get('/api/download_data/'+str(project.pk)+'/')
+    # check that the response is the correct type
+    response = admin_client.get('/api/download_data/' + str(project.pk) + '/')
     assert 'detail' not in response
     assert response.get("Content-Type") == "text/csv"

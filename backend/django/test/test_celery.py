@@ -72,10 +72,12 @@ def test_tfidf_creation_task(test_project_data, tmpdir, settings):
     project = test_project_data
     data = Data.objects.filter(project=project)
 
-    file = tasks.send_tfidf_creation_task.delay(DataSerializer(data, many=True).data, project.pk).get()
+    file = tasks.send_tfidf_creation_task.delay(
+        DataSerializer(data, many=True).data, project.pk).get()
 
     assert os.path.isfile(file)
-    assert file == os.path.join(str(data_temp), 'project_'+str(test_project_data.pk) + '_tfidf_matrix.pkl')
+    assert file == os.path.join(str(data_temp), 'project_'
+                                + str(test_project_data.pk) + '_tfidf_matrix.pkl')
 
 
 def test_model_task_redis_no_dupes_data_left_in_queue(test_project_labeled_and_tfidf, test_queue_labeled, test_irr_queue_labeled, test_admin_queue_labeled, test_redis, tmpdir, settings):
@@ -94,11 +96,10 @@ def test_model_task_redis_no_dupes_data_left_in_queue(test_project_labeled_and_t
     settings.MODEL_PICKLE_PATH = str(model_path_temp)
 
     batch_size = project.batch_size
-    fill_queue(queue, 'random', irr_queue , irr_percent = project.percentage_irr ,batch_size = batch_size)
-
+    fill_queue(queue, 'random', irr_queue, irr_percent=project.percentage_irr, batch_size=batch_size)
 
     labels = project.labels.all()
-    for i in range(int(batch_size* ((100-project.percentage_irr)/100))):
+    for i in range(int(batch_size * ((100 - project.percentage_irr) / 100))):
         datum = assign_datum(project.creator, project)
         label_data(random.choice(labels), datum, project.creator, 3)
 
@@ -108,7 +109,7 @@ def test_model_task_redis_no_dupes_data_left_in_queue(test_project_labeled_and_t
     assert len(redis_items) == len(set(redis_items))
 
 
-def test_model_task_redis_no_dupes_data_unassign_assigned_data(test_project_labeled_and_tfidf, test_queue_labeled, test_irr_queue_labeled, test_admin_queue_labeled ,test_redis, tmpdir, settings):
+def test_model_task_redis_no_dupes_data_unassign_assigned_data(test_project_labeled_and_tfidf, test_queue_labeled, test_irr_queue_labeled, test_admin_queue_labeled, test_redis, tmpdir, settings):
     project = test_project_labeled_and_tfidf
     test_queue = test_queue_labeled
     person2 = create_profile('test_profilezzz', 'password', 'test_profile@rti.org')
@@ -128,7 +129,7 @@ def test_model_task_redis_no_dupes_data_unassign_assigned_data(test_project_labe
     settings.MODEL_PICKLE_PATH = str(model_path_temp)
 
     batch_size = project.batch_size
-    fill_queue(queue, 'random', irr_queue , irr_percent = project.percentage_irr ,batch_size = batch_size)
+    fill_queue(queue, 'random', irr_queue, irr_percent=project.percentage_irr, batch_size=batch_size)
 
     labels = project.labels.all()
     assignments = get_assignments(project.creator, project, batch_size)
