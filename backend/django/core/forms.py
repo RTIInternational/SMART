@@ -4,7 +4,7 @@ from .models import Project, ProjectPermissions, Label, Data
 import pandas as pd
 import numpy as np
 from pandas.errors import EmptyDataError, ParserError
-from django.forms.widgets import RadioSelect, Textarea, TextInput
+from django.forms.widgets import RadioSelect, Textarea, TextInput, Select
 import copy
 from io import StringIO
 from core.util import md5_hash
@@ -152,6 +152,10 @@ class ProjectPermissionsForm(forms.ModelForm):
     class Meta:
         model = ProjectPermissions
         fields = '__all__'
+        widgets = {
+            'profile': Select(attrs={'class': 'form-control'}),
+            'permission': Select(attrs={'class': 'form-control'}),
+        }
 
     def __init__(self, *args, **kwargs):
         self.profile = kwargs.pop('profile', None)
