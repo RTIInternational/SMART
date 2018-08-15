@@ -41,8 +41,7 @@ test_backend:
   script:
     - cd envs/dev
     - docker-compose start
-    - docker exec -i smart_backend bash -c "coverage run -m py.test"
-    - docker exec -i smart_backend bash -c "coverage report -m"
+    - docker exec -i smart_backend bash -c "./run_tests.sh"
   after_script:
     - cd envs/dev
     - docker-compose stop
