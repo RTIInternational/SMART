@@ -49,7 +49,6 @@ class IsAdminOrCreator(permissions.BasePermission):
     """
     message = 'Invalid permission. Must be an admin'
 
-
     def has_permission(self, request, view):
         if 'project_pk' in view.kwargs:
             project = Project.objects.get(pk=view.kwargs['project_pk'])
@@ -101,7 +100,7 @@ def download_data(request, project_pk):
     data = data.to_dict("records")
 
     buffer = io.StringIO()
-    wr = csv.DictWriter(buffer, fieldnames=['ID','Text', 'Label'], quoting=csv.QUOTE_ALL)
+    wr = csv.DictWriter(buffer, fieldnames=['ID', 'Text', 'Label'], quoting=csv.QUOTE_ALL)
     wr.writeheader()
     wr.writerows(data)
     buffer.seek(0)
@@ -109,6 +108,7 @@ def download_data(request, project_pk):
     response['Content-Disposition'] = 'attachment;'
 
     return response
+
 
 @api_view(['GET'])
 @permission_classes((IsAdminOrCreator, ))
@@ -124,45 +124,49 @@ def download_model(request, project_pk):
     project = Project.objects.get(pk=project_pk)
     data_objs = Data.objects.filter(project=project)
 
-    #https://stackoverflow.com/questions/12881294/django-create-a-zip-of-multiple-files-and-make-it-downloadable
-    zip_subdir = 'model_project'+str(project_pk)
-    zip_filename = 'model_project'+str(project_pk)+".zip"
+    # https://stackoverflow.com/questions/12881294/django-create-a-zip-of-multiple-files-and-make-it-downloadable
+    zip_subdir = 'model_project' + str(project_pk)
+    zip_filename = 'model_project' + str(project_pk) + ".zip"
 
-    #readme_file = 'README.txt'
+    # readme_file = 'README.txt'
     num_proj_files = len([f for f in os.listdir(settings.PROJECT_FILE_PATH)
-                          if f.startswith('project_'+str(project_pk))])
+                          if f.startswith('project_' + str(project_pk))])
 
-    tfidf_path = os.path.join(settings.TF_IDF_PATH, 'project_'+str(project_pk) + '_tfidf_matrix.pkl')
-    tfidf_vectorizer_path = os.path.join(settings.TF_IDF_PATH, 'project_'+str(project_pk) + '_vectorizer.pkl')
-    readme_path = os.path.join(settings.BASE_DIR,'core', 'data', 'README.pdf')
+    tfidf_path = os.path.join(settings.TF_IDF_PATH, 'project_'
+                              + str(project_pk) + '_tfidf_matrix.pkl')
+    tfidf_vectorizer_path = os.path.join(
+        settings.TF_IDF_PATH, 'project_' + str(project_pk) + '_vectorizer.pkl')
+    readme_path = os.path.join(settings.BASE_DIR, 'core', 'data', 'README.pdf')
     current_training_set = project.get_current_training_set()
-    model_path = os.path.join(settings.MODEL_PICKLE_PATH, 'project_' + str(project_pk) + '_training_' + str(current_training_set.set_number - 1) + '.pkl')
+    model_path = os.path.join(settings.MODEL_PICKLE_PATH, 'project_' + str(project_pk)
+                              + '_training_' + str(current_training_set.set_number - 1) + '.pkl')
 
     data, label_data = util.get_labeled_data(project)
-    #open the tempfile and write the label data to it
-    temp_labeleddata_file = tempfile.NamedTemporaryFile(mode='w', suffix=".csv",delete=False, dir=settings.DATA_DIR)
+    # open the tempfile and write the label data to it
+    temp_labeleddata_file = tempfile.NamedTemporaryFile(
+        mode='w', suffix=".csv", delete=False, dir=settings.DATA_DIR)
     temp_labeleddata_file.seek(0)
     data.to_csv(temp_labeleddata_file.name, index=False)
     temp_labeleddata_file.flush()
     temp_labeleddata_file.close()
 
-    temp_label_file = tempfile.NamedTemporaryFile(mode='w', suffix=".csv",delete=False, dir=settings.DATA_DIR)
+    temp_label_file = tempfile.NamedTemporaryFile(
+        mode='w', suffix=".csv", delete=False, dir=settings.DATA_DIR)
     temp_label_file.seek(0)
     label_data.to_csv(temp_label_file.name, index=False)
     temp_label_file.flush()
     temp_label_file.close()
 
-
     s = io.BytesIO()
-    #open the zip folder
-    zip_file =  zipfile.ZipFile(s, "w")
+    # open the zip folder
+    zip_file = zipfile.ZipFile(s, "w")
     for path in [tfidf_path, tfidf_vectorizer_path, readme_path, model_path, temp_labeleddata_file.name, temp_label_file.name]:
         fdir, fname = os.path.split(path)
         if path == temp_label_file.name:
-            fname = "project_"+str(project_pk)+"_labels.csv"
+            fname = "project_" + str(project_pk) + "_labels.csv"
         elif path == temp_labeleddata_file.name:
-            fname = "project_"+str(project_pk)+"_labeled_data.csv"
-        #write the file to the zip folder
+            fname = "project_" + str(project_pk) + "_labeled_data.csv"
+        # write the file to the zip folder
         zip_path = os.path.join(zip_subdir, fname)
         zip_file.write(path, zip_path)
     zip_file.close()
@@ -171,6 +175,7 @@ def download_model(request, project_pk):
     response['Content-Disposition'] = 'attachment;'
 
     return response
+
 
 @api_view(['GET'])
 @permission_classes((IsAdminOrCreator, ))
@@ -195,14 +200,12 @@ def label_distribution_inverted(request, project_pk):
     dataset = []
     all_counts = []
     for u in users:
-        temp_data = {'key':u.__str__()}
         temp_values = []
         for l in labels:
             label_count = DataLabel.objects.filter(profile=u, label=l).count()
             all_counts.append(label_count)
-            temp_values.append({'x':l.name, 'y':label_count})
-        dataset.append({'key':u.__str__(), 'values':temp_values})
-
+            temp_values.append({'x': l.name, 'y': label_count})
+        dataset.append({'key': u.__str__(), 'values': temp_values})
 
     if not any(count > 0 for count in all_counts):
         dataset = []
@@ -231,13 +234,13 @@ def label_distribution(request, project_pk):
     dataset = []
     all_counts = []
     for l in labels:
-        temp_data = {'key':l.name}
+        temp_data = {'key': l.name}
         temp_values = []
         for u in users:
             label_count = DataLabel.objects.filter(profile=u, label=l).count()
             all_counts.append(label_count)
-            temp_values.append({'x':u.__str__(), 'y': label_count})
-        dataset.append({'key':l.name, 'values': temp_values})
+            temp_values.append({'x': u.__str__(), 'y': label_count})
+        dataset.append({'key': l.name, 'values': temp_values})
 
     if not any(count > 0 for count in all_counts):
         dataset = []
@@ -267,9 +270,9 @@ def label_timing(request, project_pk):
     yDomain = 0
     for u in users:
         result = DataLabel.objects.filter(data__project=project_pk, profile=u)\
-                    .aggregate(quartiles=Percentile('time_to_label', [0.05, 0.25, 0.5, 0.75, 0.95],
-                               continuous=False,
-                               output_field=ArrayField(FloatField())))
+            .aggregate(quartiles=Percentile('time_to_label', [0.05, 0.25, 0.5, 0.75, 0.95],
+                                            continuous=False,
+                                            output_field=ArrayField(FloatField())))
 
         if result['quartiles']:
             if result['quartiles'][4] > yDomain:
@@ -320,16 +323,16 @@ def model_metrics(request, project_pk):
             }
         ]
     else:
-        labels = {str(label.pk): label.name for label in  project.labels.all()}
+        labels = {str(label.pk): label.name for label in project.labels.all()}
         dataset = []
         for label in labels:
             values = []
             for model in models:
                 current_metric = model.cv_metrics[metric][label]
                 values.append({
-                    'x':  model.training_set.set_number,
+                    'x': model.training_set.set_number,
                     'y': current_metric
-                  })
+                })
             dataset.append({
                 'key': labels[label],
                 'values': values
@@ -386,7 +389,7 @@ def data_change_log_table(request, project_pk):
             else:
                 minute = str(d.change_timestamp.minute)
             new_timestamp = str(d.change_timestamp.date()) + ", " + str(d.change_timestamp.hour)\
-            + ":" + minute + "." + str(d.change_timestamp.second)
+                + ":" + minute + "." + str(d.change_timestamp.second)
         else:
             new_timestamp = "None"
 
@@ -435,26 +438,26 @@ def data_predicted_table(request, project_pk):
     ON ts.{trainingset_pk_col} = m.{model_trainingset_id_col}
     WHERE ts.{trainingset_setnumber_col} = {previous_run} AND d.{data_project_id_col} = {project_pk}
     """.format(
-            data_text_col=Data._meta.get_field('text').column,
-            label_name_col=Label._meta.get_field('name').column,
-            pred_prob_col=DataPrediction._meta.get_field('predicted_probability').column,
-            pred_data_id_col=DataPrediction._meta.get_field('data').column,
-            pred_table=DataPrediction._meta.db_table,
-            label_table=Label._meta.db_table,
-            label_pk_col=Label._meta.pk.name,
-            pred_label_id_col=DataPrediction._meta.get_field('label').column,
-            data_table=Data._meta.db_table,
-            data_pk_col=Data._meta.pk.name,
-            model_table=Model._meta.db_table,
-            model_pk_col=Model._meta.pk.name,
-            pred_model_id_col=DataPrediction._meta.get_field('model').column,
-            trainingset_table=TrainingSet._meta.db_table,
-            trainingset_pk_col=TrainingSet._meta.pk.name,
-            model_trainingset_id_col=Model._meta.get_field('training_set').column,
-            trainingset_setnumber_col=TrainingSet._meta.get_field('set_number').column,
-            previous_run=previous_run,
-            data_project_id_col=Data._meta.get_field('project').column,
-            project_pk=project.pk)
+        data_text_col=Data._meta.get_field('text').column,
+        label_name_col=Label._meta.get_field('name').column,
+        pred_prob_col=DataPrediction._meta.get_field('predicted_probability').column,
+        pred_data_id_col=DataPrediction._meta.get_field('data').column,
+        pred_table=DataPrediction._meta.db_table,
+        label_table=Label._meta.db_table,
+        label_pk_col=Label._meta.pk.name,
+        pred_label_id_col=DataPrediction._meta.get_field('label').column,
+        data_table=Data._meta.db_table,
+        data_pk_col=Data._meta.pk.name,
+        model_table=Model._meta.db_table,
+        model_pk_col=Model._meta.pk.name,
+        pred_model_id_col=DataPrediction._meta.get_field('model').column,
+        trainingset_table=TrainingSet._meta.db_table,
+        trainingset_pk_col=TrainingSet._meta.pk.name,
+        model_trainingset_id_col=Model._meta.get_field('training_set').column,
+        trainingset_setnumber_col=TrainingSet._meta.get_field('set_number').column,
+        previous_run=previous_run,
+        data_project_id_col=Data._meta.get_field('project').column,
+        project_pk=project.pk)
 
     with connection.cursor() as c:
         result = c.execute(sql)
@@ -488,13 +491,15 @@ def data_unlabeled_table(request, project_pk):
     stuff_in_queue = DataQueue.objects.filter(queue__project=project)
     queued_ids = [queued.data.id for queued in stuff_in_queue]
 
-    recycle_ids = RecycleBin.objects.filter(data__project=project).values_list('data__pk',flat=True)
-    unlabeled_data = project.data_set.filter(datalabel__isnull=True).exclude(id__in=queued_ids).exclude(id__in=recycle_ids)
+    recycle_ids = RecycleBin.objects.filter(
+        data__project=project).values_list('data__pk', flat=True)
+    unlabeled_data = project.data_set.filter(datalabel__isnull=True).exclude(
+        id__in=queued_ids).exclude(id__in=recycle_ids)
     data = []
     for d in unlabeled_data:
         temp = {
             'Text': escape(d.text),
-            'ID':d.id
+            'ID': d.id
         }
         data.append(temp)
 
@@ -513,9 +518,10 @@ def data_admin_table(request, project_pk):
         data: a list of data information
     """
     project = Project.objects.get(pk=project_pk)
-    queue = Queue.objects.filter(project=project,type="admin")
+    queue = Queue.objects.filter(project=project, type="admin")
 
     data_objs = DataQueue.objects.filter(queue=queue)
+    profile = request.user.profile
 
     data = []
     for d in data_objs:
@@ -532,6 +538,7 @@ def data_admin_table(request, project_pk):
 
     return Response({'data': data})
 
+
 @api_view(['GET'])
 @permission_classes((IsAdminOrCreator, ))
 def data_admin_counts(request, project_pk):
@@ -543,15 +550,16 @@ def data_admin_counts(request, project_pk):
         data: a list of data information
     """
     project = Project.objects.get(pk=project_pk)
-    queue = Queue.objects.filter(project=project,type="admin")
+    queue = Queue.objects.filter(project=project, type="admin")
     data_objs = DataQueue.objects.filter(queue=queue)
     irr_count = data_objs.filter(data__irr_ind=True).count()
     skip_count = data_objs.filter(data__irr_ind=False).count()
-    #only give both counts if both counts are relevent
+    # only give both counts if both counts are relevent
     if project.percentage_irr == 0:
-        return Response({'data': {"SKIP":skip_count}})
+        return Response({'data': {"SKIP": skip_count}})
     else:
-        return Response({'data': {"IRR":irr_count, "SKIP":skip_count}})
+        return Response({'data': {"IRR": irr_count, "SKIP": skip_count}})
+
 
 @api_view(['GET'])
 @permission_classes((IsAdminOrCreator, ))
@@ -577,6 +585,7 @@ def recycle_bin_table(request, project_pk):
 
     return Response({'data': data})
 
+
 @api_view(['POST'])
 @permission_classes((IsAdminOrCreator, ))
 def label_skew_label(request, data_pk):
@@ -594,18 +603,22 @@ def label_skew_label(request, data_pk):
     project = datum.project
     label = Label.objects.get(pk=request.data['labelID'])
     profile = request.user.profile
+    response = {}
 
     current_training_set = project.get_current_training_set()
+    if project_extras.proj_permission_level(datum.project, profile) >= 2:
+        with transaction.atomic():
+            DataLabel.objects.create(data=datum,
+                                     label=label,
+                                     profile=profile,
+                                     training_set=current_training_set,
+                                     time_to_label=None,
+                                     timestamp=timezone.now()
+                                     )
+    else:
+        response['error'] = "Invalid permission. Must be an admin."
 
-    with transaction.atomic():
-        DataLabel.objects.create(data=datum,
-                                label=label,
-                                profile=profile,
-                                training_set=current_training_set,
-                                time_to_label=None,
-                                timestamp = timezone.now())
-
-    return Response({'test':'success'})
+    return Response(response)
 
 
 @api_view(['POST'])
@@ -625,29 +638,30 @@ def label_admin_label(request, data_pk):
     project = datum.project
     label = Label.objects.get(pk=request.data['labelID'])
     profile = request.user.profile
+    response = {}
 
     current_training_set = project.get_current_training_set()
 
     with transaction.atomic():
         queue = project.queue_set.get(type="admin")
         DataLabel.objects.create(data=datum,
-                                label=label,
-                                profile=profile,
-                                training_set=current_training_set,
-                                time_to_label=None,
-                                timestamp=timezone.now())
+                                 label=label,
+                                 profile=profile,
+                                 training_set=current_training_set,
+                                 time_to_label=None,
+                                 timestamp=timezone.now())
 
         DataQueue.objects.filter(data=datum, queue=queue).delete()
 
-        #make sure the data is no longer irr
+        # make sure the data is no longer irr
         if datum.irr_ind:
             Data.objects.filter(pk=datum.pk).update(irr_ind=False)
 
-    #NOTE: this checks if the model needs to be triggered, but not if the
-    #queues need to be refilled. This is because for something to be in the
-    #admin queue, annotate or skip would have already checked for an empty queue
+    # NOTE: this checks if the model needs to be triggered, but not if the
+    # queues need to be refilled. This is because for something to be in the
+    # admin queue, annotate or skip would have already checked for an empty queue
     util.check_and_trigger_model(datum)
-    return Response({'test':'success'})
+    return Response(response)
 
 
 ############################################
@@ -674,7 +688,7 @@ def get_card_deck(request, project_pk):
     coder_size = math.ceil(batch_size / num_coders)
 
     data = util.get_assignments(profile, project, coder_size)
-    #shuffle so the irr is not all at the front
+    # shuffle so the irr is not all at the front
     random.shuffle(data)
     labels = Label.objects.all().filter(project=project)
 
@@ -703,7 +717,7 @@ def get_label_history(request, project_pk):
     data_list = []
     results = []
     for d in data:
-        #if it is not labeled irr but is in the log, the data is resolved IRR,
+        # if it is not labeled irr but is in the log, the data is resolved IRR,
         if not d.data.irr_ind and len(IRRLog.objects.filter(data=d.data)) > 0:
             continue
 
@@ -718,19 +732,19 @@ def get_label_history(request, project_pk):
             else:
                 second = str(d.timestamp.second)
             new_timestamp = str(d.timestamp.date()) + ", " + str(d.timestamp.hour)\
-            + ":" + minute + "." + second
+                + ":" + minute + "." + second
         else:
             new_timestamp = "None"
-        temp_dict = {"data":d.data.text,
-        "id": d.data.id,"label":d.label.name,
-        "labelID": d.label.id ,"timestamp":new_timestamp, "edit": "yes"}
+        temp_dict = {"data": d.data.text,
+                     "id": d.data.id, "label": d.label.name,
+                     "labelID": d.label.id, "timestamp": new_timestamp, "edit": "yes"}
         results.append(temp_dict)
 
     data_irr = IRRLog.objects.filter(profile=profile, data__project=project_pk, label__isnull=False)
 
     for d in data_irr:
-        #if the data was labeled by that person (they were the admin), don't add
-        #it twice
+        # if the data was labeled by that person (they were the admin), don't add
+        # it twice
         if d.data.id in data_list:
             continue
 
@@ -744,12 +758,12 @@ def get_label_history(request, project_pk):
             else:
                 second = str(d.timestamp.second)
             new_timestamp = str(d.timestamp.date()) + ", " + str(d.timestamp.hour)\
-            + ":" + minute + "." + second
+                + ":" + minute + "." + second
         else:
             new_timestamp = "None"
-        temp_dict = {"data":d.data.text,
-        "id": d.data.id,"label":d.label.name,
-        "labelID": d.label.id ,"timestamp":new_timestamp, "edit":"no"}
+        temp_dict = {"data": d.data.text,
+                     "id": d.data.id, "label": d.label.name,
+                     "labelID": d.label.id, "timestamp": new_timestamp, "edit": "no"}
         results.append(temp_dict)
 
     return Response({'data': results})
@@ -768,8 +782,8 @@ def get_irr_metrics(request, project_pk):
         {}
     """
 
-    #need to take the IRRLog and pull out exactly the max_labelers amount
-    #of labels for each datum
+    # need to take the IRRLog and pull out exactly the max_labelers amount
+    # of labels for each datum
     all_data = []
     project = Project.objects.get(pk=project_pk)
     profile = request.user.profile
@@ -779,12 +793,12 @@ def get_irr_metrics(request, project_pk):
             kappa, perc_agreement = util.fleiss_kappa(project)
         else:
             kappa, perc_agreement = util.cohens_kappa(project)
-        kappa = round(kappa,3)
-        perc_agreement = str(round(perc_agreement,5)*100)+"%"
+        kappa = round(kappa, 3)
+        perc_agreement = str(round(perc_agreement, 5) * 100) + "%"
     except ValueError:
         kappa = "No irr data processed"
         perc_agreement = "No irr data processed"
-    return Response({'kappa':kappa, 'percent agreement':perc_agreement})
+    return Response({'kappa': kappa, 'percent agreement': perc_agreement})
 
 
 @api_view(['GET'])
@@ -799,10 +813,10 @@ def perc_agree_table(request, project_pk):
     profile = request.user.profile
 
     if len(irr_data) == 0:
-        return Response({'data':[]})
+        return Response({'data': []})
 
     user_agree = util.perc_agreement_table_data(project)
-    return Response({'data':user_agree})
+    return Response({'data': user_agree})
 
 
 @api_view(['GET'])
@@ -823,16 +837,15 @@ def heat_map_data(request, project_pk):
     profile = request.user.profile
 
     heatmap_data = util.irr_heatmap_data(project)
-    labels = list(Label.objects.all().filter(project=project).values_list('name',flat=True))
+    labels = list(Label.objects.all().filter(project=project).values_list('name', flat=True))
     labels.append("Skip")
     coders = []
     profiles = ProjectPermissions.objects.filter(project=project)
-    coders.append({'name':str(project.creator),'pk':project.creator.pk})
+    coders.append({'name': str(project.creator), 'pk': project.creator.pk})
     for p in profiles:
-        coders.append({'name':str(p.profile), 'pk':p.profile.pk})
+        coders.append({'name': str(p.profile), 'pk': p.profile.pk})
 
-
-    return Response({'data':heatmap_data, 'labels':labels , "coders":coders})
+    return Response({'data': heatmap_data, 'labels': labels, "coders": coders})
 
 
 @api_view(['POST'])
@@ -854,28 +867,28 @@ def skip_data(request, data_pk):
     queue = project.queue_set.get(type="normal")
     response = {}
 
-    #if the data is IRR or processed IRR, dont add to admin queue yet
+    # if the data is IRR or processed IRR, dont add to admin queue yet
     num_history = IRRLog.objects.filter(data=data).count()
 
     if RecycleBin.objects.filter(data=data).count() > 0:
-        assignment = AssignedData.objects.get(data=data,profile=profile)
+        assignment = AssignedData.objects.get(data=data, profile=profile)
         assignment.delete()
     elif data.irr_ind or num_history > 0:
-        #unassign the skipped item
-        assignment = AssignedData.objects.get(data=data,profile=profile)
+        # unassign the skipped item
+        assignment = AssignedData.objects.get(data=data, profile=profile)
         assignment.delete()
 
-        #log the data and check IRR but don't put in admin queue yet
-        IRRLog.objects.create(data=data, profile=profile, label = None, timestamp = timezone.now())
-        #if the IRR history has more than the needed number of labels , it is
-        #already processed so don't do anything else
+        # log the data and check IRR but don't put in admin queue yet
+        IRRLog.objects.create(data=data, profile=profile, label=None, timestamp=timezone.now())
+        # if the IRR history has more than the needed number of labels , it is
+        # already processed so don't do anything else
         if num_history <= project.num_users_irr:
             util.process_irr_label(data, None)
     else:
-        #the data is not IRR so treat it as normal
+        # the data is not IRR so treat it as normal
         util.move_skipped_to_admin_queue(data, profile, project)
 
-    #for all data, check if we need to refill queue
+    # for all data, check if we need to refill queue
     util.check_and_trigger_model(data, profile)
 
     return Response(response)
@@ -905,22 +918,22 @@ def annotate_data(request, data_pk):
     num_history = IRRLog.objects.filter(data=data).count()
 
     if RecycleBin.objects.filter(data=data).count() > 0:
-        #this data is no longer in use. delete it
-        assignment = AssignedData.objects.get(data=data,profile=profile)
+        # this data is no longer in use. delete it
+        assignment = AssignedData.objects.get(data=data, profile=profile)
         assignment.delete()
     elif num_history >= project.num_users_irr:
-        #if the IRR history has more than the needed number of labels , it is
-        #already processed so just add this label to the history.
-        IRRLog.objects.create(data=data, profile=profile, label=label, timestamp = timezone.now())
-        assignment = AssignedData.objects.get(data=data,profile=profile)
+        # if the IRR history has more than the needed number of labels , it is
+        # already processed so just add this label to the history.
+        IRRLog.objects.create(data=data, profile=profile, label=label, timestamp=timezone.now())
+        assignment = AssignedData.objects.get(data=data, profile=profile)
         assignment.delete()
     else:
         util.label_data(label, data, profile, labeling_time)
         if data.irr_ind:
-            #if it is reliability data, run processing step
+            # if it is reliability data, run processing step
             util.process_irr_label(data, label)
 
-    #for all data, check if we need to refill queue
+    # for all data, check if we need to refill queue
     util.check_and_trigger_model(data, profile)
 
     return Response(response)
@@ -945,13 +958,14 @@ def discard_data(request, data_pk):
 
     # Make sure coder is an admin
     if project_extras.proj_permission_level(data.project, profile) > 1:
-        #remove it from the admin queue
+        # remove it from the admin queue
         queue = Queue.objects.get(project=project, type="admin")
         DataQueue.objects.get(data=data, queue=queue).delete()
-
+        IRRLog.objects.filter(data=data).delete()
+        Data.objects.filter(pk=data_pk).update(irr_ind=False)
         RecycleBin.objects.create(data=data, timestamp=timezone.now())
 
-        #remove any IRR log data
+        # remove any IRR log data
         irr_records = IRRLog.objects.filter(data=data)
         irr_records.delete()
 
@@ -959,6 +973,7 @@ def discard_data(request, data_pk):
         response['error'] = 'Invalid credentials. Must be an admin.'
 
     return Response(response)
+
 
 @api_view(['POST'])
 @permission_classes((IsAdminOrCreator, ))
@@ -977,12 +992,13 @@ def restore_data(request, data_pk):
 
     # Make sure coder is an admin
     if project_extras.proj_permission_level(data.project, profile) > 1:
-        #remove it from the recycle bin
+        # remove it from the recycle bin
         RecycleBin.objects.get(data=data).delete()
     else:
         response['error'] = 'Invalid credentials. Must be an admin.'
 
     return Response(response)
+
 
 @api_view(['POST'])
 @permission_classes((IsCoder, ))
@@ -1000,17 +1016,22 @@ def modify_label(request, data_pk):
     response = {}
     project = data.project
 
+    if request.data['labelID'] == request.data['oldLabelID']:
+        response['error'] = 'Invalid. The new label should be different'
+        return Response(response)
+
     # Make sure coder still has permissions before labeling data
     label = Label.objects.get(pk=request.data['labelID'])
     old_label = Label.objects.get(pk=request.data['oldLabelID'])
     with transaction.atomic():
         DataLabel.objects.filter(data=data, label=old_label).update(label=label,
-        time_to_label=0, timestamp=timezone.now())
+                                                                    time_to_label=0, timestamp=timezone.now())
 
         LabelChangeLog.objects.create(project=project, data=data, profile=profile,
-        old_label=old_label.name, new_label = label.name, change_timestamp = timezone.now())
+                                      old_label=old_label.name, new_label=label.name, change_timestamp=timezone.now())
 
     return Response(response)
+
 
 @api_view(['POST'])
 @permission_classes((IsCoder, ))
@@ -1034,17 +1055,18 @@ def modify_label_to_skip(request, data_pk):
     with transaction.atomic():
         DataLabel.objects.filter(data=data, label=old_label).delete()
         if data.irr_ind:
-            #if it was irr, add it to the log
-            if len(IRRLog.objects.filter(data=data,profile=profile)) == 0:
-                IRRLog.objects.create(data=data, profile=profile, label = None, timestamp = timezone.now())
+            # if it was irr, add it to the log
+            if len(IRRLog.objects.filter(data=data, profile=profile)) == 0:
+                IRRLog.objects.create(data=data, profile=profile,
+                                      label=None, timestamp=timezone.now())
         else:
-            #if it's not irr, add it to the admin queue immediately
+            # if it's not irr, add it to the admin queue immediately
             DataQueue.objects.create(data=data, queue=queue)
         LabelChangeLog.objects.create(project=project, data=data, profile=profile,
-        old_label=old_label.name, new_label = "skip", change_timestamp = timezone.now())
-
+                                      old_label=old_label.name, new_label="skip", change_timestamp=timezone.now())
 
     return Response(response)
+
 
 @api_view(['GET'])
 @permission_classes((IsAdminOrCreator, ))
@@ -1056,13 +1078,14 @@ def check_admin_in_progress(request, project_pk):
     profile = request.user.profile
     project = Project.objects.get(pk=project_pk)
 
-    #if nobody ELSE is there yet, return True
+    # if nobody ELSE is there yet, return True
     if AdminProgress.objects.filter(project=project).count() == 0:
-        return Response({"available":1})
+        return Response({"available": 1})
     if AdminProgress.objects.filter(project=project, profile=profile).count() == 0:
-        return Response({"available":0})
+        return Response({"available": 0})
     else:
-        return Response({"available":1})
+        return Response({"available": 1})
+
 
 @api_view(['GET'])
 def enter_coding_page(request, project_pk):
@@ -1075,11 +1098,12 @@ def enter_coding_page(request, project_pk):
     """
     profile = request.user.profile
     project = Project.objects.get(pk=project_pk)
-    #check that no other admin is using it. If they are not, give this admin permission
+    # check that no other admin is using it. If they are not, give this admin permission
     if project_extras.proj_permission_level(project, profile) > 1:
         if AdminProgress.objects.filter(project=project).count() == 0:
-            AdminProgress.objects.create(project=project, profile=profile, timestamp = timezone.now())
+            AdminProgress.objects.create(project=project, profile=profile, timestamp=timezone.now())
     return Response({})
+
 
 @api_view(['GET'])
 def leave_coding_page(request, project_pk):
@@ -1121,25 +1145,30 @@ class ProfileViewSet(viewsets.ModelViewSet):
     serializer_class = ProfileSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
+
 class AuthUserGroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all().order_by('id')
     serializer_class = AuthUserGroupSerializer
     permission_classes = (permissions.IsAuthenticated,)
+
 
 class AuthUserViewSet(viewsets.ModelViewSet):
     queryset = AuthUser.objects.all().order_by('id')
     serializer_class = AuthUserSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
+
 class ProjectViewSet(viewsets.ModelViewSet):
     queryset = Project.objects.all().order_by('id')
     serializer_class = ProjectSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
+
 class CoreModelViewSet(viewsets.ModelViewSet):
     queryset = Model.objects.all().order_by('id')
     serializer_class = CoreModelSerializer
     permission_classes = (permissions.IsAuthenticated,)
+
 
 class DataViewSet(viewsets.ModelViewSet):
     queryset = Data.objects.all().order_by('id')
@@ -1147,25 +1176,30 @@ class DataViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
     pagination_class = SmartPagination
 
+
 class LabelViewSet(viewsets.ModelViewSet):
     queryset = Label.objects.all().order_by('id')
     serializer_class = LabelSerializer
     permission_classes = (permissions.IsAuthenticated,)
+
 
 class DataLabelViewSet(viewsets.ModelViewSet):
     queryset = DataLabel.objects.all().order_by('id')
     serializer_class = DataLabelSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
+
 class DataPredictionViewSet(viewsets.ModelViewSet):
     queryset = DataPrediction.objects.all().order_by('id')
     serializer_class = DataPredictionSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
+
 class QueueViewSet(viewsets.ModelViewSet):
     queryset = Queue.objects.all().order_by('id')
     serializer_class = QueueSerializer
     permission_classes = (permissions.IsAuthenticated,)
+
 
 class AssignedDataViewSet(viewsets.ModelViewSet):
     queryset = AssignedData.objects.all().order_by('id')

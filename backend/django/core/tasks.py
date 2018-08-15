@@ -7,6 +7,7 @@ import math
 def send_test_task():
     return 'Test Task Complete'
 
+
 @shared_task
 def send_model_task(project_pk):
     """Trains, Saves, Predicts, Fills Queue"""
@@ -23,7 +24,7 @@ def send_model_task(project_pk):
     if al_method != "random":
         predictions = predict_data(project, model)
     new_training_set = TrainingSet.objects.create(project=project,
-                               set_number=project.get_current_training_set().set_number+1)
+                                                  set_number=project.get_current_training_set().set_number + 1)
 
     # Determine if queue size has changed (num_coders changed) and re-fill queue
     num_coders = len(project.projectpermissions_set.all()) + 1
@@ -32,7 +33,9 @@ def send_model_task(project_pk):
         queue.length = q_length
         queue.save()
 
-    fill_queue(queue, irr_queue = irr_queue, orderby = al_method, irr_percent = project.percentage_irr, batch_size = batch_size)
+    fill_queue(queue, irr_queue=irr_queue, orderby=al_method,
+               irr_percent=project.percentage_irr, batch_size=batch_size)
+
 
 @shared_task
 def send_tfidf_creation_task(response, project_pk):
@@ -49,6 +52,7 @@ def send_tfidf_creation_task(response, project_pk):
     save_tfidf_vectorizer(vectorizer, project_pk)
 
     return file
+
 
 @shared_task
 def send_check_and_trigger_model_task(project_pk):

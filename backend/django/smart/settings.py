@@ -28,7 +28,6 @@ class Dev(Configuration):
 
     ALLOWED_HOSTS = ['0.0.0.0', 'localhost']
 
-
     # Application definition
 
     INSTALLED_APPS = [
@@ -99,7 +98,6 @@ class Dev(Configuration):
 
     WSGI_APPLICATION = 'smart.wsgi.application'
 
-
     # Database
     # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
@@ -113,7 +111,6 @@ class Dev(Configuration):
             'PORT': '5432',
         }
     }
-
 
     # Password validation
     # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
@@ -133,7 +130,7 @@ class Dev(Configuration):
         },
     ]
 
-    ACCOUNT_LOGOUT_ON_GET=True
+    ACCOUNT_LOGOUT_ON_GET = True
 
     # Internationalization
     # https://docs.djangoproject.com/en/1.11/topics/i18n/
@@ -147,7 +144,6 @@ class Dev(Configuration):
     USE_L10N = True
 
     USE_TZ = True
-
 
     # Static files (CSS, JavaScript, Images)
     # https://docs.djangoproject.com/en/1.11/howto/static-files/
@@ -164,7 +160,6 @@ class Dev(Configuration):
             'rest_framework.permissions.IsAuthenticated',
         )
     }
-
 
     # SMART app config
 
@@ -201,7 +196,7 @@ class Dev(Configuration):
     STATICFILES_DIRS = [
         os.path.join(BASE_DIR, 'frontend', 'dist'),
         os.path.join(BASE_DIR, 'core/data'),
-         '/data/code_books/',
+        '/data/code_books/',
     ]
 
     WEBPACK_LOADER = {
@@ -214,6 +209,7 @@ class Dev(Configuration):
             'IGNORE': ['.+\.hot-update.js', '.+\.map']
         }
     }
+
 
 class Prod(Dev):
     DEBUG = False

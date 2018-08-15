@@ -9,7 +9,7 @@ import numpy as np
 import scipy
 import pandas as pd
 import math
-
+from django.utils import timezone
 from django.contrib.auth import get_user_model
 
 from core.models import (Project, Queue, Data, DataQueue, Profile, Model,
@@ -22,13 +22,15 @@ from core.util import (redis_serialize_queue, redis_serialize_data, redis_serial
                        add_queue, fill_queue, pop_queue,
                        init_redis, get_nonempty_queue, skip_data,
                        create_profile, label_data, move_skipped_to_admin_queue, pop_first_nonempty_queue,
-                       get_assignments, unassign_datum,  save_data_file,
+                       get_assignments, unassign_datum, save_data_file,
                        save_tfidf_matrix, load_tfidf_matrix,
                        train_and_save_model, predict_data,
                        least_confident, margin_sampling, entropy,
                        check_and_trigger_model, get_ordered_data,
-                       find_queue_length, cohens_kappa, fleiss_kappa,
-                       irr_heatmap_data, perc_agreement_table_data, md5_hash)
+                       find_queue_length, save_codebook_file, md5_hash,
+                       cohens_kappa, fleiss_kappa,
+                       irr_heatmap_data, perc_agreement_table_data,
+                       get_labeled_data)
 
 from test.util import read_test_data_backend, assert_obj_exists, assert_redis_matches_db
 from test.conftest import TEST_QUEUE_LEN
@@ -60,8 +62,8 @@ def test_redis_parse_queue(test_queue, test_redis):
     parsed_queue = redis_parse_queue(queue_key)
 
     assert parsed_queue.pk == test_queue.pk
-    assert_obj_exists(DataQueue, { 'queue_id': parsed_queue.pk })
-    assert_obj_exists(Queue, { 'pk': parsed_queue.pk })
+    assert_obj_exists(DataQueue, {'queue_id': parsed_queue.pk})
+    assert_obj_exists(Queue, {'pk': parsed_queue.pk})
 
 
 def test_redis_parse_data(test_queue, test_redis):
@@ -70,8 +72,8 @@ def test_redis_parse_data(test_queue, test_redis):
     popped_data_key = test_redis.lpop(redis_serialize_queue(test_queue))
     parsed_data = redis_parse_data(popped_data_key)
 
-    assert_obj_exists(Data, { 'pk': parsed_data.pk })
-    assert_obj_exists(DataQueue, { 'data_id': parsed_data.pk })
+    assert_obj_exists(Data, {'pk': parsed_data.pk})
+    assert_obj_exists(DataQueue, {'data_id': parsed_data.pk})
 
 
 def test_redis_parse_list_dataids(test_queue, test_redis):
@@ -117,14 +119,14 @@ def test_create_profile(db):
                  .filter(**auth_user_attrs)
                  .first())
 
-    assert_obj_exists(Profile, { 'user': auth_user })
+    assert_obj_exists(Profile, {'user': auth_user})
 
 
 def test_create_project(db, test_profile):
     name = 'test_project'
     project = create_project(name, test_profile)
 
-    assert_obj_exists(Project, { 'name': name })
+    assert_obj_exists(Project, {'name': name})
 
 
 def test_get_current_training_set_no_training_set(test_profile):
@@ -132,19 +134,19 @@ def test_get_current_training_set_no_training_set(test_profile):
 
     training_set = project.get_current_training_set()
 
-    assert training_set == None
+    assert training_set is None
 
 
 def test_get_current_training_set_one_training_set(test_project):
     training_set = test_project.get_current_training_set()
     assertTrainingSet = TrainingSet.objects.filter(project=test_project).order_by('-set_number')[0]
 
-    assert_obj_exists(TrainingSet, { 'project': test_project, 'set_number': 0 })
+    assert_obj_exists(TrainingSet, {'project': test_project, 'set_number': 0})
     assert training_set == assertTrainingSet
 
 
 def test_get_current_training_set_multiple_training_set(test_project):
-    # Test Project already has training set with set number 0, create set number 1,2,3
+    # Test Project already has training set with set number 0, create set number 1, 2, 3
     set_num_one = TrainingSet.objects.create(project=test_project, set_number=1)
     set_num_two = TrainingSet.objects.create(project=test_project, set_number=2)
     set_num_three = TrainingSet.objects.create(project=test_project, set_number=3)
@@ -206,7 +208,8 @@ def test_fill_empty_queue(db, test_queue):
 
 def test_fill_nonempty_queue(db, test_queue):
     # Manually add one observation so the queue is now nonempty
-    test_datum = Data.objects.create(text='test data', project=test_queue.project, upload_id_hash=md5_hash(0))
+    test_datum = Data.objects.create(
+        text='test data', project=test_queue.project, upload_id_hash=md5_hash(0))
     DataQueue.objects.create(data=test_datum, queue=test_queue)
     assert test_queue.data.count() == 1
 
@@ -305,7 +308,7 @@ def test_pop_empty_queue(db, test_project, test_redis):
     datum = pop_queue(queue)
 
     assert datum is None
-    assert not test_redis.exists('queue:'+str(queue.pk))
+    assert not test_redis.exists('queue:' + str(queue.pk))
     assert queue.data.count() == 0
 
 
@@ -317,8 +320,8 @@ def test_pop_nonempty_queue(db, test_project_data, test_redis):
     datum = pop_queue(queue)
 
     assert isinstance(datum, Data)
-    assert test_redis.llen('queue:'+str(queue.pk)) == (queue_len - 1)
-    assert test_redis.scard('set:'+str(queue.pk)) == (queue_len)
+    assert test_redis.llen('queue:' + str(queue.pk)) == (queue_len - 1)
+    assert test_redis.scard('set:' + str(queue.pk)) == (queue_len)
     assert queue.data.count() == queue_len
 
 
@@ -332,12 +335,12 @@ def test_pop_only_affects_one_queue(db, test_project_data, test_redis):
     datum = pop_queue(queue)
 
     assert isinstance(datum, Data)
-    assert test_redis.llen('queue:'+str(queue.pk)) == (queue_len - 1)
-    assert test_redis.scard('set:'+str(queue.pk)) == (queue_len)
+    assert test_redis.llen('queue:' + str(queue.pk)) == (queue_len - 1)
+    assert test_redis.scard('set:' + str(queue.pk)) == (queue_len)
     assert queue.data.count() == queue_len
 
-    assert test_redis.llen('queue:'+str(queue2.pk)) == queue_len
-    assert test_redis.scard('set:'+str(queue2.pk)) == (queue_len)
+    assert test_redis.llen('queue:' + str(queue2.pk)) == queue_len
+    assert test_redis.scard('set:' + str(queue2.pk)) == (queue_len)
     assert queue2.data.count() == queue_len
 
 
@@ -359,9 +362,9 @@ def test_get_nonempty_profile_queue(db, test_project_data, test_profile):
     queue_len = 10
     queue = add_queue(test_project_data, queue_len)
     profile_queue = add_queue(test_project_data, queue_len,
-                           profile=test_profile)
+                              profile=test_profile)
     profile_queue2 = add_queue(test_project_data, queue_len,
-                            profile=test_profile)
+                               profile=test_profile)
 
     assert get_nonempty_queue(test_project_data, profile=test_profile) is None
 
@@ -373,7 +376,7 @@ def test_get_nonempty_profile_queue(db, test_project_data, test_profile):
 
 
 def test_get_nonempty_queue_multiple_profiles(db, test_project_data, test_profile,
-                                           test_profile2, test_profile_queue, test_profile_queue2):
+                                              test_profile2, test_profile_queue, test_profile_queue2):
 
     assert get_nonempty_queue(test_project_data) is None
 
@@ -415,7 +418,7 @@ def test_pop_first_nonempty_queue_single_queue(db, test_project_data, test_queue
 
 
 def test_pop_first_nonempty_queue_profile_queue(db, test_project_data, test_profile,
-                                             test_profile_queue, test_redis):
+                                                test_profile_queue, test_redis):
     fill_queue(test_profile_queue, orderby='random')
 
     queue, data = pop_first_nonempty_queue(test_project_data, profile=test_profile)
@@ -445,8 +448,8 @@ def test_pop_first_nonempty_queue_multiple_queues(db, test_project_data, test_qu
 
 
 def test_pop_first_nonempty_queue_multiple_profile_queues(db, test_project_data, test_profile,
-                                                       test_profile_queue, test_profile_queue2,
-                                                       test_redis):
+                                                          test_profile_queue, test_profile_queue2,
+                                                          test_redis):
     fill_queue(test_profile_queue2, orderby='random')
 
     queue, data = pop_first_nonempty_queue(test_project_data, profile=test_profile)
@@ -493,8 +496,8 @@ def test_assign_datum_project_queue_pops_queues(db, test_queue, test_profile, te
     datum = assign_datum(test_profile, test_queue.project)
 
     # Make sure the datum was removed from queues but not set
-    assert test_redis.llen('queue:'+str(test_queue.pk)) == test_queue.length - 1
-    assert test_redis.scard('set:'+str(test_queue.pk)) == test_queue.length
+    assert test_redis.llen('queue:' + str(test_queue.pk)) == test_queue.length - 1
+    assert test_redis.scard('set:' + str(test_queue.pk)) == test_queue.length
 
     # but not from the db queue
     assert test_queue.data.count() == test_queue.length
@@ -502,8 +505,8 @@ def test_assign_datum_project_queue_pops_queues(db, test_queue, test_profile, te
 
 
 def test_assign_datum_profile_queue_returns_correct_datum(db, test_profile_queue, test_profile,
-                                                       test_profile_queue2, test_profile2,
-                                                       test_redis):
+                                                          test_profile_queue2, test_profile2,
+                                                          test_redis):
     fill_queue(test_profile_queue, orderby='random')
     fill_queue(test_profile_queue2, orderby='random')
 
@@ -513,8 +516,8 @@ def test_assign_datum_profile_queue_returns_correct_datum(db, test_profile_queue
 
 
 def test_assign_datum_profile_queue_correct_assignment(db, test_profile_queue, test_profile,
-                                                    test_profile_queue2, test_profile2,
-                                                    test_redis):
+                                                       test_profile_queue2, test_profile2,
+                                                       test_redis):
     fill_queue(test_profile_queue, orderby='random')
     fill_queue(test_profile_queue2, orderby='random')
 
@@ -528,21 +531,21 @@ def test_assign_datum_profile_queue_correct_assignment(db, test_profile_queue, t
 
 
 def test_assign_datum_profile_queue_pops_queues(db, test_profile_queue, test_profile,
-                                             test_profile_queue2, test_profile2, test_redis):
+                                                test_profile_queue2, test_profile2, test_redis):
     fill_queue(test_profile_queue, orderby='random')
     fill_queue(test_profile_queue2, orderby='random')
 
     datum = assign_datum(test_profile, test_profile_queue.project)
 
     # Make sure the datum was removed from the correct queues but not sets
-    assert test_redis.llen('queue:'+str(test_profile_queue.pk)) == test_profile_queue.length - 1
-    assert test_redis.scard('set:'+str(test_profile_queue.pk)) == test_profile_queue.length
+    assert test_redis.llen('queue:' + str(test_profile_queue.pk)) == test_profile_queue.length - 1
+    assert test_redis.scard('set:' + str(test_profile_queue.pk)) == test_profile_queue.length
 
     # ...but not the other queues
     assert test_profile_queue.data.count() == test_profile_queue.length
     assert datum in test_profile_queue.data.all()
-    assert test_redis.llen('queue:'+str(test_profile_queue2.pk)) == test_profile_queue2.length
-    assert test_redis.scard('set:'+str(test_profile_queue2.pk)) == test_profile_queue2.length
+    assert test_redis.llen('queue:' + str(test_profile_queue2.pk)) == test_profile_queue2.length
+    assert test_redis.scard('set:' + str(test_profile_queue2.pk)) == test_profile_queue2.length
     assert test_profile_queue2.data.count() == test_profile_queue2.length
 
 
@@ -559,8 +562,8 @@ def test_init_redis_ignores_assigned_data(db, test_profile, test_queue, test_red
     init_redis()
 
     # Make sure the assigned datum didn't get into the redis queue
-    assert test_redis.llen('queue:'+str(test_queue.pk)) == test_queue.length - 1
-    assert test_redis.scard('set:'+str(test_queue.pk)) == test_queue.length - 1
+    assert test_redis.llen('queue:' + str(test_queue.pk)) == test_queue.length - 1
+    assert test_redis.scard('set:' + str(test_queue.pk)) == test_queue.length - 1
 
 
 def test_label_data(db, test_profile, test_queue, test_redis):
@@ -586,7 +589,7 @@ def test_label_data(db, test_profile, test_queue, test_redis):
 
 
 def test_get_assignments_no_existing_assignment_one_assignment(db, test_profile, test_project_data, test_queue,
-                                               test_redis):
+                                                               test_redis):
     fill_queue(test_queue, orderby='random')
 
     assert AssignedData.objects.count() == 0
@@ -602,7 +605,7 @@ def test_get_assignments_no_existing_assignment_one_assignment(db, test_profile,
 
 
 def test_get_assignments_no_existing_assignment_half_max_queue_length(db, test_profile, test_project_data, test_queue,
-                                               test_redis):
+                                                                      test_redis):
     fill_queue(test_queue, orderby='random')
 
     assert AssignedData.objects.count() == 0
@@ -619,7 +622,7 @@ def test_get_assignments_no_existing_assignment_half_max_queue_length(db, test_p
 
 
 def test_get_assignments_no_existing_assignment_max_queue_length(db, test_profile, test_project_data, test_queue,
-                                               test_redis):
+                                                                 test_redis):
     fill_queue(test_queue, orderby='random')
 
     assert AssignedData.objects.count() == 0
@@ -636,7 +639,7 @@ def test_get_assignments_no_existing_assignment_max_queue_length(db, test_profil
 
 
 def test_get_assignments_no_existing_assignment_over_max_queue_length(db, test_profile, test_project_data, test_queue,
-                                               test_redis):
+                                                                      test_redis):
     fill_queue(test_queue, orderby='random')
 
     assert AssignedData.objects.count() == 0
@@ -653,7 +656,7 @@ def test_get_assignments_no_existing_assignment_over_max_queue_length(db, test_p
 
 
 def test_get_assignments_one_existing_assignment(db, test_profile, test_project_data, test_queue,
-                                            test_redis):
+                                                 test_redis):
     fill_queue(test_queue, orderby='random')
 
     assigned_datum = assign_datum(test_profile, test_project_data)
@@ -666,7 +669,7 @@ def test_get_assignments_one_existing_assignment(db, test_profile, test_project_
 
 
 def test_get_assignments_multiple_existing_assignments(db, test_profile, test_project_data, test_queue,
-                                            test_redis):
+                                                       test_redis):
     fill_queue(test_queue, orderby='random')
 
     assigned_data = []
@@ -687,21 +690,21 @@ def test_get_assignments_multiple_existing_assignments(db, test_profile, test_pr
 def test_unassign(db, test_profile, test_project_data, test_queue, test_redis):
     fill_queue(test_queue, orderby='random')
 
-    assert test_redis.llen('queue:'+str(test_queue.pk)) == test_queue.length
-    assert test_redis.scard('set:'+str(test_queue.pk)) == test_queue.length
+    assert test_redis.llen('queue:' + str(test_queue.pk)) == test_queue.length
+    assert test_redis.scard('set:' + str(test_queue.pk)) == test_queue.length
 
     datum = get_assignments(test_profile, test_project_data, 1)[0]
 
-    assert test_redis.llen('queue:'+str(test_queue.pk)) == (test_queue.length - 1)
-    assert test_redis.scard('set:'+str(test_queue.pk)) == test_queue.length
+    assert test_redis.llen('queue:' + str(test_queue.pk)) == (test_queue.length - 1)
+    assert test_redis.scard('set:' + str(test_queue.pk)) == test_queue.length
     assert AssignedData.objects.filter(
         data=datum,
         profile=test_profile).exists()
 
     unassign_datum(datum, test_profile)
 
-    assert test_redis.llen('queue:'+str(test_queue.pk)) == test_queue.length
-    assert test_redis.scard('set:'+str(test_queue.pk)) == test_queue.length
+    assert test_redis.llen('queue:' + str(test_queue.pk)) == test_queue.length
+    assert test_redis.scard('set:' + str(test_queue.pk)) == test_queue.length
     assert not AssignedData.objects.filter(
         data=datum,
         profile=test_profile).exists()
@@ -715,25 +718,25 @@ def test_unassign(db, test_profile, test_project_data, test_queue, test_redis):
 def test_unassign_after_fillqueue(db, test_profile, test_project_data, test_queue, test_labels, test_redis):
     fill_queue(test_queue, 'random')
 
-    assert test_redis.llen('queue:'+str(test_queue.pk)) == test_queue.length
-    assert test_redis.scard('set:'+str(test_queue.pk)) == test_queue.length
+    assert test_redis.llen('queue:' + str(test_queue.pk)) == test_queue.length
+    assert test_redis.scard('set:' + str(test_queue.pk)) == test_queue.length
 
     data = get_assignments(test_profile, test_project_data, 10)
 
-    assert test_redis.llen('queue:'+str(test_queue.pk)) == (test_queue.length - 10)
-    assert test_redis.scard('set:'+str(test_queue.pk)) == test_queue.length
+    assert test_redis.llen('queue:' + str(test_queue.pk)) == (test_queue.length - 10)
+    assert test_redis.scard('set:' + str(test_queue.pk)) == test_queue.length
 
     test_label = test_labels[0]
     for i in range(5):
         label_data(test_label, data[i], test_profile, 3)
 
-    assert test_redis.llen('queue:'+str(test_queue.pk)) == (test_queue.length - 10)
-    assert test_redis.scard('set:'+str(test_queue.pk)) == (test_queue.length - 5)
+    assert test_redis.llen('queue:' + str(test_queue.pk)) == (test_queue.length - 10)
+    assert test_redis.scard('set:' + str(test_queue.pk)) == (test_queue.length - 5)
 
     fill_queue(test_queue, 'random')
 
-    assert test_redis.llen('queue:'+str(test_queue.pk)) == test_queue.length - 5
-    assert test_redis.scard('set:'+str(test_queue.pk)) == test_queue.length
+    assert test_redis.llen('queue:' + str(test_queue.pk)) == test_queue.length - 5
+    assert test_redis.scard('set:' + str(test_queue.pk)) == test_queue.length
 
 
 def test_save_data_file_no_labels_csv(test_project, tmpdir, settings):
@@ -750,7 +753,8 @@ def test_save_data_file_no_labels_csv(test_project, tmpdir, settings):
 
     saved_data = pd.read_csv(fname)
 
-    assert fname == os.path.join(str(temp_data_file_path), 'project_' + str(test_project.pk) + '_data_0.csv')
+    assert fname == os.path.join(str(temp_data_file_path), 'project_'
+                                 + str(test_project.pk) + '_data_0.csv')
     assert os.path.isfile(fname)
     assert saved_data.equals(data)
 
@@ -769,7 +773,8 @@ def test_save_data_file_some_labels_csv(test_project, tmpdir, settings):
 
     saved_data = pd.read_csv(fname)
 
-    assert fname == os.path.join(str(temp_data_file_path), 'project_' + str(test_project.pk) + '_data_0.csv')
+    assert fname == os.path.join(str(temp_data_file_path), 'project_'
+                                 + str(test_project.pk) + '_data_0.csv')
     assert os.path.isfile(fname)
     assert saved_data.equals(data)
 
@@ -787,17 +792,20 @@ def test_save_data_file_multiple_files(test_project, tmpdir, settings):
     fname2 = save_data_file(data, test_project.pk)
     fname3 = save_data_file(data, test_project.pk)
 
-    assert fname1 == os.path.join(str(temp_data_file_path), 'project_' + str(test_project.pk) + '_data_0.csv')
+    assert fname1 == os.path.join(str(temp_data_file_path), 'project_'
+                                  + str(test_project.pk) + '_data_0.csv')
     assert os.path.isfile(fname1)
-    assert fname2 == os.path.join(str(temp_data_file_path), 'project_' + str(test_project.pk) + '_data_1.csv')
+    assert fname2 == os.path.join(str(temp_data_file_path), 'project_'
+                                  + str(test_project.pk) + '_data_1.csv')
     assert os.path.isfile(fname2)
-    assert fname3 == os.path.join(str(temp_data_file_path), 'project_' + str(test_project.pk) + '_data_2.csv')
+    assert fname3 == os.path.join(str(temp_data_file_path), 'project_'
+                                  + str(test_project.pk) + '_data_2.csv')
     assert os.path.isfile(fname3)
 
 
 def test_create_tfidf_matrix(test_tfidf_matrix):
-    #UPDATE: is now saved as a dictionary of lists
-    assert type(test_tfidf_matrix) == type({})
+    # UPDATE: is now saved as a dictionary of lists
+    assert isinstance(test_tfidf_matrix, dict)
     assert len(test_tfidf_matrix) == 285
     for key in test_tfidf_matrix:
         assert len(test_tfidf_matrix[key]) == 307
@@ -811,7 +819,8 @@ def test_save_tfidf_matrix(test_project_data, test_tfidf_matrix, tmpdir, setting
     file = save_tfidf_matrix(test_tfidf_matrix, test_project_data.pk)
 
     assert os.path.isfile(file)
-    assert file == os.path.join(settings.TF_IDF_PATH, 'project_'+str(test_project_data.pk) + '_tfidf_matrix.pkl')
+    assert file == os.path.join(settings.TF_IDF_PATH, 'project_'
+                                + str(test_project_data.pk) + '_tfidf_matrix.pkl')
 
 
 def test_load_tfidf_matrix(test_project_labeled_and_tfidf, test_tfidf_matrix_labeled, tmpdir, settings):
@@ -951,7 +960,8 @@ def test_train_and_save_model(test_project_labeled_and_tfidf, tmpdir, settings):
     })
     assert os.path.isfile(model.pickle_path)
     assert model.pickle_path == os.path.join(str(model_path_temp), 'project_' + str(project.pk)
-                                             + '_training_' + str(project.get_current_training_set().set_number)
+                                             + '_training_'
+                                             + str(project.get_current_training_set().set_number)
                                              + '.pkl')
 
 
@@ -961,8 +971,9 @@ def test_predict_data(test_project_with_trained_model, tmpdir):
     predictions = predict_data(project, project.model_set.get())
 
     # Number of unlabeled data * number of labels.  Each data gets a prediction for each label.
-    expected_predction_count = project.data_set.filter(datalabel__isnull=True).count() * project.labels.count()
-    assert len(predictions) ==  expected_predction_count
+    expected_predction_count = project.data_set.filter(
+        datalabel__isnull=True).count() * project.labels.count()
+    assert len(predictions) == expected_predction_count
 
     for prediction in predictions:
         assert isinstance(prediction, DataPrediction)
@@ -1073,7 +1084,8 @@ def test_check_and_trigger_lt_batch_labeled(setup_celery, test_project_data, tes
     assert test_project_data.model_set.count() == 0
     assert DataPrediction.objects.filter(data__project=test_project_data).count() == 0
     assert DataUncertainty.objects.filter(data__project=test_project_data).count() == 0
-    assert DataQueue.objects.filter(queue=test_queue).count() == TEST_QUEUE_LEN - (TEST_QUEUE_LEN // 2)
+    assert DataQueue.objects.filter(queue=test_queue).count(
+    ) == TEST_QUEUE_LEN - (TEST_QUEUE_LEN // 2)
 
 
 def test_check_and_trigger_batched_success(setup_celery, test_project_labeled_and_tfidf,
@@ -1119,8 +1131,8 @@ def test_check_and_trigger_batched_success(setup_celery, test_project_labeled_an
         })
         assert datum.datauncertainty_set.get().least_confident <= previous_lc
         previous_lc = datum.datauncertainty_set.get().least_confident
-    assert (DataQueue.objects.filter(queue=test_queue).count() +
-            DataQueue.objects.filter(queue=test_irr_queue_labeled).count()) == TEST_QUEUE_LEN
+    assert (DataQueue.objects.filter(queue=test_queue).count()
+            + DataQueue.objects.filter(queue=test_irr_queue_labeled).count()) == TEST_QUEUE_LEN
 
     # Assert new training set
     assert project.get_current_training_set() != initial_training_set
@@ -1148,7 +1160,7 @@ def test_check_and_trigger_batched_onlyone_label(setup_celery, test_project_data
 
 
 def test_check_and_trigger_queue_changes_success(setup_celery, test_project_labeled_and_tfidf,
-                                                  test_queue_labeled, test_irr_queue_labeled, test_redis, tmpdir, settings, test_profile2):
+                                                 test_queue_labeled, test_irr_queue_labeled, test_redis, tmpdir, settings, test_profile2):
     project = test_project_labeled_and_tfidf
     test_queue = test_queue_labeled
     initial_training_set = project.get_current_training_set()
@@ -1187,7 +1199,6 @@ def test_check_and_trigger_queue_changes_success(setup_celery, test_project_labe
     assert (q.data.count() + q_irr.data.count()) == batch_size
     assert_redis_matches_db(test_redis)
 
-
     num_coders = len(project.projectpermissions_set.all()) + 1
     new_queue_length = find_queue_length(batch_size, num_coders)
     assert q.length == new_queue_length
@@ -1202,12 +1213,13 @@ def test_check_and_trigger_queue_changes_success(setup_celery, test_project_labe
         })
         assert datum.datauncertainty_set.get().least_confident <= previous_lc
         previous_lc = datum.datauncertainty_set.get().least_confident
-    assert (DataQueue.objects.filter(queue=test_queue).count() +
-            DataQueue.objects.filter(queue=test_irr_queue_labeled).count()) == batch_size
+    assert (DataQueue.objects.filter(queue=test_queue).count()
+            + DataQueue.objects.filter(queue=test_irr_queue_labeled).count()) == batch_size
 
     # Assert new training set
     assert project.get_current_training_set() != initial_training_set
     assert project.get_current_training_set().set_number == initial_training_set.set_number + 1
+
 
 def test_skip_data(db, test_profile, test_queue, test_admin_queue, test_redis):
     fill_queue(test_queue, orderby='random')
@@ -1219,11 +1231,171 @@ def test_skip_data(db, test_profile, test_queue, test_admin_queue, test_redis):
     assert not AssignedData.objects.filter(profile=test_profile,
                                            data=datum,
                                            queue=test_queue).exists()
-    #make sure the item was re-assigned to the admin queue
-    assert DataQueue.objects.filter(data=datum,queue = test_admin_queue).exists()
+    # make sure the item was re-assigned to the admin queue
+    assert DataQueue.objects.filter(data=datum, queue=test_admin_queue).exists()
+    # make sure not in normal queue
+    assert not DataQueue.objects.filter(data=datum, queue=test_queue).exists()
+
+
+def test_svm_classifier(setup_celery, test_project_svm_data_tfidf, test_svm_labels,
+                        test_svm_queue_list, test_profile, test_redis, tmpdir, settings):
+    '''
+    This tests that a project with the svm classifier can successfully train
+    and give predictions for a model
+    '''
+    normal_queue, admin_queue, irr_queue = test_svm_queue_list
+    labels = test_svm_labels
+    project = test_project_svm_data_tfidf
+
+    active_l = project.learning_method
+    batch_size = project.batch_size
+    initial_training_set = project.get_current_training_set()
+    model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
+    settings.MODEL_PICKLE_PATH = str(model_path_temp)
+
+    assert project.classifier == "svm"
+    assert active_l == 'least confident'
+
+    fill_queue(normal_queue, 'random')
+
+    assert DataQueue.objects.filter(queue=normal_queue).count() == batch_size
+
+    for i in range(batch_size):
+        datum = assign_datum(test_profile, project)
+        label_data(labels[i % 3], datum, test_profile, 3)
+
+    ret_str = check_and_trigger_model(datum)
+    assert ret_str == 'model running'
+
+    # Assert model created and saved
+    assert_obj_exists(Model, {
+        'project': project
+    })
+    model = Model.objects.get(project=project)
+    assert os.path.isfile(model.pickle_path)
+    assert model.pickle_path == os.path.join(str(model_path_temp), 'project_' + str(project.pk)
+                                             + '_training_' + str(initial_training_set.set_number)
+                                             + '.pkl')
+
+    # Assert predictions created
+    predictions = DataPrediction.objects.filter(data__project=project)
+    assert len(predictions) == Data.objects.filter(project=project,
+                                                   labelers=None).count() * project.labels.count()
+
+
+def test_randomforest_classifier(setup_celery, test_project_randomforest_data_tfidf, test_randomforest_labels,
+                                 test_randomforest_queue_list, test_profile, test_redis, tmpdir, settings):
+    '''
+    This tests that a project with the random forest classifier can successfully train
+    and give predictions for a model
+    '''
+    normal_queue, admin_queue, irr_queue = test_randomforest_queue_list
+    labels = test_randomforest_labels
+    project = test_project_randomforest_data_tfidf
+
+    active_l = project.learning_method
+    batch_size = project.batch_size
+    initial_training_set = project.get_current_training_set()
+    model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
+    settings.MODEL_PICKLE_PATH = str(model_path_temp)
+
+    assert project.classifier == "random forest"
+    assert active_l == 'least confident'
+
+    fill_queue(normal_queue, 'random')
+
+    assert DataQueue.objects.filter(queue=normal_queue).count() == batch_size
+
+    for i in range(batch_size):
+        datum = assign_datum(test_profile, project)
+        label_data(labels[i % 3], datum, test_profile, 3)
+
+    ret_str = check_and_trigger_model(datum)
+    assert ret_str == 'model running'
+
+    # Assert model created and saved
+    assert_obj_exists(Model, {
+        'project': project
+    })
+    model = Model.objects.get(project=project)
+    assert os.path.isfile(model.pickle_path)
+    assert model.pickle_path == os.path.join(str(model_path_temp), 'project_' + str(project.pk)
+                                             + '_training_' + str(initial_training_set.set_number)
+                                             + '.pkl')
+
+    # Assert predictions created
+    predictions = DataPrediction.objects.filter(data__project=project)
+    assert len(predictions) == Data.objects.filter(project=project,
+                                                   labelers=None).count() * project.labels.count()
+
+
+def test_g_naivebayes_classifier(setup_celery, test_project_gnb_data_tfidf, test_gnb_labels,
+                                 test_gnb_queue_list, test_profile, test_redis, tmpdir, settings):
+    '''
+    This tests that a project with the Gaussian Naiive Bayes classifier can successfully train
+    and give predictions for a model
+    '''
+    normal_queue, admin_queue, irr_queue = test_gnb_queue_list
+    labels = test_gnb_labels
+    project = test_project_gnb_data_tfidf
+
+    active_l = project.learning_method
+    batch_size = project.batch_size
+    initial_training_set = project.get_current_training_set()
+    model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
+    settings.MODEL_PICKLE_PATH = str(model_path_temp)
+
+    assert project.classifier == "gnb"
+    assert active_l == 'least confident'
+
+    fill_queue(normal_queue, 'random')
+
+    assert DataQueue.objects.filter(queue=normal_queue).count() == batch_size
+
+    for i in range(batch_size):
+        datum = assign_datum(test_profile, project)
+        label_data(labels[i % 3], datum, test_profile, 3)
+
+    ret_str = check_and_trigger_model(datum)
+    assert ret_str == 'model running'
+
+    # Assert model created and saved
+    assert_obj_exists(Model, {
+        'project': project
+    })
+    model = Model.objects.get(project=project)
+    assert os.path.isfile(model.pickle_path)
+    assert model.pickle_path == os.path.join(str(model_path_temp), 'project_' + str(project.pk)
+                                             + '_training_' + str(initial_training_set.set_number)
+                                             + '.pkl')
+
+    # Assert predictions created
+    predictions = DataPrediction.objects.filter(data__project=project)
+    assert len(predictions) == Data.objects.filter(project=project,
+                                                   labelers=None).count() * project.labels.count()
+
+
+def test_save_codebook(test_project, tmpdir, settings):
+    '''
+    This tests that a user can upload a pdf codebook and
+    have it be saved properly internally.
+    '''
+    test_file = open('./core/data/test_files/test_codebook.pdf', "rb")
+
+    temp_data_file_path = tmpdir.mkdir('data').mkdir('code_books')
+    settings.CODEBOOK_FILE_PATH = str(temp_data_file_path)
+
+    fname = save_codebook_file(test_file, test_project.pk)
+    date = timezone.now().strftime('%m_%d_%y__%H_%M_%S')
+    f_path = os.path.join(str(temp_data_file_path), 'project_'
+                          + str(test_project.pk) + '_codebook' + date + '.pdf')
+    assert fname == f_path.replace("/data/code_books/", "")
+    assert os.path.isfile(f_path)
+
 
 """IRR TESTS"""
-#tests to check the queues are filled correctly
+
+
 def test_fill_half_irr_queues(setup_celery, test_project_half_irr_data, test_half_irr_all_queues, test_profile, test_redis, tmpdir, settings):
     '''
     Using a project with equal irr settings (50%, 2),
@@ -1232,12 +1404,12 @@ def test_fill_half_irr_queues(setup_celery, test_project_half_irr_data, test_hal
     normal_queue, admin_queue, irr_queue = test_half_irr_all_queues
     batch_size = test_project_half_irr_data.batch_size
     percentage_irr = test_project_half_irr_data.percentage_irr
-    fill_queue(normal_queue, 'random', irr_queue, percentage_irr, batch_size )
+    fill_queue(normal_queue, 'random', irr_queue, percentage_irr, batch_size)
 
-    #check that the queue is filled with the correct proportion of IRR and not
+    # check that the queue is filled with the correct proportion of IRR and not
     project = test_project_half_irr_data
-    irr_count = math.ceil((percentage_irr/100)*batch_size)
-    non_irr_count = math.ceil(((100 - percentage_irr)/100)*batch_size)
+    irr_count = math.ceil((percentage_irr / 100) * batch_size)
+    non_irr_count = math.ceil(((100 - percentage_irr) / 100) * batch_size)
     num_in_norm = DataQueue.objects.filter(queue=normal_queue).count()
     num_in_irr = DataQueue.objects.filter(queue=irr_queue).count()
     assert (num_in_norm + num_in_irr) == batch_size
@@ -1245,14 +1417,15 @@ def test_fill_half_irr_queues(setup_celery, test_project_half_irr_data, test_hal
     assert num_in_irr == irr_count
     assert num_in_norm == num_in_irr
 
-    #check that all of the data in the irr queue is labeled irr_ind=True
-    assert DataQueue.objects.filter(queue=irr_queue, data__irr_ind = False).count() == 0
-    #check that NONE of the data in the normal queue is irr_ind=True
-    assert DataQueue.objects.filter(queue=normal_queue, data__irr_ind = True).count() == 0
-    #check that there is no duplicate data across the two queues
-    data_irr = DataQueue.objects.filter(queue=irr_queue).values_list('data__hash',flat=True)
-    data_norm = DataQueue.objects.filter(queue=normal_queue).values_list('data__hash',flat=True)
+    # check that all of the data in the irr queue is labeled irr_ind=True
+    assert DataQueue.objects.filter(queue=irr_queue, data__irr_ind=False).count() == 0
+    # check that NONE of the data in the normal queue is irr_ind=True
+    assert DataQueue.objects.filter(queue=normal_queue, data__irr_ind=True).count() == 0
+    # check that there is no duplicate data across the two queues
+    data_irr = DataQueue.objects.filter(queue=irr_queue).values_list('data__hash', flat=True)
+    data_norm = DataQueue.objects.filter(queue=normal_queue).values_list('data__hash', flat=True)
     assert len(set(data_irr) & set(data_norm)) == 0
+
 
 def test_annotate_irr(setup_celery, test_project_half_irr_data, test_half_irr_all_queues, test_profile, test_profile2, test_profile3, test_labels_half_irr, test_redis, tmpdir, settings):
     '''
@@ -1260,17 +1433,17 @@ def test_annotate_irr(setup_celery, test_project_half_irr_data, test_half_irr_al
     '''
     project = test_project_half_irr_data
     normal_queue, admin_queue, irr_queue = test_half_irr_all_queues
-    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size )
+    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size)
     # get an irr datum. One should exist.
     datum = assign_datum(test_profile, project, "irr")
-    assert datum != None
+    assert datum is not None
 
     # let one user label a datum. It should be in DataLabel, not be in IRRLog,
-    #still be in IRR Queue
+    # still be in IRR Queue
     label_data(test_labels_half_irr[0], datum, test_profile, 3)
-    assert DataLabel.objects.filter(data=datum,profile=test_profile).count() > 0
-    assert IRRLog.objects.filter(data=datum,profile=test_profile).count() == 0
-    assert DataQueue.objects.filter(data=datum,queue=irr_queue).count() > 0
+    assert DataLabel.objects.filter(data=datum, profile=test_profile).count() > 0
+    assert IRRLog.objects.filter(data=datum, profile=test_profile).count() == 0
+    assert DataQueue.objects.filter(data=datum, queue=irr_queue).count() > 0
 
     datum2 = assign_datum(test_profile2, project, "irr")
     assert datum.pk == datum2.pk
@@ -1279,30 +1452,30 @@ def test_annotate_irr(setup_celery, test_project_half_irr_data, test_half_irr_al
     assert datum.pk == datum3.pk
 
     # let other user label the same datum. It should now be in datatable with
-    #creater=profile, be in IRRLog (twice), not be in IRRQueue
+    # creater=profile, be in IRRLog (twice), not be in IRRQueue
     label_data(test_labels_half_irr[0], datum2, test_profile2, 3)
-    assert DataLabel.objects.filter(data=datum2).count()  == 1
+    assert DataLabel.objects.filter(data=datum2).count() == 1
     assert DataLabel.objects.get(data=datum2).profile.pk == project.creator.pk
     assert IRRLog.objects.filter(data=datum2).count() == 2
-    assert DataQueue.objects.filter(data=datum2,queue=irr_queue).count() == 0
+    assert DataQueue.objects.filter(data=datum2, queue=irr_queue).count() == 0
 
     # let a third user label the first data something else. It should be in
-    #IRRLog but not overwrite the label from before
+    # IRRLog but not overwrite the label from before
     label_data(test_labels_half_irr[0], datum3, test_profile3, 3)
     assert IRRLog.objects.filter(data=datum3).count() == 3
     assert DataLabel.objects.filter(data=datum3).count() == 1
     assert DataLabel.objects.get(data=datum3).profile.pk == project.creator.pk
 
     # let two users disagree on a datum. It should be in the admin queue,
-    #not in irr queue, not in datalabel, in irrlog twice
+    # not in irr queue, not in datalabel, in irrlog twice
     second_datum = assign_datum(test_profile, project, "irr")
-    #should be a new datum
+    # should be a new datum
     assert datum.pk != second_datum.pk
     second_datum2 = assign_datum(test_profile2, project, "irr")
     label_data(test_labels_half_irr[0], second_datum, test_profile, 3)
     label_data(test_labels_half_irr[1], second_datum2, test_profile2, 3)
-    assert DataQueue.objects.filter(data=second_datum2,queue=admin_queue).count() == 1
-    assert DataQueue.objects.filter(data=second_datum2,queue=irr_queue).count() == 0
+    assert DataQueue.objects.filter(data=second_datum2, queue=admin_queue).count() == 1
+    assert DataQueue.objects.filter(data=second_datum2, queue=irr_queue).count() == 0
     assert DataLabel.objects.filter(data=second_datum2).count() == 0
     assert IRRLog.objects.filter(data=second_datum2).count() == 2
 
@@ -1313,31 +1486,31 @@ def test_skip_irr(setup_celery, test_project_half_irr_data, test_half_irr_all_qu
     '''
     project = test_project_half_irr_data
     normal_queue, admin_queue, irr_queue = test_half_irr_all_queues
-    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size )
+    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size)
     # get an irr datum. One should exist.
     datum = assign_datum(test_profile, project, "irr")
-    assert datum != None
+    assert datum is not None
 
-    #let one user skip an irr datum. It should not be in adminqueue, should be in irr queue,
-    #should be in irrlog, should be in irr queue, not be in datalabel
+    # let one user skip an irr datum. It should not be in adminqueue, should be in irr queue,
+    # should be in irrlog, should be in irr queue, not be in datalabel
     skip_data(datum, test_profile)
-    assert DataQueue.objects.filter(data=datum,queue=admin_queue).count() == 0
-    assert DataQueue.objects.filter(data=datum,queue=irr_queue).count() == 1
-    assert IRRLog.objects.filter(data=datum,profile=test_profile).count() == 1
-    assert DataLabel.objects.filter(data=datum,profile=test_profile).count() == 0
+    assert DataQueue.objects.filter(data=datum, queue=admin_queue).count() == 0
+    assert DataQueue.objects.filter(data=datum, queue=irr_queue).count() == 1
+    assert IRRLog.objects.filter(data=datum, profile=test_profile).count() == 1
+    assert DataLabel.objects.filter(data=datum, profile=test_profile).count() == 0
 
-    #let the other user skip the data. It should be in admin queue,
-    #IRRlog (twice), and nowhere else.
+    # let the other user skip the data. It should be in admin queue,
+    # IRRlog (twice), and nowhere else.
     datum2 = assign_datum(test_profile2, project, "irr")
     assert datum.pk == datum2.pk
     skip_data(datum2, test_profile2)
-    assert DataQueue.objects.filter(data=datum,queue=admin_queue).count() == 1
-    assert DataQueue.objects.filter(data=datum,queue=irr_queue).count() == 0
+    assert DataQueue.objects.filter(data=datum, queue=admin_queue).count() == 1
+    assert DataQueue.objects.filter(data=datum, queue=irr_queue).count() == 0
     assert IRRLog.objects.filter(data=datum).count() == 2
     assert DataLabel.objects.filter(data=datum).count() == 0
 
-    #have two users label an IRR datum then have a third user skip it.
-    #It should be in the IRRLog but not in admin queue or anywhere else.
+    # have two users label an IRR datum then have a third user skip it.
+    # It should be in the IRRLog but not in admin queue or anywhere else.
     second_datum = assign_datum(test_profile, project, "irr")
     second_datum2 = assign_datum(test_profile2, project, "irr")
     assert second_datum.pk != datum.pk
@@ -1348,35 +1521,36 @@ def test_skip_irr(setup_celery, test_project_half_irr_data, test_half_irr_all_qu
     label_data(test_labels_half_irr[0], second_datum, test_profile, 3)
     label_data(test_labels_half_irr[0], second_datum2, test_profile2, 3)
     skip_data(second_datum3, test_profile3)
-    assert DataQueue.objects.filter(data=second_datum3,queue=admin_queue).count() == 0
-    assert DataQueue.objects.filter(data=second_datum3,queue=irr_queue).count() == 0
+    assert DataQueue.objects.filter(data=second_datum3, queue=admin_queue).count() == 0
+    assert DataQueue.objects.filter(data=second_datum3, queue=irr_queue).count() == 0
     assert IRRLog.objects.filter(data=second_datum3).count() == 3
     assert DataLabel.objects.filter(data=second_datum3).count() == 1
+
 
 def test_queue_refill(setup_celery, test_project_data, test_all_queues, test_profile, test_labels, test_redis, tmpdir, settings):
     '''
     Check that the queues refill the way they should.
-    Have one person label everything in a batch. Check that the queue refills but the irr queue now has twice the irr%*batch amount
+    Have one person label everything in a batch. Check that the queue refills but the irr queue now has twice the irr% * batch amount
     '''
     project = test_project_data
     normal_queue, admin_queue, irr_queue = test_all_queues
-    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size )
+    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size)
 
-    irr_count = math.ceil((project.percentage_irr/100)*project.batch_size)
-    non_irr_count = math.ceil(((100 - project.percentage_irr)/100)*project.batch_size)
+    irr_count = math.ceil((project.percentage_irr / 100) * project.batch_size)
+    non_irr_count = math.ceil(((100 - project.percentage_irr) / 100) * project.batch_size)
 
     for i in range(non_irr_count):
         datum = assign_datum(test_profile, project, "normal")
         assert datum is not None
-        label_data(test_labels[0],datum, test_profile, 3)
+        label_data(test_labels[0], datum, test_profile, 3)
         check_and_trigger_model(datum, test_profile)
     for i in range(irr_count):
         datum = assign_datum(test_profile, project, "irr")
         assert datum is not None
-        label_data(test_labels[0],datum, test_profile, 3)
+        label_data(test_labels[0], datum, test_profile, 3)
         check_and_trigger_model(datum, test_profile)
     assert DataQueue.objects.filter(queue=normal_queue).count() == non_irr_count
-    assert DataQueue.objects.filter(queue=irr_queue).count() == irr_count*2
+    assert DataQueue.objects.filter(queue=irr_queue).count() == irr_count * 2
 
 
 def test_no_irr(setup_celery, test_project_no_irr_data, test_no_irr_all_queues, test_profile, test_labels_no_irr, test_redis, tmpdir, settings):
@@ -1385,14 +1559,15 @@ def test_no_irr(setup_celery, test_project_no_irr_data, test_no_irr_all_queues, 
     '''
     project = test_project_no_irr_data
     normal_queue, admin_queue, irr_queue = test_no_irr_all_queues
-    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size )
+    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size)
 
     # check that the normal queue is filled and the IRR queue is empty
-    assert DataQueue.objects.filter(queue=irr_queue).count()  == 0
-    assert DataQueue.objects.filter(queue=normal_queue).count()  == project.batch_size
+    assert DataQueue.objects.filter(queue=irr_queue).count() == 0
+    assert DataQueue.objects.filter(queue=normal_queue).count() == project.batch_size
 
     # check that no data has irr_ind=True
     assert Data.objects.filter(irr_ind=True).count() == 0
+
 
 def test_all_irr(setup_celery, test_project_all_irr_3_coders_data, test_all_irr_3_coders_all_queues, test_profile, test_profile2, test_profile3, test_labels_all_irr_3_coders, test_redis, tmpdir, settings):
     '''
@@ -1401,14 +1576,15 @@ def test_all_irr(setup_celery, test_project_all_irr_3_coders_data, test_all_irr_
     project = test_project_all_irr_3_coders_data
     labels = test_labels_all_irr_3_coders
     normal_queue, admin_queue, irr_queue = test_all_irr_3_coders_all_queues
-    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size )
+    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size)
 
     # check the normal queue is empty and the irr queue is full
-    assert DataQueue.objects.filter(queue=irr_queue).count()  == project.batch_size
-    assert DataQueue.objects.filter(queue=normal_queue).count()  == 0
+    assert DataQueue.objects.filter(queue=irr_queue).count() == project.batch_size
+    assert DataQueue.objects.filter(queue=normal_queue).count() == 0
 
     # check everything in the irr queue has irr_ind = true
-    assert DataQueue.objects.filter(queue=irr_queue, data__irr_ind = True).count()  == project.batch_size
+    assert DataQueue.objects.filter(
+        queue=irr_queue, data__irr_ind=True).count() == project.batch_size
 
     # have one person label three datum and check that they are still in the queue
     datum = assign_datum(test_profile, project, "irr")
@@ -1421,7 +1597,8 @@ def test_all_irr(setup_celery, test_project_all_irr_3_coders_data, test_all_irr_
     label_data(labels[0], second_datum, test_profile, 3)
     label_data(labels[0], third_datum, test_profile, 3)
 
-    assert DataQueue.objects.filter(queue=irr_queue, data__in=[datum, second_datum, third_datum]).count() == 3
+    assert DataQueue.objects.filter(queue=irr_queue, data__in=[
+                                    datum, second_datum, third_datum]).count() == 3
 
     # have one person skip all three datum, and check that they are still in the irr queue, in irrlog, and in datalabel, but not in admin queue
     datum2 = assign_datum(test_profile2, project, "irr")
@@ -1436,8 +1613,10 @@ def test_all_irr(setup_celery, test_project_all_irr_3_coders_data, test_all_irr_
     skip_data(second_datum2, test_profile2)
     skip_data(third_datum2, test_profile2)
 
-    assert DataQueue.objects.filter(data__in=[datum2, second_datum2, third_datum2], queue=irr_queue).count() == 3
-    assert DataQueue.objects.filter(data__in=[datum2, second_datum2, third_datum2], queue=admin_queue).count() == 0
+    assert DataQueue.objects.filter(
+        data__in=[datum2, second_datum2, third_datum2], queue=irr_queue).count() == 3
+    assert DataQueue.objects.filter(
+        data__in=[datum2, second_datum2, third_datum2], queue=admin_queue).count() == 0
     assert IRRLog.objects.filter(data__in=[datum2, second_datum2, third_datum2]).count() == 3
     assert DataLabel.objects.filter(data__in=[datum2, second_datum2, third_datum2]).count() == 3
 
@@ -1454,10 +1633,13 @@ def test_all_irr(setup_celery, test_project_all_irr_3_coders_data, test_all_irr_
     label_data(labels[1], second_datum3, test_profile3, 3)
     label_data(labels[0], third_datum3, test_profile3, 3)
 
-    assert DataQueue.objects.filter(data__in=[datum3, second_datum3, third_datum3], queue=irr_queue).count() == 0
-    assert DataQueue.objects.filter(data__in=[datum3, second_datum3, third_datum3], queue=admin_queue).count() == 3
+    assert DataQueue.objects.filter(
+        data__in=[datum3, second_datum3, third_datum3], queue=irr_queue).count() == 0
+    assert DataQueue.objects.filter(
+        data__in=[datum3, second_datum3, third_datum3], queue=admin_queue).count() == 3
     assert IRRLog.objects.filter(data__in=[datum3, second_datum3, third_datum3]).count() == 9
     assert DataLabel.objects.filter(data__in=[datum3, second_datum3, third_datum3]).count() == 0
+
 
 def test_cohens_kappa_perc_agreement(setup_celery, test_project_half_irr_data, test_half_irr_all_queues, test_profile, test_profile2, test_labels_half_irr, test_redis, tmpdir, settings):
     '''
@@ -1467,22 +1649,22 @@ def test_cohens_kappa_perc_agreement(setup_celery, test_project_half_irr_data, t
     project = test_project_half_irr_data
     labels = test_labels_half_irr
     normal_queue, admin_queue, irr_queue = test_half_irr_all_queues
-    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size )
+    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size)
 
-    #check that before anything is labeled, an error is thrown
+    # check that before anything is labeled, an error is thrown
     with pytest.raises(ValueError) as excinfo:
         ls = cohens_kappa(project)
 
     assert 'No irr data' in str(excinfo.value)
 
-    #have two labelers label two datum the same.
+    # have two labelers label two datum the same.
     for i in range(2):
         datum = assign_datum(test_profile, project, "irr")
         assign_datum(test_profile2, project, "irr")
         label_data(labels[0], datum, test_profile, 3)
         label_data(labels[0], datum, test_profile2, 3)
 
-    #kappa requires at least two labels be represented
+    # kappa requires at least two labels be represented
     with pytest.raises(ValueError) as excinfo:
         ls = cohens_kappa(project)
     assert 'Need at least two labels represented' in str(excinfo.value)
@@ -1492,12 +1674,12 @@ def test_cohens_kappa_perc_agreement(setup_celery, test_project_half_irr_data, t
     label_data(labels[1], datum, test_profile, 3)
     label_data(labels[1], datum, test_profile2, 3)
 
-    #Now kappa should be 1
+    # Now kappa should be 1
     kappa, perc = cohens_kappa(project)
     assert kappa == 1.0
     assert perc == 1.0
 
-    #have two labelers disagree on two datum check the value
+    # have two labelers disagree on two datum check the value
     datum = assign_datum(test_profile, project, "irr")
     assign_datum(test_profile2, project, "irr")
     label_data(labels[1], datum, test_profile, 3)
@@ -1509,8 +1691,9 @@ def test_cohens_kappa_perc_agreement(setup_celery, test_project_half_irr_data, t
     label_data(labels[1], datum, test_profile2, 3)
 
     kappa, perc = cohens_kappa(project)
-    assert round(kappa,3) == 0.333
+    assert round(kappa, 3) == 0.333
     assert perc == 0.6
+
 
 def test_cohens_kappa_perc_agreement_no_agreement(setup_celery, test_project_half_irr_data, test_half_irr_all_queues, test_profile, test_profile2, test_labels_half_irr, test_redis, tmpdir, settings):
     '''
@@ -1519,16 +1702,16 @@ def test_cohens_kappa_perc_agreement_no_agreement(setup_celery, test_project_hal
     project = test_project_half_irr_data
     labels = test_labels_half_irr
     normal_queue, admin_queue, irr_queue = test_half_irr_all_queues
-    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size )
+    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size)
 
-    #label 5 irr elements but disagree on all of them
+    # label 5 irr elements but disagree on all of them
     for i in range(5):
         datum = assign_datum(test_profile, project, "irr")
         assign_datum(test_profile2, project, "irr")
-        label_data(labels[i%3], datum, test_profile, 3)
-        label_data(labels[(i+1)%3], datum, test_profile2, 3)
+        label_data(labels[i % 3], datum, test_profile, 3)
+        label_data(labels[(i + 1) % 3], datum, test_profile2, 3)
     kappa, perc = cohens_kappa(project)
-    assert round(kappa,3) == -0.471
+    assert round(kappa, 3) == -0.471
     assert perc == 0.0
 
 
@@ -1539,15 +1722,15 @@ def test_fleiss_kappa_perc_agreement(setup_celery, test_project_all_irr_3_coders
     project = test_project_all_irr_3_coders_data
     labels = test_labels_all_irr_3_coders
     normal_queue, admin_queue, irr_queue = test_all_irr_3_coders_all_queues
-    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size )
+    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size)
 
-    #first check that an error is thrown if there is no data
+    # first check that an error is thrown if there is no data
     with pytest.raises(ValueError) as excinfo:
         ls = fleiss_kappa(project)
 
     assert 'No irr data' in str(excinfo.value)
 
-    #next, check that the same error happens if only two have labeled it
+    # next, check that the same error happens if only two have labeled it
     datum = assign_datum(test_profile, project, "irr")
     assign_datum(test_profile2, project, "irr")
     assign_datum(test_profile3, project, "irr")
@@ -1558,14 +1741,14 @@ def test_fleiss_kappa_perc_agreement(setup_celery, test_project_all_irr_3_coders
         ls = fleiss_kappa(project)
     assert 'No irr data' in str(excinfo.value)
 
-    #have everyone label a datum differenty
-    #[1 1 1], kappa = -0.5, pa = 0
+    # have everyone label a datum differenty
+    # [1 1 1], kappa = -0.5, pa = 0
     label_data(labels[2], datum, test_profile3, 3)
     kappa, perc = fleiss_kappa(project)
-    assert round(kappa,1) == -0.5
+    assert round(kappa, 1) == -0.5
     assert perc == 0.0
 
-    #have only two people label a datum the same and check that kappa is the same
+    # have only two people label a datum the same and check that kappa is the same
     datum = assign_datum(test_profile, project, "irr")
     assign_datum(test_profile2, project, "irr")
     assign_datum(test_profile3, project, "irr")
@@ -1573,19 +1756,19 @@ def test_fleiss_kappa_perc_agreement(setup_celery, test_project_all_irr_3_coders
     label_data(labels[0], datum, test_profile2, 3)
 
     kappa, perc = fleiss_kappa(project)
-    assert round(kappa,1) == -0.5
+    assert round(kappa, 1) == -0.5
     assert perc == 0.0
 
-    #have last person label datum the same
-    #[[1 1 1],[3 0 0]], kappa = 0.0, pa = 0.5
+    # have last person label datum the same
+    # [[1 1 1],[3 0 0]], kappa = 0.0, pa = 0.5
     label_data(labels[0], datum, test_profile3, 3)
 
     kappa, perc = fleiss_kappa(project)
-    assert round(kappa,2) == 0.0
+    assert round(kappa, 2) == 0.0
     assert perc == 0.5
 
-    #have two people agree and one disagree
-    #[[1 1 1],[3 0 0],[2 1 0]], kappa = -0.13, pa=0.333
+    # have two people agree and one disagree
+    # [[1 1 1],[3 0 0],[2 1 0]], kappa = -0.13, pa=0.333
     datum = assign_datum(test_profile, project, "irr")
     assign_datum(test_profile2, project, "irr")
     assign_datum(test_profile3, project, "irr")
@@ -1594,11 +1777,11 @@ def test_fleiss_kappa_perc_agreement(setup_celery, test_project_all_irr_3_coders
     label_data(labels[1], datum, test_profile3, 3)
 
     kappa, perc = fleiss_kappa(project)
-    assert round(kappa,2) == -0.13
-    assert round(perc,2) == 0.33
+    assert round(kappa, 2) == -0.13
+    assert round(perc, 2) == 0.33
 
-    #repeat previous step with slight variation
-    #[[1 1 1],[3 0 0],[2 1 0],[1 2 0]], kappa = -0.08, pa=0.25
+    # repeat previous step with slight variation
+    # [[1 1 1],[3 0 0],[2 1 0],[1 2 0]], kappa = -0.08, pa=0.25
     datum = assign_datum(test_profile, project, "irr")
     assign_datum(test_profile2, project, "irr")
     assign_datum(test_profile3, project, "irr")
@@ -1607,12 +1790,12 @@ def test_fleiss_kappa_perc_agreement(setup_celery, test_project_all_irr_3_coders
     label_data(labels[1], datum, test_profile3, 3)
 
     kappa, perc = fleiss_kappa(project)
-    assert round(kappa,2) == -0.08
-    assert round(perc,2) == 0.25
+    assert round(kappa, 2) == -0.08
+    assert round(perc, 2) == 0.25
 
 
 def test_heatmap_data(setup_celery, test_project_half_irr_data, test_half_irr_all_queues,
-                       test_profile, test_profile2, test_labels_half_irr, test_redis, tmpdir, settings):
+                      test_profile, test_profile2, test_labels_half_irr, test_redis, tmpdir, settings):
     '''
     These tests check that the heatmap accurately reflects the data
     '''
@@ -1625,66 +1808,76 @@ def test_heatmap_data(setup_celery, test_project_half_irr_data, test_half_irr_al
                                       permission='CODER')
     labels = test_labels_half_irr
     normal_queue, admin_queue, irr_queue = test_half_irr_all_queues
-    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size )
+    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size)
 
     combo1 = str(test_profile.pk) + "_" + str(test_profile2.pk)
 
     same1 = str(test_profile.pk) + "_" + str(test_profile.pk)
     same2 = str(test_profile2.pk) + "_" + str(test_profile2.pk)
 
-    #don't label anything. The heatmap shoud have all zeros for user pair
+    # don't label anything. The heatmap shoud have all zeros for user pair
     heatmap = irr_heatmap_data(project)
     assert combo1 in heatmap
     heatmap = heatmap[combo1]
 
     counts = pd.DataFrame(heatmap)["count"].tolist()
-    assert np.all(np.equal(counts,[0]*len(counts)))
+    assert np.all(np.equal(counts, [0] * len(counts)))
 
-    #have one user skip 3 things and another label them.
+    # have one user skip 3 things and another label them.
     for i in range(3):
         datum = assign_datum(test_profile, project, "irr")
         assign_datum(test_profile2, project, "irr")
         label_data(labels[i], datum, test_profile, 3)
         skip_data(datum, test_profile2)
 
-    #check that user1-user1 map is I3
+    # check that user1-user1 map is I3
     heatmap = irr_heatmap_data(project)
-    same_frame =  pd.DataFrame(heatmap[same1])
-    assert same_frame.loc[(same_frame["label1"] == labels[0].name) & (same_frame["label2"] == labels[0].name)]["count"].tolist()[0] == 1
-    assert same_frame.loc[(same_frame["label1"] == labels[1].name) & (same_frame["label2"] == labels[1].name)]["count"].tolist()[0] == 1
-    assert same_frame.loc[(same_frame["label1"] == labels[2].name) & (same_frame["label2"] == labels[2].name)]["count"].tolist()[0] == 1
+    same_frame = pd.DataFrame(heatmap[same1])
+    assert same_frame.loc[(same_frame["label1"] == labels[0].name) & (
+        same_frame["label2"] == labels[0].name)]["count"].tolist()[0] == 1
+    assert same_frame.loc[(same_frame["label1"] == labels[1].name) & (
+        same_frame["label2"] == labels[1].name)]["count"].tolist()[0] == 1
+    assert same_frame.loc[(same_frame["label1"] == labels[2].name) & (
+        same_frame["label2"] == labels[2].name)]["count"].tolist()[0] == 1
     assert np.sum(same_frame["count"].tolist()) == 3
 
-    #check the second user only has 3 in the skip-skip spot
-    same_frame2 =  pd.DataFrame(heatmap[same2])
-    assert same_frame2.loc[(same_frame2["label1"] == "Skip") & (same_frame["label2"] == "Skip")]["count"].tolist()[0] == 3
+    # check the second user only has 3 in the skip-skip spot
+    same_frame2 = pd.DataFrame(heatmap[same2])
+    assert same_frame2.loc[(same_frame2["label1"] == "Skip") & (
+        same_frame["label2"] == "Skip")]["count"].tolist()[0] == 3
     assert np.sum(same_frame2["count"].tolist()) == 3
 
-    #check that the between-user heatmap has skip-label = 1 for each label
+    # check that the between-user heatmap has skip-label = 1 for each label
     heatmap = irr_heatmap_data(project)
     heatmap = pd.DataFrame(heatmap[combo1])
-    assert heatmap.loc[(heatmap["label1"] == labels[0].name) & (heatmap["label2"] == "Skip")]["count"].tolist()[0] == 1
-    assert heatmap.loc[(heatmap["label1"] == labels[1].name) & (heatmap["label2"] == "Skip")]["count"].tolist()[0] == 1
-    assert heatmap.loc[(heatmap["label1"] == labels[2].name) & (heatmap["label2"] == "Skip")]["count"].tolist()[0] == 1
+    assert heatmap.loc[(heatmap["label1"] == labels[0].name) & (
+        heatmap["label2"] == "Skip")]["count"].tolist()[0] == 1
+    assert heatmap.loc[(heatmap["label1"] == labels[1].name) & (
+        heatmap["label2"] == "Skip")]["count"].tolist()[0] == 1
+    assert heatmap.loc[(heatmap["label1"] == labels[2].name) & (
+        heatmap["label2"] == "Skip")]["count"].tolist()[0] == 1
 
     assert np.sum(heatmap["count"].tolist()) == 3
 
-    #have users agree on 5 labels and datums, check heatmap
+    # have users agree on 5 labels and datums, check heatmap
     for i in range(5):
         datum = assign_datum(test_profile, project, "irr")
         assign_datum(test_profile2, project, "irr")
-        label_data(labels[i%3], datum, test_profile, 3)
-        label_data(labels[i%3], datum, test_profile2, 3)
+        label_data(labels[i % 3], datum, test_profile, 3)
+        label_data(labels[i % 3], datum, test_profile2, 3)
 
     heatmap = irr_heatmap_data(project)
     heatmap = pd.DataFrame(heatmap[combo1])
 
-    assert heatmap.loc[(heatmap["label1"] == labels[0].name) & (heatmap["label2"] == labels[0].name)]["count"].tolist()[0] == 2
-    assert heatmap.loc[(heatmap["label1"] == labels[1].name) & (heatmap["label2"] == labels[1].name)]["count"].tolist()[0] == 2
-    assert heatmap.loc[(heatmap["label1"] == labels[2].name) & (heatmap["label2"] == labels[2].name)]["count"].tolist()[0] == 1
+    assert heatmap.loc[(heatmap["label1"] == labels[0].name) & (
+        heatmap["label2"] == labels[0].name)]["count"].tolist()[0] == 2
+    assert heatmap.loc[(heatmap["label1"] == labels[1].name) & (
+        heatmap["label2"] == labels[1].name)]["count"].tolist()[0] == 2
+    assert heatmap.loc[(heatmap["label1"] == labels[2].name) & (
+        heatmap["label2"] == labels[2].name)]["count"].tolist()[0] == 1
     assert np.sum(heatmap["count"].tolist()) == 8
 
-    #have one user label something, show the heatmap hasn't changed
+    # have one user label something, show the heatmap hasn't changed
     datum = assign_datum(test_profile, project, "irr")
     label_data(labels[0], datum, test_profile, 3)
     heatmap = irr_heatmap_data(project)
@@ -1693,8 +1886,9 @@ def test_heatmap_data(setup_celery, test_project_half_irr_data, test_half_irr_al
     heatmap = pd.DataFrame(heatmap[combo1])
     assert np.sum(pd.DataFrame(heatmap)["count"].tolist()) == 8
 
+
 def test_percent_agreement_table(setup_celery, test_project_all_irr_3_coders_data, test_all_irr_3_coders_all_queues,
-                                  test_profile, test_profile2, test_profile3, test_labels_all_irr_3_coders, test_redis, tmpdir, settings):
+                                 test_profile, test_profile2, test_profile3, test_labels_all_irr_3_coders, test_redis, tmpdir, settings):
     '''
     This tests the percent agreement table
     '''
@@ -1707,14 +1901,15 @@ def test_percent_agreement_table(setup_celery, test_project_all_irr_3_coders_dat
                                       permission='CODER')
     labels = test_labels_all_irr_3_coders
     normal_queue, admin_queue, irr_queue = test_all_irr_3_coders_all_queues
-    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size )
+    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size)
 
     table_data_perc = pd.DataFrame(perc_agreement_table_data(project))["Percent Agreement"].tolist()
-    #first test that it has "No Samples" for the percent for all
+    # first test that it has "No Samples" for the percent for all
     assert len(table_data_perc) == 3
-    assert (table_data_perc[0] == "No samples") and (table_data_perc[1] == "No samples") and (table_data_perc[2] == "No samples")
+    assert (table_data_perc[0] == "No samples") and (table_data_perc[1]
+                                                     == "No samples") and (table_data_perc[2] == "No samples")
 
-    #First have everyone give same label, should be 100% for all
+    # First have everyone give same label, should be 100% for all
     datum = assign_datum(test_profile, project, "irr")
     assign_datum(test_profile2, project, "irr")
     assign_datum(test_profile3, project, "irr")
@@ -1723,9 +1918,10 @@ def test_percent_agreement_table(setup_celery, test_project_all_irr_3_coders_dat
     label_data(labels[0], datum, test_profile3, 3)
 
     table_data_perc = pd.DataFrame(perc_agreement_table_data(project))["Percent Agreement"].tolist()
-    assert (table_data_perc[0] == "100.0%") and (table_data_perc[1] == "100.0%") and (table_data_perc[2] == "100.0%")
+    assert (table_data_perc[0] == "100.0%") and (table_data_perc[1]
+                                                 == "100.0%") and (table_data_perc[2] == "100.0%")
 
-    #Next have user1 = user2 != user3, Check values
+    # Next have user1 = user2 != user3, Check values
     datum = assign_datum(test_profile, project, "irr")
     assign_datum(test_profile2, project, "irr")
     assign_datum(test_profile3, project, "irr")
@@ -1735,9 +1931,10 @@ def test_percent_agreement_table(setup_celery, test_project_all_irr_3_coders_dat
 
     table_data_perc = pd.DataFrame(perc_agreement_table_data(project))["Percent Agreement"].tolist()
     # goes in the order [prof2,prof3], [prof2, prof], [prof3, prof]
-    assert (table_data_perc[0] == "50.0%") and (table_data_perc[1] == "100.0%") and (table_data_perc[2] == "50.0%")
+    assert (table_data_perc[0] == "50.0%") and (table_data_perc[1]
+                                                == "100.0%") and (table_data_perc[2] == "50.0%")
 
-    #Next have all users skip. Should count as disagreement.
+    # Next have all users skip. Should count as disagreement.
     datum = assign_datum(test_profile, project, "irr")
     assign_datum(test_profile2, project, "irr")
     assign_datum(test_profile3, project, "irr")
@@ -1747,9 +1944,10 @@ def test_percent_agreement_table(setup_celery, test_project_all_irr_3_coders_dat
 
     table_data_perc = pd.DataFrame(perc_agreement_table_data(project))["Percent Agreement"].tolist()
     # goes in the order [prof2,prof3], [prof2, prof], [prof3, prof]
-    assert (table_data_perc[0] == "33.3%") and (table_data_perc[1] == "66.7%") and (table_data_perc[2] == "33.3%")
+    assert (table_data_perc[0] == "33.3%") and (
+        table_data_perc[1] == "66.7%") and (table_data_perc[2] == "33.3%")
 
-    #Lastly have two users label. Should be the same as before
+    # Lastly have two users label. Should be the same as before
     datum = assign_datum(test_profile, project, "irr")
     assign_datum(test_profile2, project, "irr")
     assign_datum(test_profile3, project, "irr")
@@ -1757,4 +1955,32 @@ def test_percent_agreement_table(setup_celery, test_project_all_irr_3_coders_dat
     label_data(labels[0], datum, test_profile2, 3)
     table_data_perc = pd.DataFrame(perc_agreement_table_data(project))["Percent Agreement"].tolist()
     # goes in the order [prof2,prof3], [prof2, prof], [prof3, prof]
-    assert (table_data_perc[0] == "33.3%") and (table_data_perc[1] == "66.7%") and (table_data_perc[2] == "33.3%")
+    assert (table_data_perc[0] == "33.3%") and (
+        table_data_perc[1] == "66.7%") and (table_data_perc[2] == "33.3%")
+
+
+def test_get_labeled_data(setup_celery, test_profile, test_project_labeled, test_queue_labeled, test_irr_queue_labeled,
+                          test_admin_queue_labeled, test_redis, tmpdir, settings):
+    '''
+    This tests that the labeled data is pulled correctly
+    '''
+    # This tests labeled data util call
+    project = test_project_labeled
+    project_labels = Label.objects.filter(project=project)
+    fill_queue(test_queue_labeled, 'random', test_irr_queue_labeled,
+               project.percentage_irr, project.batch_size)
+
+    # get the labeled data and the labels
+    labeled_data, labels = get_labeled_data(project)
+    assert isinstance(labeled_data, pd.DataFrame)
+    assert isinstance(labels, pd.DataFrame)
+
+    # should have the same number of labels and labeled data as in project
+    assert len(labels) == len(project_labels)
+
+    project_labeled = DataLabel.objects.filter(data__project=project)
+    assert len(labeled_data) == len(project_labeled)
+
+    # check that the labeled data is returned matches the stuff in DataLabel
+    assert len(set(project_labeled.values_list("data__upload_id", flat=True))
+               & set(labeled_data["ID"].tolist())) == len(labeled_data)
