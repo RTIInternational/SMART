@@ -4,7 +4,7 @@ from .models import Project, ProjectPermissions, Label, Data
 import pandas as pd
 import numpy as np
 from pandas.errors import EmptyDataError, ParserError
-from django.forms.widgets import RadioSelect, Textarea
+from django.forms.widgets import RadioSelect, Textarea, TextInput, Select
 import copy
 from io import StringIO
 from core.util import md5_hash
@@ -131,8 +131,8 @@ class LabelForm(forms.ModelForm):
         model = Label
         fields = '__all__'
 
-    name = forms.CharField()
-    description = forms.CharField(required=False, initial="", widget=Textarea())
+    name = forms.CharField(widget=TextInput(attrs={'class': 'form-control'}))
+    description = forms.CharField(required=False, initial='', widget=Textarea(attrs={'class': 'form-control', 'rows': '5'}))
 
 
 class LabelDescriptionForm(forms.ModelForm):
@@ -140,8 +140,8 @@ class LabelDescriptionForm(forms.ModelForm):
         model = Label
         fields = ['name', 'description']
 
-    name = forms.CharField(disabled=True)
-    description = forms.CharField(required=False, widget=Textarea())
+    name = forms.CharField(disabled=True, widget=TextInput(attrs={'class': 'form-control'}))
+    description = forms.CharField(required=False, widget=Textarea(attrs={'class': 'form-control', 'rows': '5'}))
 
     def __init__(self, *args, **kwargs):
         self.action = kwargs.pop('action', None)
@@ -152,6 +152,10 @@ class ProjectPermissionsForm(forms.ModelForm):
     class Meta:
         model = ProjectPermissions
         fields = '__all__'
+        widgets = {
+            'profile': Select(attrs={'class': 'form-control'}),
+            'permission': Select(attrs={'class': 'form-control'}),
+        }
 
     def __init__(self, *args, **kwargs):
         self.profile = kwargs.pop('profile', None)

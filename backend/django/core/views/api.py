@@ -870,14 +870,16 @@ def skip_data(request, data_pk):
     # if the data is IRR or processed IRR, dont add to admin queue yet
     num_history = IRRLog.objects.filter(data=data).count()
 
-    if data.irr_ind or num_history > 0:
-        # log the data and check IRR but don't put in admin queue yet
-        IRRLog.objects.create(data=data, profile=profile, label=None, timestamp=timezone.now())
-
+    if RecycleBin.objects.filter(data=data).count() > 0:
+        assignment = AssignedData.objects.get(data=data, profile=profile)
+        assignment.delete()
+    elif data.irr_ind or num_history > 0:
         # unassign the skipped item
         assignment = AssignedData.objects.get(data=data, profile=profile)
         assignment.delete()
 
+        # log the data and check IRR but don't put in admin queue yet
+        IRRLog.objects.create(data=data, profile=profile, label=None, timestamp=timezone.now())
         # if the IRR history has more than the needed number of labels , it is
         # already processed so don't do anything else
         if num_history <= project.num_users_irr:
@@ -914,9 +916,14 @@ def annotate_data(request, data_pk):
     labeling_time = request.data['labeling_time']
 
     num_history = IRRLog.objects.filter(data=data).count()
-    # if the IRR history has more than the needed number of labels , it is
-    # already processed so just add this label to the history.
-    if num_history >= project.num_users_irr:
+
+    if RecycleBin.objects.filter(data=data).count() > 0:
+        # this data is no longer in use. delete it
+        assignment = AssignedData.objects.get(data=data, profile=profile)
+        assignment.delete()
+    elif num_history >= project.num_users_irr:
+        # if the IRR history has more than the needed number of labels , it is
+        # already processed so just add this label to the history.
         IRRLog.objects.create(data=data, profile=profile, label=label, timestamp=timezone.now())
         assignment = AssignedData.objects.get(data=data, profile=profile)
         assignment.delete()
@@ -957,6 +964,11 @@ def discard_data(request, data_pk):
         IRRLog.objects.filter(data=data).delete()
         Data.objects.filter(pk=data_pk).update(irr_ind=False)
         RecycleBin.objects.create(data=data, timestamp=timezone.now())
+
+        # remove any IRR log data
+        irr_records = IRRLog.objects.filter(data=data)
+        irr_records.delete()
+
     else:
         response['error'] = 'Invalid credentials. Must be an admin.'
 
