@@ -88,9 +88,19 @@
           <div id="settings-panel" class="panel-collapse collapse in">
             <div class="panel-body">
               <ul class="list-group-flush">
+                {% if project.classifier != None %}
+                <li class="list-group-item">
+                  <dt>Classifier</dt>
+                  <dd>{{ project.classifier }}</dd>
+                </li>
+                {% else %}
+                <li class="list-group-item">
+                  <dt>No Classifier being used</dt>
+                </li>
+                {% endif %}
                 <li class="list-group-item">
                   <dt>Selection Algorithm</dt>
-                  <dd> {{ project.learning_method }}</dd>
+                  <dd>{{ project.learning_method }}</dd>
                 </li>
                 <li class="list-group-item">
                   <dt>Batch Size</dt>

@@ -89,6 +89,7 @@
                         </div>
                     </div>
                 </div>
+                {% if project.learning_method != "random" %}
                 <hr>
                 <div class="row">
                     <div class="col-md-12">
@@ -104,6 +105,7 @@
                         </table>
                     </div>
                 </div>
+                {% endif %}
             </div>
             {% endif %}
             <div id="irr_tab" class="tab-pane fade in">
@@ -606,7 +608,7 @@ $(document).ready(function() {
     /*
      *  Activate DataTable script to create the predicted data DataTable
      */
-     {% if project.classifier != None %}
+     {% if project.classifier != None and project.learning_method != "random" %}
         $('#predicted_data_table').DataTable({
             "ajax": '/api/data_predicted_table/' + {{ project.pk }} + '/',
             "columns": [
