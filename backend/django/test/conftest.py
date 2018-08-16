@@ -193,7 +193,7 @@ def test_tfidf_matrix(test_project_data):
     A CSR-format tf-idf matrix created from the data of test_project_data
     '''
     data = Data.objects.filter(project=test_project_data)
-    return create_tfidf_matrix(data, test_project_data.pk)[0]
+    return create_tfidf_matrix(test_project_data.pk)[0]
 
 
 @pytest.fixture
@@ -202,7 +202,7 @@ def test_tfidf_matrix_labeled(test_project_labeled):
     A CSR-format tf-idf matrix created from the data of test_project_data
     '''
     data = Data.objects.filter(project=test_project_labeled)
-    return create_tfidf_matrix(data, test_project_labeled.pk)[0]
+    return create_tfidf_matrix(test_project_labeled.pk)[0]
 
 
 @pytest.fixture
@@ -211,7 +211,7 @@ def test_tfidf_vectorizer_labeled(test_project_labeled):
     A CSR-format tf-idf matrix created from the data of test_project_data
     '''
     data = Data.objects.filter(project=test_project_labeled)
-    return create_tfidf_matrix(data, test_project_labeled.pk)[1]
+    return create_tfidf_matrix(test_project_labeled.pk)[1]
 
 
 @pytest.fixture
@@ -309,7 +309,7 @@ def test_project_svm_data_tfidf(db, test_profile, tmpdir, settings):
     add_data(proj, test_data)
 
     data = Data.objects.filter(project=proj)
-    matrix = create_tfidf_matrix(data, proj.pk)[0]
+    matrix = create_tfidf_matrix(proj.pk)[0]
 
     data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
     settings.TF_IDF_PATH = str(data_temp)
@@ -389,7 +389,7 @@ def test_project_randomforest_data_tfidf(db, test_profile, tmpdir, settings):
     add_data(proj, test_data)
 
     data = Data.objects.filter(project=proj)
-    matrix = create_tfidf_matrix(data, proj.pk)[0]
+    matrix = create_tfidf_matrix(proj.pk)[0]
 
     data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
     settings.TF_IDF_PATH = str(data_temp)
@@ -484,7 +484,7 @@ def test_project_randomforest_data_tfidf(db, test_profile, tmpdir, settings):
     add_data(proj, test_data)
 
     data = Data.objects.filter(project=proj)
-    matrix = create_tfidf_matrix(data, proj.pk)[0]
+    matrix = create_tfidf_matrix(proj.pk)[0]
 
     data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
     settings.TF_IDF_PATH = str(data_temp)
@@ -602,7 +602,7 @@ def test_project_gnb_data_tfidf(db, test_profile, tmpdir, settings):
     add_data(proj, test_data)
 
     data = Data.objects.filter(project=proj)
-    matrix = create_tfidf_matrix(data, proj.pk)[0]
+    matrix = create_tfidf_matrix(proj.pk)[0]
 
     data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
     settings.TF_IDF_PATH = str(data_temp)

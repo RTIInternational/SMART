@@ -72,8 +72,7 @@ def test_tfidf_creation_task(test_project_data, tmpdir, settings):
     project = test_project_data
     data = Data.objects.filter(project=project)
 
-    file = tasks.send_tfidf_creation_task.delay(
-        DataSerializer(data, many=True).data, project.pk).get()
+    file = tasks.send_tfidf_creation_task.delay(project.pk).get()
 
     assert os.path.isfile(file)
     assert file == os.path.join(str(data_temp), 'project_'
