@@ -40,8 +40,8 @@ from core import tasks
 
 
 # TODO: Divide these functions into a public/private API when we determine
-#  what functionality is needed by the frontend.  This file is a little
-#  intimidating to sort through at the moment.
+# what functionality is needed by the frontend.  This file is a little
+# intimidating to sort through at the moment.
 
 
 def redis_serialize_queue(queue):
@@ -84,6 +84,7 @@ def md5_hash(obj):
         return hashlib.md5(obj.encode('utf-8', errors='ignore')).hexdigest()
     else:
         return None
+
 
 def create_profile(username, password, email):
     '''
@@ -139,8 +140,8 @@ def init_redis():
     try:
         assigned_data_ids = set((d.data_id for d in AssignedData.objects.all()))
     except ProgrammingError:
-        raise ValueError('There are unrun migrations.  Please migrate the database.'\
-                         ' Use `docker-compose run --rm smart_backend ./migrate.sh`'\
+        raise ValueError('There are unrun migrations.  Please migrate the database.'
+                         ' Use `docker-compose run --rm smart_backend ./migrate.sh`'
                          ' Then restart the django server.')
 
     pipeline = settings.REDIS.pipeline(transaction=False)
@@ -172,8 +173,8 @@ def sync_redis_objects(queue, orderby):
     """
     ORDERBY_OPTIONS = ['random', 'least confident', 'margin sampling', 'entropy', 'qbc']
     if orderby not in ORDERBY_OPTIONS:
-        raise ValueError('orderby parameter must be one of the following: ' +
-                         ' '.join(ORDERBY_OPTIONS))
+        raise ValueError('orderby parameter must be one of the following: '
+                         + ' '.join(ORDERBY_OPTIONS))
 
     data_ids = [redis_serialize_data(d) for d in queue.data.all()]
     if len(data_ids) > 0:
@@ -186,23 +187,31 @@ def sync_redis_objects(queue, orderby):
         new_data_ids = redis_parse_list_dataids(redis_set_data.difference(set(redis_queue_data)))
 
         # IDs not already assigned
-        new_data_ids = set(new_data_ids).difference([str(a.data.pk) for a in AssignedData.objects.filter(queue=queue)])
+        new_data_ids = set(new_data_ids).difference(
+            [str(a.data.pk) for a in AssignedData.objects.filter(queue=queue)])
 
-        ordered_data_ids = [redis_serialize_data(d) for d in get_ordered_data(new_data_ids, orderby)]
+        ordered_data_ids = [redis_serialize_data(d)
+                            for d in get_ordered_data(new_data_ids, orderby)]
 
         if len(ordered_data_ids) > 0:
             settings.REDIS.rpush(redis_serialize_queue(queue), *ordered_data_ids)
 
 
-def create_project(name, creator, percentage_irr=10,num_users_irr=2, classifier="logistic regression", learning_method='least confident'):
+def create_project(name, creator, percentage_irr=10, num_users_irr=2, classifier=None, learning_method='least confident'):
     '''
     Create a project with the given name and creator.
     '''
-    proj = Project.objects.create(name=name, creator=creator,
-                                   percentage_irr = percentage_irr,
-                                    num_users_irr = num_users_irr,
-                                     classifier = classifier,
-                                      learning_method = learning_method)
+    if classifier:
+        proj = Project.objects.create(name=name, creator=creator,
+                                      percentage_irr=percentage_irr,
+                                      num_users_irr=num_users_irr,
+                                      classifier=classifier,
+                                      learning_method=learning_method)
+    else:
+        proj = Project.objects.create(name=name, creator=creator,
+                                      percentage_irr=percentage_irr,
+                                      num_users_irr=num_users_irr,
+                                      learning_method=learning_method)
     training_set = TrainingSet.objects.create(project=proj, set_number=0)
 
     return proj
@@ -218,8 +227,9 @@ def add_data(project, df):
     df['hash'] = df['Text'].apply(md5_hash)
     df.drop_duplicates(subset='hash', keep='first', inplace=True)
 
-    #check that the data is not already in the system and drop duplicates
-    df = df.loc[~df['hash'].isin(list(Data.objects.filter(project=project).values_list("hash",flat=True)))]
+    # check that the data is not already in the system and drop duplicates
+    df = df.loc[~df['hash'].isin(list(Data.objects.filter(
+        project=project).values_list("hash", flat=True)))]
     if len(df) == 0:
         return []
     # Limit the number of rows to 2mil for the entire project
@@ -227,25 +237,25 @@ def add_data(project, df):
     if num_existing_data >= 2000000:
         return []
 
-    df = df[:2000000- num_existing_data]
-    #if there is no ID column already, add it and hash it
+    df = df[:2000000 - num_existing_data]
+    # if there is no ID column already, add it and hash it
     df.reset_index(drop=True, inplace=True)
     if 'ID' not in df.columns:
-        #should add to what already exists
+        # should add to what already exists
         df["ID"] = [x + num_existing_data for x in list(df.index.values)]
         df["id_hash"] = df["ID"].astype(str).apply(md5_hash)
     else:
-        #get the hashes from existing identifiers. Check that the new identifiers do not overlap
-        existing_hashes = Data.objects.filter(project=project).values_list('upload_id_hash',flat=True)
+        # get the hashes from existing identifiers. Check that the new identifiers do not overlap
+        existing_hashes = Data.objects.filter(
+            project=project).values_list('upload_id_hash', flat=True)
         df = df.loc[~df['id_hash'].isin(existing_hashes)]
         if len(df) == 0:
             return []
 
-
     # Create the data objects
     df['object'] = df.apply(lambda x: Data(text=x['Text'], project=project,
-                                            hash=x['hash'],
-                                            upload_id=x['ID'], upload_id_hash = x['id_hash']), axis=1)
+                                           hash=x['hash'],
+                                           upload_id=x['ID'], upload_id_hash=x['id_hash']), axis=1)
     data = Data.objects.bulk_create(df['object'].tolist())
 
     labels = {}
@@ -263,7 +273,7 @@ def add_data(project, df):
              for i, row in labeled_df.iterrows()]
         )
 
-    return data
+    return data, df
 
 
 def find_queue_length(batch_size, num_coders):
@@ -275,7 +285,7 @@ def find_queue_length(batch_size, num_coders):
     Returns:
         queue_length
     """
-    return math.ceil(batch_size/num_coders) * num_coders + math.ceil(batch_size/num_coders) * (num_coders - 1)
+    return math.ceil(batch_size / num_coders) * num_coders + math.ceil(batch_size / num_coders) * (num_coders - 1)
 
 
 def add_queue(project, length, type="normal", profile=None):
@@ -305,8 +315,8 @@ def get_ordered_data(data_ids, orderby):
     """
     ORDERBY_OPTIONS = ['random', 'least confident', 'margin sampling', 'entropy', 'qbc']
     if orderby not in ORDERBY_OPTIONS:
-        raise ValueError('orderby parameter must be one of the following: ' +
-                         ' '.join(ORDERBY_OPTIONS))
+        raise ValueError('orderby parameter must be one of the following: '
+                         + ' '.join(ORDERBY_OPTIONS))
 
     data_objs = Data.objects.filter(pk__in=data_ids)
 
@@ -321,7 +331,8 @@ def get_ordered_data(data_ids, orderby):
     elif orderby == 'qbc':
         return data_objs.annotate(max_qbc=Max('datauncertainty__qbc')).order_by('-max_qbc')
 
-def fill_queue(queue, orderby,  irr_queue = None, irr_percent = 10, batch_size = 30 ):
+
+def fill_queue(queue, orderby, irr_queue=None, irr_percent=10, batch_size=30):
     '''
     Fill a queue with unlabeled, unassigned data randomly selected from
     the queue's project. The queue doesn't need to be empty.
@@ -343,10 +354,11 @@ def fill_queue(queue, orderby,  irr_queue = None, irr_percent = 10, batch_size =
         'qbc': 'uncertainty.qbc DESC'
     }
     if orderby not in ORDERBY_VALUE.keys():
-        raise ValueError('orderby parameter must be one of the following: ' +
-                         ' '.join(ORDERBY_VALUE))
+        raise ValueError('orderby parameter must be one of the following: '
+                         + ' '.join(ORDERBY_VALUE))
 
-    recycled_data = RecycleBin.objects.filter(data__project=queue.project).values_list('data__pk',flat=True)
+    recycled_data = RecycleBin.objects.filter(
+        data__project=queue.project).values_list('data__pk', flat=True)
     data_filters = {
         'project': queue.project,
         'labelers': None,
@@ -358,21 +370,23 @@ def fill_queue(queue, orderby,  irr_queue = None, irr_percent = 10, batch_size =
 
     cte_sql, cte_params = eligible_data.query.sql_with_params()
 
-    #get the join clause that controls how the data is selected
+    # get the join clause that controls how the data is selected
     join_clause = get_join_clause(orderby, queue)
 
-    #First process the IRR data
+    # First process the IRR data
     if irr_queue:
-        #if the irr queue is given, want to fill it with a given percent of
-        #the batch size
-        num_irr = math.ceil(batch_size * (irr_percent/100))
+        # if the irr queue is given, want to fill it with a given percent of
+        # the batch size
+        num_irr = math.ceil(batch_size * (irr_percent / 100))
         num_elements = len(DataQueue.objects.filter(queue=irr_queue))
         queue_size = irr_queue.length
 
-        #get the number of elements to add to the irr queue
-        irr_sample_size_sql, irr_sample_size_params = get_queue_size_params(irr_queue,queue_size, num_elements, num_irr, irr_queue)
-        #get the sql for adding the elements
-        irr_sql = generate_sql_for_fill_queue(irr_queue,ORDERBY_VALUE[orderby],join_clause, cte_sql, irr_sample_size_sql)
+        # get the number of elements to add to the irr queue
+        irr_sample_size_sql, irr_sample_size_params = get_queue_size_params(
+            irr_queue, queue_size, num_elements, num_irr, irr_queue)
+        # get the sql for adding the elements
+        irr_sql = generate_sql_for_fill_queue(
+            irr_queue, ORDERBY_VALUE[orderby], join_clause, cte_sql, irr_sample_size_sql)
 
         with connection.cursor() as c:
             c.execute(irr_sql, (*cte_params, *irr_sample_size_params))
@@ -386,24 +400,27 @@ def fill_queue(queue, orderby,  irr_queue = None, irr_percent = 10, batch_size =
 
         sync_redis_objects(irr_queue, orderby)
 
-        #get new eligible data by filtering out what was just chosen
+        # get new eligible data by filtering out what was just chosen
         eligible_data = eligible_data.exclude(pk__in=data_ids)
         cte_sql, cte_params = eligible_data.query.sql_with_params()
 
-    #get the remaining space in the normal queue
-    non_irr_batch_size = math.ceil(batch_size * ((100 - irr_percent)/100))
+    # get the remaining space in the normal queue
+    non_irr_batch_size = math.ceil(batch_size * ((100 - irr_percent) / 100))
     num_in_queue = len(DataQueue.objects.filter(queue=queue))
     queue_size = queue.length
-    #if there is not much space or we are not filling the irr queue, just
-    #fill the normal queue to the top
-    sample_size_sql, sample_size_params = get_queue_size_params(queue,queue_size, num_in_queue, non_irr_batch_size, irr_queue)
+    # if there is not much space or we are not filling the irr queue, just
+    # fill the normal queue to the top
+    sample_size_sql, sample_size_params = get_queue_size_params(
+        queue, queue_size, num_in_queue, non_irr_batch_size, irr_queue)
 
-    sql = generate_sql_for_fill_queue(queue, ORDERBY_VALUE[orderby], join_clause, cte_sql, sample_size_sql)
+    sql = generate_sql_for_fill_queue(
+        queue, ORDERBY_VALUE[orderby], join_clause, cte_sql, sample_size_sql)
 
     with connection.cursor() as c:
         c.execute(sql, (*cte_params, *sample_size_params))
 
     sync_redis_objects(queue, orderby)
+
 
 def generate_sql_for_fill_queue(queue, orderby_value, join_clause, cte_sql, size_sql):
     '''
@@ -434,8 +451,9 @@ def generate_sql_for_fill_queue(queue, orderby_value, join_clause, cte_sql, size
         queue_id=queue.pk,
         join_clause=join_clause,
         orderby_value=orderby_value,
-        sample_size_sql= size_sql)
+        sample_size_sql=size_sql)
     return sql
+
 
 def get_join_clause(orderby, queue):
     '''
@@ -466,24 +484,25 @@ def get_join_clause(orderby, queue):
             project_id=queue.project.pk)
     return join_clause
 
-def get_queue_size_params(queue,queue_size, num_in_queue, batch_size, irr_queue):
+
+def get_queue_size_params(queue, queue_size, num_in_queue, batch_size, irr_queue):
     '''
     Get the sql parameters for the number of items to add to the queue
     '''
-    #if there is less space in the queue than the default number of
-    #elements to add, or we are trying to fill the queue to the top
-    #(irr_queue=None in the second case)
+    # if there is less space in the queue than the default number of
+    # elements to add, or we are trying to fill the queue to the top
+    # (irr_queue=None in the second case)
     if (queue_size - num_in_queue < batch_size) or not(irr_queue):
         sample_size_sql, sample_size_params = (Queue.objects.filter(pk=queue.pk)
-                                                .annotate(sample_size=F('length') - Count('data'))
-                                                .values('sample_size')
-                                                .query.sql_with_params())
+                                               .annotate(sample_size=F('length') - Count('data'))
+                                               .values('sample_size')
+                                               .query.sql_with_params())
     else:
-        #just add the number requested (some percent of the batch size)
+        # just add the number requested (some percent of the batch size)
         sample_size_sql, sample_size_params = (Queue.objects.filter(pk=queue.pk)
-                                                .annotate(sample_size=Value(batch_size, IntegerField()))
-                                                .values('sample_size')
-                                                .query.sql_with_params())
+                                               .annotate(sample_size=Value(batch_size, IntegerField()))
+                                               .values('sample_size')
+                                               .query.sql_with_params())
     return sample_size_sql, sample_size_params
 
 
@@ -509,22 +528,25 @@ def pop_first_nonempty_queue(project, profile=None, type="normal"):
                           (profile_queues.union(project_queues)
                            .order_by('priority', 'pk'))]
 
-
     if type == "irr":
         for queue_id in eligible_queue_ids:
             queue = redis_parse_queue(queue_id.encode())
 
-            #first get the assigned data that was already labeled, or data already assigned
-            labeled_irr_data = DataLabel.objects.filter(profile=profile).values_list('data',flat=True)
-            assigned_data = AssignedData.objects.filter(profile=profile, queue=queue).values_list('data',flat=True)
-            skipped_data = IRRLog.objects.filter(profile=profile,label__isnull=True).values_list('data',flat=True)
-            assigned_unlabeled = DataQueue.objects.filter(queue=queue).exclude(data__in=labeled_irr_data).exclude(data__in=assigned_data).exclude(data__in=skipped_data)
+            # first get the assigned data that was already labeled, or data already assigned
+            labeled_irr_data = DataLabel.objects.filter(
+                profile=profile).values_list('data', flat=True)
+            assigned_data = AssignedData.objects.filter(
+                profile=profile, queue=queue).values_list('data', flat=True)
+            skipped_data = IRRLog.objects.filter(
+                profile=profile, label__isnull=True).values_list('data', flat=True)
+            assigned_unlabeled = DataQueue.objects.filter(queue=queue).exclude(
+                data__in=labeled_irr_data).exclude(data__in=assigned_data).exclude(data__in=skipped_data)
 
-            #if there are no elements, return none
+            # if there are no elements, return none
             if len(assigned_unlabeled) == 0:
                 return (None, None)
             else:
-                #else, get the first element off the group and return it
+                # else, get the first element off the group and return it
                 datum = Data.objects.get(pk=assigned_unlabeled[0].data.pk)
                 return (queue, datum)
     if len(eligible_queue_ids) == 0:
@@ -590,10 +612,10 @@ def get_nonempty_queue(project, profile=None):
     # Only check for profile queues if we were passed a profile
     if profile is not None:
         nonempty_profile_queues = (project.queue_set
-                                .filter(profile=profile, type="normal")
-                                .annotate(
-                                    data_count=Count('data'))
-                                .filter(data_count__gt=0))
+                                   .filter(profile=profile, type="normal")
+                                   .annotate(
+                                       data_count=Count('data'))
+                                   .filter(data_count__gt=0))
 
         if len(nonempty_profile_queues) > 0:
             first_nonempty_queue = nonempty_profile_queues.first()
@@ -625,34 +647,36 @@ def assign_datum(profile, project, type="normal"):
             num_labeled = DataLabel.objects.filter(data=datum, profile=profile).count()
             if num_labeled == 0:
                 AssignedData.objects.create(data=datum, profile=profile,
-                                        queue=queue)
+                                            queue=queue)
                 return datum
             else:
                 return None
+
 
 def skip_data(datum, profile):
     '''
     Record that a given datum has been skipped
     '''
     project = datum.project
-    queue = Queue.objects.get(project=project,type="normal")
+    queue = Queue.objects.get(project=project, type="normal")
 
-    IRRLog.objects.create(data=datum, profile=profile, label = None, timestamp = timezone.now())
+    IRRLog.objects.create(data=datum, profile=profile, label=None, timestamp=timezone.now())
     num_history = IRRLog.objects.filter(data=datum).count()
-    #if the datum is irr or processed irr, dont add to admin queue yet
+    # if the datum is irr or processed irr, dont add to admin queue yet
     if datum.irr_ind or num_history > 0:
-        #if the IRR history has more than the needed number of labels , it is
-        #already processed so don't do anything else
+        # if the IRR history has more than the needed number of labels , it is
+        # already processed so don't do anything else
         if num_history <= project.num_users_irr:
             process_irr_label(datum, None)
 
-        #unassign the skipped item
-        assignment = AssignedData.objects.get(data=datum,profile=profile)
+        # unassign the skipped item
+        assignment = AssignedData.objects.get(data=datum, profile=profile)
         assignment.delete()
     else:
         # Make sure coder still has permissions before labeling data
         if project_extras.proj_permission_level(project, profile) > 0:
             move_skipped_to_admin_queue(datum, profile, project)
+
 
 def label_data(label, datum, profile, time):
     '''
@@ -666,16 +690,16 @@ def label_data(label, datum, profile, time):
 
     with transaction.atomic():
         DataLabel.objects.create(data=datum,
-                                label=label,
-                                profile=profile,
-                                training_set=current_training_set,
-                                time_to_label=time,
-                                timestamp = timezone.now()
-                                )
+                                 label=label,
+                                 profile=profile,
+                                 training_set=current_training_set,
+                                 time_to_label=time,
+                                 timestamp=timezone.now()
+                                 )
         # There's a unique constraint on data/profile, so this is
         # guaranteed to return one object
         assignment = AssignedData.objects.filter(data=datum,
-                                                profile=profile).get()
+                                                 profile=profile).get()
         queue = assignment.queue
         assignment.delete()
 
@@ -683,31 +707,33 @@ def label_data(label, datum, profile, time):
             DataQueue.objects.filter(data=datum, queue=queue).delete()
         else:
             num_history = IRRLog.objects.filter(data=datum).count()
-            #if the IRR history has more than the needed number of labels , it is
-            #already processed so just add this label to the history.
+            # if the IRR history has more than the needed number of labels , it is
+            # already processed so just add this label to the history.
             if num_history >= datum.project.num_users_irr:
-                IRRLog.objects.create(data=datum, profile=profile, label=label, timestamp = timezone.now())
-                DataLabel.objects.get(data=datum,profile=profile).delete()
+                IRRLog.objects.create(data=datum, profile=profile,
+                                      label=label, timestamp=timezone.now())
+                DataLabel.objects.get(data=datum, profile=profile).delete()
             else:
-                process_irr_label(datum,label)
+                process_irr_label(datum, label)
     if not irr_data:
         settings.REDIS.srem(redis_serialize_set(queue), redis_serialize_data(datum))
+
 
 def process_irr_label(data, label):
     '''
     This function checks if an irr datum has been labeled by enough people. if
     it has, then it will attempt to resolve the labels and record the irr history
     '''
-    #get the number of labels for that data in the project
+    # get the number of labels for that data in the project
     labeled = DataLabel.objects.filter(data=data)
     skipped = IRRLog.objects.filter(label__isnull=True, data=data)
     project = data.project
     current_training_set = project.get_current_training_set()
 
     admin_queue = Queue.objects.get(project=project, type="admin")
-    #if there are >= labels or skips than the project calls for
+    # if there are >= labels or skips than the project calls for
     if (labeled.count() + skipped.count()) >= project.num_users_irr:
-        #add all labels to IRRLog
+        # add all labels to IRRLog
         history_list = [IRRLog(data=data,
                                profile=d.profile,
                                label=d.label,
@@ -715,32 +741,31 @@ def process_irr_label(data, label):
         with transaction.atomic():
             IRRLog.objects.bulk_create(history_list)
 
-            #remove all labels from DataLabel and save in list
+            # remove all labels from DataLabel and save in list
             labels = list(labeled.values_list('label', flat=True))
 
             DataLabel.objects.filter(data=data).delete()
 
-
-            #check if the labels agree
+            # check if the labels agree
             if len(set(labels)) == 1 and skipped.count() == 0:
-                #the data is no longer seen as irr (so it can be in the training set)
+                # the data is no longer seen as irr (so it can be in the training set)
                 Data.objects.filter(pk=data.pk).update(irr_ind=False)
                 agree = True
-                #if they do, add a new element to dataLabel with one label
-                #by creator and remove from the irr queue
+                # if they do, add a new element to dataLabel with one label
+                # by creator and remove from the irr queue
                 DataLabel.objects.create(data=data,
                                          profile=project.creator,
                                          label=label,
-                                         training_set = current_training_set,
+                                         training_set=current_training_set,
                                          time_to_label=None,
                                          timestamp=timezone.now())
                 DataQueue.objects.filter(data=data).delete()
             else:
                 agree = False
-                #if they don't, update the data into the admin queue
+                # if they don't, update the data into the admin queue
                 DataQueue.objects.filter(data=data).update(queue=admin_queue)
 
-        #update redis to reflect the queue changes
+        # update redis to reflect the queue changes
         irr_queue = Queue.objects.get(project=project, type="irr")
         settings.REDIS.srem(redis_serialize_set(irr_queue), redis_serialize_data(data))
 
@@ -759,9 +784,9 @@ def cohens_kappa(project):
 
     agree = 0
 
-    #initialize the dictionary
+    # initialize the dictionary
     rater1_rater2_dict = {}
-    label_list = list(Label.objects.filter(project=project).values_list('name',flat=True))
+    label_list = list(Label.objects.filter(project=project).values_list('name', flat=True))
     label_list.append("skip")
     for label1 in label_list:
         rater1_rater2_dict[label1] = {}
@@ -771,40 +796,40 @@ def cohens_kappa(project):
     num_data = 0
     labels_seen = set()
     for d in irr_data:
-        d_log = IRRLog.objects.filter(data=d,data__project=project)
-        labels = list(set(d_log.values_list('label',flat=True)))
+        d_log = IRRLog.objects.filter(data=d, data__project=project)
+        labels = list(set(d_log.values_list('label', flat=True)))
         labels_seen = labels_seen | set(labels)
-        #get the percent agreement between the users  = (num agree)/size_data
+        # get the percent agreement between the users  = (num agree)/size_data
         if d_log.count() < 2:
-            #don't use this datum, it isn't processed yet
+            # don't use this datum, it isn't processed yet
             continue
         num_data += 1
         if len(labels) == 1:
-            if labels[0] != None:
+            if labels[0] is not None:
                 agree += 1
-        if d_log[0].label == None:
+        if d_log[0].label is None:
             label1 = "skip"
         else:
             label1 = d_log[0].label.name
 
-        if d_log[1].label == None:
+        if d_log[1].label is None:
             label2 = "skip"
         else:
             label2 = d_log[1].label.name
 
-
-        rater1_rater2_dict[label1][label2] +=1
+        rater1_rater2_dict[label1][label2] += 1
     if num_data == 0:
-        #there is no irr data, so just return bad values
+        # there is no irr data, so just return bad values
         raise ValueError('No irr data')
 
     if len(labels_seen) < 2:
         raise ValueError('Need at least two labels represented')
 
-    kappa = raters.cohens_kappa(np.asarray(pd.DataFrame(rater1_rater2_dict)),return_results=False)
+    kappa = raters.cohens_kappa(np.asarray(pd.DataFrame(rater1_rater2_dict)), return_results=False)
 
     p_o = agree / num_data
     return kappa, p_o
+
 
 def fleiss_kappa(project):
     '''
@@ -815,49 +840,49 @@ def fleiss_kappa(project):
     '''
     irr_data = set(IRRLog.objects.values_list('data', flat=True))
 
-
-    label_list = list(Label.objects.filter(project=project).values_list('name',flat=True))
+    label_list = list(Label.objects.filter(project=project).values_list('name', flat=True))
     label_list.append(None)
-    #number of labels in the project +1 for skipping
+    # number of labels in the project +1 for skipping
     k = len(label_list)
-    #n is the number of labelers
+    # n is the number of labelers
     n = project.num_users_irr
     agree = 0
     data_label_dict = []
     num_data = 0
     for d in irr_data:
-        d_data_log = IRRLog.objects.filter(data=d,data__project=project)
+        d_data_log = IRRLog.objects.filter(data=d, data__project=project)
 
         if d_data_log.count() < n:
-            #don't use this datum, it isn't processed yet
+            # don't use this datum, it isn't processed yet
             continue
         elif d_data_log.count() > n:
-            #grab only the first few elements if there were extra labelers
+            # grab only the first few elements if there were extra labelers
             d_data_log = d_data_log[:n]
         num_data += 1
-        labels = list(set(d_data_log.values_list('label',flat=True)))
-        #accumulate the percent agreement
+        labels = list(set(d_data_log.values_list('label', flat=True)))
+        # accumulate the percent agreement
         if len(labels) == 1:
-            if labels[0] != None:
+            if labels[0] is not None:
                 agree += 1
 
         label_count_dict = {}
         for l in label_list:
-            if l == None:
+            if l is None:
                 l_label = "skip"
             else:
                 l_label = str(l)
-            label_count_dict[l_label] = len(d_data_log.filter(label__name = l))
+            label_count_dict[l_label] = len(d_data_log.filter(label__name=l))
 
         data_label_dict.append(label_count_dict)
 
     if num_data == 0:
-        #there is no irr data, so just return bad values
+        # there is no irr data, so just return bad values
         raise ValueError('No irr data')
 
     kappa = raters.fleiss_kappa(np.asarray(pd.DataFrame(data_label_dict)))
 
-    return kappa, agree/num_data
+    return kappa, agree / num_data
+
 
 def perc_agreement_table_data(project):
     '''
@@ -865,20 +890,22 @@ def perc_agreement_table_data(project):
     '''
     irr_data = set(IRRLog.objects.filter(data__project=project).values_list('data', flat=True))
 
-    user_list = [str(Profile.objects.get(pk=x)) for x in list(ProjectPermissions.objects.filter(project=project).values_list('profile',flat=True))]
+    user_list = [str(Profile.objects.get(pk=x)) for x in list(
+        ProjectPermissions.objects.filter(project=project).values_list('profile', flat=True))]
     user_list.append(str(project.creator))
-    user_pk_list = list(ProjectPermissions.objects.filter(project=project).values_list('profile__pk',flat=True))
+    user_pk_list = list(ProjectPermissions.objects.filter(
+        project=project).values_list('profile__pk', flat=True))
     user_pk_list.append(project.creator.pk)
-    #get all possible pairs of users
-    user_combinations = combinations(user_list,r=2)
+    # get all possible pairs of users
+    user_combinations = combinations(user_list, r=2)
     data_choices = []
 
     for d in irr_data:
-        d_log = IRRLog.objects.filter(data=d,data__project=project)
-        labels = list(set(d_log.values_list('label',flat=True)))
-        #get the percent agreement between the users  = (num agree)/size_data
+        d_log = IRRLog.objects.filter(data=d, data__project=project)
+        labels = list(set(d_log.values_list('label', flat=True)))
+        # get the percent agreement between the users  = (num agree)/size_data
         if d_log.count() < 2:
-            #don't use this datum, it isn't processed yet
+            # don't use this datum, it isn't processed yet
             continue
         temp_dict = {}
         for user in user_pk_list:
@@ -886,78 +913,84 @@ def perc_agreement_table_data(project):
                 temp_dict[str(Profile.objects.get(pk=user))] = np.nan
             else:
                 d = d_log.get(profile=user)
-                if d.label == None:
+                if d.label is None:
                     name = "Skip"
                 else:
                     name = d.label.name
                 temp_dict[str(d.profile)] = name
         data_choices.append(temp_dict)
-    #If there is no data, just return nothing
+    # If there is no data, just return nothing
     if len(data_choices) == 0:
         user_agree = []
         for pair in user_combinations:
-            user_agree.append({"First Coder":pair[0],"Second Coder":pair[1],"Percent Agreement":"No samples"})
+            user_agree.append(
+                {"First Coder": pair[0], "Second Coder": pair[1], "Percent Agreement": "No samples"})
         return user_agree
 
     choice_frame = pd.DataFrame(data_choices)
     user_agree = []
     for pair in user_combinations:
-        #get the total number they both edited
-        p_total = len(choice_frame[[pair[0],pair[1]]].dropna(axis=0))
+        # get the total number they both edited
+        p_total = len(choice_frame[[pair[0], pair[1]]].dropna(axis=0))
 
-        #get the elements that were labeled by both and not skipped
-        choice_frame2 = choice_frame[[pair[0],pair[1]]].replace("Skip", np.nan).dropna(axis=0)
+        # get the elements that were labeled by both and not skipped
+        choice_frame2 = choice_frame[[pair[0], pair[1]]].replace("Skip", np.nan).dropna(axis=0)
 
-        #fill the na's so if they are both na they aren't equal
-        p_agree = np.sum(np.equal(choice_frame2[pair[0]],choice_frame2[pair[1]]))
+        # fill the na's so if they are both na they aren't equal
+        p_agree = np.sum(np.equal(choice_frame2[pair[0]], choice_frame2[pair[1]]))
 
         if p_total > 0:
-            user_agree.append({"First Coder":pair[0],"Second Coder":pair[1],"Percent Agreement":str(100*round(p_agree/p_total,3))+"%"})
+            user_agree.append({"First Coder": pair[0], "Second Coder": pair[1], "Percent Agreement": str(
+                100 * round(p_agree / p_total, 3)) + "%"})
         else:
-            user_agree.append({"First Coder":pair[0],"Second Coder":pair[1],"Percent Agreement":"No samples"})
+            user_agree.append(
+                {"First Coder": pair[0], "Second Coder": pair[1], "Percent Agreement": "No samples"})
     return user_agree
+
 
 def irr_heatmap_data(project):
     '''
     Takes in the irrlog and formats the data to be usable in the irr heatmap
 
     '''
-    #get the list of users and labels for this project
-    user_list = list(ProjectPermissions.objects.filter(project=project).values_list('profile__user',flat=True))
+    # get the list of users and labels for this project
+    user_list = list(ProjectPermissions.objects.filter(
+        project=project).values_list('profile__user', flat=True))
     user_list.append(project.creator.pk)
-    label_list = list(Label.objects.filter(project=project).values_list('name',flat=True))
+    label_list = list(Label.objects.filter(project=project).values_list('name', flat=True))
     label_list.append("Skip")
 
     irr_data = set(IRRLog.objects.values_list('data', flat=True))
 
-
-    #Initialize the dictionary of dictionaries to use for the heatmap later
+    # Initialize the dictionary of dictionaries to use for the heatmap later
     user_label_counts = {}
     for user1 in user_list:
         for user2 in user_list:
-            user_label_counts[str(user1)+"_"+str(user2)] = {}
+            user_label_counts[str(user1) + "_" + str(user2)] = {}
             for label1 in label_list:
-                user_label_counts[str(user1)+"_"+str(user2)][str(label1)] = {}
+                user_label_counts[str(user1) + "_" + str(user2)][str(label1)] = {}
                 for label2 in label_list:
-                    user_label_counts[str(user1)+"_"+str(user2)][str(label1)][str(label2)] = 0
+                    user_label_counts[str(user1) + "_" + str(user2)][str(label1)][str(label2)] = 0
 
     for data_id in irr_data:
-        #iterate over the data and count up labels
-        data_log_list = IRRLog.objects.filter(data=data_id,data__project=project)
-        small_user_list = data_log_list.values_list('profile__user',flat=True)
+        # iterate over the data and count up labels
+        data_log_list = IRRLog.objects.filter(data=data_id, data__project=project)
+        small_user_list = data_log_list.values_list('profile__user', flat=True)
         for user1 in small_user_list:
             for user2 in small_user_list:
-                user_combo = str(user1)+"_"+str(user2)
-                label1 = data_log_list.get(profile__pk = user1).label
-                label2 = data_log_list.get(profile__pk = user2).label
-                user_label_counts[user_combo][str(label1).replace("None","Skip")][str(label2).replace("None","Skip")] +=1
-    #get the results in the final format needed for the graph
+                user_combo = str(user1) + "_" + str(user2)
+                label1 = data_log_list.get(profile__pk=user1).label
+                label2 = data_log_list.get(profile__pk=user2).label
+                user_label_counts[user_combo][str(label1).replace(
+                    "None", "Skip")][str(label2).replace("None", "Skip")] += 1
+    # get the results in the final format needed for the graph
     end_data = {}
     for user_combo in user_label_counts:
         end_data_list = []
         for label1 in user_label_counts[user_combo]:
             for label2 in user_label_counts[user_combo][label1]:
-                end_data_list.append({"label1":label1,"label2":label2,"count":user_label_counts[user_combo][label1][label2]})
+                end_data_list.append({"label1": label1, "label2": label2,
+                                      "count": user_label_counts[user_combo][label1][label2]})
         end_data[user_combo] = end_data_list
 
     return end_data
@@ -970,18 +1003,19 @@ def move_skipped_to_admin_queue(datum, profile, project):
     Change the assigned queue to the admin one for this project
     '''
     with transaction.atomic():
-        #remove the data from the assignment table
+        # remove the data from the assignment table
         assignment = AssignedData.objects.get(data=datum,
-                                                profile=profile)
+                                              profile=profile)
         queue = assignment.queue
         assignment.delete()
-        #change the queue to the admin one
+        # change the queue to the admin one
         old_id = queue.id
         new_queue = Queue.objects.get(project=queue.project, type="admin")
         DataQueue.objects.filter(data=datum, queue=queue).update(queue=new_queue)
 
-    #remove the data from redis
+    # remove the data from redis
     settings.REDIS.srem(redis_serialize_set(queue), redis_serialize_data(datum))
+
 
 def get_assignments(profile, project, num_assignments):
     '''
@@ -1000,15 +1034,15 @@ def get_assignments(profile, project, num_assignments):
         more_irr = True
         for i in range(num_assignments):
 
-            #first try to get any IRR data
+            # first try to get any IRR data
             if more_irr:
                 assigned_datum = assign_datum(profile, project, type="irr")
                 if assigned_datum is None:
-                    #no irr data found
+                    # no irr data found
                     more_irr = False
                     assigned_datum = assign_datum(profile, project)
             else:
-                #get normal data
+                # get normal data
                 assigned_datum = assign_datum(profile, project)
             if assigned_datum is None:
                 break
@@ -1055,13 +1089,15 @@ def save_data_file(df, project_pk):
         file: The filepath to the saved datafile
     """
     num_proj_files = len([f for f in os.listdir(settings.PROJECT_FILE_PATH)
-                          if f.startswith('project_'+str(project_pk))])
-    fpath = os.path.join(settings.PROJECT_FILE_PATH, 'project_' + str(project_pk) + '_data_' + str(num_proj_files) + '.csv')
+                          if f.startswith('project_' + str(project_pk))])
+    fpath = os.path.join(settings.PROJECT_FILE_PATH, 'project_'
+                         + str(project_pk) + '_data_' + str(num_proj_files) + '.csv')
 
-    df = df[['Text', 'Label']]
+    df = df[['ID', 'Text', 'Label']]
     df.to_csv(fpath, index=False)
 
     return fpath
+
 
 def save_codebook_file(data, project_pk):
     """Given the django data file, save it as the codebook for that project
@@ -1069,17 +1105,19 @@ def save_codebook_file(data, project_pk):
 
     """
     date = timezone.now().strftime('%m_%d_%y__%H_%M_%S')
-    fpath = os.path.join(settings.CODEBOOK_FILE_PATH, 'project_' + str(project_pk) + '_codebook'+date+'.pdf')
+    fpath = os.path.join(settings.CODEBOOK_FILE_PATH, 'project_'
+                         + str(project_pk) + '_codebook' + date + '.pdf')
     with open(fpath, "wb") as outputFile:
         outputFile.write(data.read())
-    return fpath.replace("/data/code_books/","")
+    return fpath.replace("/data/code_books/", "")
 
-def create_tfidf_matrix(data, project_pk, max_df=0.995, min_df=0.005):
+
+def create_tfidf_matrix(project_pk, max_df=0.995, min_df=0.005):
     """Create a TF-IDF matrix. Make sure to order the data by upload_id_hash so that we
         can sync the data up again when training the model
 
     Args:
-        data: List of data objs
+        project_pk: The pk of the project
     Returns:
         tf_idf_matrix: CSR-format tf-idf matrix
     """
@@ -1107,11 +1145,12 @@ def save_tfidf_matrix(matrix, project_pk):
     Returns:
         file: The filepath to the saved matrix
     """
-    fpath = os.path.join(settings.TF_IDF_PATH, 'project_'+str(project_pk) + '_tfidf_matrix.pkl')
+    fpath = os.path.join(settings.TF_IDF_PATH, 'project_' + str(project_pk) + '_tfidf_matrix.pkl')
     with open(fpath, "wb") as tfidf_file:
         pickle.dump(matrix, tfidf_file)
 
     return fpath
+
 
 def save_tfidf_vectorizer(vectorizer, project_pk):
     """Save tf-idf matrix to persistent volume storage defined in settings as
@@ -1123,7 +1162,7 @@ def save_tfidf_vectorizer(vectorizer, project_pk):
     Returns:
         file: The filepath to the saved matrix
     """
-    fpath = os.path.join(settings.TF_IDF_PATH, 'project_'+str(project_pk) + '_vectorizer.pkl')
+    fpath = os.path.join(settings.TF_IDF_PATH, 'project_' + str(project_pk) + '_vectorizer.pkl')
     with open(fpath, "wb") as tfidf_file:
         pickle.dump(vectorizer, tfidf_file)
     return fpath
@@ -1137,13 +1176,44 @@ def load_tfidf_matrix(project_pk):
     Returns:
         matrix or None
     """
-    fpath = os.path.join(settings.TF_IDF_PATH, 'project_'+str(project_pk) + '_tfidf_matrix.pkl')
+    fpath = os.path.join(settings.TF_IDF_PATH, 'project_' + str(project_pk) + '_tfidf_matrix.pkl')
 
     if os.path.isfile(fpath):
-        with open(fpath,"rb") as file:
+        with open(fpath, "rb") as file:
             return pickle.load(file)
     else:
         raise ValueError('There was no tfidf matrix found for project: ' + str(project_pk))
+
+
+def handle_empty_queue(profile, project):
+    """Given a profile and project, check if there is any data left for the user to code,
+        if not then refill the queue
+
+    Args:
+        profile: user profile object
+        project: project object
+    """
+    queue = Queue.objects.get(project=project, type='normal')
+    irr_queue = Queue.objects.get(project=project, type='irr')
+
+    queue_count = DataQueue.objects.filter(queue=queue).count()
+    irr_count = DataQueue.objects.filter(queue=irr_queue).count()
+    assigned_toOthers_count = AssignedData.objects.filter(
+        queue=queue).exclude(profile=profile).count()
+    irr_labeled_count = IRRLog.objects.filter(profile=profile, data__project=project).count() \
+        + DataLabel.objects.filter(profile=profile, data__dataqueue__queue=irr_queue).count()
+
+    if queue_count - assigned_toOthers_count == 0 and irr_count == irr_labeled_count:
+        # if there is a model, use the orderby of the project, otherwise random
+        if len(Model.objects.filter(project=project)) > 0:
+            fill_queue(queue=queue, orderby=project.learning_method,
+                       irr_queue=irr_queue, irr_percent=project.percentage_irr,
+                       batch_size=project.batch_size)
+            return_str = project.learning_method
+        else:
+            fill_queue(queue=queue, orderby='random',
+                       irr_queue=irr_queue, irr_percent=project.percentage_irr,
+                       batch_size=project.batch_size)
 
 
 def check_and_trigger_model(datum, profile=None):
@@ -1161,59 +1231,28 @@ def check_and_trigger_model(datum, profile=None):
     batch_size = project.batch_size
     labeled_data = DataLabel.objects.filter(data__project=project,
                                             training_set=current_training_set,
-                                            data__irr_ind = False)
+                                            data__irr_ind=False)
     labeled_data_count = labeled_data.count()
     labels_count = labeled_data.distinct('label').count()
-
-    #if both the normal and irr queue are empty or the user
-    #has labeled all of the irr
-    if profile:
-        queue = Queue.objects.get(project=project,type="normal")
-        irr_queue = Queue.objects.get(project=project,type="irr")
-        queue_count = DataQueue.objects.filter(queue=queue).count()
-        #get the number of items that the profile has not labeled/skipped in irr
-        irr_data = DataQueue.objects.filter(queue=irr_queue)
-        irr_count = 0
-        for d in irr_data:
-            #if they have already labeled it
-            if len(DataLabel.objects.filter(data=d.data,profile=profile)) > 0:
-                continue
-            #if they skipped it
-            if len(IRRLog.objects.filter(data=d.data,profile=profile)) > 0:
-                continue
-            irr_count += 1
-    else:
-        #this data was not labeled, so there isn't a profile attached
-        queue_count = 1
-        irr_count = 1
 
     if current_training_set.celery_task_id != '':
         return_str = 'task already running'
     elif labeled_data_count >= batch_size:
         if labels_count < project.labels.count() or project.classifier is None:
             queue = project.queue_set.get(type="normal")
-            fill_queue(queue = queue, orderby = 'random', batch_size=batch_size)
+
+            fill_queue(queue=queue, orderby='random', batch_size=batch_size)
             return_str = 'random'
         else:
             task_num = tasks.send_model_task.delay(project.pk)
             current_training_set.celery_task_id = task_num
             current_training_set.save()
             return_str = 'model running'
-    elif (irr_count == 0) and (queue_count == 0):
-        #check if the user has any unlabeled stuff left. If not,
-        #we need to refil the queue
+    elif profile:
+        # Model is not running, check if user needs more data
+        handle_empty_queue(profile, project)
 
-        #if there is a model, use the orderby of the project, otherwise random
-        if len(Model.objects.filter(project=project)) > 0:
-            fill_queue(queue=queue, orderby = project.learning_method,
-                       irr_queue = irr_queue, irr_percent = project.percentage_irr,
-                       batch_size = batch_size )
-            return_str = project.learning_method
-        else:
-            fill_queue(queue=queue, orderby = 'random',
-                       irr_queue = irr_queue, irr_percent = project.percentage_irr,
-                       batch_size = batch_size )
-            return_str = 'random'
+        return_str = 'user queue refill'
     else:
         return_str = 'no trigger'
 
@@ -1247,8 +1286,10 @@ def train_and_save_model(project):
     # label
 
     labeled_data = DataLabel.objects.filter(data__project=project)
-    unique_ids = list(labeled_data.values_list("data__upload_id", flat=True).order_by('data__upload_id_hash'))
-    labeled_values = list(labeled_data.values_list('label', flat=True).order_by('data__upload_id_hash'))
+    unique_ids = list(labeled_data.values_list("data__upload_id",
+                                               flat=True).order_by('data__upload_id_hash'))
+    labeled_values = list(labeled_data.values_list(
+        'label', flat=True).order_by('data__upload_id_hash'))
 
     X = [tf_idf[id] for id in unique_ids]
     Y = labeled_values
@@ -1262,8 +1303,8 @@ def train_and_save_model(project):
     metric_map = map(lambda x: dict(zip(classes, x)), metrics[:3])
     cv_metrics = dict(zip(keys, metric_map))
 
-    fpath = os.path.join(settings.MODEL_PICKLE_PATH, 'project_' + str(project.pk) + '_training_' \
-         + str(current_training_set.set_number) + '.pkl')
+    fpath = os.path.join(settings.MODEL_PICKLE_PATH, 'project_' + str(project.pk) + '_training_'
+                         + str(current_training_set.set_number) + '.pkl')
 
     joblib.dump(clf, fpath)
 
@@ -1305,7 +1346,8 @@ def margin_sampling(probs):
     if not isinstance(probs, np.ndarray):
         raise ValueError('Probs should be a numpy array')
 
-    probs[::-1].sort()  # https://stackoverflow.com/questions/26984414/efficiently-sorting-a-numpy-array-in-descending-order#answer-26984520
+    # https://stackoverflow.com/questions/26984414/efficiently-sorting-a-numpy-array-in-descending-order#answer-26984520
+    probs[::-1].sort()
     return probs[0] - probs[1]
 
 
@@ -1330,6 +1372,7 @@ def entropy(probs):
         total += p * math.log10(p)
     return -total
 
+
 def qbc_entropy(row):
     """QBC Entropy - Query by Committee
         x = -sum(p * log(p))
@@ -1340,16 +1383,17 @@ def qbc_entropy(row):
     Returns:
         x
     """
-    #it is being called by qbc with a row format
+    # it is being called by qbc with a row format
     class_votes = row.value_counts().to_dict()
-    #pandas count automatically does not include 0 counts
+    # pandas count automatically does not include 0 counts
     votes = list(class_votes.values())
     if len(votes) == 0:
         raise ValueError('Should not be empty array')
-    non_zero_probs = np.asarray([c/len(votes) for c in votes])
+    non_zero_probs = np.asarray([c / len(votes) for c in votes])
     return entropy(non_zero_probs)
 
-def train_and_apply_committee(project, unlabeled_X, com_size = 5):
+
+def train_and_apply_committee(project, unlabeled_X, com_size=5):
     """Given a project where query by committee is the metric, reads in
     the training data and trains a bagged set of classifiers. Calculates
     the disagreement between the models for each unlabeled instance.
@@ -1364,18 +1408,22 @@ def train_and_apply_committee(project, unlabeled_X, com_size = 5):
     # Order both X and Y by df_idx to ensure the tf-idf vector corresponds to the correct
     # label
     labeled_data = DataLabel.objects.filter(data__project=project)
-    unique_ids = list(labeled_data.values_list("data__upload_id", flat=True).order_by('data__upload_id_hash'))
+    unique_ids = list(labeled_data.values_list("data__upload_id",
+                                               flat=True).order_by('data__upload_id_hash'))
 
-    #get the list of all data sorted by identifier
-    labeled_values = list(labeled_data.values_list('label', flat=True).order_by('data__upload_id_hash'))
+    # get the list of all data sorted by identifier
+    labeled_values = list(labeled_data.values_list(
+        'label', flat=True).order_by('data__upload_id_hash'))
 
     X = pd.DataFrame([tf_idf[id] for id in unique_ids])
     Y = pd.DataFrame(labeled_values)
     predictions = []
-    stratefied_shuffle_split = StratifiedShuffleSplit(n_splits = com_size, train_size=0.75, test_size = 0.25)
-    for train_index, test_index in stratefied_shuffle_split.split(X,Y):
+    stratefied_shuffle_split = StratifiedShuffleSplit(
+        n_splits=com_size, train_size=0.75, test_size=0.25)
+    for train_index, test_index in stratefied_shuffle_split.split(X, Y):
         if project.classifier == "logistic regression":
-            clf = LogisticRegression(class_weight='balanced', solver='lbfgs', multi_class='multinomial')
+            clf = LogisticRegression(class_weight='balanced',
+                                     solver='lbfgs', multi_class='multinomial')
         elif project.classifier == "svm":
             clf = SVC(probability=True)
         elif project.classifier == "random forest":
@@ -1388,14 +1436,15 @@ def train_and_apply_committee(project, unlabeled_X, com_size = 5):
         temp_x = X.iloc[train_index]
         temp_y = Y.iloc[train_index]
         clf.fit(temp_x, temp_y.unstack())
-        #have the classifier predict the unlabeled data
+        # have the classifier predict the unlabeled data
         y_pred = clf.predict(unlabeled_X)
-        predictions.append(np.reshape(y_pred,(len(y_pred),1)))
+        predictions.append(np.reshape(y_pred, (len(y_pred), 1)))
 
     all_predictions = np.concatenate(predictions, axis=1)
     scores = pd.DataFrame(all_predictions).apply(qbc_entropy, axis=1)
 
     return scores
+
 
 def get_labeled_data(project):
     """Given a project, get the list of labeled data
@@ -1406,11 +1455,11 @@ def get_labeled_data(project):
         data: a list of the labeled data
     """
     project_labels = Label.objects.filter(project=project)
-    #get the data labels
+    # get the data labels
     data = []
     labels = []
     for label in project_labels:
-        labels.append({"Name":label.name, "Label_ID":label.pk})
+        labels.append({"Name": label.name, "Label_ID": label.pk})
         labeled_data = DataLabel.objects.filter(label=label)
         for d in labeled_data:
             temp = {}
@@ -1418,7 +1467,7 @@ def get_labeled_data(project):
             temp['Text'] = d.data.text
             temp['Label'] = label.name
             data.append(temp)
-    labeled_data_frame  = pd.DataFrame(data)
+    labeled_data_frame = pd.DataFrame(data)
     label_frame = pd.DataFrame(labels)
 
     return labeled_data_frame, label_frame
@@ -1441,16 +1490,17 @@ def predict_data(project, model):
 
     # In order to predict need X (tf-idf vector) for every unlabeled datum. Order
     # X by upload_id_hash to ensure the tf-idf vector corresponds to the correct datum
-    recycle_data = RecycleBin.objects.filter(data__project=project).values_list('pk',flat=True)
-    unlabeled_data = project.data_set.filter(datalabel__isnull=True).exclude(pk__in=recycle_data).order_by('upload_id_hash')
+    recycle_data = RecycleBin.objects.filter(data__project=project).values_list('pk', flat=True)
+    unlabeled_data = project.data_set.filter(datalabel__isnull=True).exclude(
+        pk__in=recycle_data).order_by('upload_id_hash')
     unique_ids = list(unlabeled_data.values_list("upload_id", flat=True).order_by('upload_id_hash'))
 
-    #get the list of all data sorted by identifier
+    # get the list of all data sorted by identifier
     X = [tf_idf[id] for id in unique_ids]
     predictions = clf.predict_proba(X)
 
     if project.learning_method == "qbc":
-        qbc_predictions = train_and_apply_committee(project,X)
+        qbc_predictions = train_and_apply_committee(project, X)
 
     label_obj = [Label.objects.get(pk=label) for label in clf.classes_]
 
@@ -1465,8 +1515,8 @@ def predict_data(project, model):
         # corresponds to the label of the same index in clf.classes_
         for p, label in zip(prediction, label_obj):
             bulk_predictions.append(DataPrediction(data=datum, model=model,
-                                       label=label,
-                                       predicted_probability=p))
+                                                   label=label,
+                                                   predicted_probability=p))
 
         # Need to crate uncertainty object so fill_queue can sort by one of the metrics
         lc = least_confident(prediction)
@@ -1479,7 +1529,7 @@ def predict_data(project, model):
                                            least_confident=lc,
                                            margin_sampling=ms,
                                            entropy=e,
-                                           qbc = qbc_score)
+                                           qbc=qbc_score)
         else:
             DataUncertainty.objects.create(data=datum,
                                            model=model,

@@ -7,6 +7,7 @@ from django.dispatch import receiver
 from django.contrib.postgres.fields import JSONField
 from django.core.validators import MaxValueValidator, MinValueValidator
 
+
 class Profile(models.Model):
     # Link to the auth user, since we're basically just extending it
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -17,42 +18,48 @@ class Profile(models.Model):
     def __str__(self):
         return self.user.username
 
+
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_user(sender, instance, created, **kwargs):
     if created:
         Profile.objects.create(user=instance)
 
+
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def save_user(sender, instance, **kwargs):
     instance.profile.save()
+
 
 class Project(models.Model):
     name = models.TextField()
     description = models.TextField(blank=True)
     creator = models.ForeignKey('Profile')
-    percentage_irr = models.FloatField(default=10.0, validators=[MinValueValidator(0.0), MaxValueValidator(100.0)])
+    percentage_irr = models.FloatField(default=10.0, validators=[
+                                       MinValueValidator(0.0), MaxValueValidator(100.0)])
     num_users_irr = models.IntegerField(default=2, validators=[MinValueValidator(2)])
     codebook_file = models.TextField(default='')
     batch_size = models.IntegerField(default=30)
-    #####Advanced options#####
-    #the current options are 'random', 'least confident', 'entropy', and 'margin sampling'
+    ''' Advanced options '''
+    # the current options are 'random', 'least confident', 'entropy', and 'margin sampling'
     ACTIVE_L_CHOICES = [
-        ("least confident","By Uncertainty using Least Confident"),
-        ("margin sampling","By Uncertainty using the Margin"),
-        ("entropy","By Uncertainty using Entropy"),
-        ("random","Randomly (No Active Learning)"),
-        ("qbc","Query by Committee (using bagging)")
+        ("least confident", "By Uncertainty using Least Confident"),
+        ("margin sampling", "By Uncertainty using the Margin"),
+        ("entropy", "By Uncertainty using Entropy"),
+        ("random", "Randomly (No Active Learning)"),
+        ("qbc", "Query by Committee (using bagging)")
     ]
 
     CLASSIFIER_CHOICES = [
-        ("logistic regression","Logistic Regression (default)"),
-        ("svm","Support Vector Machine (warning: slower for large datasets)"),
-        ("random forest","Random Forest"),
-        ("gnb","Gaussian Naive Bayes")
+        ("logistic regression", "Logistic Regression (default)"),
+        ("svm", "Support Vector Machine (warning: slower for large datasets)"),
+        ("random forest", "Random Forest"),
+        ("gnb", "Gaussian Naive Bayes")
     ]
 
-    learning_method = models.CharField(max_length = 15, default='least confident', choices=ACTIVE_L_CHOICES)
-    classifier = models.CharField(max_length = 19, default="logistic regression", choices = CLASSIFIER_CHOICES, null=True)
+    learning_method = models.CharField(
+        max_length=15, default='least confident', choices=ACTIVE_L_CHOICES)
+    classifier = models.CharField(
+        max_length=19, default="logistic regression", choices=CLASSIFIER_CHOICES, null=True)
 
     def get_absolute_url(self):
         return reverse('projects:project_detail', kwargs={'pk': self.pk})
@@ -78,6 +85,7 @@ class Project(models.Model):
         else:
             return False
 
+
 class ProjectPermissions(models.Model):
     class Meta:
         unique_together = (('profile', 'project'))
@@ -87,7 +95,8 @@ class ProjectPermissions(models.Model):
     )
     profile = models.ForeignKey('Profile')
     project = models.ForeignKey('Project')
-    permission = models.CharField(max_length=5,choices=PERM_CHOICES)
+    permission = models.CharField(max_length=5, choices=PERM_CHOICES)
+
 
 class Model(models.Model):
     pickle_path = models.TextField()
@@ -98,6 +107,7 @@ class Model(models.Model):
     predictions = models.ManyToManyField(
         'Data', related_name='models', through='DataPrediction'
     )
+
 
 class Data(models.Model):
     class Meta:
@@ -112,6 +122,7 @@ class Data(models.Model):
     def __str__(self):
         return self.text
 
+
 class Label(models.Model):
     class Meta:
         unique_together = (('name', 'project'))
@@ -122,13 +133,15 @@ class Label(models.Model):
     def __str__(self):
         return self.name
 
+
 class IRRLog(models.Model):
     class Meta:
         unique_together = (('data', 'profile'))
     data = models.ForeignKey('Data')
     profile = models.ForeignKey('Profile')
     label = models.ForeignKey('Label', null=True)
-    timestamp = models.DateTimeField(null=True, default= None)
+    timestamp = models.DateTimeField(null=True, default=None)
+
 
 class DataLabel(models.Model):
     class Meta:
@@ -138,7 +151,8 @@ class DataLabel(models.Model):
     label = models.ForeignKey('Label')
     training_set = models.ForeignKey('TrainingSet')
     time_to_label = models.IntegerField(null=True)
-    timestamp = models.DateTimeField(null=True, default= None)
+    timestamp = models.DateTimeField(null=True, default=None)
+
 
 class LabelChangeLog(models.Model):
     project = models.ForeignKey('Project')
@@ -146,7 +160,8 @@ class LabelChangeLog(models.Model):
     profile = models.ForeignKey('Profile')
     old_label = models.TextField()
     new_label = models.TextField()
-    change_timestamp = models.DateTimeField(null=True, default= None)
+    change_timestamp = models.DateTimeField(null=True, default=None)
+
 
 class DataPrediction(models.Model):
     class Meta:
@@ -155,6 +170,7 @@ class DataPrediction(models.Model):
     model = models.ForeignKey('Model')
     label = models.ForeignKey('Label')
     predicted_probability = models.FloatField()
+
 
 class DataUncertainty(models.Model):
     class Meta:
@@ -166,19 +182,21 @@ class DataUncertainty(models.Model):
     entropy = models.FloatField()
     qbc = models.FloatField(null=True)
 
+
 class Queue(models.Model):
     profile = models.ForeignKey('Profile', blank=True, null=True)
     project = models.ForeignKey('Project')
     QUEUE_TYPES = (
         ('admin', 'Admin'),
         ('irr', 'IRR'),
-        ('normal','Normal')
+        ('normal', 'Normal')
     )
-    type = models.CharField(max_length = 6, default='normal', choices=QUEUE_TYPES)
+    type = models.CharField(max_length=6, default='normal', choices=QUEUE_TYPES)
     length = models.IntegerField()
     data = models.ManyToManyField(
         'Data', related_name='queues', through='DataQueue'
     )
+
 
 class DataQueue(models.Model):
     class Meta:
@@ -186,24 +204,28 @@ class DataQueue(models.Model):
     queue = models.ForeignKey('Queue')
     data = models.ForeignKey('Data')
 
+
 class AssignedData(models.Model):
     class Meta:
         unique_together = (('profile', 'queue', 'data'))
     profile = models.ForeignKey('Profile')
     data = models.ForeignKey('Data')
     queue = models.ForeignKey('Queue')
-    assigned_timestamp = models.DateTimeField(default = timezone.now)
+    assigned_timestamp = models.DateTimeField(default=timezone.now)
+
 
 class TrainingSet(models.Model):
     project = models.ForeignKey('Project')
     set_number = models.IntegerField()
     celery_task_id = models.TextField(blank=True)
 
+
 class RecycleBin(models.Model):
     data = models.ForeignKey('Data')
-    timestamp = models.DateTimeField(default = timezone.now)
+    timestamp = models.DateTimeField(default=timezone.now)
+
 
 class AdminProgress(models.Model):
     project = models.ForeignKey('Project')
     profile = models.ForeignKey('Profile')
-    timestamp = models.DateTimeField(default = timezone.now)
+    timestamp = models.DateTimeField(default=timezone.now)
