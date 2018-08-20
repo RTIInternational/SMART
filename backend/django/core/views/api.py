@@ -354,7 +354,7 @@ def data_coded_table(request, project_pk):
     """
     project = Project.objects.get(pk=project_pk)
 
-    data_objs = DataLabel.objects.filter(data__project=project)
+    data_objs = DataLabel.objects.filter(data__project=project, data__irr_ind=False)
 
     data = []
     for d in data_objs:
