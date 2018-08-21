@@ -24,7 +24,7 @@ def clean_data_helper(data, supplied_labels):
     ]
     ALLOWED_HEADER = ['Text', 'Label']
     ALLOWED_HEADER_ID = ['ID', 'Text', 'Label']
-    MAX_FILE_SIZE = 4 * 1000 * 1000 * 1000
+    MAX_FILE_SIZE = 500 * 1000 * 1000
 
     if data.size > MAX_FILE_SIZE:
         raise ValidationError("File is too large.  Received {0} but max size is {1}."
