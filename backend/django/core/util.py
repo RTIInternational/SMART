@@ -248,14 +248,17 @@ def add_data(project, df):
     # check that the data is not already in the system and drop duplicates
     df = df.loc[~df['hash'].isin(list(Data.objects.filter(
         project=project).values_list("hash", flat=True)))]
+
     if len(df) == 0:
         return []
+
     # Limit the number of rows to 2mil for the entire project
     num_existing_data = Data.objects.filter(project=project).count()
     if num_existing_data >= 2000000:
         return []
 
     df = df[:2000000 - num_existing_data]
+
     # if there is no ID column already, add it and hash it
     df.reset_index(drop=True, inplace=True)
     if 'ID' not in df.columns:

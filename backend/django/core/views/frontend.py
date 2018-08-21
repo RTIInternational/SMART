@@ -218,9 +218,6 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             kwargs.setdefault('queryset', self.get_form_instance(step))
 
         if step == 'permissions':
-            # formset= form_class(**kwargs, form_kwargs=self.get_form_kwargs_special(step))
-            # form = formset[0]
-            # print(form.fields['profile'].choices)
             return form_class(**kwargs, form_kwargs=self.get_form_kwargs_special(step))
         else:
             return form_class(**kwargs)
