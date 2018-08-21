@@ -19,6 +19,7 @@ import statsmodels.stats.inter_rater as raters
 from collections import defaultdict
 from itertools import combinations
 from django.utils import timezone
+from io import StringIO
 
 # https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
 # Disable warning for false positive warning that should only trigger on chained assignment
@@ -213,6 +214,27 @@ def create_project(name, creator, percentage_irr=10, num_users_irr=2, classifier
     return proj
 
 
+def create_data_from_csv(df, project):
+    '''
+    Insert data objects into database using cursor.copy_from by creating an in-memory
+    tsv representation of the data
+    '''
+    columns = ['Text', 'project', 'hash', 'ID', 'id_hash', 'irr_ind']
+    stream = StringIO()
+
+    df['project'] = project.pk
+    df['irr_ind'] = False
+
+    df['Text'] = df['Text'].str.replace('\t', '')
+    df['Text'] = df['Text'].str.replace('\\', '\\\\')
+
+    df.to_csv(stream, sep='\t', header=False, index=False, columns=columns)
+    stream.seek(0)
+
+    with connection.cursor() as c:
+        c.copy_from(stream, Data._meta.db_table, sep='\t', null='',
+                    columns=['text', 'project_id', 'hash', 'upload_id', 'upload_id_hash', 'irr_ind'])
+
 def add_data(project, df):
     '''
     Add data to an existing project.  df should be two column dataframe with
@@ -245,14 +267,12 @@ def add_data(project, df):
         existing_hashes = Data.objects.filter(
             project=project).values_list('upload_id_hash', flat=True)
         df = df.loc[~df['id_hash'].isin(existing_hashes)]
+
         if len(df) == 0:
             return []
 
     # Create the data objects
-    df['object'] = df.apply(lambda x: Data(text=x['Text'], project=project,
-                                           hash=x['hash'],
-                                           upload_id=x['ID'], upload_id_hash=x['id_hash']), axis=1)
-    data = Data.objects.bulk_create(df['object'].tolist())
+    create_data_from_csv(df, project)
 
     labels = {}
     for l in project.labels.all():
@@ -269,7 +289,7 @@ def add_data(project, df):
              for i, row in labeled_df.iterrows()]
         )
 
-    return data, df
+    return df
 
 
 def find_queue_length(batch_size, num_coders):
