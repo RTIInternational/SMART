@@ -24,7 +24,7 @@ def clean_data_helper(data, supplied_labels):
     ]
     ALLOWED_HEADER = ['Text', 'Label']
     ALLOWED_HEADER_ID = ['ID', 'Text', 'Label']
-    MAX_FILE_SIZE = 4 * 1000 * 1000 * 1000
+    MAX_FILE_SIZE = 500 * 1000 * 1000
 
     if data.size > MAX_FILE_SIZE:
         raise ValidationError("File is too large.  Received {0} but max size is {1}."
@@ -32,14 +32,11 @@ def clean_data_helper(data, supplied_labels):
 
     try:
         if data.content_type == 'text/tab-separated-values':
-            data = pd.read_csv(StringIO(data.read().decode('utf8', 'ignore')),
-                               sep='\t').dropna(axis=0, how="all")
+            data = pd.read_csv(StringIO(data.read().decode('utf8', 'ignore')), sep='\t').dropna(axis=0, how="all")
         elif data.content_type == 'text/csv':
-            data = pd.read_csv(StringIO(data.read().decode('utf8', 'ignore'))
-                               ).dropna(axis=0, how="all")
+            data = pd.read_csv(StringIO(data.read().decode('utf8', 'ignore'))).dropna(axis=0, how="all")
         elif data.content_type.startswith('application/vnd') and data.name.endswith('.csv'):
-            data = pd.read_csv(StringIO(data.read().decode('utf8', 'ignore'))
-                               ).dropna(axis=0, how="all")
+            data = pd.read_csv(StringIO(data.read().decode('utf8', 'ignore'))).dropna(axis=0, how="all")
         elif data.content_type.startswith('application/vnd') and data.name.endswith('.xlsx'):
             data = pd.read_excel(data).dropna(axis=0, how="all")
         else:

@@ -62,6 +62,19 @@ def test_project(db, test_profile):
 
 
 @pytest.fixture
+def test_project_labeled(test_project):
+    '''
+    A project that has labeled data
+    '''
+    for l in SEED_LABELS:
+        Label.objects.create(name=l, project=test_project)
+
+    test_data = read_test_data_backend(file='./core/data/test_files/test_some_labels.csv')
+    add_data(test_project, test_data)
+    return test_project
+
+
+@pytest.fixture
 def test_project_data(db, test_project):
     '''
     Creates the test project and adds test data to it.
@@ -236,18 +249,6 @@ def test_project_labels(test_project):
     for l in SEED_LABELS:
         labels.append(Label.objects.create(name=l, project=test_project))
 
-    return test_project
-
-
-@pytest.fixture
-def test_project_labeled(test_project):
-    '''
-    A project that has labeled data
-    '''
-    for l in SEED_LABELS:
-        Label.objects.create(name=l, project=test_project)
-    test_data = read_test_data_backend(file='./core/data/test_files/test_some_labels.csv')
-    add_data(test_project, test_data)
     return test_project
 
 

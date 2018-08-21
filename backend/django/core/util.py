@@ -19,6 +19,7 @@ import statsmodels.stats.inter_rater as raters
 from collections import defaultdict
 from itertools import combinations
 from django.utils import timezone
+from io import StringIO
 
 # https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
 # Disable warning for false positive warning that should only trigger on chained assignment
@@ -213,6 +214,55 @@ def create_project(name, creator, percentage_irr=10, num_users_irr=2, classifier
     return proj
 
 
+def create_data_from_csv(df, project):
+    '''
+    Insert data objects into database using cursor.copy_from by creating an in-memory
+    tsv representation of the data
+    '''
+    columns = ['Text', 'project', 'hash', 'ID', 'id_hash', 'irr_ind']
+    stream = StringIO()
+
+    df['project'] = project.pk
+    df['irr_ind'] = False
+
+    df['Text'] = df['Text'].str.replace('\t', '')
+    df['Text'] = df['Text'].str.replace('\\', '\\\\')
+
+    df.to_csv(stream, sep='\t', header=False, index=False, columns=columns)
+    stream.seek(0)
+
+    with connection.cursor() as c:
+        c.copy_from(stream, Data._meta.db_table, sep='\t', null='',
+                    columns=['text', 'project_id', 'hash', 'upload_id', 'upload_id_hash', 'irr_ind'])
+
+
+def create_labels_from_csv(df, project):
+    '''
+    Insert DataLabel objects into database using cursor.copy_from by creating an in-memory
+    tsv representation of the datalabel objects
+    '''
+    columns = ['label_id', 'data_id', 'profile_id', 'training_set_id', 'time_to_label', 'timestamp']
+    stream = StringIO()
+
+    labels = {}
+    for l in project.labels.all():
+        labels[l.name] = l.pk
+
+    df['data_id'] = df['hash'].apply(lambda x: Data.objects.get(hash=x, project=project).pk)
+    df['time_to_label'] = None
+    df['timestamp'] = None
+    df['training_set_id'] = project.get_current_training_set().pk
+    df['label_id'] = df['Label'].apply(lambda x: labels[x])
+    df['profile_id'] = project.creator.pk
+
+    df.to_csv(stream, sep='\t', header=False, index=False, columns=columns)
+    stream.seek(0)
+
+    with connection.cursor() as c:
+        c.copy_from(stream, DataLabel._meta.db_table, sep='\t', null='',
+                    columns=columns)
+
+
 def add_data(project, df):
     '''
     Add data to an existing project.  df should be two column dataframe with
@@ -226,14 +276,17 @@ def add_data(project, df):
     # check that the data is not already in the system and drop duplicates
     df = df.loc[~df['hash'].isin(list(Data.objects.filter(
         project=project).values_list("hash", flat=True)))]
+
     if len(df) == 0:
         return []
+
     # Limit the number of rows to 2mil for the entire project
     num_existing_data = Data.objects.filter(project=project).count()
     if num_existing_data >= 2000000:
         return []
 
     df = df[:2000000 - num_existing_data]
+
     # if there is no ID column already, add it and hash it
     df.reset_index(drop=True, inplace=True)
     if 'ID' not in df.columns:
@@ -245,31 +298,19 @@ def add_data(project, df):
         existing_hashes = Data.objects.filter(
             project=project).values_list('upload_id_hash', flat=True)
         df = df.loc[~df['id_hash'].isin(existing_hashes)]
+
         if len(df) == 0:
             return []
 
     # Create the data objects
-    df['object'] = df.apply(lambda x: Data(text=x['Text'], project=project,
-                                           hash=x['hash'],
-                                           upload_id=x['ID'], upload_id_hash=x['id_hash']), axis=1)
-    data = Data.objects.bulk_create(df['object'].tolist())
-
-    labels = {}
-    for l in project.labels.all():
-        labels[l.name] = l
+    create_data_from_csv(df.copy(deep=True), project)
 
     # Find the data that has labels
     labeled_df = df[~pd.isnull(df['Label'])]
     if len(labeled_df) > 0:
-        labels = DataLabel.objects.bulk_create(
-            [DataLabel(data=row['object'],
-                       profile=project.creator,
-                       label=labels[row['Label']],
-                       training_set=project.get_current_training_set())
-             for i, row in labeled_df.iterrows()]
-        )
+        create_labels_from_csv(labeled_df, project)
 
-    return data, df
+    return df
 
 
 def find_queue_length(batch_size, num_coders):

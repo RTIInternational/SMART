@@ -34,7 +34,7 @@
             <ul class="list-group">
               <li class="list-group-item">The file needs to have either a <code>.csv</code>, <code>.tsv</code>, or <code>.xlsx</code> file extension.</li>
               <li class="list-group-item">The file requires the data to be formatted into two columns, with header names <code>Text</code> and <code>Label</code> OR three columns with header names <code>ID</code> <code>Text</code> and <code>Label</code>.</li>
-              <li class="list-group-item">The largest file size supported is 4GBs.</li>
+              <li class="list-group-item">The largest file size supported is 500MBs.</li>
             </ul>
             <p>The (optional) <code>ID</code> column should contain a <b>unique</b> identifier for your data. The identifiers should be no more than 128 characters.</p>
             <p>The <code>Text</code> column should contain the text you wish users to label. For example, if you are building a sentiment analysis classifier to predict whether a tweet is positive, negative, or neutral, the <code>Text</code> column would contain the tweets.</p>
@@ -74,8 +74,7 @@
 
 {% block scripts_body %}
 <script type="text/javascript">
-function addASpinner()
-{
+function addASpinner() {
   $('.overlay').show();
   $('#loading_text').html("Please wait. Uploading data...");
   $("#second_progress").addClass("loader");
@@ -86,12 +85,12 @@ function addASpinner()
       $('#loading_text').html("Please wait. Processing data...");
       clearInterval(refreshID);
     }
-  },300);
+  }, 10000);
 
   //after 30 seconds, update the message
   setTimeout(function(){
     $('#loading_text').html("STILL Processing data...");
-  },10000)
+  }, 30000)
 }
 
 </script>

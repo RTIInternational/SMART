@@ -111,7 +111,7 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
     4. Create tf_idf file
     5. Check and Trigger model
     """
-    data_objs, new_df = util.add_data(project, form_data)
+    new_df = util.add_data(project, form_data)
     if queue:
         util.fill_queue(queue=queue, irr_queue=irr_queue, orderby='random',
                         irr_percent=project.percentage_irr, batch_size=batch_size)
@@ -121,7 +121,7 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
     # tf_idf to be created we must create a chord which garuntees that tfidf
     # creation task is completed before check and trigger model task
 
-    if len(data_objs) > 0:
+    if len(new_df) > 0:
         util.save_data_file(new_df, project.pk)
         if project.classifier is not None:
             transaction.on_commit(
@@ -218,9 +218,6 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             kwargs.setdefault('queryset', self.get_form_instance(step))
 
         if step == 'permissions':
-            # formset= form_class(**kwargs, form_kwargs=self.get_form_kwargs_special(step))
-            # form = formset[0]
-            # print(form.fields['profile'].choices)
             return form_class(**kwargs, form_kwargs=self.get_form_kwargs_special(step))
         else:
             return form_class(**kwargs)
