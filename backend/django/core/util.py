@@ -235,6 +235,7 @@ def create_data_from_csv(df, project):
         c.copy_from(stream, Data._meta.db_table, sep='\t', null='',
                     columns=['text', 'project_id', 'hash', 'upload_id', 'upload_id_hash', 'irr_ind'])
 
+
 def add_data(project, df):
     '''
     Add data to an existing project.  df should be two column dataframe with
