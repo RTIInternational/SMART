@@ -236,6 +236,33 @@ def create_data_from_csv(df, project):
                     columns=['text', 'project_id', 'hash', 'upload_id', 'upload_id_hash', 'irr_ind'])
 
 
+def create_labels_from_csv(df, project):
+    '''
+    Insert DataLabel objects into database using cursor.copy_from by creating an in-memory
+    tsv representation of the datalabel objects
+    '''
+    columns = ['label_id', 'data_id', 'profile_id', 'training_set_id', 'time_to_label', 'timestamp']
+    stream = StringIO()
+
+    labels = {}
+    for l in project.labels.all():
+        labels[l.name] = l.pk
+
+    df['data_id'] = df['hash'].apply(lambda x: Data.objects.get(hash=x, project=project).pk)
+    df['time_to_label'] = None
+    df['timestamp'] = None
+    df['training_set_id'] = project.get_current_training_set().pk
+    df['label_id'] = df['Label'].apply(lambda x: labels[x])
+    df['profile_id'] = project.creator.pk
+
+    df.to_csv(stream, sep='\t', header=False, index=False, columns=columns)
+    stream.seek(0)
+
+    with connection.cursor() as c:
+        c.copy_from(stream, DataLabel._meta.db_table, sep='\t', null='',
+                    columns=columns)
+
+
 def add_data(project, df):
     '''
     Add data to an existing project.  df should be two column dataframe with
@@ -276,22 +303,12 @@ def add_data(project, df):
             return []
 
     # Create the data objects
-    create_data_from_csv(df, project)
-
-    labels = {}
-    for l in project.labels.all():
-        labels[l.name] = l
+    create_data_from_csv(df.copy(deep=True), project)
 
     # Find the data that has labels
     labeled_df = df[~pd.isnull(df['Label'])]
     if len(labeled_df) > 0:
-        labels = DataLabel.objects.bulk_create(
-            [DataLabel(data=row['object'],
-                       profile=project.creator,
-                       label=labels[row['Label']],
-                       training_set=project.get_current_training_set())
-             for i, row in labeled_df.iterrows()]
-        )
+        create_labels_from_csv(labeled_df, project)
 
     return df
 
