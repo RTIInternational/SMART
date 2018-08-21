@@ -32,14 +32,11 @@ def clean_data_helper(data, supplied_labels):
 
     try:
         if data.content_type == 'text/tab-separated-values':
-            data = pd.read_csv(StringIO(data.read().decode('utf8', 'ignore')),
-                               sep='\t').dropna(axis=0, how="all")
+            data = pd.read_csv(StringIO(data.read().decode('utf8', 'ignore')), sep='\t').dropna(axis=0, how="all")
         elif data.content_type == 'text/csv':
-            data = pd.read_csv(StringIO(data.read().decode('utf8', 'ignore'))
-                               ).dropna(axis=0, how="all")
+            data = pd.read_csv(StringIO(data.read().decode('utf8', 'ignore'))).dropna(axis=0, how="all")
         elif data.content_type.startswith('application/vnd') and data.name.endswith('.csv'):
-            data = pd.read_csv(StringIO(data.read().decode('utf8', 'ignore'))
-                               ).dropna(axis=0, how="all")
+            data = pd.read_csv(StringIO(data.read().decode('utf8', 'ignore'))).dropna(axis=0, how="all")
         elif data.content_type.startswith('application/vnd') and data.name.endswith('.xlsx'):
             data = pd.read_excel(data).dropna(axis=0, how="all")
         else:
