@@ -156,27 +156,29 @@ def test_get_current_training_set_multiple_training_set(test_project):
 
 def test_add_data_no_labels(db, test_project):
     test_data = read_test_data_backend(file='./core/data/test_files/test_no_labels.csv')
-    add_data(test_project, test_data)
+    df = add_data(test_project, test_data)
 
-    for i, row in test_data.iterrows():
+    for i, row in df.iterrows():
         assert_obj_exists(Data, {
-            'text': row['Text'],
+            'upload_id_hash': row['id_hash'],
+            'hash': row['hash'],
             'project': test_project
         })
 
 
 def test_add_data_with_labels(db, test_project_labels):
     test_data = read_test_data_backend(file='./core/data/test_files/test_some_labels.csv')
-    add_data(test_project_labels, test_data)
+    df = add_data(test_project_labels, test_data)
 
-    for i, row in test_data.iterrows():
+    for i, row in df.iterrows():
         assert_obj_exists(Data, {
-            'text': row['Text'],
+            'upload_id_hash': row['id_hash'],
+            'hash': row['hash'],
             'project': test_project_labels
         })
         if not pd.isnull(row['Label']):
             assert_obj_exists(DataLabel, {
-                'data__text': row['Text'],
+                'data__hash': row['hash'],
                 'profile': test_project_labels.creator,
                 'label__name': row['Label']
             })
