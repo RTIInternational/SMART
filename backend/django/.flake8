@@ -1,2 +1,2 @@
 [flake8]
-exclude = manage.py,test
+exclude = manage.py
