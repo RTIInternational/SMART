@@ -217,26 +217,26 @@
 
 {% block scripts_body %}
 <script>
-
-/*When the download model button is pressed, download a zip file
-*with a README, the model, labeled data, and tfidf matrix
-*/
-$("#download_model_btn").on("click", function() {
+/*
+ *  When the download model button is pressed, download a zip file
+ *  with a README, the model, labeled data, and tfidf matrix
+ */
+$('#download_model_btn').on('click', function() {
   xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
-      var a, today;
-      if (xhttp.readyState === 4 && xhttp.status === 200) {
-          a = document.createElement('a');
-          a.href = window.URL.createObjectURL(xhttp.response);
-          today = new Date();
-          a.download = "project_" + {{ project.pk }} + '_model_' + today.toDateString().split(" ").join("_") + ".zip";
-          a.style.display = 'none';
-          document.body.appendChild(a);
-          return a.click();
-      }
+    var a, today;
+    if (xhttp.readyState === 4 && xhttp.status === 200) {
+      a = document.createElement('a');
+      a.href = window.URL.createObjectURL(xhttp.response);
+      today = new Date();
+      a.download = 'project_' + {{ project.pk }} + '_model_' + today.toDateString().split(' ').join('_') + '.zip';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      return a.click();
+    }
   };
-  xhttp.open("GET", "/api/download_model/" + {{ project.pk }} + "/", true);
-  xhttp.setRequestHeader("Content-Type", "application/json");
+  xhttp.open('GET', '/api/download_model/' + {{ project.pk }} + '/', true);
+  xhttp.setRequestHeader('Content-Type', 'application/json');
   xhttp.responseType = 'blob';
   xhttp.send();
 });
@@ -246,24 +246,24 @@ $("#download_model_btn").on("click", function() {
  *  to a new anchor element, and trigger a click event on that anchor element
  *  to prompt the download file popup
  */
-$("#download_btn").on("click", function() {
-    xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function() {
-        var a, today;
-        if (xhttp.readyState === 4 && xhttp.status === 200) {
-            a = document.createElement('a');
-            a.href = window.URL.createObjectURL(xhttp.response);
-            today = new Date();
-            a.download = "project_" + {{ project.pk }} + '_labels_' + today.toDateString().split(" ").join("_") + ".csv";
-            a.style.display = 'none';
-            document.body.appendChild(a);
-            return a.click();
-        }
-    };
-    xhttp.open("GET", "/api/download_data/" + {{ project.pk }} + "/", true);
-    xhttp.setRequestHeader("Content-Type", "application/json");
-    xhttp.responseType = 'blob';
-    xhttp.send();
+$('#download_btn').on('click', function() {
+  xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    var a, today;
+    if (xhttp.readyState === 4 && xhttp.status === 200) {
+      a = document.createElement('a');
+      a.href = window.URL.createObjectURL(xhttp.response);
+      today = new Date();
+      a.download = 'project_' + {{ project.pk }} + '_labels_' + today.toDateString().split(' ').join('_') + '.csv';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      return a.click();
+    }
+  };
+  xhttp.open('GET', '/api/download_data/' + {{ project.pk }} + '/', true);
+  xhttp.setRequestHeader('Content-Type', 'application/json');
+  xhttp.responseType = 'blob';
+  xhttp.send();
 });
 </script>
 {% endblock %}
