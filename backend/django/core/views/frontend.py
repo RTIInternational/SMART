@@ -1,29 +1,22 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import TemplateView, ListView, DetailView
-from django.views.generic.edit import CreateView, UpdateView, DeleteView
+from django.views.generic.edit import UpdateView, DeleteView
 from django.urls import reverse_lazy
 from django.http import HttpResponseRedirect
 from django.db import transaction
-from django.core.exceptions import PermissionDenied
 from django.core.files.storage import FileSystemStorage
 from django.conf import settings
 from django import forms
-from formtools.wizard.views import SessionWizardView, StepsHelper
-from formtools.wizard.storage import get_storage
+from formtools.wizard.views import SessionWizardView
 
 import pandas as pd
-import math
-import os
 from celery import chord
 
-from core.models import (Profile, Project, ProjectPermissions, Model, Data, Label,
-                         DataLabel, DataPrediction, Queue, DataQueue, AssignedData,
-                         TrainingSet)
+from core.models import (Project, Data, Label, TrainingSet)
 from core.forms import (ProjectUpdateForm, PermissionsFormSet, LabelFormSet,
                         ProjectWizardForm, DataWizardForm, AdvancedWizardForm,
                         CodeBookWizardForm, LabelDescriptionFormSet)
-from core.serializers import DataSerializer
 from core.templatetags import project_extras
 import core.util as util
 from core import tasks
@@ -261,7 +254,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             proj_obj.save()
 
             # Training Set
-            training_set = TrainingSet.objects.create(project=proj_obj, set_number=0)
+            TrainingSet.objects.create(project=proj_obj, set_number=0)
 
             # Labels
             labels.instance = proj_obj
@@ -281,7 +274,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
             # Data
             f_data = data.cleaned_data['data']
-            admin_queue = util.add_queue(project=proj_obj, length=2000000, type="admin")
+            util.add_queue(project=proj_obj, length=2000000, type="admin")
             irr_queue = util.add_queue(project=proj_obj, length=2000000, type="irr")
             upload_data(f_data, proj_obj, queue, irr_queue, batch_size)
 

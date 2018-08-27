@@ -1072,59 +1072,6 @@ def test_admin_table(seeded_database, admin_client, client, test_project_data, t
     assert len(response['data']) == 0
 
 
-def test_change_log_table(seeded_database, client, admin_client, test_project_data, test_queue, test_admin_queue, test_irr_queue, test_labels):
-    '''
-    This tests that the change log table records changes in the history table
-    '''
-    project = test_project_data
-    client_profile, admin_profile = sign_in_and_fill_queue(
-        project, test_queue, client, admin_client)
-    data = get_assignments(client_profile, project, 3)
-    # label three datum. Table should be empty.
-    for i in range(3):
-        response = client.post('/api/annotate_data/' + str(data[i].pk) + '/', {
-                               "labelID": test_labels[0].pk, "labeling_time": 1})
-    response = client.get('/api/data_change_log_table/' + str(project.pk) + '/')
-    assert 'detail' in response.json() and "Invalid permission. Must be an admin" in response.json()[
-        'detail']
-
-    response = admin_client.get('/api/data_change_log_table/' + str(project.pk) + '/').json()
-    assert len(response['data']) == 0
-    # change the first to itself. Should not be in the table.
-    change_info = {
-        "dataID": data[0].pk,
-        "oldLabelID": test_labels[0].pk,
-        "labelID": test_labels[0].pk
-    }
-    response = client.post('/api/modify_label/' + str(data[0].pk) + '/', change_info).json()
-    response = admin_client.get('/api/data_change_log_table/' + str(project.pk) + '/').json()
-    assert len(response['data']) == 0
-
-    # skip the second one. Should be in the table with "skip"
-    change_info = {
-        "dataID": data[1].pk,
-        "oldLabelID": test_labels[0].pk
-    }
-    response = client.post('/api/modify_label_to_skip/' + str(data[1].pk) + '/', change_info)
-    assert 'error' not in response.json() and 'detail' not in response.json()
-    response = admin_client.get('/api/data_change_log_table/' + str(project.pk) + '/').json()
-    assert len(response['data']) == 1
-    assert response['data'][0]['New Label'] == 'skip'
-    assert response['data'][0]['Text'] == escape(data[1].text)
-
-    # change the third one to something else. Should be in the table.
-    change_info = {
-        "dataID": data[2].pk,
-        "oldLabelID": test_labels[0].pk,
-        "labelID": test_labels[1].pk
-    }
-    response = client.post('/api/modify_label/' + str(data[2].pk) + '/', change_info).json()
-    response = admin_client.get('/api/data_change_log_table/' + str(project.pk) + '/').json()
-    assert len(response['data']) == 2
-    for item in response['data']:
-        assert item['New Label'] in ['skip', test_labels[1].name]
-
-
 def test_multiple_admin_on_admin_annotation(seeded_database, client, admin_client, test_project_all_irr_data, test_all_irr_all_queues, test_labels_all_irr):
     '''
     This tests the functions that prevent the race condition of multiple admin
