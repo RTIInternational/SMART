@@ -8,7 +8,7 @@ from pandas.errors import ParserError
 import copy
 from io import StringIO
 
-from core.util import md5_hash
+from core.utils.util import md5_hash
 from .models import Project, ProjectPermissions, Label
 
 

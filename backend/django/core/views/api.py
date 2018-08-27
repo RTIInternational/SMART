@@ -9,7 +9,7 @@ import zipfile
 import tempfile
 
 from core.models import Project
-import core.util as util
+from core.utils.util import get_labeled_data
 from core.permissions import IsAdminOrCreator
 
 
@@ -25,7 +25,7 @@ def download_data(request, project_pk):
         an HttpResponse containing the requested data
     """
     project = Project.objects.get(pk=project_pk)
-    data, labels = util.get_labeled_data(project)
+    data, labels = get_labeled_data(project)
     data = data.to_dict("records")
 
     buffer = io.StringIO()
@@ -64,7 +64,7 @@ def download_model(request, project_pk):
     model_path = os.path.join(settings.MODEL_PICKLE_PATH, 'project_' + str(project_pk)
                               + '_training_' + str(current_training_set.set_number - 1) + '.pkl')
 
-    data, label_data = util.get_labeled_data(project)
+    data, label_data = get_labeled_data(project)
     # open the tempfile and write the label data to it
     temp_labeleddata_file = tempfile.NamedTemporaryFile(
         mode='w', suffix=".csv", delete=False, dir=settings.DATA_DIR)

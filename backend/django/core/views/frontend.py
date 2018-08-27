@@ -11,15 +11,15 @@ from django import forms
 from formtools.wizard.views import SessionWizardView
 
 import pandas as pd
-from celery import chord
 
 from core.models import (Project, Data, Label, TrainingSet)
 from core.forms import (ProjectUpdateForm, PermissionsFormSet, LabelFormSet,
                         ProjectWizardForm, DataWizardForm, AdvancedWizardForm,
                         CodeBookWizardForm, LabelDescriptionFormSet)
 from core.templatetags import project_extras
-import core.util as util
-from core import tasks
+from core.utils.util import save_codebook_file, upload_data
+from core.utils.utils_queue import add_queue, find_queue_length
+from core.utils.utils_annotate import batch_unassign
 
 
 # Projects
@@ -93,37 +93,6 @@ class ProjectDetail(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         project = Project.objects.get(pk=self.kwargs['pk'])
 
         return project_extras.proj_permission_level(project, self.request.user.profile) > 0
-
-
-def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
-    """Perform data upload given validated form_data.
-
-    1. Add data to database
-    2. If new project then fill queue (only new project will pass queue object)
-    3. Save the uploaded data file
-    4. Create tf_idf file
-    5. Check and Trigger model
-    """
-    new_df = util.add_data(project, form_data)
-    if queue:
-        util.fill_queue(queue=queue, irr_queue=irr_queue, orderby='random',
-                        irr_percent=project.percentage_irr, batch_size=batch_size)
-
-    # Since User can upload Labeled Data and this data is added to current training_set
-    # we need to check_and_trigger model.  However since training model requires
-    # tf_idf to be created we must create a chord which garuntees that tfidf
-    # creation task is completed before check and trigger model task
-
-    if len(new_df) > 0:
-        util.save_data_file(new_df, project.pk)
-        if project.classifier is not None:
-            transaction.on_commit(
-                lambda:
-                    chord(
-                        tasks.send_tfidf_creation_task.s(project.pk),
-                        tasks.send_check_and_trigger_model_task.si(project.pk)
-                    ).apply_async()
-            )
 
 
 class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
@@ -236,7 +205,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
             cb_data = codebook_data.cleaned_data['data']
             if cb_data != "":
-                cb_filepath = util.save_codebook_file(cb_data, proj_pk)
+                cb_filepath = save_codebook_file(cb_data, proj_pk)
             else:
                 cb_filepath = ""
             proj_obj.codebook_file = cb_filepath
@@ -268,14 +237,14 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
             num_coders = len([x for x in permissions if x.cleaned_data
                               != {} and not x.cleaned_data['DELETE']]) + 1
-            q_length = util.find_queue_length(batch_size, num_coders)
+            q_length = find_queue_length(batch_size, num_coders)
 
-            queue = util.add_queue(project=proj_obj, length=q_length)
+            queue = add_queue(project=proj_obj, length=q_length)
 
             # Data
             f_data = data.cleaned_data['data']
-            util.add_queue(project=proj_obj, length=2000000, type="admin")
-            irr_queue = util.add_queue(project=proj_obj, length=2000000, type="irr")
+            add_queue(project=proj_obj, length=2000000, type="admin")
+            irr_queue = add_queue(project=proj_obj, length=2000000, type="irr")
             upload_data(f_data, proj_obj, queue, irr_queue, batch_size)
 
         return HttpResponseRedirect(proj_obj.get_absolute_url())
@@ -326,7 +295,7 @@ class ProjectUpdate(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
                 permissions.instance = self.object
                 for deleted_permissions in permissions.deleted_forms:
                     del_perm_profile = deleted_permissions.cleaned_data.get('profile', None)
-                    util.batch_unassign(del_perm_profile)
+                    batch_unassign(del_perm_profile)
                 permissions.save()
 
                 # Data
@@ -337,7 +306,7 @@ class ProjectUpdate(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
                 # CodeBook
                 cb_data = form.cleaned_data.get('cb_data', False)
                 if cb_data and cb_data != "":
-                    cb_filepath = util.save_codebook_file(cb_data, self.object.pk)
+                    cb_filepath = save_codebook_file(cb_data, self.object.pk)
                     self.object.codebook_file = cb_filepath
                     self.object.save()
 

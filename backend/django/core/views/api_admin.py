@@ -10,8 +10,8 @@ from postgres_stats.aggregates import Percentile
 from core.models import (Project, Model, Data, Label, DataLabel,
                          DataPrediction, TrainingSet,
                          IRRLog, ProjectPermissions)
-
-import core.util as util
+from core.utils.util import perc_agreement_table_data, irr_heatmap_data
+from core.utils.utils_model import fleiss_kappa, cohens_kappa
 from core.permissions import IsAdminOrCreator
 
 
@@ -258,9 +258,9 @@ def get_irr_metrics(request, project_pk):
 
     try:
         if project.num_users_irr > 2:
-            kappa, perc_agreement = util.fleiss_kappa(project)
+            kappa, perc_agreement = fleiss_kappa(project)
         else:
-            kappa, perc_agreement = util.cohens_kappa(project)
+            kappa, perc_agreement = cohens_kappa(project)
         kappa = round(kappa, 3)
         perc_agreement = str(round(perc_agreement, 5) * 100) + "%"
     except ValueError:
@@ -282,7 +282,7 @@ def perc_agree_table(request, project_pk):
     if len(irr_data) == 0:
         return Response({'data': []})
 
-    user_agree = util.perc_agreement_table_data(project)
+    user_agree = perc_agreement_table_data(project)
     return Response({'data': user_agree})
 
 
@@ -302,7 +302,7 @@ def heat_map_data(request, project_pk):
     '''
     project = Project.objects.get(pk=project_pk)
 
-    heatmap_data = util.irr_heatmap_data(project)
+    heatmap_data = irr_heatmap_data(project)
     labels = list(Label.objects.all().filter(project=project).values_list('name', flat=True))
     labels.append("Skip")
     coders = []

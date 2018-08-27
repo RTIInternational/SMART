@@ -11,7 +11,8 @@ def send_test_task():
 def send_model_task(project_pk):
     """Trains, Saves, Predicts, Fills Queue"""
     from core.models import Project, TrainingSet
-    from core.util import train_and_save_model, predict_data, fill_queue, find_queue_length
+    from core.utils.utils_model import train_and_save_model, predict_data
+    from core.utils.utils_queue import fill_queue, find_queue_length
 
     project = Project.objects.get(pk=project_pk)
     queue = project.queue_set.get(type="normal")
@@ -38,7 +39,7 @@ def send_model_task(project_pk):
 @shared_task
 def send_tfidf_creation_task(project_pk):
     """Create and Save tfidf"""
-    from core.util import create_tfidf_matrix, save_tfidf_matrix, save_tfidf_vectorizer
+    from core.util.utils_model import create_tfidf_matrix, save_tfidf_matrix, save_tfidf_vectorizer
 
     tf_idf, vectorizer = create_tfidf_matrix(project_pk)
     file = save_tfidf_matrix(tf_idf, project_pk)
@@ -49,7 +50,7 @@ def send_tfidf_creation_task(project_pk):
 
 @shared_task
 def send_check_and_trigger_model_task(project_pk):
-    from core.util import check_and_trigger_model
+    from core.util.utils_model import check_and_trigger_model
     from core.models import Data
 
     datum = Data.objects.filter(project=project_pk).first()

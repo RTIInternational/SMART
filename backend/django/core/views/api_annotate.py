@@ -11,9 +11,11 @@ from core.serializers import LabelSerializer, DataSerializer
 from core.models import (Project, Data, Label, DataLabel,
                          Queue, DataQueue, AssignedData,
                          LabelChangeLog, RecycleBin, IRRLog, AdminProgress)
-import core.util as util
 from core.templatetags import project_extras
 from core.permissions import IsAdminOrCreator, IsCoder
+from core.utils.utils_annotate import (process_irr_label, move_skipped_to_admin_queue,
+                                       label_data, unassign_datum, get_assignments)
+from core.utils.utils_model import check_and_trigger_model
 
 
 @api_view(['GET'])
@@ -36,7 +38,7 @@ def get_card_deck(request, project_pk):
     num_coders = len(project.projectpermissions_set.all()) + 1
     coder_size = math.ceil(batch_size / num_coders)
 
-    data = util.get_assignments(profile, project, coder_size)
+    data = get_assignments(profile, project, coder_size)
     # shuffle so the irr is not all at the front
     random.shuffle(data)
     labels = Label.objects.all().filter(project=project)
@@ -114,13 +116,13 @@ def skip_data(request, data_pk):
         # if the IRR history has more than the needed number of labels , it is
         # already processed so don't do anything else
         if num_history <= project.num_users_irr:
-            util.process_irr_label(data, None)
+            process_irr_label(data, None)
     else:
         # the data is not IRR so treat it as normal
-        util.move_skipped_to_admin_queue(data, profile, project)
+        move_skipped_to_admin_queue(data, profile, project)
 
     # for all data, check if we need to refill queue
-    util.check_and_trigger_model(data, profile)
+    check_and_trigger_model(data, profile)
 
     return Response(response)
 
@@ -159,13 +161,13 @@ def annotate_data(request, data_pk):
         assignment = AssignedData.objects.get(data=data, profile=profile)
         assignment.delete()
     else:
-        util.label_data(label, data, profile, labeling_time)
+        label_data(label, data, profile, labeling_time)
         if data.irr_ind:
             # if it is reliability data, run processing step
-            util.process_irr_label(data, label)
+            process_irr_label(data, label)
 
     # for all data, check if we need to refill queue
-    util.check_and_trigger_model(data, profile)
+    check_and_trigger_model(data, profile)
 
     return Response(response)
 
@@ -351,7 +353,7 @@ def leave_coding_page(request, project_pk):
     assigned_data = AssignedData.objects.filter(profile=profile)
 
     for assignment in assigned_data:
-        util.unassign_datum(assignment.data, profile)
+        unassign_datum(assignment.data, profile)
 
     if project_extras.proj_permission_level(project, profile) > 1:
         if AdminProgress.objects.filter(project=project, profile=profile).count() > 0:
@@ -545,7 +547,7 @@ def label_admin_label(request, data_pk):
     # NOTE: this checks if the model needs to be triggered, but not if the
     # queues need to be refilled. This is because for something to be in the
     # admin queue, annotate or skip would have already checked for an empty queue
-    util.check_and_trigger_model(datum)
+    check_and_trigger_model(datum)
     return Response(response)
 
 
