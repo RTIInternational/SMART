@@ -1,20 +1,15 @@
-import pytest
-import redis
-import os
-import pandas as pd
-
 from django.conf import settings
-from django.contrib.auth import get_user_model
+
+import pytest
+
 from smart.celery import app as celery_app
-from core.management.commands.seed import (
-    seed_database, SEED_USERNAME, SEED_LABELS)
-from core.models import (Profile, Label, Model, DataLabel, Data, TrainingSet)
+from core.management.commands.seed import seed_database, SEED_LABELS
+from core.models import Label, Data, TrainingSet
 from core.utils.util import create_project, create_profile, add_data
 from core.utils.utils_model import (create_tfidf_matrix, save_tfidf_matrix,
                                     train_and_save_model, predict_data,
                                     save_tfidf_vectorizer)
 from core.utils.utils_queue import add_queue
-
 from test.util import read_test_data_backend
 
 TEST_QUEUE_LEN = 30
@@ -163,15 +158,6 @@ def test_admin_queue_labeled(db, test_project_labeled):
 
 
 @pytest.fixture
-def test_admin_queue_labeled(db, test_project_labeled):
-    '''
-    A queue containing data from the test project, with length set to
-    the global len.
-    '''
-    return add_queue(test_project_labeled, TEST_QUEUE_LEN, type="admin")
-
-
-@pytest.fixture
 def test_profile_queue(db, test_profile, test_project_data):
     '''
     A queue with test data, associated with the first test profile.
@@ -205,7 +191,7 @@ def test_tfidf_matrix(test_project_data):
     '''
     A CSR-format tf-idf matrix created from the data of test_project_data
     '''
-    data = Data.objects.filter(project=test_project_data)
+    Data.objects.filter(project=test_project_data)
     return create_tfidf_matrix(test_project_data.pk)[0]
 
 
@@ -214,7 +200,7 @@ def test_tfidf_matrix_labeled(test_project_labeled):
     '''
     A CSR-format tf-idf matrix created from the data of test_project_data
     '''
-    data = Data.objects.filter(project=test_project_labeled)
+    Data.objects.filter(project=test_project_labeled)
     return create_tfidf_matrix(test_project_labeled.pk)[0]
 
 
@@ -223,7 +209,7 @@ def test_tfidf_vectorizer_labeled(test_project_labeled):
     '''
     A CSR-format tf-idf matrix created from the data of test_project_data
     '''
-    data = Data.objects.filter(project=test_project_labeled)
+    Data.objects.filter(project=test_project_labeled)
     return create_tfidf_matrix(test_project_labeled.pk)[1]
 
 
@@ -256,7 +242,7 @@ def test_project_labels(test_project):
 def test_project_labeled_and_tfidf(test_project_labeled, test_tfidf_matrix_labeled, test_tfidf_vectorizer_labeled, tmpdir, settings):
     data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
     settings.TF_IDF_PATH = str(data_temp)
-    fpath = save_tfidf_matrix(test_tfidf_matrix_labeled, test_project_labeled.pk)
+    save_tfidf_matrix(test_tfidf_matrix_labeled, test_project_labeled.pk)
     save_tfidf_vectorizer(test_tfidf_vectorizer_labeled, test_project_labeled.pk)
     return test_project_labeled
 
@@ -266,7 +252,7 @@ def test_project_unlabeled_and_tfidf(test_project_data, test_tfidf_matrix, tmpdi
     data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
     settings.TF_IDF_PATH = str(data_temp)
 
-    fpath = save_tfidf_matrix(test_tfidf_matrix, test_project_data.pk)
+    save_tfidf_matrix(test_tfidf_matrix, test_project_data.pk)
 
     return test_project_data
 
@@ -280,7 +266,7 @@ def test_project_with_trained_model(test_project_labeled_and_tfidf, tmpdir):
     temp_pickle_path = tmpdir.listdir()[0].mkdir('model_pickles')
     settings.MODEL_PICKLE_PATH = str(temp_pickle_path)
 
-    trained_model = train_and_save_model(test_project_labeled_and_tfidf)
+    train_and_save_model(test_project_labeled_and_tfidf)
     # update the training set number
     training_set_number = test_project_labeled_and_tfidf.get_current_training_set().set_number
     TrainingSet.objects.create(project=test_project_labeled_and_tfidf,
@@ -292,12 +278,9 @@ def test_project_with_trained_model(test_project_labeled_and_tfidf, tmpdir):
 def test_project_predicted_data(test_project_with_trained_model, tmpdir):
     project = test_project_with_trained_model
 
-    predictions = predict_data(project, project.model_set.get())
+    predict_data(project, project.model_set.get())
 
     return test_project_with_trained_model
-
-
-'''Fixtures for testing various classifiers'''
 
 
 @pytest.fixture
@@ -309,13 +292,13 @@ def test_project_svm_data_tfidf(db, test_profile, tmpdir, settings):
     test_data = read_test_data_backend(file='./core/data/test_files/test_no_labels.csv')
     add_data(proj, test_data)
 
-    data = Data.objects.filter(project=proj)
+    Data.objects.filter(project=proj)
     matrix = create_tfidf_matrix(proj.pk)[0]
 
     data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
     settings.TF_IDF_PATH = str(data_temp)
 
-    fpath = save_tfidf_matrix(matrix, proj.pk)
+    save_tfidf_matrix(matrix, proj.pk)
 
     return proj
 
@@ -326,9 +309,6 @@ def test_svm_queue_list(db, test_project_svm_data_tfidf):
     admin_q = add_queue(test_project_svm_data_tfidf, TEST_QUEUE_LEN, type="admin")
     irr_q = add_queue(test_project_svm_data_tfidf, TEST_QUEUE_LEN, type="irr")
     return [normal_q, admin_q, irr_q]
-
-
-'''Fixtures for IRR tests'''
 
 
 @pytest.fixture
@@ -389,13 +369,13 @@ def test_project_randomforest_data_tfidf(db, test_profile, tmpdir, settings):
     test_data = read_test_data_backend(file='./core/data/test_files/test_no_labels.csv')
     add_data(proj, test_data)
 
-    data = Data.objects.filter(project=proj)
+    Data.objects.filter(project=proj)
     matrix = create_tfidf_matrix(proj.pk)[0]
 
     data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
     settings.TF_IDF_PATH = str(data_temp)
 
-    fpath = save_tfidf_matrix(matrix, proj.pk)
+    save_tfidf_matrix(matrix, proj.pk)
 
     return proj
 
@@ -476,105 +456,6 @@ def test_half_irr_all_queues(db, test_project_half_irr):
 
 
 @pytest.fixture
-def test_project_randomforest_data_tfidf(db, test_profile, tmpdir, settings):
-    '''
-    This fixture only creates the test project without any data.
-    '''
-    proj = create_project('test_project', test_profile, classifier="random forest")
-    test_data = read_test_data_backend(file='./core/data/test_files/test_no_labels.csv')
-    add_data(proj, test_data)
-
-    data = Data.objects.filter(project=proj)
-    matrix = create_tfidf_matrix(proj.pk)[0]
-
-    data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
-    settings.TF_IDF_PATH = str(data_temp)
-
-    fpath = save_tfidf_matrix(matrix, proj.pk)
-
-    return proj
-
-
-@pytest.fixture
-def test_randomforest_queue_list(db, test_project_randomforest_data_tfidf):
-    normal_q = add_queue(test_project_randomforest_data_tfidf, TEST_QUEUE_LEN)
-    admin_q = add_queue(test_project_randomforest_data_tfidf, TEST_QUEUE_LEN, type="admin")
-    irr_q = add_queue(test_project_randomforest_data_tfidf, MAX_DATA_LEN, type="irr")
-    return [normal_q, admin_q, irr_q]
-
-
-@pytest.fixture
-def test_project_all_irr_3_coders(db, test_profile):
-    '''
-    This fixture only creates the test project without any data.
-    '''
-    return create_project('test_project', test_profile, 100, 3)
-
-
-@pytest.fixture
-def test_project_all_irr_3_coders_data(db, test_project_all_irr_3_coders):
-    '''
-    Creates the test project with 100% irr and adds test data to it.
-    '''
-    test_data = read_test_data_backend(file='./core/data/test_files/test_no_labels.csv')
-    add_data(test_project_all_irr_3_coders, test_data)
-    return test_project_all_irr_3_coders
-
-
-@pytest.fixture
-def test_all_irr_3_coders_all_queues(db, test_project_all_irr_3_coders_data):
-    '''
-    A queue containing data from the test project, with length set to
-    the global len.
-    '''
-    normal_q = add_queue(test_project_all_irr_3_coders_data, TEST_QUEUE_LEN)
-    admin_q = add_queue(test_project_all_irr_3_coders_data, TEST_QUEUE_LEN, type="admin")
-    irr_q = add_queue(test_project_all_irr_3_coders_data, MAX_DATA_LEN, type="irr")
-    return [normal_q, admin_q, irr_q]
-
-
-@pytest.fixture
-def test_labels_all_irr_3_coders(test_project_all_irr_3_coders_data):
-    '''
-    A list of labels that correspond to SEED_LABELS
-    '''
-    labels = []
-    for l in SEED_LABELS:
-        labels.append(Label.objects.create(name=l, project=test_project_all_irr_3_coders_data))
-    return labels
-
-
-@pytest.fixture
-def test_project_half_irr(db, test_profile):
-    '''
-    This fixture only creates the test project without any data.
-    '''
-    return create_project('test_project', test_profile, 50, 2)
-
-
-@pytest.fixture
-def test_project_half_irr_data(db, test_project_half_irr):
-    '''
-    Creates the test project with 50% irr and adds test data to it.
-    '''
-    test_data = read_test_data_backend(file='./core/data/test_files/test_no_labels.csv')
-    add_data(test_project_half_irr, test_data)
-    return test_project_half_irr
-
-
-@pytest.fixture
-def test_half_irr_all_queues(db, test_project_half_irr):
-    '''
-    A queue containing data from the test project, with length set to
-    the global len.
-    '''
-    normal_q = add_queue(test_project_half_irr, TEST_QUEUE_LEN)
-    admin_q = add_queue(test_project_half_irr, TEST_QUEUE_LEN, type="admin")
-    irr_q = add_queue(test_project_half_irr, MAX_DATA_LEN, type="irr")
-    return [normal_q, admin_q, irr_q]
-
-
-@pytest.fixture
 def test_randomforest_labels(test_project_randomforest_data_tfidf):
     labels = []
     for l in SEED_LABELS:
@@ -602,13 +483,13 @@ def test_project_gnb_data_tfidf(db, test_profile, tmpdir, settings):
     test_data = read_test_data_backend(file='./core/data/test_files/test_no_labels.csv')
     add_data(proj, test_data)
 
-    data = Data.objects.filter(project=proj)
+    Data.objects.filter(project=proj)
     matrix = create_tfidf_matrix(proj.pk)[0]
 
     data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
     settings.TF_IDF_PATH = str(data_temp)
 
-    fpath = save_tfidf_matrix(matrix, proj.pk)
+    save_tfidf_matrix(matrix, proj.pk)
     return proj
 
 
