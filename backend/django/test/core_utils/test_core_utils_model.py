@@ -11,7 +11,6 @@ from core.utils.utils_model import (save_tfidf_matrix, load_tfidf_matrix,
                                     train_and_save_model, predict_data,
                                     least_confident, margin_sampling, entropy,
                                     check_and_trigger_model, cohens_kappa, fleiss_kappa)
-
 from test.util import assert_obj_exists, assert_redis_matches_db
 from test.conftest import TEST_QUEUE_LEN
 

@@ -1,35 +1,9 @@
-import pytest
-import unittest
-import os
-import numpy as np
-import scipy
-import pandas as pd
-import math
-from django.utils import timezone
-from django.contrib.auth import get_user_model
-
-from core.models import (Project, Queue, Data, DataQueue, Profile, Model,
-                         AssignedData, Label, DataLabel, DataPrediction,
-                         DataUncertainty, TrainingSet, ProjectPermissions,
-                         IRRLog)
-from core.utils.util import (create_project, add_data, create_profile,
-                             save_data_file, save_codebook_file, md5_hash,
-                             irr_heatmap_data, perc_agreement_table_data,
-                             get_labeled_data)
-from core.utils.utils_redis import (redis_serialize_queue, redis_serialize_data,
-                                    redis_serialize_set, redis_parse_queue, redis_parse_data,
-                                    redis_parse_list_dataids, init_redis, get_ordered_data)
-from core.utils.utils_annotate import (assign_datum, skip_data, label_data, move_skipped_to_admin_queue,
-                                       get_assignments, unassign_datum)
+from core.models import Queue, Data, DataUncertainty, DataQueue
+from core.utils.util import add_data, md5_hash, create_project
+from core.utils.utils_redis import get_ordered_data, init_redis
 from core.utils.utils_queue import (add_queue, fill_queue, pop_queue, get_nonempty_queue,
                                     pop_first_nonempty_queue, find_queue_length)
-from core.utils.utils_model import(save_tfidf_matrix, load_tfidf_matrix,
-                                   train_and_save_model, predict_data,
-                                   least_confident, margin_sampling, entropy,
-                                   check_and_trigger_model, cohens_kappa, fleiss_kappa)
-
 from test.util import read_test_data_backend, assert_obj_exists, assert_redis_matches_db
-from test.conftest import TEST_QUEUE_LEN
 
 
 def test_find_queue_length():
@@ -166,7 +140,7 @@ def test_get_nonempty_queue_noprofile(db, test_project_data):
 
 def test_get_nonempty_profile_queue(db, test_project_data, test_profile):
     queue_len = 10
-    queue = add_queue(test_project_data, queue_len)
+    add_queue(test_project_data, queue_len)
     profile_queue = add_queue(test_project_data, queue_len,
                               profile=test_profile)
     profile_queue2 = add_queue(test_project_data, queue_len,
