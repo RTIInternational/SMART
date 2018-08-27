@@ -9,8 +9,8 @@ while [ $n -ne 0 ]; do
     n=$?
 done
 
-echo "Checking PEP8...."
-result=$(find . -name \*.py -exec pycodestyle --show-source --show-pep8 --ignore=E402,E501,W503,E722,W605 {} +)
+echo "Checking FLAKE8...."
+result=$(flake8 --ignore E501,W503 .)
 echo "$result"
 
 if [ -n "$result" ]; then
