@@ -3,9 +3,10 @@ import random
 
 from core import tasks
 from core.models import Model, DataPrediction, Data, DataUncertainty, ProjectPermissions
-from core.util import (label_data, fill_queue, get_ordered_data, create_profile,
-                       assign_datum, redis_serialize_queue, get_assignments,
-                       batch_unassign)
+from core.utils.utils_annotate import label_data, assign_datum, get_assignments, batch_unassign
+from core.utils.utils_queue import fill_queue
+from core.utils.utils_redis import get_ordered_data, redis_serialize_queue
+from core.utils.util import create_profile
 from core.serializers import DataSerializer
 
 from test.util import assert_obj_exists, assert_redis_matches_db

@@ -13,7 +13,8 @@ from test.util import read_test_data_api
 import re
 import pandas as pd
 
-from core.util import assign_datum, fill_queue, get_assignments
+from core.utils.utils_annotate import assign_datum, get_assignments
+from core.utils.utils_queue import fill_queue
 from django.contrib.auth import get_user_model
 AuthUser = get_user_model()
 

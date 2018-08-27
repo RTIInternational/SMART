@@ -39,7 +39,7 @@ def send_model_task(project_pk):
 @shared_task
 def send_tfidf_creation_task(project_pk):
     """Create and Save tfidf"""
-    from core.util.utils_model import create_tfidf_matrix, save_tfidf_matrix, save_tfidf_vectorizer
+    from core.utils.utils_model import create_tfidf_matrix, save_tfidf_matrix, save_tfidf_vectorizer
 
     tf_idf, vectorizer = create_tfidf_matrix(project_pk)
     file = save_tfidf_matrix(tf_idf, project_pk)

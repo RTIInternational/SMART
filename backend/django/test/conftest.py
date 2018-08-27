@@ -9,11 +9,11 @@ from smart.celery import app as celery_app
 from core.management.commands.seed import (
     seed_database, SEED_USERNAME, SEED_LABELS)
 from core.models import (Profile, Label, Model, DataLabel, Data, TrainingSet)
-from core.util import (create_project, add_queue,
-                       create_profile, add_data,
-                       create_tfidf_matrix, save_tfidf_matrix,
-                       train_and_save_model, predict_data,
-                       save_tfidf_vectorizer)
+from core.utils.util import create_project, create_profile, add_data
+from core.utils.utils_model import (create_tfidf_matrix, save_tfidf_matrix,
+                                    train_and_save_model, predict_data,
+                                    save_tfidf_vectorizer)
+from core.utils.utils_queue import add_queue
 
 from test.util import read_test_data_backend
 

@@ -1,11 +1,10 @@
-import os.path
-import csv
-
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 
+import csv
+
 from core.models import Profile, Project, Label, Data
-from core.util import md5_hash
+from core.utils.util import md5_hash
 
 AuthUser = get_user_model()
 
@@ -44,7 +43,7 @@ def seed_database(noprofile=False, nodata=False):
                 reader = csv.DictReader(inf)
                 sample_data = [Data(text=row['Text'], hash=md5_hash(
                     row['Text']), project=project, upload_id_hash=md5_hash(i)) for i, row in enumerate(reader)]
-                dataset = Data.objects.bulk_create(sample_data)
+                Data.objects.bulk_create(sample_data)
             for label in SEED_LABELS:
                 Label.objects.create(name=label, project=project)
             print('SEED: seed-data Project Seeded with Data - project.pk: {}'.format(project.pk))
