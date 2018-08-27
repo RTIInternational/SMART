@@ -1,8 +1,7 @@
 from django.contrib.auth.models import Group, User as AuthUser
-from django.conf import settings
 from rest_framework import serializers
 from core.models import (Profile, Project, Model, Data, Label, DataLabel, IRRLog,
-                         DataPrediction, Queue, DataQueue, AssignedData, LabelChangeLog)
+                         DataPrediction, Queue, AssignedData, LabelChangeLog)
 
 
 class ProfileSerializer(serializers.HyperlinkedModelSerializer):

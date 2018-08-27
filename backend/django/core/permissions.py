@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions
+from rest_framework import permissions
 
 from core.models import Project, Data
 from core.templatetags import project_extras
