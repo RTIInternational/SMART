@@ -75,8 +75,6 @@ class CodebookLabelMenu extends React.Component {
             codebook_button = (<div />);
         }
 
-        const echo = 'unused';
-
         if(this.state.labels_open) {
             var label_button = (
                 <Button
