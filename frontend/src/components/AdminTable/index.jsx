@@ -18,7 +18,7 @@ class AdminTable extends React.Component {
             table_data = [];
         }
 
-        var expanded = {}
+        var expanded = {};
         for(var i = 0; i < table_data.length; i++) {
             expanded[i] = true;
         }
@@ -50,7 +50,7 @@ class AdminTable extends React.Component {
                                             bsStyle="primary"
                                         >{label.name}
                                         </Button>
-                                    )
+                                    );
                                 })}
                                 <OverlayTrigger
                                     placement = "top"

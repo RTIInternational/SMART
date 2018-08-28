@@ -16,7 +16,7 @@ export const getHistory = (projectID) => {
                 if (response.ok) {
                     return response.json();
                 } else {
-                    const error = new Error(response.statusText)
+                    const error = new Error(response.statusText);
                     error.response = response;
                     throw error;
                 }
@@ -33,13 +33,13 @@ export const getHistory = (projectID) => {
                         old_label_id: response.data[i].labelID,
                         timestamp: response.data[i].timestamp,
                         edit: response.data[i].edit
-                    }
+                    };
                     all_data.push(row);
                 }
                 dispatch(set_hist_data(all_data));
             })
             .catch(err => console.log("Error: ", err));
-    }
+    };
 };
 
 
@@ -48,7 +48,7 @@ export const changeLabel = (dataID, oldLabelID, labelID, projectID) => {
         dataID: dataID,
         oldLabelID: oldLabelID,
         labelID: labelID
-    }
+    };
     let apiURL = `/api/modify_label/${dataID}/`;
     return dispatch => {
         return fetch(apiURL, postConfig(payload))
@@ -56,27 +56,27 @@ export const changeLabel = (dataID, oldLabelID, labelID, projectID) => {
                 if (response.ok) {
                     return response.json();
                 } else {
-                    const error = new Error(response.statusText)
+                    const error = new Error(response.statusText);
                     error.response = response;
                     throw error;
                 }
             })
             .then(response => {
                 if ('error' in response) {
-                    return dispatch(setMessage(response.error))
+                    return dispatch(setMessage(response.error));
                 } else {
-                    dispatch(getHistory(projectID))
-                    dispatch(getLabelCounts(projectID))
+                    dispatch(getHistory(projectID));
+                    dispatch(getLabelCounts(projectID));
                 }
-            })
-    }
+            });
+    };
 };
 
 export const changeToSkip = (dataID, oldLabelID, projectID) => {
     let payload = {
         dataID: dataID,
         oldLabelID: oldLabelID,
-    }
+    };
     let apiURL = `/api/modify_label_to_skip/${dataID}/`;
     return dispatch => {
         return fetch(apiURL, postConfig(payload))
@@ -84,19 +84,19 @@ export const changeToSkip = (dataID, oldLabelID, projectID) => {
                 if (response.ok) {
                     return response.json();
                 } else {
-                    const error = new Error(response.statusText)
+                    const error = new Error(response.statusText);
                     error.response = response;
                     throw error;
                 }
             })
             .then(response => {
                 if ('error' in response) {
-                    return dispatch(setMessage(response.error))
+                    return dispatch(setMessage(response.error));
                 } else {
-                    dispatch(getHistory(projectID))
-                    dispatch(getAdmin(projectID))
-                    dispatch(getAdminCounts(projectID))
+                    dispatch(getHistory(projectID));
+                    dispatch(getAdmin(projectID));
+                    dispatch(getAdminCounts(projectID));
                 }
-            })
-    }
+            });
+    };
 };

@@ -27,7 +27,7 @@ export const fetchCards = (projectID) => {
                 if (response.ok) {
                     return response.json();
                 } else {
-                    const error = new Error(response.statusText)
+                    const error = new Error(response.statusText);
                     error.response = response;
                     throw error;
                 }
@@ -42,19 +42,19 @@ export const fetchCards = (projectID) => {
                     const card = {
                         id: i,
                         text: response.data[i]
-                    }
+                    };
                     dispatch(pushCard(card));
                 }
             })
             .catch(err => console.log("Error: ", err));
-    }
+    };
 };
 
 export const annotateCard = (card, labelID, num_cards_left, projectID, is_admin) => {
     let payload = {
         labelID: labelID,
         labeling_time: moment().diff(card['start_time'], 'seconds') // now - start_time rounded to whole seconds
-    }
+    };
     let apiURL = `/api/annotate_data/${card.text.pk}/`;
     return dispatch => {
         return fetch(apiURL, postConfig(payload))
@@ -62,29 +62,29 @@ export const annotateCard = (card, labelID, num_cards_left, projectID, is_admin)
                 if (response.ok) {
                     return response.json();
                 } else {
-                    const error = new Error(response.statusText)
+                    const error = new Error(response.statusText);
                     error.response = response;
                     throw error;
                 }
             })
             .then(response => {
                 if ('error' in response) {
-                    dispatch(clearDeck())
-                    return dispatch(setMessage(response.error))
+                    dispatch(clearDeck());
+                    return dispatch(setMessage(response.error));
                 } else {
-                    dispatch(popCard())
-                    dispatch(getHistory(projectID))
+                    dispatch(popCard());
+                    dispatch(getHistory(projectID));
 
                     if (is_admin)  {
-                        dispatch(getAdmin(projectID))
-                        dispatch(getAdminCounts(projectID))
-                        dispatch(getLabelCounts(projectID))
+                        dispatch(getAdmin(projectID));
+                        dispatch(getAdminCounts(projectID));
+                        dispatch(getLabelCounts(projectID));
                     }
                     if(num_cards_left <= 1) dispatch(fetchCards(projectID));
                 }
-            })
-    }
-}
+            });
+    };
+};
 
 //skip a card and put it in the admin table
 export const passCard = (card, num_cards_left, is_admin, projectID ) => {
@@ -95,24 +95,24 @@ export const passCard = (card, num_cards_left, is_admin, projectID ) => {
                 if (response.ok) {
                     return response.json();
                 } else {
-                    const error = new Error(response.statusText)
+                    const error = new Error(response.statusText);
                     error.response = response;
                     throw error;
                 }
             })
             .then(response => {
                 if ('error' in response) {
-                    dispatch(clearDeck())
-                    return dispatch(setMessage(response.error))
+                    dispatch(clearDeck());
+                    return dispatch(setMessage(response.error));
                 } else {
-                    dispatch(popCard())
-                    dispatch(getHistory(projectID))
+                    dispatch(popCard());
+                    dispatch(getHistory(projectID));
                     if (is_admin) {
-                        dispatch(getAdmin(projectID))
-                        dispatch(getAdminCounts(projectID))
+                        dispatch(getAdmin(projectID));
+                        dispatch(getAdminCounts(projectID));
                     }
-                    if(num_cards_left <= 1) dispatch(fetchCards(projectID))
+                    if(num_cards_left <= 1) dispatch(fetchCards(projectID));
                 }
-            })
-    }
+            });
+    };
 };

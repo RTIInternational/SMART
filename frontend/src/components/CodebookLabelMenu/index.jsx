@@ -13,7 +13,7 @@ class CodebookLabelMenu extends React.Component {
         this.state = {
             codebook_open: false,
             labels_open: false
-        }
+        };
     }
 
     //This opens/closes the codebook module
@@ -41,7 +41,7 @@ class CodebookLabelMenu extends React.Component {
                         </ul>
                     </div>
                 </div>
-            )
+            );
         } else {
             return null;
         }
@@ -84,7 +84,7 @@ class CodebookLabelMenu extends React.Component {
                 >
                     <Glyphicon glyph="minus"/> Label Guide
                 </Button>
-            )
+            );
         } else {
             label_button = (
                 <Button
@@ -94,7 +94,7 @@ class CodebookLabelMenu extends React.Component {
                 >
                     <Glyphicon glyph="plus"/> Label Guide
                 </Button>
-            )
+            );
         }
 
         return (

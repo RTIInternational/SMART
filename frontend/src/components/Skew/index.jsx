@@ -48,9 +48,9 @@ class Skew extends React.Component {
         }
 
         if(unlabeled_data) {
-            var table_data = unlabeled_data
+            var table_data = unlabeled_data;
         } else {
-            table_data = []
+            table_data = [];
         }
 
         return (
@@ -123,7 +123,7 @@ class Skew extends React.Component {
                     }}
                 />
             </div>
-        )
+        );
     }
 
 }

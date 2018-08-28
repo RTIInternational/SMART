@@ -27,7 +27,7 @@ export const getAdminTabsAvailable = (projectID) => {
                 if (response.ok) {
                     return response.json();
                 } else {
-                    const error = new Error(response.statusText)
+                    const error = new Error(response.statusText);
                     error.response = response;
                     throw error;
                 }
@@ -43,7 +43,7 @@ export const getAdminTabsAvailable = (projectID) => {
 
             })
             .catch(err => console.log("Error: ", err));
-    }
+    };
 };
 
 //Get the data for the skew table
@@ -55,7 +55,7 @@ export const getUnlabeled = (projectID) => {
                 if (response.ok) {
                     return response.json();
                 } else {
-                    const error = new Error(response.statusText)
+                    const error = new Error(response.statusText);
                     error.response = response;
                     throw error;
                 }
@@ -68,20 +68,20 @@ export const getUnlabeled = (projectID) => {
                     const row = {
                         id: response.data[i].ID,
                         data: response.data[i].Text
-                    }
+                    };
                     all_data.push(row);
                 }
                 dispatch(set_unlabeled_data(all_data));
             })
             .catch(err => console.log("Error: ", err));
-    }
+    };
 };
 
 export const skewLabel = (dataID, labelID, projectID) => {
     let payload = {
         labelID: labelID,
         labeleing_time: null
-    }
+    };
     let apiURL = `/api/label_skew_label/${dataID}/`;
     return dispatch => {
         return fetch(apiURL, postConfig(payload))
@@ -89,21 +89,21 @@ export const skewLabel = (dataID, labelID, projectID) => {
                 if (response.ok) {
                     return response.json();
                 } else {
-                    const error = new Error(response.statusText)
+                    const error = new Error(response.statusText);
                     error.response = response;
                     throw error;
                 }
             })
             .then(response => {
                 if ('error' in response) {
-                    return dispatch(setMessage(response.error))
+                    return dispatch(setMessage(response.error));
                 } else {
-                    dispatch(getUnlabeled(projectID))
-                    dispatch(getHistory(projectID))
-                    dispatch(getLabelCounts(projectID))
+                    dispatch(getUnlabeled(projectID));
+                    dispatch(getHistory(projectID));
+                    dispatch(getLabelCounts(projectID));
                 }
-            })
-    }
+            });
+    };
 };
 
 //get the data for the skew graph
@@ -115,7 +115,7 @@ export const getLabelCounts = (projectID) => {
                 if (response.ok) {
                     return response.json();
                 } else {
-                    const error = new Error(response.statusText)
+                    const error = new Error(response.statusText);
                     error.response = response;
                     throw error;
                 }
@@ -126,7 +126,7 @@ export const getLabelCounts = (projectID) => {
                 dispatch(set_label_counts(response));
             })
             .catch(err => console.log("Error: ", err));
-    }
+    };
 };
 
 //get the skipped data for the admin Table
@@ -138,7 +138,7 @@ export const getAdmin = (projectID) => {
                 if (response.ok) {
                     return response.json();
                 } else {
-                    const error = new Error(response.statusText)
+                    const error = new Error(response.statusText);
                     error.response = response;
                     throw error;
                 }
@@ -152,13 +152,13 @@ export const getAdmin = (projectID) => {
                         id: response.data[i].ID,
                         data: response.data[i].Text,
                         reason: response.data[i].Reason
-                    }
+                    };
                     all_data.push(row);
                 }
                 dispatch(set_admin_data(all_data));
             })
             .catch(err => console.log("Error: ", err));
-    }
+    };
 };
 
 //get the skipped data for the admin Table
@@ -170,7 +170,7 @@ export const getAdminCounts = (projectID) => {
                 if (response.ok) {
                     return response.json();
                 } else {
-                    const error = new Error(response.statusText)
+                    const error = new Error(response.statusText);
                     error.response = response;
                     throw error;
                 }
@@ -181,13 +181,13 @@ export const getAdminCounts = (projectID) => {
                 dispatch(set_admin_counts(response.data));
             })
             .catch(err => console.log("Error: ", err));
-    }
+    };
 };
 
 export const adminLabel = (dataID, labelID, projectID) => {
     let payload = {
         labelID: labelID,
-    }
+    };
     let apiURL = `/api/label_admin_label/${dataID}/`;
     return dispatch => {
         return fetch(apiURL, postConfig(payload))
@@ -195,23 +195,23 @@ export const adminLabel = (dataID, labelID, projectID) => {
                 if (response.ok) {
                     return response.json();
                 } else {
-                    const error = new Error(response.statusText)
+                    const error = new Error(response.statusText);
                     error.response = response;
                     throw error;
                 }
             })
             .then(response => {
                 if ('error' in response) {
-                    return dispatch(setMessage(response.error))
+                    return dispatch(setMessage(response.error));
                 } else {
-                    dispatch(getUnlabeled(projectID))
-                    dispatch(getHistory(projectID))
-                    dispatch(getLabelCounts(projectID))
-                    dispatch(getAdmin(projectID))
-                    dispatch(getAdminCounts(projectID))
+                    dispatch(getUnlabeled(projectID));
+                    dispatch(getHistory(projectID));
+                    dispatch(getLabelCounts(projectID));
+                    dispatch(getAdmin(projectID));
+                    dispatch(getAdminCounts(projectID));
                 }
-            })
-    }
+            });
+    };
 };
 
 //mark data as uncodable and put it in the recycle bin
@@ -223,22 +223,22 @@ export const discardData = (dataID, projectID) => {
                 if (response.ok) {
                     return response.json();
                 } else {
-                    const error = new Error(response.statusText)
+                    const error = new Error(response.statusText);
                     error.response = response;
                     throw error;
                 }
             })
             .then(response => {
                 if ('error' in response) {
-                    return dispatch(setMessage(response.error))
+                    return dispatch(setMessage(response.error));
                 } else {
-                    dispatch(getAdmin(projectID))
-                    dispatch(getAdminCounts(projectID))
-                    dispatch(getDiscarded(projectID))
-                    dispatch(getUnlabeled(projectID))
+                    dispatch(getAdmin(projectID));
+                    dispatch(getAdminCounts(projectID));
+                    dispatch(getDiscarded(projectID));
+                    dispatch(getUnlabeled(projectID));
                 }
-            })
-    }
+            });
+    };
 };
 
 //take data out of the recycle bin
@@ -250,20 +250,20 @@ export const restoreData = (dataID, projectID) => {
                 if (response.ok) {
                     return response.json();
                 } else {
-                    const error = new Error(response.statusText)
+                    const error = new Error(response.statusText);
                     error.response = response;
                     throw error;
                 }
             })
             .then(response => {
                 if ('error' in response) {
-                    return dispatch(setMessage(response.error))
+                    return dispatch(setMessage(response.error));
                 } else {
-                    dispatch(getDiscarded(projectID))
-                    dispatch(getUnlabeled(projectID))
+                    dispatch(getDiscarded(projectID));
+                    dispatch(getUnlabeled(projectID));
                 }
-            })
-    }
+            });
+    };
 };
 
 //get the discarded data for the recycle bin table
@@ -275,7 +275,7 @@ export const getDiscarded = (projectID) => {
                 if (response.ok) {
                     return response.json();
                 } else {
-                    const error = new Error(response.statusText)
+                    const error = new Error(response.statusText);
                     error.response = response;
                     throw error;
                 }
@@ -288,11 +288,11 @@ export const getDiscarded = (projectID) => {
                     const row = {
                         id: response.data[i].ID,
                         data: response.data[i].Text,
-                    }
+                    };
                     all_data.push(row);
                 }
                 dispatch(set_discarded_data(all_data));
             })
             .catch(err => console.log("Error: ", err));
-    }
+    };
 };

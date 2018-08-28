@@ -55,9 +55,9 @@ class HistoryTable extends React.Component {
         const { history_data, labels, changeLabel, changeToSkip } = this.props;
 
         if(history_data) {
-            var table_data = history_data
+            var table_data = history_data;
         } else {
-            table_data = []
+            table_data = [];
         }
 
         var page_sizes = [1];
@@ -94,12 +94,12 @@ class HistoryTable extends React.Component {
                                                 <Button key={label.pk.toString() + "_" + row.row.id.toString()}
                                                     onClick={() => {
                                                         if(!(row.row.old_label_id === label.pk)) {
-                                                            changeLabel(row.row.id, row.row.old_label_id, label.pk)
+                                                            changeLabel(row.row.id, row.row.old_label_id, label.pk);
                                                         }
                                                     }}
                                                     bsStyle="primary"
                                                 >{label.name}</Button>
-                                            )
+                                            );
                                         })}
                                         <OverlayTrigger
                                             placement = "top"
@@ -132,7 +132,7 @@ class HistoryTable extends React.Component {
 
                 />
             </div>
-        )
+        );
     }
 
 }
