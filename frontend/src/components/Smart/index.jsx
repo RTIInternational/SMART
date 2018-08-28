@@ -201,7 +201,7 @@ class Smart extends React.Component {
             </Tabs>
         );
 
-    };
+    }
 }
 Smart.propTypes = {
     cards: PropTypes.arrayOf(PropTypes.object),

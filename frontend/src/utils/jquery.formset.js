@@ -11,7 +11,7 @@
  */
 
 /* eslint-disable no-undef */
-;(function($) {
+(function($) {
     $.fn.formset = function(opts) {
         var options = $.extend({}, $.fn.formset.defaults, opts),
             flatExtraClasses = options.extraClasses.join(' '),
