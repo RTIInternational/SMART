@@ -26,6 +26,10 @@
         "no-unused-vars": 1,
         "react/display-name": 0,
         "react/prop-types": 0,
-        "react/no-find-dom-node": 0
+        "react/no-find-dom-node": 0,
+        "brace-style": ["error", "1tbs"],
+        "space-infix-ops": ["error", {"int32Hint": false}],
+        "comma-spacing": ["error", { "before": false, "after": true }],
+        "indent": ["error", 4]
     }
 }
