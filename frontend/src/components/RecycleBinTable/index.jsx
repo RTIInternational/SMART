@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import ReactTable from 'react-table';
-import {Button, ButtonToolbar, Tooltip, OverlayTrigger} from "react-bootstrap";
+import { Button, ButtonToolbar, Tooltip, OverlayTrigger } from "react-bootstrap";
 import CodebookLabelMenu from '../CodebookLabelMenu';
 class RecycleBinTable extends React.Component {
 
@@ -10,7 +10,7 @@ class RecycleBinTable extends React.Component {
     }
 
     render() {
-        const {discarded_data, restoreData, labels} = this.props;
+        const { discarded_data, restoreData, labels } = this.props;
 
         if(discarded_data) {
             var table_data = discarded_data;

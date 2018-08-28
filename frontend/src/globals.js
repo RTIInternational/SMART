@@ -8,7 +8,7 @@ import 'datatables.net';
 import dt from 'datatables.net-bs';
 dt(window, $);
 
-import {getCookie} from './utils/fetch_configs.js';
+import { getCookie } from './utils/fetch_configs.js';
 $.ajaxSetup({
     beforeSend: function(xhr, settings) {
         if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {

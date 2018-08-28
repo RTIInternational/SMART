@@ -28,6 +28,7 @@
         "react/prop-types": 0,
         "react/no-find-dom-node": 0,
         "brace-style": ["error", "1tbs"],
+        "object-curly-spacing": ["error", "always"],
         "space-infix-ops": ["error", {"int32Hint": false}],
         "comma-spacing": ["error", { "before": false, "after": true }],
         "indent": ["error", 4]

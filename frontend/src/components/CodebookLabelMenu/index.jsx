@@ -18,11 +18,11 @@ class CodebookLabelMenu extends React.Component {
 
     //This opens/closes the codebook module
     toggleCodebook(){
-        this.setState({codebook_open: !this.state.codebook_open});
+        this.setState({ codebook_open: !this.state.codebook_open });
     }
 
     toggleLabel(){
-        this.setState({labels_open: !this.state.labels_open});
+        this.setState({ labels_open: !this.state.labels_open });
     }
 
 
@@ -48,7 +48,7 @@ class CodebookLabelMenu extends React.Component {
     }
 
     render() {
-        const {labels} = this.props;
+        const { labels } = this.props;
 
         if(CODEBOOK_URL != "") {
             var codebook_module = (

@@ -39,7 +39,7 @@ class Skew extends React.Component {
 
     render() {
 
-        const {unlabeled_data, labels, skewLabel, label_counts} = this.props;
+        const { unlabeled_data, labels, skewLabel, label_counts } = this.props;
 
 
         var label_data = [];

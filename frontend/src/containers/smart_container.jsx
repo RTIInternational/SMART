@@ -5,7 +5,7 @@ import { fetchCards, annotateCard, passCard, popCard } from '../actions/classifi
 import { getHistory, changeLabel, changeToSkip } from '../actions/history';
 import { getUnlabeled, skewLabel, getLabelCounts,
     adminLabel, getAdmin, discardData, getDiscarded,
-    restoreData, getAdminTabsAvailable, getAdminCounts} from '../actions/adminTables';
+    restoreData, getAdminTabsAvailable, getAdminCounts } from '../actions/adminTables';
 import Smart from '../components/Smart';
 
 const PROJECT_ID = window.PROJECT_ID;

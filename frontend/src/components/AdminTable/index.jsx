@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import ReactTable from 'react-table';
-import {Button, ButtonToolbar, Tooltip, OverlayTrigger} from "react-bootstrap";
+import { Button, ButtonToolbar, Tooltip, OverlayTrigger } from "react-bootstrap";
 import CodebookLabelMenu from '../CodebookLabelMenu';
 
 class AdminTable extends React.Component {
@@ -11,7 +11,7 @@ class AdminTable extends React.Component {
     }
 
     render() {
-        const {admin_data, labels, adminLabel, discardData} = this.props;
+        const { admin_data, labels, adminLabel, discardData } = this.props;
         if(admin_data) {
             var table_data = admin_data;
         } else {

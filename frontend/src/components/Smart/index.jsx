@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { Button, ButtonToolbar, Clearfix,
     Well, Tooltip, OverlayTrigger, Glyphicon,
-    ProgressBar, Tabs, Tab, Badge} from "react-bootstrap";
+    ProgressBar, Tabs, Tab, Badge } from "react-bootstrap";
 import Card from '../Card';
 import HistoryTable from '../HistoryTable';
 import Skew from '../Skew';
@@ -24,7 +24,7 @@ class Smart extends React.Component {
             changeToSkip, getUnlabeled, unlabeled_data,
             skewLabel, getLabelCounts, label_counts, getAdmin, admin_data,
             adminLabel, discardData, getDiscarded, discarded_data,
-            restoreData, labels, available, admin_counts} = this.props;
+            restoreData, labels, available, admin_counts } = this.props;
 
         var progress = 100;
         var start_card = 0;
@@ -177,7 +177,7 @@ class Smart extends React.Component {
                         />
                         <ProgressBar>
                             <ProgressBar
-                                style={{minWidth: 60}}
+                                style={{ minWidth: 60 }}
                                 label={label}
                                 now={progress}/>
                         </ProgressBar>

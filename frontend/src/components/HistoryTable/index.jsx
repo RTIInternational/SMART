@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import ReactTable from 'react-table';
-import {Button, ButtonToolbar, Tooltip, OverlayTrigger} from "react-bootstrap";
+import { Button, ButtonToolbar, Tooltip, OverlayTrigger } from "react-bootstrap";
 import CodebookLabelMenu from '../CodebookLabelMenu';
 const columns = [
     {
@@ -52,7 +52,7 @@ class HistoryTable extends React.Component {
 
 
     render() {
-        const {history_data, labels, changeLabel, changeToSkip} = this.props;
+        const { history_data, labels, changeLabel, changeToSkip } = this.props;
 
         if(history_data) {
             var table_data = history_data
