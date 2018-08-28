@@ -26,8 +26,7 @@ export const fetchCards = (projectID) => {
             .then(response => {
                 if (response.ok) {
                     return response.json();
-                }
-                else {
+                } else {
                     const error = new Error(response.statusText)
                     error.response = response;
                     throw error;
@@ -40,7 +39,6 @@ export const fetchCards = (projectID) => {
                 dispatch(setLabel(response.labels));
 
                 for (let i = 0; i < response.data.length; i++) {
-
                     const card = {
                         id: i,
                         text: response.data[i]
@@ -63,8 +61,7 @@ export const annotateCard = (card, labelID, num_cards_left, projectID, is_admin)
             .then(response => {
                 if (response.ok) {
                     return response.json();
-                }
-                else {
+                } else {
                     const error = new Error(response.statusText)
                     error.response = response;
                     throw error;
@@ -74,8 +71,7 @@ export const annotateCard = (card, labelID, num_cards_left, projectID, is_admin)
                 if ('error' in response) {
                     dispatch(clearDeck())
                     return dispatch(setMessage(response.error))
-                }
-                else {
+                } else {
                     dispatch(popCard())
                     dispatch(getHistory(projectID))
 
@@ -84,7 +80,7 @@ export const annotateCard = (card, labelID, num_cards_left, projectID, is_admin)
                         dispatch(getAdminCounts(projectID))
                         dispatch(getLabelCounts(projectID))
                     }
-                    if(num_cards_left <=1) dispatch(fetchCards(projectID));
+                    if(num_cards_left <= 1) dispatch(fetchCards(projectID));
                 }
             })
     }
@@ -92,16 +88,13 @@ export const annotateCard = (card, labelID, num_cards_left, projectID, is_admin)
 
 //skip a card and put it in the admin table
 export const passCard = (card, num_cards_left, is_admin, projectID ) => {
-    let payload = {
-    }
     let apiURL = `/api/skip_data/${card.text.pk}/`;
     return dispatch => {
-        return fetch(apiURL, postConfig(payload))
+        return fetch(apiURL, postConfig())
             .then(response => {
                 if (response.ok) {
                     return response.json();
-                }
-                else {
+                } else {
                     const error = new Error(response.statusText)
                     error.response = response;
                     throw error;
@@ -111,16 +104,14 @@ export const passCard = (card, num_cards_left, is_admin, projectID ) => {
                 if ('error' in response) {
                     dispatch(clearDeck())
                     return dispatch(setMessage(response.error))
-                }
-                else {
+                } else {
                     dispatch(popCard())
                     dispatch(getHistory(projectID))
-                    if (is_admin)
-                    {
-                      dispatch(getAdmin(projectID))
-                      dispatch(getAdminCounts(projectID))
+                    if (is_admin) {
+                        dispatch(getAdmin(projectID))
+                        dispatch(getAdminCounts(projectID))
                     }
-                    if(num_cards_left <=1) dispatch(fetchCards(projectID))
+                    if(num_cards_left <= 1) dispatch(fetchCards(projectID))
                 }
             })
     }

@@ -8,9 +8,9 @@ const initialState = {
 };
 
 const history = handleActions({
-  [SET_HIST_DATA]: (state, action) => {
-    return update(state, {history_data: { $set: action.payload } } )
-  }
+    [SET_HIST_DATA]: (state, action) => {
+        return update(state, {history_data: { $set: action.payload } } )
+    }
 }, initialState);
 
 export default history;
