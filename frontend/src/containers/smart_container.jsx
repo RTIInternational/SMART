@@ -4,8 +4,8 @@ import { connect } from 'react-redux';
 import { fetchCards, annotateCard, passCard, popCard } from '../actions/classifier';
 import { getHistory, changeLabel, changeToSkip } from '../actions/history';
 import { getUnlabeled, skewLabel, getLabelCounts,
-         adminLabel, getAdmin, discardData, getDiscarded,
-         restoreData, getAdminTabsAvailable, getAdminCounts} from '../actions/adminTables';
+    adminLabel, getAdmin, discardData, getDiscarded,
+    restoreData, getAdminTabsAvailable, getAdminCounts} from '../actions/adminTables';
 import Smart from '../components/Smart';
 
 const PROJECT_ID = window.PROJECT_ID;
@@ -44,17 +44,17 @@ const mapDispatchToProps = (dispatch) => {
         getHistory: () => {
             dispatch(getHistory(PROJECT_ID))
         },
-        changeLabel: (dataID, oldLabelID ,labelID) => {
+        changeLabel: (dataID, oldLabelID, labelID) => {
             dispatch(changeLabel(dataID, oldLabelID, labelID, PROJECT_ID))
         },
         changeToSkip: (dataID, oldLabelID) => {
             dispatch(changeToSkip(dataID, oldLabelID, PROJECT_ID))
         },
         getAdminTabsAvailable: () => {
-          dispatch(getAdminTabsAvailable(PROJECT_ID))
+            dispatch(getAdminTabsAvailable(PROJECT_ID))
         },
         getUnlabeled: () => {
-          dispatch(getUnlabeled(PROJECT_ID))
+            dispatch(getUnlabeled(PROJECT_ID))
         },
         skewLabel: (dataID, labelID) => {
             dispatch(skewLabel(dataID, labelID, PROJECT_ID))
