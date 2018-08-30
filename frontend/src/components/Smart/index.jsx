@@ -94,11 +94,11 @@ class Smart extends React.Component {
                 var badges = (
                     <div>
             IRR
-                        <Badge>
+                        <Badge class="tab-badge">
                             {admin_counts["IRR"]}
                         </Badge>
              | Skipped
-                        <Badge>
+                        <Badge class="tab-badge">
                             {admin_counts["SKIP"]}
                         </Badge>
                     </div>
