@@ -196,6 +196,7 @@ class Dev(Configuration):
     STATICFILES_DIRS = [
         os.path.join(BASE_DIR, 'frontend', 'dist'),
         os.path.join(BASE_DIR, 'core/data'),
+        os.path.join(BASE_DIR, 'smart/static'),
         '/data/code_books/',
     ]
 

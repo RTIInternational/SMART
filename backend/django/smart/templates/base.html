@@ -11,15 +11,14 @@
         <meta name="description" content="Smarter Manual Annotation for Resource-constrained collection of Training data (SMART) is a tool that leverages elements of active learning, gamification, and UI/UX design to help data scientists and researchers reduce manual coding time and effort, making machine learning classification tasks more affordable and widely accessible."/>
         <link href="https://fonts.googleapis.com/css?family=Lato|Roboto+Slab" rel="stylesheet">
         {% load static %}
-        <link rel="shortcut icon" href="{% static 'SMART_logo32x32_bw.ico' %}"/ type="image/x-icon"> 
+        <link rel="icon" href="{% static 'SMART_logo32x32_bw.ico' %}?v=2" type="image/x-icon" /> 
         <title>{% block page_title %}{% endblock %}</title>
         {% render_bundle 'smart' 'css' %}
         {% block scripts_head %}{% endblock %}
     </head>
     <body>
         <header>
-            <a href="/"> <img src="{% static 'SMART-logo_shadow_white_horz.png' %}"/ id="logo"></a> 
-            <!-- <h1>SMART</h1> -->
+            <a href="/"> <img src="{% static 'SMART-logo_shadow_white_horz.png' %}" id="logo"></a> 
             {% if user.is_authenticated %}
             <div class="margin-left">
               {% if project.pk %}
