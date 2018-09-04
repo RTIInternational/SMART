@@ -4,6 +4,7 @@ import ReactTable from 'react-table';
 import { Button, ButtonToolbar, Tooltip, OverlayTrigger } from "react-bootstrap";
 import CodebookLabelMenu from '../CodebookLabelMenu';
 
+
 class AdminTable extends React.Component {
 
     componentWillMount() {
@@ -12,11 +13,6 @@ class AdminTable extends React.Component {
 
     render() {
         const { admin_data, labels, adminLabel, discardData } = this.props;
-
-        let expanded = {};
-        for (let i = 0; i < admin_data.length; i++) {
-            expanded[i] = true;
-        }
 
         const columns = [
             {
@@ -51,15 +47,16 @@ class AdminTable extends React.Component {
                                     placement = "top"
                                     overlay={
                                         <Tooltip id="discard_tooltip">
-                  This marks this data as uncodable, and will remove it from the active data in this project.
+                                            This marks this data as uncodable, and will remove it from the active data in this project.
                                         </Tooltip>
                                     }>
-                                    <Button key={"discard_" + row.row.id.toString()}
+                                    <Button
+                                        key={"discard_" + row.row.id.toString()}
                                         onClick={() => discardData(row.row.id)}
-                                        bsStyle="danger"
-                                    >Discard</Button>
+                                        bsStyle="danger">
+                                        Discard
+                                    </Button>
                                 </OverlayTrigger>
-
                             </ButtonToolbar>
                         </div>
                     </div>
@@ -73,26 +70,20 @@ class AdminTable extends React.Component {
         }
         page_sizes.push(admin_data.length);
 
-
         return (
             <div>
                 <h3>Instructions</h3>
                 <p>This page allows an admin to label data that was skipped by labelers, or was disagreed upon in inter-rater reliability checks.</p>
-                <CodebookLabelMenu
-                    labels={labels}
-                />
+                <CodebookLabelMenu labels={labels} />
                 <ReactTable
                     data={admin_data}
                     columns={columns}
                     pageSizeOptions={page_sizes}
                     defaultPageSize={1}
-                    expanded={expanded}
-                    filterable={false}
-                />
+                    filterable={false} />
             </div>
         );
     }
-
 }
 
 AdminTable.propTypes = {
