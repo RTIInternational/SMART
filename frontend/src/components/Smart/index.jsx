@@ -18,7 +18,7 @@ class Smart extends React.Component {
         this.props.getAdminCounts();
     }
 
-    render(){
+    render() {
         const { message, cards, passCard, annotateCard,
             history_data, getHistory, changeLabel,
             changeToSkip, getUnlabeled, unlabeled_data,
@@ -26,11 +26,12 @@ class Smart extends React.Component {
             adminLabel, discardData, getDiscarded, discarded_data,
             restoreData, labels, available, admin_counts } = this.props;
 
-        var progress = 100;
-        var start_card = 0;
-        var num_cards = 0;
-        var label = "Complete";
-        if(!(cards === undefined) && cards.length > 0) {
+        let card, adminTab1, adminTab2, adminTab3, badges;
+        let progress = 100;
+        let start_card = 0;
+        let num_cards = 0;
+        let label = "Complete";
+        if (!(cards === undefined) && cards.length > 0) {
             num_cards = cards[cards.length - 1].id + 1;
             start_card = cards[0].id + 1;
             progress = (cards[0].id / cards[cards.length - 1].id) * 100;
@@ -38,7 +39,7 @@ class Smart extends React.Component {
         }
         if (!(cards === undefined) && cards.length > 0) {
             //just get the labels from the cards
-            var card = (
+            card = (
                 <Card className="full" key={cards[0].id}>
                     <h2>Card {cards[0].id + 1}</h2>
                     <p>
@@ -74,8 +75,8 @@ class Smart extends React.Component {
             );
         }
 
-        if(available) {
-            var adminTab1 = (
+        if (available) {
+            adminTab1 = (
                 <Tab eventKey={3} title="Fix Skew" className="full card">
                     <div className="cardContent">
                         <Skew
@@ -90,8 +91,8 @@ class Smart extends React.Component {
                 </Tab>
             );
 
-            if(Object.keys(admin_counts).length > 1) {
-                var badges = (
+            if (Object.keys(admin_counts).length > 1) {
+                badges = (
                     <div>
             IRR
                         <Badge className="tab-badge">
@@ -114,7 +115,7 @@ class Smart extends React.Component {
                 );
             }
 
-            var adminTab2 = (
+            adminTab2 = (
                 <Tab eventKey={4}
                     title={
                         badges
@@ -131,7 +132,7 @@ class Smart extends React.Component {
                 </Tab>
             );
 
-            var adminTab3 = (
+            adminTab3 = (
                 <Tab eventKey={5} title={<Glyphicon glyph="trash"/>} className="full card">
                     <div className="cardContent">
                         <RecycleBinTable

@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Button, ButtonGroup,
-    Glyphicon, Modal  } from "react-bootstrap";
+    Glyphicon, Modal } from "react-bootstrap";
 const CODEBOOK_URL = window.CODEBOOK_URL;
 class CodebookLabelMenu extends React.Component {
 
@@ -27,7 +27,7 @@ class CodebookLabelMenu extends React.Component {
 
 
     getLabels(labels, labels_open) {
-        if(labels_open) {
+        if (labels_open) {
             return (
                 <div className="row">
                     <div className="col-md-12">
@@ -49,9 +49,10 @@ class CodebookLabelMenu extends React.Component {
 
     render() {
         const { labels } = this.props;
+        let codebook_module, codebook_button, label_button;
 
-        if(CODEBOOK_URL != "") {
-            var codebook_module = (
+        if (CODEBOOK_URL != "") {
+            codebook_module = (
                 <Modal show={this.state.codebook_open} onHide={this.toggleCodebook}>
                     <Modal.Header closeButton>
                         <Modal.Title>Codebook</Modal.Title>
@@ -67,7 +68,7 @@ class CodebookLabelMenu extends React.Component {
                     </Modal.Body>
                 </Modal>
             );
-            var codebook_button = (
+            codebook_button = (
                 <Button onClick={this.toggleCodebook} className="codebook-btn">Codebook</Button>
             );
         } else {
@@ -75,8 +76,8 @@ class CodebookLabelMenu extends React.Component {
             codebook_button = (<div />);
         }
 
-        if(this.state.labels_open) {
-            var label_button = (
+        if (this.state.labels_open) {
+            label_button = (
                 <Button
                     onClick={this.toggleLabel}
                     className="minus_button"

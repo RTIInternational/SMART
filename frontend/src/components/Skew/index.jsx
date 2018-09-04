@@ -16,7 +16,7 @@ const columns = [
         Header: "Unlabeled Data",
         accessor: "data",
         filterMethod: (filter, row) => {
-            if(String(row["data"]).toLowerCase().includes(filter.value.toLowerCase())) {
+            if (String(row["data"]).toLowerCase().includes(filter.value.toLowerCase())) {
                 return true;
             } else {
                 return false;
@@ -41,18 +41,6 @@ class Skew extends React.Component {
 
         const { unlabeled_data, labels, skewLabel, label_counts } = this.props;
 
-
-        var label_data = [];
-        if(label_counts) {
-            label_data = label_counts;
-        }
-
-        if(unlabeled_data) {
-            var table_data = unlabeled_data;
-        } else {
-            table_data = [];
-        }
-
         return (
             <div>
                 <Table id="skew_table">
@@ -69,7 +57,7 @@ class Skew extends React.Component {
                                     <NVD3Chart
                                         id="label_counts"
                                         type="multiBarChart"
-                                        datum={label_data}
+                                        datum={label_counts}
                                         duration={300}
                                         groupSpacing={0.1}
                                         stacked={true}
@@ -99,11 +87,11 @@ class Skew extends React.Component {
                     labels={labels}
                 />
                 <ReactTable
-                    data={table_data}
+                    data={unlabeled_data}
                     columns={columns}
                     filterable={true}
                     showPageSizeOptions={false}
-                    pageSize={(table_data.length < 50) ? table_data.length : 50}
+                    pageSize={(unlabeled_data.length < 50) ? unlabeled_data.length : 50}
                     SubComponent={row => {
                         return (
                             <div className="sub-row">

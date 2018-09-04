@@ -24,7 +24,7 @@ export const getHistory = (projectID) => {
             .then(response => {
             // If error was in the response then set that message
                 if ('error' in response) console.log(response);
-                var all_data = [];
+                let all_data = [];
                 for (let i = 0; i < response.data.length; i++) {
                     const row = {
                         id: response.data[i].id,

@@ -32,5 +32,12 @@
         "comma-spacing": ["error", { "before": false, "after": true }],
         "indent": ["error", 4],
         "semi": ["error", "always"],
+        "no-var": "error",
+        "no-multi-spaces": "error",
+        "no-duplicate-imports": "error",
+        "newline-per-chained-call": ["error", {"ignoreChainWithDepth": 3}],
+        "eol-last": ["error", "always"],
+        "keyword-spacing": ["error", {"after": true, "before": true}],
+        "linebreak-style": ["error", "unix"]
     }
 }

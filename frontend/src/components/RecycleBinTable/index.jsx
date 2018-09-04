@@ -12,12 +12,6 @@ class RecycleBinTable extends React.Component {
     render() {
         const { discarded_data, restoreData, labels } = this.props;
 
-        if(discarded_data) {
-            var table_data = discarded_data;
-        } else {
-            table_data = [];
-        }
-
         const columns = [
             {
                 Header: "id",
@@ -28,7 +22,7 @@ class RecycleBinTable extends React.Component {
                 Header: "Discarded Data",
                 accessor: "data",
                 filterMethod: (filter, row) => {
-                    if(String(row["data"]).toLowerCase().includes(filter.value.toLowerCase())) {
+                    if (String(row["data"]).toLowerCase().includes(filter.value.toLowerCase())) {
                         return true;
                     } else {
                         return false;
@@ -47,10 +41,10 @@ class RecycleBinTable extends React.Component {
                     labels={labels}
                 />
                 <ReactTable
-                    data={table_data}
+                    data={discarded_data}
                     columns={columns}
                     showPageSizeOptions={false}
-                    pageSize={(table_data.length < 50) ? table_data.length : 50}
+                    pageSize={(discarded_data.length < 50) ? discarded_data.length : 50}
                     filterable={true}
                     SubComponent={row => {
                         return (

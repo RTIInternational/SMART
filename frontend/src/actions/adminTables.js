@@ -35,7 +35,7 @@ export const getAdminTabsAvailable = (projectID) => {
             .then(response => {
             // If error was in the response then set that message
                 if ('error' in response) console.log(response);
-                if(response.available == 0) {
+                if (response.available == 0) {
                     dispatch(set_available(false));
                 } else {
                     dispatch(set_available(true));
@@ -63,7 +63,7 @@ export const getUnlabeled = (projectID) => {
             .then(response => {
             // If error was in the response then set that message
                 if ('error' in response) console.log(response);
-                var all_data = [];
+                let all_data = [];
                 for (let i = 0; i < response.data.length; i++) {
                     const row = {
                         id: response.data[i].ID,
@@ -146,7 +146,7 @@ export const getAdmin = (projectID) => {
             .then(response => {
             // If error was in the response then set that message
                 if ('error' in response) console.log(response);
-                var all_data = [];
+                let all_data = [];
                 for (let i = 0; i < response.data.length; i++) {
                     const row = {
                         id: response.data[i].ID,
@@ -283,7 +283,7 @@ export const getDiscarded = (projectID) => {
             .then(response => {
             // If error was in the response then set that message
                 if ('error' in response) console.log(response);
-                var all_data = [];
+                let all_data = [];
                 for (let i = 0; i < response.data.length; i++) {
                     const row = {
                         id: response.data[i].ID,

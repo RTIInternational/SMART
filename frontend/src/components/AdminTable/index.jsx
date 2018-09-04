@@ -12,14 +12,9 @@ class AdminTable extends React.Component {
 
     render() {
         const { admin_data, labels, adminLabel, discardData } = this.props;
-        if(admin_data) {
-            var table_data = admin_data;
-        } else {
-            table_data = [];
-        }
 
-        var expanded = {};
-        for(var i = 0; i < table_data.length; i++) {
+        let expanded = {};
+        for (let i = 0; i < admin_data.length; i++) {
             expanded[i] = true;
         }
 
@@ -72,11 +67,11 @@ class AdminTable extends React.Component {
             }
         ];
 
-        var page_sizes = [1];
-        for(i = 5; i < table_data.length; i += 5) {
+        let page_sizes = [1];
+        for (let i = 5; i < admin_data.length; i += 5) {
             page_sizes.push(i);
         }
-        page_sizes.push(table_data.length);
+        page_sizes.push(admin_data.length);
 
 
         return (
@@ -87,7 +82,7 @@ class AdminTable extends React.Component {
                     labels={labels}
                 />
                 <ReactTable
-                    data={table_data}
+                    data={admin_data}
                     columns={columns}
                     pageSizeOptions={page_sizes}
                     defaultPageSize={1}

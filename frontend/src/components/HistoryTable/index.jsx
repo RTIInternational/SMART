@@ -18,7 +18,7 @@ const columns = [
         Header: "Data",
         accessor: "data",
         filterMethod: (filter, row) => {
-            if(String(row["data"]).toLowerCase().includes(filter.value.toLowerCase())) {
+            if (String(row["data"]).toLowerCase().includes(filter.value.toLowerCase())) {
                 return true;
             } else {
                 return false;
@@ -54,19 +54,13 @@ class HistoryTable extends React.Component {
     render() {
         const { history_data, labels, changeLabel, changeToSkip } = this.props;
 
-        if(history_data) {
-            var table_data = history_data;
-        } else {
-            table_data = [];
-        }
-
-        var page_sizes = [1];
-        var counter = 1;
-        for(var i = 5; i < table_data.length; i += 5 * counter) {
+        let page_sizes = [1];
+        let counter = 1;
+        for (let i = 5; i < history_data.length; i += 5 * counter) {
             page_sizes.push(i);
             counter += 1;
         }
-        page_sizes.push(table_data.length);
+        page_sizes.push(history_data.length);
 
         return (
             <div>
@@ -78,13 +72,13 @@ class HistoryTable extends React.Component {
                     labels={labels}
                 />
                 <ReactTable
-                    data={table_data}
+                    data={history_data}
                     columns={columns}
-                    pageSize={(table_data.length < 50) ? table_data.length : 50}
+                    pageSize={(history_data.length < 50) ? history_data.length : 50}
                     showPageSizeOptions={false}
                     SubComponent={row => {
 
-                        if(row.row.edit === "yes") {
+                        if (row.row.edit === "yes") {
                             return (
                                 <div className="sub-row">
                                     <p>{row.row.data}</p>
@@ -93,7 +87,7 @@ class HistoryTable extends React.Component {
                                             return (
                                                 <Button key={label.pk.toString() + "_" + row.row.id.toString()}
                                                     onClick={() => {
-                                                        if(!(row.row.old_label_id === label.pk)) {
+                                                        if (!(row.row.old_label_id === label.pk)) {
                                                             changeLabel(row.row.id, row.row.old_label_id, label.pk);
                                                         }
                                                     }}
