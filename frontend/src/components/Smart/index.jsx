@@ -4,7 +4,7 @@ import { Button, ButtonToolbar, Clearfix, Well, Tooltip, OverlayTrigger,
     Glyphicon, ProgressBar, Tabs, Tab, Badge } from "react-bootstrap";
 import Card from '../Card';
 import HistoryTable from '../HistoryTable';
-import Skew from '../Skew';
+import SkewContainer from '../../containers/skew_container';
 import AdminTable from '../AdminTable';
 import RecycleBinTable from '../RecycleBinTable';
 import CodebookLabelMenu from '../CodebookLabelMenu';
@@ -22,21 +22,13 @@ class Smart extends React.Component {
 
     renderAdminTabSkew() {
         let adminTabSkew;
-        const { getUnlabeled, unlabeled_data, skewLabel, getLabelCounts,
-            label_counts, labels, adminTabsAvailable } = this.props;
+        const { adminTabsAvailable } = this.props;
 
         if (adminTabsAvailable) {
             adminTabSkew = (
                 <Tab eventKey={3} title="Fix Skew" className="full card">
                     <div className="cardContent">
-                        <Skew
-                            getUnlabeled={getUnlabeled}
-                            unlabeled_data={unlabeled_data}
-                            labels={labels}
-                            skewLabel={skewLabel}
-                            getLabelCounts={getLabelCounts}
-                            label_counts={label_counts}
-                        />
+                        <SkewContainer />
                     </div>
                 </Tab>
             );
@@ -234,13 +226,8 @@ Smart.propTypes = {
     getHistory: PropTypes.func.isRequired,
     changeLabel: PropTypes.func.isRequired,
     changeToSkip: PropTypes.func.isRequired,
-    getUnlabeled: PropTypes.func.isRequired,
-    unlabeled_data: PropTypes.arrayOf(PropTypes.object),
     adminTabsAvailable: PropTypes.bool,
     getAdminTabsAvailable: PropTypes.func.isRequired,
-    label_counts: PropTypes.arrayOf(PropTypes.object),
-    skewLabel: PropTypes.func.isRequired,
-    getLabelCounts: PropTypes.func.isRequired,
     getAdmin: PropTypes.func.isRequired,
     admin_data: PropTypes.arrayOf(PropTypes.object),
     adminLabel: PropTypes.func.isRequired,
