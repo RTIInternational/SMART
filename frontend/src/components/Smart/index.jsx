@@ -5,8 +5,8 @@ import { Button, ButtonToolbar, Clearfix, Well, Tooltip, OverlayTrigger,
 import Card from '../Card';
 import HistoryContainer from '../../containers/history_container';
 import SkewContainer from '../../containers/skew_container';
-import AdminTable from '../AdminTable';
-import RecycleBinTable from '../RecycleBinTable';
+import AdminTableContainer from '../../containers/adminTable_container';
+import RecycleBinContainer from '../../containers/recycleBin_container';
 import CodebookLabelMenu from '../CodebookLabelMenu';
 
 const ADMIN = window.ADMIN;
@@ -47,8 +47,7 @@ class Smart extends React.Component {
 
     renderAdminTabAdminTable() {
         let adminTabAdminTable, badges;
-        const { getAdmin, admin_data, adminLabel, discardData, labels,
-            adminTabsAvailable, admin_counts } = this.props;
+        const { adminTabsAvailable, admin_counts } = this.props;
 
         if (adminTabsAvailable) {
             if (Object.keys(admin_counts).length > 1) {
@@ -80,13 +79,7 @@ class Smart extends React.Component {
                     title={badges}
                     className="full card">
                     <div className="cardContent">
-                        <AdminTable
-                            getAdmin={getAdmin}
-                            admin_data={admin_data}
-                            labels={labels}
-                            adminLabel={adminLabel}
-                            discardData={discardData}
-                        />
+                        <AdminTableContainer />
                     </div>
                 </Tab>
             );
@@ -105,18 +98,13 @@ class Smart extends React.Component {
 
     renderAdminTabRecycle() {
         let adminTabRecycle;
-        const { getDiscarded, discarded_data, restoreData, labels, adminTabsAvailable } = this.props;
+        const { adminTabsAvailable } = this.props;
 
         if (adminTabsAvailable) {
             adminTabRecycle = (
                 <Tab eventKey={5} title={<Glyphicon glyph="trash"/>} className="full card">
                     <div className="cardContent">
-                        <RecycleBinTable
-                            getDiscarded = {getDiscarded}
-                            discarded_data = {discarded_data}
-                            restoreData = {restoreData}
-                            labels={labels}
-                        />
+                        <RecycleBinContainer />
                     </div>
                 </Tab>
             );
@@ -135,8 +123,7 @@ class Smart extends React.Component {
 
     render() {
         let card;
-        const { labels, message, cards, passCard, annotateCard, history_data, getHistory,
-            changeLabel, changeToSkip } = this.props;
+        const { labels, message, cards, passCard, annotateCard } = this.props;
 
         let progress = 100;
         let start_card = 0;
@@ -218,13 +205,6 @@ Smart.propTypes = {
     message: PropTypes.string,
     adminTabsAvailable: PropTypes.bool,
     getAdminTabsAvailable: PropTypes.func.isRequired,
-    getAdmin: PropTypes.func.isRequired,
-    admin_data: PropTypes.arrayOf(PropTypes.object),
-    adminLabel: PropTypes.func.isRequired,
-    discardData: PropTypes.func.isRequired,
-    restoreData: PropTypes.func.isRequired,
-    getDiscarded: PropTypes.func.isRequired,
-    discarded_data: PropTypes.arrayOf(PropTypes.object),
     fetchCards: PropTypes.func.isRequired,
     annotateCard: PropTypes.func.isRequired,
     passCard: PropTypes.func.isRequired,

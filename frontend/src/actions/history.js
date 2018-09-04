@@ -2,9 +2,12 @@ import { createAction } from 'redux-actions';
 import 'whatwg-fetch';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
-import { getAdmin, getAdminCounts } from './adminTables';
+import { getAdmin } from './adminTables';
+import { getAdminCounts } from './classifier';
 import { getLabelCounts } from './skew';
+
 export const SET_HIST_DATA = 'SET_HIST_DATA';
+
 export const set_hist_data = createAction(SET_HIST_DATA);
 
 //Get the data for the history table

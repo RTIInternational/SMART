@@ -4,7 +4,7 @@ import moment from 'moment';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
 import { getHistory } from './history';
-import { getAdmin, getAdminCounts } from './adminTables';
+import { getAdmin } from './adminTables';
 import { getLabelCounts } from './skew';
 
 export const POP_CARD = 'POP_CARD';
@@ -12,12 +12,16 @@ export const PUSH_CARD = 'PUSH_CARD';
 export const SET_LABEL = 'SET_LABEL';
 export const SET_MESSAGE = 'SET_MESSAGE';
 export const CLEAR_DECK = 'CLEAR_DECK';
+export const SET_AVAILABLE = 'SET_AVAILABLE';
+export const SET_ADMIN_COUNTS = 'SET_ADMIN_COUNTS';
 
 export const popCard = createAction(POP_CARD);
 export const pushCard = createAction(PUSH_CARD);
 export const setLabel = createAction(SET_LABEL);
 export const setMessage = createAction(SET_MESSAGE);
 export const clearDeck = createAction(CLEAR_DECK);
+export const set_available = createAction(SET_AVAILABLE);
+export const set_admin_counts = createAction(SET_ADMIN_COUNTS);
 
 // Create cards by reading from a queue
 export const fetchCards = (projectID) => {
@@ -115,5 +119,56 @@ export const passCard = (card, num_cards_left, is_admin, projectID ) => {
                     if (num_cards_left <= 1) dispatch(fetchCards(projectID));
                 }
             });
+    };
+};
+
+//get the counts that go on the adminTable tab badges
+export const getAdminCounts = (projectID) => {
+    let apiURL = `/api/data_admin_counts/${projectID}/`;
+    return dispatch => {
+        return fetch(apiURL, getConfig())
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    const error = new Error(response.statusText);
+                    error.response = response;
+                    throw error;
+                }
+            })
+            .then(response => {
+            // If error was in the response then set that message
+                if ('error' in response) console.log(response);
+                dispatch(set_admin_counts(response.data));
+            })
+            .catch(err => console.log("Error: ", err));
+    };
+};
+
+//check if another admin is already using the admin tabs
+export const getAdminTabsAvailable = (projectID) => {
+    let apiURL = `/api/check_admin_in_progress/${projectID}/`;
+    return dispatch => {
+        return fetch(apiURL, getConfig())
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    const error = new Error(response.statusText);
+                    error.response = response;
+                    throw error;
+                }
+            })
+            .then(response => {
+            // If error was in the response then set that message
+                if ('error' in response) console.log(response);
+                if (response.available == 0) {
+                    dispatch(set_available(false));
+                } else {
+                    dispatch(set_available(true));
+                }
+
+            })
+            .catch(err => console.log("Error: ", err));
     };
 };

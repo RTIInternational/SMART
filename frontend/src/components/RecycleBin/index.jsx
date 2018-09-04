@@ -24,7 +24,7 @@ const COLUMNS = [
 ];
 
 
-class RecycleBinTable extends React.Component {
+class RecycleBin extends React.Component {
 
     componentWillMount() {
         this.props.getDiscarded();
@@ -77,11 +77,11 @@ class RecycleBinTable extends React.Component {
     }
 }
 
-RecycleBinTable.propTypes = {
+RecycleBin.propTypes = {
     getDiscarded: PropTypes.func.isRequired,
     discarded_data: PropTypes.arrayOf(PropTypes.object),
     restoreData: PropTypes.func.isRequired,
     labels: PropTypes.arrayOf(PropTypes.object)
 };
 
-export default RecycleBinTable;
+export default RecycleBin;

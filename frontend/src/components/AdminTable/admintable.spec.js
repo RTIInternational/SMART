@@ -13,10 +13,10 @@ describe('<AdminTable />', () => {
             const wrapper = shallow(
                 <AdminTable
                   getAdmin = {fn}
-                  admin_data={data}
-                  labels={labels}
                   adminLabel = {fn}
                   discardData = {fn}
+                  admin_data={data}
+                  labels={labels}
                 />
             );
         });
