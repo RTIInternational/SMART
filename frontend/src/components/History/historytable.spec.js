@@ -1,9 +1,9 @@
 import React, {Component} from 'react';
 import { shallow } from 'enzyme';
 import { assert } from 'chai';
-import HistoryTable from './index';
+import History from './index';
 
-describe('<HistoryTable />', () => {
+describe('<History />', () => {
     describe('render', () => {
         it('renders properly if all props provided', () => {
             const fn = () => {};
@@ -11,7 +11,7 @@ describe('<HistoryTable />', () => {
             const labels = [];
 
             const wrapper = shallow(
-                <HistoryTable
+                <History
                   getHistory = {fn}
                   history_data={data}
                   labels={labels}

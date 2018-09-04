@@ -4,7 +4,8 @@ import moment from 'moment';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
 import { getHistory } from './history';
-import { getLabelCounts, getAdmin, getAdminCounts } from './adminTables';
+import { getAdmin, getAdminCounts } from './adminTables';
+import { getLabelCounts } from './skew';
 
 export const POP_CARD = 'POP_CARD';
 export const PUSH_CARD = 'PUSH_CARD';

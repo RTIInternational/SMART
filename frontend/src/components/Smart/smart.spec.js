@@ -13,11 +13,7 @@ describe('<Smart />', () => {
               <Smart
                 cards =  {data}
                 message = {message}
-                history_data = {data}
-                getHistory = {fn}
-                changeLabel = {fn}
-                changeToSkip = {fn}
-                available = {false}
+                adminTabsAvailable = {false}
                 getAdminTabsAvailable = {fn}
                 getAdmin = {fn}
                 admin_data = {data}

@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { Button, ButtonToolbar, Clearfix, Well, Tooltip, OverlayTrigger,
     Glyphicon, ProgressBar, Tabs, Tab, Badge } from "react-bootstrap";
 import Card from '../Card';
-import HistoryTable from '../HistoryTable';
+import HistoryContainer from '../../containers/history_container';
 import SkewContainer from '../../containers/skew_container';
 import AdminTable from '../AdminTable';
 import RecycleBinTable from '../RecycleBinTable';
@@ -202,13 +202,7 @@ class Smart extends React.Component {
                 </Tab>
                 <Tab eventKey={2} title="History" className="full card">
                     <div className="cardContent">
-                        <HistoryTable
-                            getHistory={getHistory}
-                            history_data={history_data}
-                            labels={labels}
-                            changeLabel={changeLabel}
-                            changeToSkip={changeToSkip}
-                        />
+                        <HistoryContainer />
                     </div>
                 </Tab>
                 { ADMIN === true && this.renderAdminTabSkew() }
@@ -216,16 +210,12 @@ class Smart extends React.Component {
                 { ADMIN === true && this.renderAdminTabRecycle() }
             </Tabs>
         );
-
     }
 }
+
 Smart.propTypes = {
     cards: PropTypes.arrayOf(PropTypes.object),
     message: PropTypes.string,
-    history_data: PropTypes.arrayOf(PropTypes.object),
-    getHistory: PropTypes.func.isRequired,
-    changeLabel: PropTypes.func.isRequired,
-    changeToSkip: PropTypes.func.isRequired,
     adminTabsAvailable: PropTypes.bool,
     getAdminTabsAvailable: PropTypes.func.isRequired,
     getAdmin: PropTypes.func.isRequired,

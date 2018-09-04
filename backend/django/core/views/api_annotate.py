@@ -248,10 +248,6 @@ def modify_label(request, data_pk):
     response = {}
     project = data.project
 
-    if request.data['labelID'] == request.data['oldLabelID']:
-        response['error'] = 'Invalid. The new label should be different'
-        return Response(response)
-
     # Make sure coder still has permissions before labeling data
     label = Label.objects.get(pk=request.data['labelID'])
     old_label = Label.objects.get(pk=request.data['oldLabelID'])

@@ -45,7 +45,7 @@ const COLUMNS = [
 ];
 
 
-class HistoryTable extends React.Component {
+class History extends React.Component {
 
     componentWillMount() {
         this.props.getHistory();
@@ -155,7 +155,7 @@ class HistoryTable extends React.Component {
 // change label (action)
 // change_to_skip (action)
 // data
-HistoryTable.propTypes = {
+History.propTypes = {
     getHistory: PropTypes.func.isRequired,
     history_data: PropTypes.arrayOf(PropTypes.object),
     labels: PropTypes.arrayOf(PropTypes.object),
@@ -163,4 +163,4 @@ HistoryTable.propTypes = {
     changeToSkip: PropTypes.func.isRequired
 };
 
-export default HistoryTable;
+export default History;
