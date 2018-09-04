@@ -225,8 +225,9 @@ def create_data_from_csv(df, project):
     df['project'] = project.pk
     df['irr_ind'] = False
 
-    df['Text'] = df['Text'].str.replace('\t', '')
-    df['Text'] = df['Text'].str.replace('\\', '\\\\')
+    # Replace tabs since thats our delimiter, remove carriage returns since copy_from doesnt like them
+    # escape all backslashes because it seems to fix "end-of-copy marker corrupt"
+    df['Text'] = df['Text'].apply(lambda x: x.replace('\t', '').replace('\r', '').replace('\\', '\\\\'))
 
     df.to_csv(stream, sep='\t', header=False, index=False, columns=columns)
     stream.seek(0)
