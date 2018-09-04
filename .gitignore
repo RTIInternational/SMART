@@ -5,6 +5,7 @@
 frontend/dist/
 frontend/webpack-stats.json
 frontend/node_modules/
+npm-debug.log
 
 # Mounted Docker volume
 backend/django/frontend/

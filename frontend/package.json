@@ -7,7 +7,7 @@
     "dev": "npm run manage.py runserver",
     "manage.py": "python django/smart/manage.py",
     "lint": "npm run lint:js && npm run lint:css",
-    "lint:js": "eslint src/",
+    "lint:js": "node_modules/.bin/eslint --ext .js,.jsx src/",
     "lint:css": "node_modules/.bin/stylelint src/**/*.scss",
     "test": "node_modules/.bin/babel-node tests/index.js"
   },

@@ -2,12 +2,13 @@
 @import 'includes';
 
 header {
-    @include border($attribute: border-top, $size: 8px, $color: $primary-color-dark);
+    @include border($attribute: border-top, $size: 12px, $color: $primary-color-dark);
+    @include border($attribute: border-bottom, $size: 8px, $color: $primary-color-dark);
     @include flexbox;
     @include align-items(center);
 
-    height: 64px;
-    padding: 0 16px;
+    height: 75px;
+    padding: 0 30px;
 
     background: $primary-color;
 
@@ -371,4 +372,22 @@ li.disabled {
 
 .padded-cell {
     padding-left: 32px !important;
+}
+
+#logo {
+    height: 60px;
+    margin-bottom: 3px;
+}
+
+.tab-badge {
+    font-size: 9px;
+    margin-bottom: 5px;
+}
+
+.more-padding {
+    padding-right: 10px;
+}
+
+.model_question_tooltip {
+    top: 5px;
 }

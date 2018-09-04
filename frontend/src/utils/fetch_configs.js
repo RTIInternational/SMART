@@ -15,7 +15,7 @@ export const getCookie = (name) => {
     }
 
     return cookieValue;
-}
+};
 
 export const deleteConfig = () => {
     return (

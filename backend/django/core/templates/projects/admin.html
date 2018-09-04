@@ -112,8 +112,12 @@
                 <div class="row">
                     <div class="col-md-12">
                         <h3>IRR Metrics</h3>
-                        <p id="kappa"></p>
-                        <p id="percent_agree"></p>
+                        <p><b>Kappa</b>: 
+                          <span id="kappa"></span>
+                        </p>
+                        <p><b>Percent Overall Agreement</b>:
+                          <span id="percent_agree"></span>
+                        </p>
 
                         <table id="pairwise_perc_agreement_table" class="table table-hover table-striped table-bordered" cellspacing="0" width="100%">
                             <thead>
@@ -128,7 +132,7 @@
                         <p>The chart below shows the frequency with which pairs of coders agreed or disagreed on labels</p>
                         <table>
                           <tr>
-                            <td>
+                            <td class="more-padding">
                               First Coder (top):<select class="form-control" id="coder1_select">
                               </select>
                             </td>
@@ -429,8 +433,8 @@ $.ajax({
     method: "GET",
     url: '/api/get_irr_metrics/' + {{ project.pk }} + '/',
     success: function (response) {
-        $('#kappa').text("Kappa: "+response.kappa.toString());
-        $('#percent_agree').text("Percent Overall Agreement: "+response['percent agreement'].toString());
+        $('#kappa').text(response.kappa.toString());
+        $('#percent_agree').text(response['percent agreement'].toString());
     },
     error: function (error) {
         console.log(error);
