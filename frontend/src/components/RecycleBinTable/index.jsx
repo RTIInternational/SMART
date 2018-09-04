@@ -3,33 +3,59 @@ import PropTypes from 'prop-types';
 import ReactTable from 'react-table';
 import { Button, ButtonToolbar, Tooltip, OverlayTrigger } from "react-bootstrap";
 import CodebookLabelMenu from '../CodebookLabelMenu';
+
+const COLUMNS = [
+    {
+        Header: "id",
+        accessor: "id",
+        show: false
+    },
+    {
+        Header: "Discarded Data",
+        accessor: "data",
+        filterMethod: (filter, row) => {
+            if (String(row["data"]).toLowerCase().includes(filter.value.toLowerCase())) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+];
+
+
 class RecycleBinTable extends React.Component {
 
     componentWillMount() {
         this.props.getDiscarded();
     }
 
-    render() {
-        const { discarded_data, restoreData, labels } = this.props;
+    getSubComponent(row) {
+        const { restoreData } = this.props;
 
-        const columns = [
-            {
-                Header: "id",
-                accessor: "id",
-                show: false
-            },
-            {
-                Header: "Discarded Data",
-                accessor: "data",
-                filterMethod: (filter, row) => {
-                    if (String(row["data"]).toLowerCase().includes(filter.value.toLowerCase())) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
-            }
-        ];
+        return (
+            <div className="sub-row">
+                <p id="disc_text">{row.row.data}</p>
+                <div id="disc_buttons">
+                    <ButtonToolbar bsClass="btn-toolbar pull-right">
+                        <OverlayTrigger
+                            placement = "top"
+                            overlay={
+                                <Tooltip id="discard_tooltip">
+                                    This will add this data back into the project active data.
+                                </Tooltip>
+                            }>
+                            <Button onClick = {() => restoreData(row.row.id)}
+                                bsStyle="danger">Restore</Button>
+                        </OverlayTrigger>
+                    </ButtonToolbar>
+                </div>
+            </div>
+        );
+    }
+
+    render() {
+        const { discarded_data, labels } = this.props;
 
         return (
             <div>
@@ -37,36 +63,14 @@ class RecycleBinTable extends React.Component {
                 <p>This page displays all data that has been discarded by an admin.</p>
                 <p>All data in this table has been removed from the set of unlabeled data to be predicted, and will not be assigned to anyone for labeling.</p>
                 <p>To add a datum back into the project, click the Restore button next to the datum.</p>
-                <CodebookLabelMenu
-                    labels={labels}
-                />
+                <CodebookLabelMenu labels={labels} />
                 <ReactTable
                     data={discarded_data}
-                    columns={columns}
+                    columns={COLUMNS}
                     showPageSizeOptions={false}
                     pageSize={(discarded_data.length < 50) ? discarded_data.length : 50}
                     filterable={true}
-                    SubComponent={row => {
-                        return (
-                            <div className="sub-row">
-                                <p id="disc_text">{row.row.data}</p>
-                                <div id="disc_buttons">
-                                    <ButtonToolbar bsClass="btn-toolbar pull-right">
-                                        <OverlayTrigger
-                                            placement = "top"
-                                            overlay={
-                                                <Tooltip id="discard_tooltip">
-                    This will add this data back into the project active data.
-                                                </Tooltip>
-                                            }>
-                                            <Button onClick = {() => restoreData(row.row.id)}
-                                                bsStyle="danger">Restore</Button>
-                                        </OverlayTrigger>
-                                    </ButtonToolbar>
-                                </div>
-                            </div>
-                        );
-                    }}
+                    SubComponent={row => this.getSubComponent(row)}
                 />
             </div>
         );
