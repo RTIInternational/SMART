@@ -1,15 +1,17 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Button, ButtonToolbar, Clearfix,
-    Well, Tooltip, OverlayTrigger, Glyphicon,
-    ProgressBar, Tabs, Tab, Badge } from "react-bootstrap";
+import { Button, ButtonToolbar, Clearfix, Well, Tooltip, OverlayTrigger,
+    Glyphicon, ProgressBar, Tabs, Tab, Badge } from "react-bootstrap";
 import Card from '../Card';
 import HistoryTable from '../HistoryTable';
 import Skew from '../Skew';
 import AdminTable from '../AdminTable';
 import RecycleBinTable from '../RecycleBinTable';
-const ADMIN = window.ADMIN;
 import CodebookLabelMenu from '../CodebookLabelMenu';
+
+const ADMIN = window.ADMIN;
+
+
 class Smart extends React.Component {
 
     componentWillMount() {
@@ -18,15 +20,132 @@ class Smart extends React.Component {
         this.props.getAdminCounts();
     }
 
-    render() {
-        const { message, cards, passCard, annotateCard,
-            history_data, getHistory, changeLabel,
-            changeToSkip, getUnlabeled, unlabeled_data,
-            skewLabel, getLabelCounts, label_counts, getAdmin, admin_data,
-            adminLabel, discardData, getDiscarded, discarded_data,
-            restoreData, labels, available, admin_counts } = this.props;
+    renderAdminTabSkew() {
+        let adminTabSkew;
+        const { getUnlabeled, unlabeled_data, skewLabel, getLabelCounts,
+            label_counts, labels, adminTabsAvailable } = this.props;
 
-        let card, adminTab1, adminTab2, adminTab3, badges;
+        if (adminTabsAvailable) {
+            adminTabSkew = (
+                <Tab eventKey={3} title="Fix Skew" className="full card">
+                    <div className="cardContent">
+                        <Skew
+                            getUnlabeled={getUnlabeled}
+                            unlabeled_data={unlabeled_data}
+                            labels={labels}
+                            skewLabel={skewLabel}
+                            getLabelCounts={getLabelCounts}
+                            label_counts={label_counts}
+                        />
+                    </div>
+                </Tab>
+            );
+        } else {
+            adminTabSkew = (
+                <Tab eventKey={3} title="Fix Skew" className="full card">
+                    <div className="cardContent">
+                        <h2>Another admin is currently using this page. Please check back later.</h2>
+                    </div>
+                </Tab>
+            );
+        }
+
+        return adminTabSkew;
+    }
+
+    renderAdminTabAdminTable() {
+        let adminTabAdminTable, badges;
+        const { getAdmin, admin_data, adminLabel, discardData, labels,
+            adminTabsAvailable, admin_counts } = this.props;
+
+        if (adminTabsAvailable) {
+            if (Object.keys(admin_counts).length > 1) {
+                badges = (
+                    <div>
+                        IRR
+                        <Badge className="tab-badge">
+                            {admin_counts["IRR"]}
+                        </Badge>
+                        | Skipped
+                        <Badge className="tab-badge">
+                            {admin_counts["SKIP"]}
+                        </Badge>
+                    </div>
+                );
+            } else {
+                badges = (
+                    <div>
+                        Skipped
+                        <Badge className="tab-badge">
+                            {admin_counts["SKIP"]}
+                        </Badge>
+                    </div>
+                );
+            }
+
+            adminTabAdminTable = (
+                <Tab eventKey={4}
+                    title={badges}
+                    className="full card">
+                    <div className="cardContent">
+                        <AdminTable
+                            getAdmin={getAdmin}
+                            admin_data={admin_data}
+                            labels={labels}
+                            adminLabel={adminLabel}
+                            discardData={discardData}
+                        />
+                    </div>
+                </Tab>
+            );
+        } else {
+            adminTabAdminTable = (
+                <Tab eventKey={4} title="Skipped Cards" className="full card">
+                    <div className="cardContent">
+                        <h2>Another admin is currently using this page. Please check back later.</h2>
+                    </div>
+                </Tab>
+            );
+        }
+
+        return adminTabAdminTable;
+    }
+
+    renderAdminTabRecycle() {
+        let adminTabRecycle;
+        const { getDiscarded, discarded_data, restoreData, labels, adminTabsAvailable } = this.props;
+
+        if (adminTabsAvailable) {
+            adminTabRecycle = (
+                <Tab eventKey={5} title={<Glyphicon glyph="trash"/>} className="full card">
+                    <div className="cardContent">
+                        <RecycleBinTable
+                            getDiscarded = {getDiscarded}
+                            discarded_data = {discarded_data}
+                            restoreData = {restoreData}
+                            labels={labels}
+                        />
+                    </div>
+                </Tab>
+            );
+        } else {
+            adminTabRecycle = (
+                <Tab eventKey={5} title={<Glyphicon glyph="trash"/>} className="full card">
+                    <div className="cardContent">
+                        <h2>Another admin is currently using this page. Please check back later.</h2>
+                    </div>
+                </Tab>
+            );
+        }
+
+        return adminTabRecycle;
+    }
+
+    render() {
+        let card;
+        const { labels, message, cards, passCard, annotateCard, history_data, getHistory,
+            changeLabel, changeToSkip } = this.props;
+
         let progress = 100;
         let start_card = 0;
         let num_cards = 0;
@@ -75,107 +194,11 @@ class Smart extends React.Component {
             );
         }
 
-        if (available) {
-            adminTab1 = (
-                <Tab eventKey={3} title="Fix Skew" className="full card">
-                    <div className="cardContent">
-                        <Skew
-                            getUnlabeled={getUnlabeled}
-                            unlabeled_data={unlabeled_data}
-                            labels={labels}
-                            skewLabel={skewLabel}
-                            getLabelCounts={getLabelCounts}
-                            label_counts={label_counts}
-                        />
-                    </div>
-                </Tab>
-            );
-
-            if (Object.keys(admin_counts).length > 1) {
-                badges = (
-                    <div>
-            IRR
-                        <Badge className="tab-badge">
-                            {admin_counts["IRR"]}
-                        </Badge>
-             | Skipped
-                        <Badge className="tab-badge">
-                            {admin_counts["SKIP"]}
-                        </Badge>
-                    </div>
-                );
-            } else {
-                badges = (
-                    <div>
-             Skipped
-                        <Badge className="tab-badge">
-                            {admin_counts["SKIP"]}
-                        </Badge>
-                    </div>
-                );
-            }
-
-            adminTab2 = (
-                <Tab eventKey={4}
-                    title={
-                        badges
-                    } className="full card">
-                    <div className="cardContent">
-                        <AdminTable
-                            getAdmin={getAdmin}
-                            admin_data={admin_data}
-                            labels={labels}
-                            adminLabel={adminLabel}
-                            discardData={discardData}
-                        />
-                    </div>
-                </Tab>
-            );
-
-            adminTab3 = (
-                <Tab eventKey={5} title={<Glyphicon glyph="trash"/>} className="full card">
-                    <div className="cardContent">
-                        <RecycleBinTable
-                            getDiscarded = {getDiscarded}
-                            discarded_data = {discarded_data}
-                            restoreData = {restoreData}
-                            labels={labels}
-                        />
-                    </div>
-                </Tab>
-            );
-        } else {
-            adminTab1 = (
-                <Tab eventKey={3} title="Fix Skew" className="full card">
-                    <div className="cardContent">
-                        <h2>Another admin is currently using this page. Please check back later.</h2>
-                    </div>
-                </Tab>
-            );
-            adminTab2 = (
-                <Tab eventKey={4} title="Skipped Cards" className="full card">
-                    <div className="cardContent">
-                        <h2>Another admin is currently using this page. Please check back later.</h2>
-                    </div>
-                </Tab>
-            );
-
-            adminTab3 = (
-                <Tab eventKey={5} title={<Glyphicon glyph="trash"/>} className="full card">
-                    <div className="cardContent">
-                        <h2>Another admin is currently using this page. Please check back later.</h2>
-                    </div>
-                </Tab>
-            );
-        }
-
         return (
             <Tabs defaultActiveKey={1} id="data_tabs" >
                 <Tab eventKey={1} title="Annotate Data" className="full card">
                     <div className="cardContent">
-                        <CodebookLabelMenu
-                            labels={labels}
-                        />
+                        <CodebookLabelMenu labels={labels} />
                         <ProgressBar>
                             <ProgressBar
                                 style={{ minWidth: 60 }}
@@ -196,9 +219,9 @@ class Smart extends React.Component {
                         />
                     </div>
                 </Tab>
-                { ADMIN === true && adminTab1 }
-                { ADMIN === true && adminTab2 }
-                { ADMIN === true && adminTab3 }
+                { ADMIN === true && this.renderAdminTabSkew() }
+                { ADMIN === true && this.renderAdminTabAdminTable() }
+                { ADMIN === true && this.renderAdminTabRecycle() }
             </Tabs>
         );
 
@@ -213,7 +236,7 @@ Smart.propTypes = {
     changeToSkip: PropTypes.func.isRequired,
     getUnlabeled: PropTypes.func.isRequired,
     unlabeled_data: PropTypes.arrayOf(PropTypes.object),
-    available: PropTypes.bool,
+    adminTabsAvailable: PropTypes.bool,
     getAdminTabsAvailable: PropTypes.func.isRequired,
     label_counts: PropTypes.arrayOf(PropTypes.object),
     skewLabel: PropTypes.func.isRequired,

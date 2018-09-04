@@ -8,7 +8,7 @@ const initialState = {
     unlabeled_data: [],
     label_counts: [],
     discarded_data: [],
-    available: false,
+    adminTabsAvailable: false,
     admin_counts: []
 };
 
@@ -26,7 +26,7 @@ const adminTables = handleActions({
         return update(state, { discarded_data: { $set: action.payload } } );
     },
     [SET_AVAILABLE]: (state, action) => {
-        return update(state, { available: { $set: action.payload } } );
+        return update(state, { adminTabsAvailable: { $set: action.payload } } );
     },
     [SET_ADMIN_COUNTS]: (state, action) => {
         return update(state, { admin_counts: { $set: action.payload } } );

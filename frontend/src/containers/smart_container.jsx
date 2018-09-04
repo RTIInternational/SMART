@@ -21,7 +21,7 @@ const mapStateToProps = (state) => {
         label_counts: state.adminTables.label_counts,
         admin_data: state.adminTables.admin_data,
         discarded_data: state.adminTables.discarded_data,
-        available: state.adminTables.available,
+        adminTabsAvailable: state.adminTables.adminTabsAvailable,
         labels: state.classifier.labels,
         admin_counts: state.adminTables.admin_counts
     };
