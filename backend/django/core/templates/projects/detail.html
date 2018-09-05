@@ -180,7 +180,7 @@
             Return to Projects
           </a>
           {% if project|proj_permission_level:request.user.profile > 1 %}
-          <a class="btn btn-info" href="{% url 'projects:project_update' project.pk %}" role="button">
+          <a class="btn btn-info" href="{% url 'projects:project_update_landing' project.pk %}" role="button">
             Update Project
           </a>
           <a class="btn btn-danger" href="{% url 'projects:project_delete' project.pk %}" role="button">

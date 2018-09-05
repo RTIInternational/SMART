@@ -125,6 +125,15 @@ class ProjectUpdateForm(forms.ModelForm):
             return cleanCodebookDataHelper(cb_data)
 
 
+class ProjectUpdateOverviewForm(forms.ModelForm):
+    class Meta:
+        model = Project
+        fields = ['name', 'description']
+
+    name = forms.CharField()
+    description = forms.CharField(required=False)
+
+
 class LabelForm(forms.ModelForm):
     class Meta:
         model = Label
