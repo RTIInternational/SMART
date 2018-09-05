@@ -2,7 +2,7 @@ import React from 'react';
 import { connect } from 'react-redux';
 
 import { fetchCards, annotateCard, passCard } from '../actions/card';
-import Card from '../components/card';
+import Card from '../components/Card';
 
 const PROJECT_ID = window.PROJECT_ID;
 
