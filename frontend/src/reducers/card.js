@@ -2,17 +2,15 @@ import { handleActions } from 'redux-actions';
 import update from 'immutability-helper';
 import moment from 'moment';
 
-import { POP_CARD, PUSH_CARD, SET_LABEL, SET_MESSAGE, CLEAR_DECK, SET_AVAILABLE, SET_ADMIN_COUNTS } from '../actions/classifier';
+import { POP_CARD, PUSH_CARD, SET_LABEL, SET_MESSAGE, CLEAR_DECK } from '../actions/card';
 
 const initialState = {
     cards: [],
     message: '',
-    labels: [],
-    adminTabsAvailable: false,
-    admin_counts: [],
+    labels: []
 };
 
-const classifier = handleActions({
+const card = handleActions({
     [POP_CARD]: (state) => {
         // Set the start time of the new top card to the current time
         if (state.cards.length > 1) {
@@ -36,13 +34,7 @@ const classifier = handleActions({
     ),
     [CLEAR_DECK]: (state) => (
         update(state, { cards : { $set: [] } } )
-    ),
-    [SET_AVAILABLE]: (state, action) => {
-        return update(state, { adminTabsAvailable: { $set: action.payload } } );
-    },
-    [SET_ADMIN_COUNTS]: (state, action) => {
-        return update(state, { admin_counts: { $set: action.payload } } );
-    }
+    )
 }, initialState);
 
-export default classifier;
+export default card;

@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import ReactTable from 'react-table';
 import { Button, ButtonToolbar, Tooltip, OverlayTrigger, Alert } from "react-bootstrap";
-import CodebookLabelMenu from '../CodebookLabelMenu';
+import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
 
 const COLUMNS = [
     {
@@ -116,7 +116,7 @@ class History extends React.Component {
     }
 
     render() {
-        const { history_data, labels } = this.props;
+        const { history_data } = this.props;
 
         let page_sizes = [1];
         let counter = 1;
@@ -132,7 +132,7 @@ class History extends React.Component {
                 <p>This page allows a coder to change past labels.</p>
                 <p>To annotate, click on a data entry below and select the label from the expanded list of labels. The chart will then update with the new label and current timestamp </p>
                 <p><strong>NOTE:</strong> Data labels that are changed on this page will not effect past model accuracy or data selected by active learning in the past. The training data will only be updated for the next run of the model</p>
-                <CodebookLabelMenu labels={labels} />
+                <CodebookLabelMenuContainer />
                 <ReactTable
                     data={history_data}
                     columns={COLUMNS}
@@ -158,7 +158,6 @@ class History extends React.Component {
 History.propTypes = {
     getHistory: PropTypes.func.isRequired,
     history_data: PropTypes.arrayOf(PropTypes.object),
-    labels: PropTypes.arrayOf(PropTypes.object),
     changeLabel: PropTypes.func.isRequired,
     changeToSkip: PropTypes.func.isRequired
 };

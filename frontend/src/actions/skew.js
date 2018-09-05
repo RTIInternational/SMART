@@ -2,7 +2,7 @@ import { createAction } from 'redux-actions';
 import 'whatwg-fetch';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
-import { setMessage } from './classifier';
+import { setMessage } from './card';
 import { getHistory } from './history';
 
 export const SET_UNLABELED_DATA = 'SET_UNLABELED_DATA';

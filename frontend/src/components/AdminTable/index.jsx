@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import ReactTable from 'react-table';
 import { Button, ButtonToolbar, Tooltip, OverlayTrigger } from "react-bootstrap";
-import CodebookLabelMenu from '../CodebookLabelMenu';
+import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
 
 
 class AdminTable extends React.Component {
@@ -74,7 +74,7 @@ class AdminTable extends React.Component {
             <div>
                 <h3>Instructions</h3>
                 <p>This page allows an admin to label data that was skipped by labelers, or was disagreed upon in inter-rater reliability checks.</p>
-                <CodebookLabelMenu labels={labels} />
+                <CodebookLabelMenuContainer />
                 <ReactTable
                     data={admin_data}
                     columns={columns}

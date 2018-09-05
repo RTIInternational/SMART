@@ -2,7 +2,7 @@ import { createAction } from 'redux-actions';
 import 'whatwg-fetch';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
-import { setMessage } from './classifier';
+import { setMessage } from './card';
 import { getUnlabeled } from './skew';
 
 export const SET_DISCARDED_DATA = 'SET_DISCARDED_DATA';

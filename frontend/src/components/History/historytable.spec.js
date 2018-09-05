@@ -14,7 +14,6 @@ describe('<History />', () => {
                 <History
                   getHistory = {fn}
                   history_data={data}
-                  labels={labels}
                   changeLabel = {fn}
                   changeToSkip= {fn}
                 />

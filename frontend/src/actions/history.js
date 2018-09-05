@@ -3,7 +3,7 @@ import 'whatwg-fetch';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
 import { getAdmin } from './adminTables';
-import { getAdminCounts } from './classifier';
+import { getAdminCounts } from './smart';
 import { getLabelCounts } from './skew';
 
 export const SET_HIST_DATA = 'SET_HIST_DATA';

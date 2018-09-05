@@ -4,7 +4,7 @@ import ReactTable from 'react-table';
 import { Button, ButtonToolbar, Panel } from "react-bootstrap";
 import NVD3Chart from "react-nvd3";
 import d3 from 'd3';
-import CodebookLabelMenu from '../CodebookLabelMenu';
+import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
 
 const COLUMNS = [
     {
@@ -74,7 +74,7 @@ class Skew extends React.Component {
                         </Panel>
                     </div>
                 </div>
-                <CodebookLabelMenu labels={labels} />
+                <CodebookLabelMenuContainer />
                 <ReactTable
                     data={unlabeled_data}
                     columns={COLUMNS}

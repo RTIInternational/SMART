@@ -2,7 +2,8 @@ import { createAction } from 'redux-actions';
 import 'whatwg-fetch';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
-import { setMessage, getAdminCounts } from './classifier';
+import { getAdminCounts } from './smart';
+import { setMessage } from './card';
 import { getHistory } from './history';
 import { getUnlabeled, getLabelCounts } from './skew';
 import { getDiscarded } from './recycleBin';

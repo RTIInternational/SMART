@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import ReactTable from 'react-table';
 import { Button, ButtonToolbar, Tooltip, OverlayTrigger } from "react-bootstrap";
-import CodebookLabelMenu from '../CodebookLabelMenu';
+import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
 
 const COLUMNS = [
     {
@@ -55,7 +55,7 @@ class RecycleBin extends React.Component {
     }
 
     render() {
-        const { discarded_data, labels } = this.props;
+        const { discarded_data } = this.props;
 
         return (
             <div>
@@ -63,7 +63,7 @@ class RecycleBin extends React.Component {
                 <p>This page displays all data that has been discarded by an admin.</p>
                 <p>All data in this table has been removed from the set of unlabeled data to be predicted, and will not be assigned to anyone for labeling.</p>
                 <p>To add a datum back into the project, click the Restore button next to the datum.</p>
-                <CodebookLabelMenu labels={labels} />
+                <CodebookLabelMenuContainer />
                 <ReactTable
                     data={discarded_data}
                     columns={COLUMNS}
@@ -81,7 +81,6 @@ RecycleBin.propTypes = {
     getDiscarded: PropTypes.func.isRequired,
     discarded_data: PropTypes.arrayOf(PropTypes.object),
     restoreData: PropTypes.func.isRequired,
-    labels: PropTypes.arrayOf(PropTypes.object)
 };
 
 export default RecycleBin;

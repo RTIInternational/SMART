@@ -11,14 +11,8 @@ describe('<Smart />', () => {
             const message = "";
             const wrapper = shallow(
               <Smart
-                cards =  {data}
-                message = {message}
                 adminTabsAvailable = {false}
                 getAdminTabsAvailable = {fn}
-                fetchCards = {fn}
-                annotateCard = {fn}
-                passCard =  {fn}
-                popCard = {fn}
                 admin_counts = {data}
                 getAdminCounts = {fn}
               />

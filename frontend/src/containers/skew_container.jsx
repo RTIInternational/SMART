@@ -12,7 +12,7 @@ const mapStateToProps = (state) => {
     return {
         unlabeled_data: state.skew.unlabeled_data,
         label_counts: state.skew.label_counts,
-        labels: state.classifier.labels
+        labels: state.card.labels
     };
 };
 

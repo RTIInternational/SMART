@@ -11,7 +11,7 @@ const AdminTableContainer = (props) => <AdminTable {...props} />;
 const mapStateToProps = (state) => {
     return {
         admin_data: state.adminTables.admin_data,
-        labels: state.classifier.labels,
+        labels: state.card.labels,
         admin_counts: state.adminTables.admin_counts
     };
 };
