@@ -127,16 +127,7 @@ def test_modify_label(seeded_database, client, test_project_data, test_queue, te
     assert data is not None
     response = client.post('/api/annotate_data/' + str(data.pk) + '/', request_info)
     assert DataLabel.objects.filter(data=data).count() == 1
-    # call modify label to change it to the same thing
-    change_info = {
-        "dataID": data.pk,
-        "oldLabelID": test_labels[0].pk,
-        "labelID": test_labels[0].pk
-    }
-    response = client.post('/api/modify_label/' + str(data.pk) + '/', change_info).json()
-    assert response != {}
-    # check that there is an error
-    assert 'error' in response and 'Invalid. The new label should be different' in response['error']
+
     # call modify label to change it to something else
     change_info = {
         "dataID": data.pk,

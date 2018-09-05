@@ -248,7 +248,6 @@ def modify_label(request, data_pk):
     response = {}
     project = data.project
 
-    # Make sure coder still has permissions before labeling data
     label = Label.objects.get(pk=request.data['labelID'])
     old_label = Label.objects.get(pk=request.data['oldLabelID'])
     with transaction.atomic():

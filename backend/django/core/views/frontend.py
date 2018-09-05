@@ -1,7 +1,7 @@
 from django.shortcuts import redirect, render
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import TemplateView, ListView, DetailView, View
-from django.views.generic.edit import UpdateView, DeleteView, FormView
+from django.views.generic.edit import UpdateView, DeleteView
 from django.urls import reverse_lazy
 from django.http import HttpResponseRedirect
 from django.db import transaction
@@ -9,14 +9,13 @@ from django.core.files.storage import FileSystemStorage
 from django.conf import settings
 from django import forms
 from formtools.wizard.views import SessionWizardView
-from extra_views import *
 
 import pandas as pd
 
-from core.models import (Project, Data, Label, TrainingSet, ProjectPermissions)
-from core.forms import (ProjectUpdateForm, ProjectUpdateOverviewForm, PermissionsFormSet, LabelFormSet,
+from core.models import (Project, Data, Label, TrainingSet)
+from core.forms import (ProjectUpdateOverviewForm, PermissionsFormSet, LabelFormSet,
                         ProjectWizardForm, DataWizardForm, AdvancedWizardForm,
-                        CodeBookWizardForm, LabelDescriptionFormSet, ProjectPermissionsForm)
+                        CodeBookWizardForm, LabelDescriptionFormSet)
 from core.templatetags import project_extras
 from core.utils.util import save_codebook_file, upload_data
 from core.utils.utils_queue import add_queue, find_queue_length
@@ -386,11 +385,11 @@ class ProjectUpdatePermissions(LoginRequiredMixin, UserPassesTestMixin, View):
 
         if self.request.POST:
             context['permissions'] = PermissionsFormSet(self.request.POST, instance=project, prefix='permissions_set', form_kwargs={
-                                                     'action': 'update', 'creator': project.creator, 'profile': self.request.user.profile})
+                                                        'action': 'update', 'creator': project.creator, 'profile': self.request.user.profile})
         else:
             context['permissions'] = PermissionsFormSet(instance=project, prefix='permissions_set', form_kwargs={
-                                                     'action': 'update', 'creator': project.creator, 'profile': self.request.user.profile})
-        
+                                                        'action': 'update', 'creator': project.creator, 'profile': self.request.user.profile})
+
         return context
 
     def get_success_url(self):
