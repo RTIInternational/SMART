@@ -174,7 +174,7 @@ class Smart extends React.Component {
         }
 
         return (
-            <Tabs defaultActiveKey={1} id="data_tabs" >
+            <Tabs defaultActiveKey={1} id="data_tabs" mountOnEnter={true} unmountOnExit={true}>
                 <Tab eventKey={1} title="Annotate Data" className="full card">
                     <div className="cardContent">
                         <CodebookLabelMenu labels={labels} />
