@@ -11,6 +11,7 @@ describe('<SmartProgressBar />', () => {
             const message = "";
             const wrapper = shallow(
               <SmartProgressBar
+                cards = {data}
               />
             );
         });

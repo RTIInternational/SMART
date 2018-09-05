@@ -1,6 +1,5 @@
 import { handleActions } from 'redux-actions';
 import update from 'immutability-helper';
-import moment from 'moment';
 
 import { SET_AVAILABLE, SET_ADMIN_COUNTS } from '../actions/smart';
 

@@ -11,11 +11,11 @@ describe('<Card />', () => {
             const message = "";
             const wrapper = shallow(
               <Card
-                cards = {data},
-                message: {message},
-                fetchCards: {fn},
-                annotateCard: {fn},
-                passCard: {fn}
+                cards = {data}
+                message = {message}
+                fetchCards = {fn}
+                annotateCard = {fn}
+                passCard = {fn}
               />
             );
         });

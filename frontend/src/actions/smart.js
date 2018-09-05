@@ -1,11 +1,7 @@
 import { createAction } from 'redux-actions';
 import 'whatwg-fetch';
-import moment from 'moment';
 
-import { getConfig, postConfig } from '../utils/fetch_configs';
-import { getHistory } from './history';
-import { getAdmin } from './adminTables';
-import { getLabelCounts } from './skew';
+import { getConfig } from '../utils/fetch_configs';
 
 export const SET_AVAILABLE = 'SET_AVAILABLE';
 export const SET_ADMIN_COUNTS = 'SET_ADMIN_COUNTS';
