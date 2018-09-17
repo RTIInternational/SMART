@@ -48,7 +48,7 @@ class ProjectCode(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
 
 class ProjectAdmin(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
-    template_name = 'projects/admin.html'
+    template_name = 'projects/admin/admin.html'
     permission_denied_message = 'You must be an Admin or Project Creator to access the Admin page.'
     raise_exception = True
 

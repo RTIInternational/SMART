@@ -8,7 +8,10 @@
         "plugin:react/recommended"
     ],
     "globals": {
-        "React": false
+        "React": false,
+        "$": false,
+        "nv": false,
+        "d3": false,
     },
     "parserOptions": {
         "ecmaVersion": 6,

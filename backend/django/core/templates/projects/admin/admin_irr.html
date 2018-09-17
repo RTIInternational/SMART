@@ -1,0 +1,41 @@
+{% block irr_tab %}
+<div id="irr_tab" class="tab-pane fade in">
+  <div class="row">
+    <div class="col-md-12">
+      <h3>IRR Metrics</h3>
+      <p>
+        <b>Kappa</b>: 
+        <span id="kappa"></span>
+      </p>
+      <p>
+        <b>Percent Overall Agreement</b>:
+        <span id="percent_agree"></span>
+      </p>
+      <table id="pairwise_perc_agreement_table" class="table table-hover table-striped table-bordered" cellspacing="0" width="100%">
+        <thead>
+          <tr>
+            <th>First Coder</th>
+            <th>Second Coder</th>
+            <th>Percent Agreement</th>
+          </tr>
+        </thead>
+      </table>
+      <h3>Coder Label Heatmap</h3>
+      <p>The chart below shows the frequency with which pairs of coders agreed or disagreed on labels</p>
+      <table>
+        <tr>
+          <td class="more-padding">
+            First Coder (top):<select class="form-control" id="coder1_select">
+            </select>
+          </td>
+          <td>
+            Second Coder (left):<select class="form-control" id="coder2_select">
+            </select>
+          </td>
+        </tr>
+      </table>
+      <div id="heatmap_chart"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
