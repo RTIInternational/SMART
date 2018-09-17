@@ -14,7 +14,7 @@ This project uses `docker` containers organized by `docker-compose` to ease depe
 
 #### Initial Startup
 
-First, install docker and docker-compose. Then navigate to `envs/[dev|prod]` and run `docker-compose build` to build all the images.
+First, install docker and docker-compose. Then navigate to `envs/dev` and run `docker-compose build` to build all the images.
 
 Next, crate the docker volumes where persistent data will be stored.  `docker volume create --name=vol_smart_pgdata` and `docker volume create --name=vol_smart_data`.
 
@@ -52,19 +52,24 @@ EXTERNAL_FRONTEND_PORT=3001
 
 The `.env` file is ignored by `.gitignore`.
 
-### Running backend tests
+### Running tests
 
-Before running tests locally, be sure your container is rebuilt to contain pytest and the latest tests by using `docker-compose build smart_backend`.
-
-Backend tests use [py.test](https://docs.pytest.org/en/latest/).  To run them, use the following `docker-compose` command from the `env/dev` directory:
+Backend tests use [py.test](https://docs.pytest.org/en/latest/) and [flake8](http://flake8.pycqa.org/en/latest/).  To run them, use the following `docker-compose` command from the `env/dev` directory:
 
 ```
-docker-compose run --rm smart_backend ./run_tests.sh
+docker-compose run --rm smart_backend ./run_tests.sh <args>
 ```
 
-Use `py.test -h` to see all the options, but a few useful ones are highlighted below:
+Where `<args>` are arguments to be passed to py.test.  Use `py.test -h` to see all the options, but a few useful ones are highlighted below:
 
  - `-x`: Stop running after the first failure
  - `-s`: Print stdout from the test run (allows you to see temporary print statements in your code)
  - `-k <expression>`: Only run tests with names containing "expression"; you can use Python expressions for more precise control.  See `py.test -h` for more info
  - `--reuse-db`: Don't drop/recreate the database between test runs.  This is useful for for reducing test runtime.  You must not pass this flag if the schema has changed since the last test run.
+
+
+Frontend tests use [mocha](https://mochajs.org/api/mocha.js.html) and [eslint](https://eslint.org/docs/user-guide/getting-started).  To run them, use the following `docker-compose` command from the `env/dev` directory:
+
+```
+docker-compose run --rm smart_frontend ./run_tests.sh
+```
