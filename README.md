@@ -73,3 +73,12 @@ Frontend tests use [mocha](https://mochajs.org/api/mocha.js.html) and [eslint](h
 ```
 docker-compose run --rm smart_frontend ./run_tests.sh
 ```
+
+### Contributing
+
+If you would like to contribute to SMART feel free to submit issues and pull requests addressing any bugs or features. Before submitting a pull request make sure to follow the few guidelines below:
+
+* Clearly explain the bug you are experiencing or the feature you wish to implement in the description.
+* For new features include unit tests to ensure the feature is working correctly and the new feature is maintainable going forward.
+* For bug fixes include unit tests to ensure that previously untested code is now covered.
+* Make sure your branch passes all the existing backend and frontend tests.
