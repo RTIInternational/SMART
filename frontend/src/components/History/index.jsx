@@ -156,6 +156,7 @@ class History extends React.Component {
 // change_to_skip (action)
 // data
 History.propTypes = {
+    labels: PropTypes.arrayOf(PropTypes.object),
     getHistory: PropTypes.func.isRequired,
     history_data: PropTypes.arrayOf(PropTypes.object),
     changeLabel: PropTypes.func.isRequired,
