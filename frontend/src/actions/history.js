@@ -2,9 +2,12 @@ import { createAction } from 'redux-actions';
 import 'whatwg-fetch';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
-import { setMessage } from './classifier';
-import { getLabelCounts, getAdmin, getAdminCounts } from './adminTables';
+import { getAdmin } from './adminTables';
+import { getAdminCounts } from './smart';
+import { getLabelCounts } from './skew';
+
 export const SET_HIST_DATA = 'SET_HIST_DATA';
+
 export const set_hist_data = createAction(SET_HIST_DATA);
 
 //Get the data for the history table
@@ -22,9 +25,8 @@ export const getHistory = (projectID) => {
                 }
             })
             .then(response => {
-            // If error was in the response then set that message
-                if ('error' in response) console.log(response);
-                var all_data = [];
+                // If error was in the response then set that message
+                let all_data = [];
                 for (let i = 0; i < response.data.length; i++) {
                     const row = {
                         id: response.data[i].id,
@@ -61,13 +63,9 @@ export const changeLabel = (dataID, oldLabelID, labelID, projectID) => {
                     throw error;
                 }
             })
-            .then(response => {
-                if ('error' in response) {
-                    return dispatch(setMessage(response.error));
-                } else {
-                    dispatch(getHistory(projectID));
-                    dispatch(getLabelCounts(projectID));
-                }
+            .then(() => {
+                dispatch(getHistory(projectID));
+                dispatch(getLabelCounts(projectID));
             });
     };
 };
@@ -89,14 +87,10 @@ export const changeToSkip = (dataID, oldLabelID, projectID) => {
                     throw error;
                 }
             })
-            .then(response => {
-                if ('error' in response) {
-                    return dispatch(setMessage(response.error));
-                } else {
-                    dispatch(getHistory(projectID));
-                    dispatch(getAdmin(projectID));
-                    dispatch(getAdminCounts(projectID));
-                }
+            .then(() => {
+                dispatch(getHistory(projectID));
+                dispatch(getAdmin(projectID));
+                dispatch(getAdminCounts(projectID));
             });
     };
 };

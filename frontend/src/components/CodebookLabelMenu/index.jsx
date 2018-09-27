@@ -1,8 +1,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Button, ButtonGroup,
-    Glyphicon, Modal  } from "react-bootstrap";
+import { Button, ButtonGroup, Glyphicon, Modal } from "react-bootstrap";
+
 const CODEBOOK_URL = window.CODEBOOK_URL;
+
+
 class CodebookLabelMenu extends React.Component {
 
     constructor(props){
@@ -25,9 +27,8 @@ class CodebookLabelMenu extends React.Component {
         this.setState({ labels_open: !this.state.labels_open });
     }
 
-
-    getLabels(labels, labels_open) {
-        if(labels_open) {
+    getLabels(labels) {
+        if (this.state.labels_open) {
             return (
                 <div className="row">
                     <div className="col-md-12">
@@ -42,16 +43,15 @@ class CodebookLabelMenu extends React.Component {
                     </div>
                 </div>
             );
-        } else {
-            return null;
         }
     }
 
     render() {
         const { labels } = this.props;
+        let codebook_module, codebook_button, label_button;
 
-        if(CODEBOOK_URL != "") {
-            var codebook_module = (
+        if (CODEBOOK_URL != "") {
+            codebook_module = (
                 <Modal show={this.state.codebook_open} onHide={this.toggleCodebook}>
                     <Modal.Header closeButton>
                         <Modal.Title>Codebook</Modal.Title>
@@ -62,12 +62,11 @@ class CodebookLabelMenu extends React.Component {
                             src={CODEBOOK_URL}
                             id="pdf_document"
                             width="100%"
-                            height="100%"
-                        />
+                            height="100%" />
                     </Modal.Body>
                 </Modal>
             );
-            var codebook_button = (
+            codebook_button = (
                 <Button onClick={this.toggleCodebook} className="codebook-btn">Codebook</Button>
             );
         } else {
@@ -75,13 +74,12 @@ class CodebookLabelMenu extends React.Component {
             codebook_button = (<div />);
         }
 
-        if(this.state.labels_open) {
-            var label_button = (
+        if (this.state.labels_open) {
+            label_button = (
                 <Button
                     onClick={this.toggleLabel}
                     className="minus_button"
-                    bsStyle="danger"
-                >
+                    bsStyle="danger">
                     <Glyphicon glyph="minus"/> Label Guide
                 </Button>
             );
@@ -90,8 +88,7 @@ class CodebookLabelMenu extends React.Component {
                 <Button
                     onClick={this.toggleLabel}
                     className="plus_button"
-                    bsStyle="success"
-                >
+                    bsStyle="success">
                     <Glyphicon glyph="plus"/> Label Guide
                 </Button>
             );
@@ -109,11 +106,8 @@ class CodebookLabelMenu extends React.Component {
                 {codebook_module}
             </div>
         );
-
     }
-
 }
-
 
 CodebookLabelMenu.propTypes = {
     labels: PropTypes.arrayOf(PropTypes.object)

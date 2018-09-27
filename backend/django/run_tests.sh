@@ -9,15 +9,15 @@ while [ $n -ne 0 ]; do
     n=$?
 done
 
-echo "Checking PEP8...."
-result=$(find . -name \*.py -exec pycodestyle --show-source --show-pep8 --ignore=E402,E501,W503,E722,W605 {} +)
+echo "Checking Flake8...."
+result=$(flake8 --ignore E501,W503 .)
 echo "$result"
 
 if [ -n "$result" ]; then
   echo "\nFix the above PEP8 errors before running tests"
   exit 1
 else
-  echo "PEP8 Styling Good. Running Tests..."
+  echo "Flake8 Good. Running Tests..."
 fi
 
 coverage run -m py.test "$@"

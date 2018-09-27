@@ -370,6 +370,10 @@ li.disabled {
     font-size: 10px;
 }
 
+.padded-cell {
+    padding-left: 32px !important;
+}
+
 #logo {
     height: 60px;
     margin-bottom: 3px;
@@ -386,4 +390,8 @@ li.disabled {
 
 .model_question_tooltip {
     top: 5px;
+}
+
+.update-list {
+    margin: 8px;
 }

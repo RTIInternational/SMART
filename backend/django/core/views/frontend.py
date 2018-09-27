@@ -1,32 +1,25 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect, render
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.views.generic import TemplateView, ListView, DetailView
-from django.views.generic.edit import CreateView, UpdateView, DeleteView
+from django.views.generic import TemplateView, ListView, DetailView, View
+from django.views.generic.edit import UpdateView, DeleteView
 from django.urls import reverse_lazy
 from django.http import HttpResponseRedirect
 from django.db import transaction
-from django.core.exceptions import PermissionDenied
 from django.core.files.storage import FileSystemStorage
 from django.conf import settings
 from django import forms
-from formtools.wizard.views import SessionWizardView, StepsHelper
-from formtools.wizard.storage import get_storage
+from formtools.wizard.views import SessionWizardView
 
 import pandas as pd
-import math
-import os
-from celery import chord
 
-from core.models import (Profile, Project, ProjectPermissions, Model, Data, Label,
-                         DataLabel, DataPrediction, Queue, DataQueue, AssignedData,
-                         TrainingSet)
-from core.forms import (ProjectUpdateForm, PermissionsFormSet, LabelFormSet,
+from core.models import (Project, Data, Label, TrainingSet)
+from core.forms import (ProjectUpdateOverviewForm, PermissionsFormSet, LabelFormSet,
                         ProjectWizardForm, DataWizardForm, AdvancedWizardForm,
                         CodeBookWizardForm, LabelDescriptionFormSet)
-from core.serializers import DataSerializer
 from core.templatetags import project_extras
-import core.util as util
-from core import tasks
+from core.utils.util import save_codebook_file, upload_data
+from core.utils.utils_queue import add_queue, find_queue_length
+from core.utils.utils_annotate import batch_unassign
 
 
 # Projects
@@ -55,7 +48,7 @@ class ProjectCode(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
 
 class ProjectAdmin(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
-    template_name = 'projects/admin.html'
+    template_name = 'projects/admin/admin.html'
     permission_denied_message = 'You must be an Admin or Project Creator to access the Admin page.'
     raise_exception = True
 
@@ -102,37 +95,6 @@ class ProjectDetail(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         return project_extras.proj_permission_level(project, self.request.user.profile) > 0
 
 
-def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
-    """Perform data upload given validated form_data.
-
-    1. Add data to database
-    2. If new project then fill queue (only new project will pass queue object)
-    3. Save the uploaded data file
-    4. Create tf_idf file
-    5. Check and Trigger model
-    """
-    new_df = util.add_data(project, form_data)
-    if queue:
-        util.fill_queue(queue=queue, irr_queue=irr_queue, orderby='random',
-                        irr_percent=project.percentage_irr, batch_size=batch_size)
-
-    # Since User can upload Labeled Data and this data is added to current training_set
-    # we need to check_and_trigger model.  However since training model requires
-    # tf_idf to be created we must create a chord which garuntees that tfidf
-    # creation task is completed before check and trigger model task
-
-    if len(new_df) > 0:
-        util.save_data_file(new_df, project.pk)
-        if project.classifier is not None:
-            transaction.on_commit(
-                lambda:
-                    chord(
-                        tasks.send_tfidf_creation_task.s(project.pk),
-                        tasks.send_check_and_trigger_model_task.si(project.pk)
-                    ).apply_async()
-            )
-
-
 class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
     file_storage = FileSystemStorage(location=settings.DATA_DIR)
     form_list = [
@@ -144,12 +106,12 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         ('data', DataWizardForm)
     ]
     template_list = {
-        'project': 'projects/create_wizard_overview.html',
-        'labels': 'projects/create_wizard_labels.html',
-        'permissions': 'projects/create_wizard_permissions.html',
-        'advanced': 'projects/create_wizard_advanced.html',
-        'codebook': 'projects/create_wizard_codebook.html',
-        'data': 'projects/create_wizard_data.html'
+        'project': 'projects/create/create_wizard_overview.html',
+        'labels': 'projects/create/create_wizard_labels.html',
+        'permissions': 'projects/create/create_wizard_permissions.html',
+        'advanced': 'projects/create/create_wizard_advanced.html',
+        'codebook': 'projects/create/create_wizard_codebook.html',
+        'data': 'projects/create/create_wizard_data.html'
     }
 
     def get_template_names(self):
@@ -243,7 +205,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
             cb_data = codebook_data.cleaned_data['data']
             if cb_data != "":
-                cb_filepath = util.save_codebook_file(cb_data, proj_pk)
+                cb_filepath = save_codebook_file(cb_data, proj_pk)
             else:
                 cb_filepath = ""
             proj_obj.codebook_file = cb_filepath
@@ -261,7 +223,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             proj_obj.save()
 
             # Training Set
-            training_set = TrainingSet.objects.create(project=proj_obj, set_number=0)
+            TrainingSet.objects.create(project=proj_obj, set_number=0)
 
             # Labels
             labels.instance = proj_obj
@@ -275,23 +237,63 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
             num_coders = len([x for x in permissions if x.cleaned_data
                               != {} and not x.cleaned_data['DELETE']]) + 1
-            q_length = util.find_queue_length(batch_size, num_coders)
+            q_length = find_queue_length(batch_size, num_coders)
 
-            queue = util.add_queue(project=proj_obj, length=q_length)
+            queue = add_queue(project=proj_obj, length=q_length)
 
             # Data
             f_data = data.cleaned_data['data']
-            admin_queue = util.add_queue(project=proj_obj, length=2000000, type="admin")
-            irr_queue = util.add_queue(project=proj_obj, length=2000000, type="irr")
+            add_queue(project=proj_obj, length=2000000, type="admin")
+            irr_queue = add_queue(project=proj_obj, length=2000000, type="irr")
             upload_data(f_data, proj_obj, queue, irr_queue, batch_size)
 
         return HttpResponseRedirect(proj_obj.get_absolute_url())
 
 
-class ProjectUpdate(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+class ProjectUpdateLanding(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'projects/update_landing.html'
+    permission_denied_message = 'You must be an Admin or Project Creator to access the Admin page.'
+    raise_exception = True
+
+    def test_func(self):
+        project = Project.objects.get(pk=self.kwargs['pk'])
+
+        return project_extras.proj_permission_level(project, self.request.user.profile) >= 2
+
+    def get_context_data(self, **kwargs):
+        ctx = super(ProjectUpdateLanding, self).get_context_data(**kwargs)
+
+        ctx['project'] = Project.objects.get(pk=self.kwargs['pk'])
+
+        return ctx
+
+
+class ProjectUpdateOverview(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Project
-    form_class = ProjectUpdateForm
-    template_name = 'projects/update.html'
+    form_class = ProjectUpdateOverviewForm
+    template_name = 'projects/update/overview.html'
+    permission_denied_message = 'You must be an Admin or Project Creator to access the Project Update page.'
+    raise_exception = True
+
+    def test_func(self):
+        project = Project.objects.get(pk=self.kwargs['pk'])
+
+        return project_extras.proj_permission_level(project, self.request.user.profile) >= 2
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        if form.is_valid():
+            with transaction.atomic():
+                self.object = form.save()
+                return redirect(self.get_success_url())
+        else:
+            return self.render_to_response(context)
+
+
+class ProjectUpdateData(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    model = Project
+    form_class = DataWizardForm
+    template_name = 'projects/update/data.html'
     permission_denied_message = 'You must be an Admin or Project Creator to access the Project Update page.'
     raise_exception = True
 
@@ -301,59 +303,160 @@ class ProjectUpdate(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         return project_extras.proj_permission_level(project, self.request.user.profile) >= 2
 
     def get_form_kwargs(self):
-        form_kwargs = super(ProjectUpdate, self).get_form_kwargs()
+        form_kwargs = super(ProjectUpdateData, self).get_form_kwargs()
 
         form_kwargs['labels'] = list(Label.objects.filter(
             project=form_kwargs['instance']).values_list('name', flat=True))
 
+        del form_kwargs['instance']
+
         return form_kwargs
 
     def get_context_data(self, **kwargs):
-        data = super(ProjectUpdate, self).get_context_data(**kwargs)
-        if self.request.POST:
-            data['permissions'] = PermissionsFormSet(self.request.POST, instance=data['project'], prefix='permissions_set', form_kwargs={
-                                                     'action': 'update', 'creator': data['project'].creator, 'profile': self.request.user.profile})
-            data['label_descriptions'] = LabelDescriptionFormSet(
-                self.request.POST, instance=data['project'], prefix='label_descriptions_set', form_kwargs={'action': 'update'})
-        else:
-            data['num_data'] = Data.objects.filter(project=data['project']).count()
-            data['permissions'] = PermissionsFormSet(instance=data['project'], prefix='permissions_set', form_kwargs={
-                                                     'action': 'update', 'creator': data['project'].creator, 'profile': self.request.user.profile})
-            data['label_descriptions'] = LabelDescriptionFormSet(
-                instance=data['project'], prefix='label_descriptions_set', form_kwargs={'action': 'update'})
+        data = super(ProjectUpdateData, self).get_context_data(**kwargs)
+
+        data['num_data'] = Data.objects.filter(project=data['project']).count()
+
         return data
 
     def form_valid(self, form):
         context = self.get_context_data()
-        permissions = context['permissions']
-        labels = context["label_descriptions"]
-        with transaction.atomic():
-            if permissions.is_valid():
-                self.object = form.save()
-                permissions.instance = self.object
-                for deleted_permissions in permissions.deleted_forms:
-                    del_perm_profile = deleted_permissions.cleaned_data.get('profile', None)
-                    util.batch_unassign(del_perm_profile)
-                permissions.save()
 
-                # Data
+        if form.is_valid():
+            with transaction.atomic():
                 f_data = form.cleaned_data.get('data', False)
                 if isinstance(f_data, pd.DataFrame):
                     upload_data(f_data, self.object, batch_size=self.object.batch_size)
 
-                # CodeBook
-                cb_data = form.cleaned_data.get('cb_data', False)
+                return redirect(self.get_success_url())
+        else:
+            return self.render_to_response(context)
+
+
+class ProjectUpdateCodebook(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    model = Project
+    form_class = CodeBookWizardForm
+    template_name = 'projects/update/codebook.html'
+    permission_denied_message = 'You must be an Admin or Project Creator to access the Project Update page.'
+    raise_exception = True
+
+    def test_func(self):
+        project = Project.objects.get(pk=self.kwargs['pk'])
+
+        return project_extras.proj_permission_level(project, self.request.user.profile) >= 2
+
+    def get_form_kwargs(self):
+        form_kwargs = super(ProjectUpdateCodebook, self).get_form_kwargs()
+
+        del form_kwargs['instance']
+
+        return form_kwargs
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        if form.is_valid():
+            with transaction.atomic():
+                cb_data = form.cleaned_data.get('data', False)
                 if cb_data and cb_data != "":
-                    cb_filepath = util.save_codebook_file(cb_data, self.object.pk)
+                    cb_filepath = save_codebook_file(cb_data, self.object.pk)
                     self.object.codebook_file = cb_filepath
                     self.object.save()
 
-                labels.instance = self.object
+                return redirect(self.get_success_url())
+        else:
+            return self.render_to_response(context)
+
+
+class ProjectUpdatePermissions(LoginRequiredMixin, UserPassesTestMixin, View):
+    model = Project
+    template_name = 'projects/update/permissions.html'
+    permission_denied_message = 'You must be an Admin or Project Creator to access the Project Update page.'
+    raise_exception = True
+
+    def test_func(self):
+        project = Project.objects.get(pk=self.kwargs['pk'])
+
+        return project_extras.proj_permission_level(project, self.request.user.profile) >= 2
+
+    def get_context_data(self, **kwargs):
+        context = {}
+        project = Project.objects.get(pk=self.kwargs['pk'])
+        context['project'] = project
+
+        if self.request.POST:
+            context['permissions'] = PermissionsFormSet(self.request.POST, instance=project, prefix='permissions_set', form_kwargs={
+                                                        'action': 'update', 'creator': project.creator, 'profile': self.request.user.profile})
+        else:
+            context['permissions'] = PermissionsFormSet(instance=project, prefix='permissions_set', form_kwargs={
+                                                        'action': 'update', 'creator': project.creator, 'profile': self.request.user.profile})
+
+        return context
+
+    def get_success_url(self):
+        context = self.get_context_data()
+        return context['project'].get_absolute_url()
+
+    def get(self, request, *args, **kwargs):
+        return render(request, self.template_name, context=self.get_context_data())
+
+    def post(self, request, *args, **kwargs):
+        context = self.get_context_data()
+        permissions = context['permissions']
+        if permissions.is_valid():
+            with transaction.atomic():
+                permissions.instance = context['project']
+                for deleted_permissions in permissions.deleted_forms:
+                    del_perm_profile = deleted_permissions.cleaned_data.get('profile', None)
+                    batch_unassign(del_perm_profile)
+                permissions.save()
+
+                return redirect(self.get_success_url())
+        else:
+            return self.render_to_response(context)
+
+
+class ProjectUpdateLabel(LoginRequiredMixin, UserPassesTestMixin, View):
+    model = Project
+    template_name = 'projects/update/labels.html'
+    permission_denied_message = 'You must be an Admin or Project Creator to access the Project Update page.'
+    raise_exception = True
+
+    def test_func(self):
+        project = Project.objects.get(pk=self.kwargs['pk'])
+
+        return project_extras.proj_permission_level(project, self.request.user.profile) >= 2
+
+    def get_context_data(self, **kwargs):
+        context = {}
+        project = Project.objects.get(pk=self.kwargs['pk'])
+        context['project'] = project
+
+        if self.request.POST:
+            context['label_descriptions'] = LabelDescriptionFormSet(
+                self.request.POST, instance=project, prefix='label_descriptions_set', form_kwargs={'action': 'update'})
+        else:
+            context['label_descriptions'] = LabelDescriptionFormSet(
+                instance=project, prefix='label_descriptions_set', form_kwargs={'action': 'update'})
+        return context
+
+    def get_success_url(self):
+        context = self.get_context_data()
+        return context['project'].get_absolute_url()
+
+    def get(self, request, *args, **kwargs):
+        return render(request, self.template_name, context=self.get_context_data())
+
+    def post(self, request, *args, **kwargs):
+        context = self.get_context_data()
+        labels = context['label_descriptions']
+        if labels.is_valid():
+            with transaction.atomic():
+                labels.instance = context['project']
                 labels.save()
 
                 return redirect(self.get_success_url())
-            else:
-                return self.render_to_response(context)
+        else:
+            return self.render_to_response(context)
 
 
 class ProjectDelete(LoginRequiredMixin, UserPassesTestMixin, DeleteView):

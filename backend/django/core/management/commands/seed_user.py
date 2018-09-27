@@ -1,7 +1,4 @@
-import os.path
-
-from django.core.management.base import BaseCommand, CommandError
-
+from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User as AuthUser
 
 from core.models import Profile
@@ -20,10 +17,10 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         try:
-            profile = profile.objects.get(user__username='test')
+            Profile.objects.get(user__username='test')
             print("SEED: Profile Already Exists")
         except Profile.DoesNotExist:
             auth_user = AuthUser.objects.create_user(
                 username='test', password='password', email='dummy@smart.org')
-            profile = Profile.objects.create(user=auth_user)
+            Profile.objects.create(user=auth_user)
             print("SEED: New Profile Created")

@@ -1,13 +1,15 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from .models import Project, ProjectPermissions, Label, Data
+from django.forms.widgets import RadioSelect, Textarea, TextInput, Select
+
 import pandas as pd
 import numpy as np
-from pandas.errors import EmptyDataError, ParserError
-from django.forms.widgets import RadioSelect, Textarea, TextInput, Select
+from pandas.errors import ParserError
 import copy
 from io import StringIO
-from core.util import md5_hash
+
+from core.utils.util import md5_hash
+from .models import Project, ProjectPermissions, Label
 
 
 def clean_data_helper(data, supplied_labels):
@@ -121,6 +123,15 @@ class ProjectUpdateForm(forms.ModelForm):
             return clean_data_helper(data, labels)
         if cb_data:
             return cleanCodebookDataHelper(cb_data)
+
+
+class ProjectUpdateOverviewForm(forms.ModelForm):
+    class Meta:
+        model = Project
+        fields = ['name', 'description']
+
+    name = forms.CharField()
+    description = forms.CharField(required=False)
 
 
 class LabelForm(forms.ModelForm):

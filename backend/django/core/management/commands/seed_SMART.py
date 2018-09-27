@@ -1,12 +1,11 @@
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 from django.db import transaction
 
 from core.models import Profile, Project, Label, ProjectPermissions, TrainingSet
-from core.util import (add_data, find_queue_length, add_queue, get_assignments,
-                       label_data, check_and_trigger_model, fill_queue, save_data_file)
-from core.views.frontend import upload_data
-from core.serializers import DataSerializer
+from core.utils.util import add_data, save_data_file
+from core.utils.utils_queue import find_queue_length, add_queue, fill_queue
+from core.utils.utils_annotate import get_assignments, label_data
 from core import tasks
 
 from test.util import read_test_data_backend
@@ -28,13 +27,13 @@ def seed_users():
 
 
 def seed_project(creator, name, description, data_file, label_list, perm_list, classifier):
-    project = Project.objects.create(name=name,
-                                     description=description,
-                                     creator=creator,
-                                     classifier=classifier
-                                     )
+    project = Project.objects.create(
+        name=name,
+        description=description,
+        creator=creator,
+        classifier=classifier)
 
-    training_set = TrainingSet.objects.create(project=project, set_number=0)
+    TrainingSet.objects.create(project=project, set_number=0)
 
     labels = []
     for name in label_list:
@@ -58,7 +57,7 @@ def seed_project(creator, name, description, data_file, label_list, perm_list, c
     f_data = read_test_data_backend(file=data_file)
     data_length = len(f_data)
 
-    admin_queue = add_queue(project=project, length=data_length, type="admin")
+    add_queue(project=project, length=data_length, type="admin")
     irr_queue = add_queue(project=project, length=2000000, type="irr")
     new_df = add_data(project, f_data)
     fill_queue(queue, irr_queue=irr_queue, orderby='random', batch_size=batch_size)
@@ -96,30 +95,30 @@ class Command(BaseCommand):
             root, user1, test_user = seed_users()
 
             print('Test projects...')
-            root_project = seed_project(creator=root,
-                                        name='Root Only Project',
-                                        description="This is a project for only the root user. The root user is the creator.  This project's data file has labels.",
-                                        data_file='./core/data/test_files/test_some_labels.csv',
-                                        label_list=['FAVOR', 'AGAINST', 'NONE'],
-                                        perm_list=[],
-                                        classifier='logistic regression'
-                                        )
-            multi_user_project = seed_project(creator=root,
-                                              name='Three User Project',
-                                              description="This is a project that is coded by three different users.  No labels were in the data file to begin with.",
-                                              data_file='./core/data/test_files/test_no_labels.csv',
-                                              label_list=['Good', 'Bad'],
-                                              perm_list=[user1, test_user],
-                                              classifier='logistic regression'
-                                              )
-            no_data_project = seed_project(creator=root,
-                                           name='No Label Project',
-                                           description="This project has no labels, all charts should say No Data Available",
-                                           data_file='./core/data/test_files/test_no_labels.csv',
-                                           label_list=['Good', 'Bad', 'Neutral'],
-                                           perm_list=[],
-                                           classifier='logistic regression'
-                                           )
+            root_project = seed_project(
+                creator=root,
+                name='Root Only Project',
+                description="This is a project for only the root user. The root user is the creator.  This project's data file has labels.",
+                data_file='./core/data/test_files/test_some_labels.csv',
+                label_list=['FAVOR', 'AGAINST', 'NONE'],
+                perm_list=[],
+                classifier='logistic regression')
+            multi_user_project = seed_project(
+                creator=root,
+                name='Three User Project',
+                description="This is a project that is coded by three different users.  No labels were in the data file to begin with.",
+                data_file='./core/data/test_files/test_no_labels.csv',
+                label_list=['Good', 'Bad'],
+                perm_list=[user1, test_user],
+                classifier='logistic regression')
+            seed_project(
+                creator=root,
+                name='No Label Project',
+                description="This project has no labels, all charts should say No Data Available",
+                data_file='./core/data/test_files/test_no_labels.csv',
+                label_list=['Good', 'Bad', 'Neutral'],
+                perm_list=[],
+                classifier='logistic regression')
 
             print('Test labels...')
             for i in range(3):

@@ -18,7 +18,6 @@ from django.conf import settings
 from django.contrib import admin
 from django.http import HttpResponseRedirect
 from rest_framework_swagger.views import get_swagger_view
-from core.views import api, frontend
 
 urlpatterns = [
     url(r'^$', lambda r: HttpResponseRedirect('projects/')),

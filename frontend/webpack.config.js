@@ -15,7 +15,8 @@ var config = {
     devtool: 'source-map',
     entry: {
         smart: './smart.jsx',
-        globals: './globals.js'
+        globals: './globals.js',
+        admins: './admins.js'
     },
     module: {
         rules: [
