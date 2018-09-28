@@ -1,4 +1,4 @@
-# SMART [![build status](http://gitlab.rtp.rti.org/cds/smart/badges/master/build.svg)](http://gitlab.rtp.rti.org/cds/smart/commits/master) [![coverage report](http://gitlab.rtp.rti.org/cds/smart/badges/master/coverage.svg)](http://gitlab.rtp.rti.org/cds/smart/commits/master)
+# SMART [![Build Status](https://travis-ci.com/RTIInternational/SMART.svg?&branch=master)](https://travis-ci.com/RTIInternational/SMART)
 
 This application is for intelligently labeling data by utilizing active learning.  It consists of a Django web application backed by a Postgres database and a Redis store.  The application uses Docker in development to aid in dependency management.
 
