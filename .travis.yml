@@ -1,0 +1,15 @@
+services:
+  - docker
+
+before_install:
+  - docker -v
+  - docker-compose -v
+
+before_script:
+  - cd envs/dev
+  - docker-compose build
+
+script:
+  - docker-compose up -d
+  - docker-compose exec smart_frontend bash -c "./run_tests.sh"
+  - docker-compose exec smart_backend bash -c "./run_tests.sh"
