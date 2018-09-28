@@ -8,8 +8,13 @@ before_install:
 before_script:
   - cd envs/dev
   - docker-compose build
+  - docker volume create vol_smart_pgdata && docker volume create vol_smart_data
 
 script:
   - docker-compose up -d
   - docker-compose exec smart_frontend bash -c "./run_tests.sh"
   - docker-compose exec smart_backend bash -c "./run_tests.sh"
+
+after_script:
+  - docker-compose down
+  - docker volume remove vol_smart_pgdata && docker volume remove vol_smart_data
