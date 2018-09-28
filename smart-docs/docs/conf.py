@@ -165,3 +165,13 @@ texinfo_documents = [
 
 
 # -- Extension configuration -------------------------------------------------
+
+
+# -- Read the docs configuraton ----------------------------------------------
+html_context = {
+    "display_github": True, # Integrate GitHub
+    "github_user": "RTIInternational", # Username
+    "github_repo": "SMART", # Repo name
+    "github_version": "master", # Version
+    "conf_py_path": "/smart-docs/", # Path in the checkout to the docs root
+}
