@@ -12,3 +12,7 @@ backend/django/frontend/
 .env
 .cache
 .coverage
+
+# Docs
+docs/_build/
+docs/nbuild/
