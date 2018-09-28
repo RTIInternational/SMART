@@ -1,4 +1,4 @@
-# SMART [![Build Status](https://travis-ci.com/RTIInternational/SMART.svg?&branch=master)](https://travis-ci.com/RTIInternational/SMART)
+# SMART [![Build Status](https://travis-ci.com/RTIInternational/SMART.svg?&branch=master)](https://travis-ci.com/RTIInternational/SMART) [![Documentation Status](https://readthedocs.org/projects/smart-app/badge/?version=latest)](https://smart-app.readthedocs.io/en/latest/?badge=latest)
 
 This application is for intelligently labeling data by utilizing active learning.  It consists of a Django web application backed by a Postgres database and a Redis store.  The application uses Docker in development to aid in dependency management.
 
