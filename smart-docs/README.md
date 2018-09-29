@@ -1,5 +1,9 @@
 ### SMART User Documentation
 
+**[READ THE DOCS ONLINE](https://smart-app.readthedocs.io/en/latest/)**
+
+![SMART docs page screenshot](docs/nstatic/img/landing-page-docs.png)
+
 Using [Sphinx](http://www.sphinx-doc.org/en/master/) to create the user documenation for SMART and hosting on [Read the Docs](http://docs.readthedocs.io/en/latest/index.html) (TBD).  For a theme template, we're using the [Read the Docs Sphinx Theme](https://sphinx-rtd-theme.readthedocs.io/en/latest/index.html).
 
 **Edit and Build**

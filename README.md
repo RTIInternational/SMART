@@ -1,6 +1,11 @@
-# SMART [![Build Status](https://travis-ci.com/RTIInternational/SMART.svg?&branch=master)](https://travis-ci.com/RTIInternational/SMART) [![Documentation Status](https://readthedocs.org/projects/smart-app/badge/?version=latest)](https://smart-app.readthedocs.io/en/latest/?badge=latest)
+![SMART](docs/img/smart-banner.png)
 
-This application is for intelligently labeling data by utilizing active learning.  It consists of a Django web application backed by a Postgres database and a Redis store.  The application uses Docker in development to aid in dependency management.
+[![Build Status](https://travis-ci.com/RTIInternational/SMART.svg?&branch=master)](https://travis-ci.com/RTIInternational/SMART) [![Documentation Status](https://readthedocs.org/projects/smart-app/badge/?version=latest)](https://smart-app.readthedocs.io/en/latest/?badge=latest)
+
+SMART is an open source application designed to help data scientists and research teams efficiently build labeled training datasets for supervised machine learning tasks.
+
+- **[SMART Landing Page](https://rtiinternational.github.io/SMART/)** 
+- **[SMART User Documentation](https://smart-app.readthedocs.io/en/latest/#)**
 
 ## Development
 
