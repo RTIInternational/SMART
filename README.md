@@ -1,4 +1,5 @@
-<img src="docs/img/smart-banner.png" alt="drawing" width="1915"/>
+# SMART
+<img src="docs/img/smart-banner.png" width="820" height="185">
 
 [![Build Status](https://travis-ci.com/RTIInternational/SMART.svg?&branch=master)](https://travis-ci.com/RTIInternational/SMART) [![Documentation Status](https://readthedocs.org/projects/smart-app/badge/?version=latest)](https://smart-app.readthedocs.io/en/latest/?badge=latest)
 
