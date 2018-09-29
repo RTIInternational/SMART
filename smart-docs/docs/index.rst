@@ -16,7 +16,7 @@ Quick Start
 ^^^^^^^^^^^
 ::
 
-	$ git clone [github repo]
+	$ git clone https://github.com/RTIInternational/SMART.git
 	$ cd smart/envs/dev/
 	$ docker-compose build
 	$ docker volume create --name=vol_smart_pgdata

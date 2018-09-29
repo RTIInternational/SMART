@@ -14,5 +14,8 @@ backend/django/frontend/
 .coverage
 
 # Docs
-docs/_build/
-docs/nbuild/
+smart-docs/docs/_build/
+smart-docs/docs/nbuild/
+
+# Landing
+docs/node_modules/

@@ -2,15 +2,15 @@ Part 1: Installation
 ====================
 
 .. note::
-	Additional installation instructions and developer notes are available at the SMART Github code repository [LINK].
+	Additional installation instructions and developer notes are available at the `SMART Github code repository <https://github.com/RTIInternational/SMART>`_.
 
 To begin installing SMART, first clone the code repository to the local directory of your choice:
 
 ::
 
-	$ git clone [github repo]
+	$ git clone https://github.com/RTIInternational/SMART.git
 
-SMART uses Docker in development to aid in dependency management. First, install `Docker <https://www.docker.com/>`_ and `Docker Compose <https://docs.docker.com/compose/install/>`_. Then navigate to ``envs/[dev|prod]`` and run ``docker-compose build`` to build all the images:
+SMART uses Docker in development to aid in dependency management. First, install `Docker <https://www.docker.com/>`_ and `Docker Compose <https://docs.docker.com/compose/install/>`_. Then navigate to ``envs/dev`` and run ``docker-compose build`` to build all the images:
 
 ::
 

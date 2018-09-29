@@ -23,8 +23,8 @@
     &:active,
     &.active {
         color: white;
-        border-color: $theme-primary;
-        background-color: $theme-primary;
+        border-color: $theme-highlight;
+        background-color: $theme-highlight;
     }
 }
 
