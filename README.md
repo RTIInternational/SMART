@@ -7,6 +7,7 @@ SMART is an open source application designed to help data scientists and researc
 
 - **[SMART Landing Page](https://rtiinternational.github.io/SMART/)** 
 - **[SMART User Documentation](https://smart-app.readthedocs.io/en/latest/#)**
+- **[SMART Pre-Print Manuscript](https://arxiv.org/abs/1812.06591)**
 
 ## Development
 

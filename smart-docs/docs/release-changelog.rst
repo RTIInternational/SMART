@@ -1,7 +1,7 @@
 Release Notes and Change Log
 ============================
 
-Release v.0.0.1
+Release v.1.0.0
 ****************
 
 Contributors
