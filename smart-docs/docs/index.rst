@@ -21,6 +21,7 @@ Quick Start
 	$ docker-compose build
 	$ docker volume create --name=vol_smart_pgdata
 	$ docker volume create --name=vol_smart_data
+  $ docker-compose run --rm smart_backend ./migrate.sh
 	$ docker-compose up -d
 
 Open your browser to http://localhost:8000
