@@ -25,6 +25,8 @@ First, install docker and docker-compose. Then navigate to `envs/dev` and run `d
 
 Next, crate the docker volumes where persistent data will be stored.  `docker volume create --name=vol_smart_pgdata` and `docker volume create --name=vol_smart_data`.
 
+Then, migrate the database to ensure the schema is prepared for the application. `docker-compose run --rm smart_backend ./migrate.sh`.
+
 ### Workflow During Development
 
 Run `docker-compose up` to start all docker containers.  This will start up the containers in the foreground so you can see the logs.  If you prefer to run the containers in the background use `docker-compose up -d`. When switching between branches there is no need to run any additional commands (except build if there is dependency change).

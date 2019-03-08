@@ -24,7 +24,7 @@ Next, create the docker volumes where persistent data will be stored: ``docker v
 	$ docker volume create --name=vol_smart_pgdata
 	$ docker volume create --name=vol_smart_data
 
-Then, setup the database and ensure the correct table/schema is prepared for the application
+Then, migrate the database to ensure the schema is prepared for the application.
 
 ::
 
