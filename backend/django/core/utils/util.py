@@ -106,7 +106,9 @@ def create_data_from_csv(df, project):
 
     # Replace tabs since thats our delimiter, remove carriage returns since copy_from doesnt like them
     # escape all backslashes because it seems to fix "end-of-copy marker corrupt"
-    df['Text'] = df['Text'].apply(lambda x: x.replace('\t', '').replace('\r', '').replace('\\', '\\\\'))
+    df['Text'] = df['Text'].apply(lambda x:
+        x.replace('\t', ' ').replace('\r', ' ').replace('\n', ' ').replace('\\', '\\\\')
+    )
 
     df.to_csv(stream, sep='\t', header=False, index=False, columns=columns)
     stream.seek(0)
