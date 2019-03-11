@@ -60,6 +60,10 @@ def download_model(request, project_pk):
     tfidf_vectorizer_path = os.path.join(
         settings.TF_IDF_PATH, 'project_' + str(project_pk) + '_vectorizer.pkl')
     readme_path = os.path.join(settings.BASE_DIR, 'core', 'data', 'README.pdf')
+    dockerfile_path = os.path.join(settings.BASE_DIR, 'core', 'data', 'Dockerfile')
+    requirements_path = os.path.join(settings.BASE_DIR, 'core', 'data', 'requirements.txt')
+    start_script_path = os.path.join(settings.BASE_DIR, 'core', 'data', 'start_notebook.sh')
+    usage_examples_path = os.path.join(settings.BASE_DIR, 'core', 'data', 'UsageExamples.ipynb')
     current_training_set = project.get_current_training_set()
     model_path = os.path.join(settings.MODEL_PICKLE_PATH, 'project_' + str(project_pk)
                               + '_training_' + str(current_training_set.set_number - 1) + '.pkl')
@@ -83,7 +87,10 @@ def download_model(request, project_pk):
     s = io.BytesIO()
     # open the zip folder
     zip_file = zipfile.ZipFile(s, "w")
-    for path in [tfidf_path, tfidf_vectorizer_path, readme_path, model_path, temp_labeleddata_file.name, temp_label_file.name]:
+    for path in [
+        tfidf_path, tfidf_vectorizer_path, readme_path, model_path, temp_labeleddata_file.name,
+        temp_label_file.name, dockerfile_path, requirements_path, start_script_path, usage_examples_path
+    ]:
         fdir, fname = os.path.split(path)
         if path == temp_label_file.name:
             fname = "project_" + str(project_pk) + "_labels.csv"
