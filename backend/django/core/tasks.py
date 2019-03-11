@@ -50,7 +50,7 @@ def send_tfidf_creation_task(project_pk):
 
 @shared_task
 def send_check_and_trigger_model_task(project_pk):
-    from core.util.utils_model import check_and_trigger_model
+    from core.utils.utils_model import check_and_trigger_model
     from core.models import Data
 
     datum = Data.objects.filter(project=project_pk).first()
