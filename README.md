@@ -7,7 +7,11 @@ SMART is an open source application designed to help data scientists and researc
 
 - **[SMART Landing Page](https://rtiinternational.github.io/SMART/)** 
 - **[SMART User Documentation](https://smart-app.readthedocs.io/en/latest/#)**
-- **[SMART Pre-Print Manuscript](https://arxiv.org/abs/1812.06591)**
+- **[SMART Publication](http://jmlr.org/papers/v20/18-859.html)**
+
+If you use SMART for a research publication, please consider citing:
+
+```Chew, R., Wenger, M., Kery, C., Nance, J., Richards, K., Hadley, E., & Baumgartner, P. (2019). SMART: An Open Source Data Labeling Platform for Supervised Learning. Journal of Machine Learning Research, 20(82), 1-5.```
 
 ## Development
 
