@@ -57,7 +57,7 @@ def cohens_kappa(project):
     labels_seen = set()
     for d in irr_data:
         d_log = IRRLog.objects.filter(data=d, data__project=project)
-        ##NOTE: Need to figure out why tests fail when this is not there
+        # NOTE: Need to figure out why tests fail when this is not there
         print(list(d_log), len(d_log))
 
         labels = list(set(d_log.values_list("label", flat=True)))

@@ -7,8 +7,6 @@ import {
     Well,
     Tooltip,
     OverlayTrigger,
-    DropdownButton,
-    MenuItem,
     Alert
 } from "react-bootstrap";
 
