@@ -1,8 +1,14 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import ReactTable from 'react-table';
-import { Button, ButtonToolbar, Tooltip, OverlayTrigger, Alert } from "react-bootstrap";
-import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
+import React from "react";
+import PropTypes from "prop-types";
+import ReactTable from "react-table";
+import {
+    Button,
+    ButtonToolbar,
+    Tooltip,
+    OverlayTrigger,
+    Alert
+} from "react-bootstrap";
+import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
 
 const COLUMNS = [
     {
@@ -19,7 +25,11 @@ const COLUMNS = [
         Header: "Data",
         accessor: "data",
         filterMethod: (filter, row) => {
-            if (String(row["data"]).toLowerCase().includes(filter.value.toLowerCase())) {
+            if (
+                String(row["data"])
+                .toLowerCase()
+                .includes(filter.value.toLowerCase())
+            ) {
                 return true;
             } else {
                 return false;
@@ -30,6 +40,11 @@ const COLUMNS = [
         Header: "Old Label",
         accessor: "old_label",
         width: 100
+    },
+    {
+        Header: "Reason for Label",
+        accessor: "label_reason",
+        width: 200
     },
     {
         Header: "Old Label ID",
@@ -44,9 +59,7 @@ const COLUMNS = [
     }
 ];
 
-
 class History extends React.Component {
-
     componentWillMount() {
         this.props.getHistory();
     }
@@ -59,7 +72,8 @@ class History extends React.Component {
                 <Button
                     key={label.pk.toString() + "_" + row.row.id.toString()}
                     bsStyle="primary"
-                    disabled>
+                    disabled
+                >
                     {label.name}
                 </Button>
             );
@@ -67,8 +81,11 @@ class History extends React.Component {
             return (
                 <Button
                     key={label.pk.toString() + "_" + row.row.id.toString()}
-                    onClick={() => changeLabel(row.row.id, row.row.old_label_id, label.pk)}
-                    bsStyle="primary">
+                    onClick={() =>
+                        changeLabel(row.row.id, row.row.old_label_id, label.pk)
+                    }
+                    bsStyle="primary"
+                >
                     {label.name}
                 </Button>
             );
@@ -84,16 +101,25 @@ class History extends React.Component {
                 <div className="sub-row">
                     <p>{row.row.data}</p>
                     <ButtonToolbar bsClass="btn-toolbar pull-right">
-                        {labels.map( (label) => this.getLabelButton(row, label) )}
+                        {labels.map(label => this.getLabelButton(row, label))}
                         <OverlayTrigger
-                            placement = "top"
+                            placement="top"
                             overlay={
                                 <Tooltip id="skip_tooltip">
-                                    Clicking this button will send this document to an administrator for review
+                                    Clicking this button will send this document
+                                    to an administrator for review
                                 </Tooltip>
-                            }>
-                            <Button onClick={() => changeToSkip(row.row.id, row.row.old_label_id)}
-                                bsStyle="info">
+                            }
+                        >
+                            <Button
+                                onClick={() =>
+                                    changeToSkip(
+                                        row.row.id,
+                                        row.row.old_label_id
+                                    )
+                                }
+                                bsStyle="info"
+                            >
                                 Skip
                             </Button>
                         </OverlayTrigger>
@@ -106,7 +132,8 @@ class History extends React.Component {
                     <p>{row.row.data}</p>
                     <Alert bsStyle="warning">
                         <strong>Note:</strong>
-                         This is Inter-rater Reliability data and is not editable.
+                        This is Inter-rater Reliability data and is not
+                        editable.
                     </Alert>
                 </div>
             );
@@ -130,26 +157,38 @@ class History extends React.Component {
             <div>
                 <h3>Instructions</h3>
                 <p>This page allows a coder to change past labels.</p>
-                <p>To annotate, click on a data entry below and select the label from the expanded list of labels. The chart will then update with the new label and current timestamp </p>
-                <p><strong>NOTE:</strong> Data labels that are changed on this page will not effect past model accuracy or data selected by active learning in the past. The training data will only be updated for the next run of the model</p>
+                <p>
+                    To annotate, click on a data entry below and select the
+                    label from the expanded list of labels. The chart will then
+                    update with the new label and current timestamp{" "}
+                </p>
+                <p>
+                    <strong>NOTE:</strong> Data labels that are changed on this
+                    page will not effect past model accuracy or data selected by
+                    active learning in the past. The training data will only be
+                    updated for the next run of the model
+                </p>
                 <CodebookLabelMenuContainer />
                 <ReactTable
                     data={history_data}
                     columns={COLUMNS}
-                    pageSize={(history_data.length < 50) ? history_data.length : 50}
+                    pageSize={
+                        history_data.length < 50 ? history_data.length : 50
+                    }
                     showPageSizeOptions={false}
                     SubComponent={row => this.getSubComponent(row)}
                     filterable={true}
-                    defaultSorted={[{
-                        id: "timestamp",
-                        desc: true
-                    }]}
+                    defaultSorted={[
+                        {
+                            id: "timestamp",
+                            desc: true
+                        }
+                    ]}
                 />
             </div>
         );
     }
 }
-
 
 //This component will have
 // change label (action)
