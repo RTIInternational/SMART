@@ -1,16 +1,8 @@
 import React from "react";
 import PropTypes from "prop-types";
-import {
-    Button,
-    ButtonToolbar,
-    Clearfix,
-    Well,
-    Tooltip,
-    OverlayTrigger,
-    Alert
-} from "react-bootstrap";
+import { Well, Alert } from "react-bootstrap";
 
-const ADMIN = window.ADMIN;
+import LabelForm from "../LabelForm";
 
 class Card extends React.Component {
     constructor(props) {
@@ -50,8 +42,7 @@ class Card extends React.Component {
                 this.props.cards[0],
                 this.state.selected_label.pk,
                 this.state.label_reason,
-                this.props.cards.length,
-                ADMIN
+                this.props.cards.length
             );
             this.setState({
                 label_reason: "",
@@ -76,7 +67,7 @@ class Card extends React.Component {
 
     render() {
         let card;
-        const { message, cards, passCard, labels } = this.props;
+        const { message, cards, passCard, labels, annotateCard } = this.props;
 
         if (!(cards === undefined) && cards.length > 0) {
             //just get the labels from the cards
@@ -85,61 +76,16 @@ class Card extends React.Component {
                     <div className="cardface">
                         <h2> Card {cards[0].id + 1} </h2>
                         <p> {cards[0].text["text"]} </p>
-                        <form onSubmit={this.handleSubmitLabel}>
-                            <ButtonToolbar>
-                                {labels.map(opt => (
-                                    <Button
-                                        key={`deck-button-${opt["name"]}`}
-                                        bsStyle="info"
-                                        onClick={() =>
-                                            this.handleLabelSelect(opt)
-                                        }
-                                    >
-                                        {opt["name"]}
-                                    </Button>
-                                ))}
-                                <p>
-                                    (Optional) Reason for Label:
-                                    <input
-                                        type="text"
-                                        value={this.state.label_reason}
-                                        onChange={this.handleReasonChange}
-                                    />
-                                </p>
-                                <b>Label: {this.state.selected_label.name}</b>
-                            </ButtonToolbar>
-
-                            <ButtonToolbar bsClass="btn-toolbar pull-right">
-                                {this.warningRender()}
-                                <Button type="submit" bsStyle="success">
-                                    Submit
-                                </Button>
-                                <OverlayTrigger
-                                    placement="top"
-                                    overlay={
-                                        <Tooltip id="skip_tooltip">
-                                            Clicking this button will send this
-                                            document to an administrator for
-                                            review
-                                        </Tooltip>
-                                    }
-                                >
-                                    <Button
-                                        onClick={() => {
-                                            passCard(
-                                                cards[0],
-                                                cards.length,
-                                                ADMIN
-                                            );
-                                        }}
-                                        bsStyle="danger"
-                                    >
-                                        Skip
-                                    </Button>
-                                </OverlayTrigger>
-                            </ButtonToolbar>
-                            <Clearfix />
-                        </form>
+                        <LabelForm
+                            data={cards[0]}
+                            labelFunction={annotateCard}
+                            passButton={true}
+                            discardButton={false}
+                            skipFunction={passCard}
+                            discardFunction={() => {}}
+                            labels={labels}
+                            optionalInt={cards.length}
+                        />
                     </div>
                 </div>
             );

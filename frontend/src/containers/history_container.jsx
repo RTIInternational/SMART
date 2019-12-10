@@ -1,27 +1,35 @@
-import React from 'react';
-import { connect } from 'react-redux';
+import React from "react";
+import { connect } from "react-redux";
 
-import { getHistory, changeLabel, changeToSkip } from '../actions/history';
-import History from '../components/History';
+import { getHistory, changeLabel, changeToSkip } from "../actions/history";
+import History from "../components/History";
 
 const PROJECT_ID = window.PROJECT_ID;
 
-const HistoryContainer = (props) => <History {...props} />;
+const HistoryContainer = props => <History {...props} />;
 
-const mapStateToProps = (state) => {
+const mapStateToProps = state => {
     return {
         history_data: state.history.history_data,
         labels: state.card.labels
     };
 };
 
-const mapDispatchToProps = (dispatch) => {
+const mapDispatchToProps = dispatch => {
     return {
         getHistory: () => {
             dispatch(getHistory(PROJECT_ID));
         },
-        changeLabel: (dataID, oldLabelID, labelID) => {
-            dispatch(changeLabel(dataID, oldLabelID, labelID, PROJECT_ID));
+        changeLabel: (dataID, oldLabelID, labelID, labelReason) => {
+            dispatch(
+                changeLabel(
+                    dataID,
+                    oldLabelID,
+                    labelID,
+                    labelReason,
+                    PROJECT_ID
+                )
+            );
         },
         changeToSkip: (dataID, oldLabelID) => {
             dispatch(changeToSkip(dataID, oldLabelID, PROJECT_ID));
@@ -29,4 +37,7 @@ const mapDispatchToProps = (dispatch) => {
     };
 };
 
-export default connect(mapStateToProps, mapDispatchToProps)(HistoryContainer);
+export default connect(
+    mapStateToProps,
+    mapDispatchToProps
+)(HistoryContainer);

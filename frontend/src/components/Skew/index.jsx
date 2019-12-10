@@ -1,10 +1,11 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import ReactTable from 'react-table';
-import { Button, ButtonToolbar, Panel } from "react-bootstrap";
+import React from "react";
+import PropTypes from "prop-types";
+import ReactTable from "react-table";
+import { Panel } from "react-bootstrap";
 import NVD3Chart from "react-nvd3";
-import d3 from 'd3';
-import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
+import d3 from "d3";
+import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
+import LabelForm from "../LabelForm";
 
 const COLUMNS = [
     {
@@ -16,7 +17,11 @@ const COLUMNS = [
         Header: "Unlabeled Data",
         accessor: "data",
         filterMethod: (filter, row) => {
-            if (String(row["data"]).toLowerCase().includes(filter.value.toLowerCase())) {
+            if (
+                String(row["data"])
+                .toLowerCase()
+                .includes(filter.value.toLowerCase())
+            ) {
                 return true;
             } else {
                 return false;
@@ -25,9 +30,7 @@ const COLUMNS = [
     }
 ];
 
-
 class Skew extends React.Component {
-
     componentWillMount() {
         this.props.getUnlabeled();
         this.props.getLabelCounts();
@@ -41,9 +44,21 @@ class Skew extends React.Component {
                 <div className="row">
                     <div className="col-md-6">
                         <h3>Instructions</h3>
-                        <p>This page allows an admin to manually search for and annotate data in the case of a particularly bad data skew.</p>
-                        <p>To the left is a chart that shows the distribution of labels in the project. Below is all of the unlabeled data that are not in a queue.</p>
-                        <p>To annotate, click on a data entry below and select the label from the expanded list of labels. As you label data the chart to the left will update.</p>
+                        <p>
+                            This page allows an admin to manually search for and
+                            annotate data in the case of a particularly bad data
+                            skew.
+                        </p>
+                        <p>
+                            To the left is a chart that shows the distribution
+                            of labels in the project. Below is all of the
+                            unlabeled data that are not in a queue.
+                        </p>
+                        <p>
+                            To annotate, click on a data entry below and select
+                            the label from the expanded list of labels. As you
+                            label data the chart to the left will update.
+                        </p>
                     </div>
                     <div className="col-md-6">
                         <Panel id="chart_panel">
@@ -58,7 +73,7 @@ class Skew extends React.Component {
                                 yAxis={{
                                     axisLabel: "Number of Data Annotated",
                                     axisLabelDistance: -5,
-                                    tickFormat: d3.format(',.01f')
+                                    tickFormat: d3.format(",.01f")
                                 }}
                                 xAxis={{
                                     axisLabel: "Label",
@@ -80,22 +95,22 @@ class Skew extends React.Component {
                     columns={COLUMNS}
                     filterable={true}
                     showPageSizeOptions={false}
-                    pageSize={(unlabeled_data.length < 50) ? unlabeled_data.length : 50}
+                    pageSize={
+                        unlabeled_data.length < 50 ? unlabeled_data.length : 50
+                    }
                     SubComponent={row => {
                         return (
                             <div className="sub-row">
                                 <p id="skew_text">{row.row.data}</p>
-                                <div id="skew_buttons">
-                                    <ButtonToolbar bsClass="btn-toolbar pull-right">
-                                        {labels.map( (label) => (
-                                            <Button key={label.pk.toString() + "_" + row.row.id.toString()}
-                                                onClick={() => skewLabel(row.row.id, label.pk)}
-                                                bsStyle="primary">
-                                                {label.name}
-                                            </Button>
-                                        ))}
-                                    </ButtonToolbar>
-                                </div>
+                                <LabelForm
+                                    data={row.row.id}
+                                    labelFunction={skewLabel}
+                                    passButton={false}
+                                    discardButton={false}
+                                    skipFunction={() => {}}
+                                    discardFunction={() => {}}
+                                    labels={labels}
+                                />
                             </div>
                         );
                     }}
@@ -104,7 +119,6 @@ class Skew extends React.Component {
         );
     }
 }
-
 
 //This component will have
 //data for the table

@@ -282,9 +282,17 @@ def modify_label(request, data_pk):
 
     label = Label.objects.get(pk=request.data["labelID"])
     old_label = Label.objects.get(pk=request.data["oldLabelID"])
+
+    label_reason = ""
+    if "labelReason" in request.data:
+        label_reason = request.data["labelReason"]
+
     with transaction.atomic():
         DataLabel.objects.filter(data=data, label=old_label).update(
-            label=label, time_to_label=0, timestamp=timezone.now()
+            label=label,
+            label_reason=label_reason,
+            time_to_label=0,
+            timestamp=timezone.now(),
         )
 
         LabelChangeLog.objects.create(
@@ -526,6 +534,9 @@ def label_skew_label(request, data_pk):
     datum = Data.objects.get(pk=data_pk)
     project = datum.project
     label = Label.objects.get(pk=request.data["labelID"])
+    label_reason = ""
+    if "labelReason" in request.data:
+        label_reason = request.data["labelReason"]
     profile = request.user.profile
     response = {}
 
@@ -535,6 +546,7 @@ def label_skew_label(request, data_pk):
             DataLabel.objects.create(
                 data=datum,
                 label=label,
+                label_reason=label_reason,
                 profile=profile,
                 training_set=current_training_set,
                 time_to_label=None,
@@ -562,6 +574,9 @@ def label_admin_label(request, data_pk):
     datum = Data.objects.get(pk=data_pk)
     project = datum.project
     label = Label.objects.get(pk=request.data["labelID"])
+    label_reason = ""
+    if "labelReason" in request.data:
+        label_reason = request.data["labelReason"]
     profile = request.user.profile
     response = {}
 
@@ -572,6 +587,7 @@ def label_admin_label(request, data_pk):
         DataLabel.objects.create(
             data=datum,
             label=label,
+            label_reason=label_reason,
             profile=profile,
             training_set=current_training_set,
             time_to_label=None,
