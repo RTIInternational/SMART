@@ -121,6 +121,7 @@ print(predictions)
 labels_frame = pd.read_csv(<<project_#_labels.csv>>)
 label_dict = labels_frame.set_index("Label_ID").to_dict()["Name"]
 
+
 # get the predictions as actual labels
 predictions = [label_dict[pred] for pred in predictions]
 print(predictions)
