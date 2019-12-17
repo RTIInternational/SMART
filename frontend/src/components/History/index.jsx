@@ -117,6 +117,7 @@ class History extends React.Component {
 
     render() {
         const { history_data } = this.props;
+        console.log(history_data);
 
         let page_sizes = [1];
         let counter = 1;

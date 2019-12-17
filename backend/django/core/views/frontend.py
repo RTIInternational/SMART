@@ -12,10 +12,18 @@ from formtools.wizard.views import SessionWizardView
 
 import pandas as pd
 
-from core.models import (Project, Data, Label, TrainingSet)
-from core.forms import (ProjectUpdateOverviewForm, PermissionsFormSet, LabelFormSet,
-                        ProjectWizardForm, DataWizardForm, AdvancedWizardForm,
-                        CodeBookWizardForm, LabelDescriptionFormSet)
+from core.models import Project, Data, Label, TrainingSet, ProjectMetaData
+from core.forms import (
+    ProjectUpdateOverviewForm,
+    PermissionsFormSet,
+    LabelFormSet,
+    ProjectWizardForm,
+    DataFormatWizardForm,
+    DataWizardForm,
+    AdvancedWizardForm,
+    CodeBookWizardForm,
+    LabelDescriptionFormSet,
+)
 from core.templatetags import project_extras
 from core.utils.util import save_codebook_file, upload_data
 from core.utils.utils_queue import add_queue, find_queue_length
@@ -24,59 +32,72 @@ from core.utils.utils_annotate import batch_unassign
 
 # Projects
 class ProjectCode(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
-    template_name = 'smart/smart.html'
-    permission_denied_message = 'You must have permissions to access the coding page for this project.'
+    template_name = "smart/smart.html"
+    permission_denied_message = (
+        "You must have permissions to access the coding page for this project."
+    )
     raise_exception = True
 
     def test_func(self):
-        project = Project.objects.get(pk=self.kwargs['pk'])
+        project = Project.objects.get(pk=self.kwargs["pk"])
 
-        return project_extras.proj_permission_level(project, self.request.user.profile) > 0
+        return (
+            project_extras.proj_permission_level(project, self.request.user.profile) > 0
+        )
 
     def get_context_data(self, **kwargs):
         ctx = super(ProjectCode, self).get_context_data(**kwargs)
-        project = Project.objects.get(pk=self.kwargs['pk'])
-        ctx['pk'] = self.kwargs['pk']
-        admin = project_extras.proj_permission_level(project, self.request.user.profile) > 1
+        project = Project.objects.get(pk=self.kwargs["pk"])
+        ctx["pk"] = self.kwargs["pk"]
+        admin = (
+            project_extras.proj_permission_level(project, self.request.user.profile) > 1
+        )
         if admin:
-            ctx['admin'] = "true"
+            ctx["admin"] = "true"
         else:
-            ctx['admin'] = "false"
-        ctx['project'] = Project.objects.get(pk=self.kwargs['pk'])
+            ctx["admin"] = "false"
+        ctx["project"] = Project.objects.get(pk=self.kwargs["pk"])
 
         return ctx
 
 
 class ProjectAdmin(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
-    template_name = 'projects/admin/admin.html'
-    permission_denied_message = 'You must be an Admin or Project Creator to access the Admin page.'
+    template_name = "projects/admin/admin.html"
+    permission_denied_message = (
+        "You must be an Admin or Project Creator to access the Admin page."
+    )
     raise_exception = True
 
     def test_func(self):
-        project = Project.objects.get(pk=self.kwargs['pk'])
+        project = Project.objects.get(pk=self.kwargs["pk"])
 
-        return project_extras.proj_permission_level(project, self.request.user.profile) >= 2
+        return (
+            project_extras.proj_permission_level(project, self.request.user.profile)
+            >= 2
+        )
 
     def get_context_data(self, **kwargs):
         ctx = super(ProjectAdmin, self).get_context_data(**kwargs)
 
-        ctx['project'] = Project.objects.get(pk=self.kwargs['pk'])
+        ctx["project"] = Project.objects.get(pk=self.kwargs["pk"])
 
         return ctx
 
 
 class ProjectList(LoginRequiredMixin, ListView):
     model = Project
-    template_name = 'projects/list.html'
+    template_name = "projects/list.html"
     paginate_by = 10
-    ordering = 'name'
+    ordering = "name"
 
     def get_queryset(self):
         # Projects profile created
         qs1 = Project.objects.filter(creator=self.request.user.profile)
 
         # Projects profile has permissions for
-        qs2 = Project.objects.filter(projectpermissions__profile=self.request.user.profile)
+        qs2 = Project.objects.filter(
+            projectpermissions__profile=self.request.user.profile
+        )
 
         qs = qs1 | qs2
 
@@ -85,33 +106,37 @@ class ProjectList(LoginRequiredMixin, ListView):
 
 class ProjectDetail(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     model = Project
-    template_name = 'projects/detail.html'
-    permission_denied_message = 'You must have permissions to access this project page.'
+    template_name = "projects/detail.html"
+    permission_denied_message = "You must have permissions to access this project page."
     raise_exception = True
 
     def test_func(self):
-        project = Project.objects.get(pk=self.kwargs['pk'])
+        project = Project.objects.get(pk=self.kwargs["pk"])
 
-        return project_extras.proj_permission_level(project, self.request.user.profile) > 0
+        return (
+            project_extras.proj_permission_level(project, self.request.user.profile) > 0
+        )
 
 
 class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
     file_storage = FileSystemStorage(location=settings.DATA_DIR)
     form_list = [
-        ('project', ProjectWizardForm),
-        ('labels', LabelFormSet),
-        ('permissions', PermissionsFormSet),
-        ('advanced', AdvancedWizardForm),
-        ('codebook', CodeBookWizardForm),
-        ('data', DataWizardForm)
+        ("project", ProjectWizardForm),
+        ("labels", LabelFormSet),
+        ("permissions", PermissionsFormSet),
+        ("advanced", AdvancedWizardForm),
+        ("dataformat", DataFormatWizardForm),
+        ("codebook", CodeBookWizardForm),
+        ("data", DataWizardForm),
     ]
     template_list = {
-        'project': 'projects/create/create_wizard_overview.html',
-        'labels': 'projects/create/create_wizard_labels.html',
-        'permissions': 'projects/create/create_wizard_permissions.html',
-        'advanced': 'projects/create/create_wizard_advanced.html',
-        'codebook': 'projects/create/create_wizard_codebook.html',
-        'data': 'projects/create/create_wizard_data.html'
+        "project": "projects/create/create_wizard_overview.html",
+        "labels": "projects/create/create_wizard_labels.html",
+        "permissions": "projects/create/create_wizard_permissions.html",
+        "advanced": "projects/create/create_wizard_advanced.html",
+        "dataformat": "projects/create/create_wizard_dataformat.html",
+        "codebook": "projects/create/create_wizard_codebook.html",
+        "data": "projects/create/create_wizard_data.html",
     }
 
     def get_template_names(self):
@@ -119,34 +144,34 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
     def get_form_kwargs(self, step):
         kwargs = {}
-        if step == 'data':
+        if step == "data":
             temp = []
-            for label in self.get_cleaned_data_for_step('labels'):
-                if 'name' in label.keys():
-                    temp.append(label['name'])
-            kwargs['labels'] = temp
+            for label in self.get_cleaned_data_for_step("labels"):
+                if "name" in label.keys():
+                    temp.append(label["name"])
+            kwargs["labels"] = temp
+            kwargs["dataformat"] = self.get_cleaned_data_for_step("dataformat")
         return kwargs
 
     def get_form_kwargs_special(self, step=None):
         form_kwargs = {}
 
-        if step == 'permissions':
-            form_kwargs.update({
-                'action': 'create',
-                'profile': self.request.user.profile
-            })
+        if step == "permissions":
+            form_kwargs.update(
+                {"action": "create", "profile": self.request.user.profile}
+            )
 
         return form_kwargs
 
     def get_form_prefix(self, step=None, form=None):
-        prefix = ''
+        prefix = ""
 
-        if step == 'labels':
-            prefix = 'label_set'
-        if step == 'permissions':
-            prefix = 'permission_set'
-        if step == 'advanced':
-            prefix = 'advanced'
+        if step == "labels":
+            prefix = "label_set"
+        if step == "permissions":
+            prefix = "permission_set"
+        if step == "advanced":
+            prefix = "advanced"
 
         return prefix
 
@@ -164,33 +189,36 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
         # prepare the kwargs for the form instance.
         kwargs = self.get_form_kwargs(step)
-        kwargs.update({
-            'data': data,
-            'files': files,
-            'prefix': self.get_form_prefix(step, form_class),
-            'initial': self.get_form_initial(step),
-        })
+        kwargs.update(
+            {
+                "data": data,
+                "files": files,
+                "prefix": self.get_form_prefix(step, form_class),
+                "initial": self.get_form_initial(step),
+            }
+        )
         if issubclass(form_class, (forms.ModelForm, forms.models.BaseInlineFormSet)):
             # If the form is based on ModelForm or InlineFormSet,
             # add instance if available and not previously set.
-            kwargs.setdefault('instance', self.get_form_instance(step))
+            kwargs.setdefault("instance", self.get_form_instance(step))
         elif issubclass(form_class, forms.models.BaseModelFormSet):
             # If the form is based on ModelFormSet, add queryset if available
             # and not previous set.
-            kwargs.setdefault('queryset', self.get_form_instance(step))
+            kwargs.setdefault("queryset", self.get_form_instance(step))
 
-        if step == 'permissions':
+        if step == "permissions":
             return form_class(**kwargs, form_kwargs=self.get_form_kwargs_special(step))
         else:
             return form_class(**kwargs)
 
     def done(self, form_list, form_dict, **kwargs):
-        proj = form_dict['project']
-        labels = form_dict['labels']
-        permissions = form_dict['permissions']
-        advanced = form_dict['advanced']
-        data = form_dict['data']
-        codebook_data = form_dict['codebook']
+        proj = form_dict["project"]
+        labels = form_dict["labels"]
+        permissions = form_dict["permissions"]
+        advanced = form_dict["advanced"]
+        data = form_dict["data"]
+        codebook_data = form_dict["codebook"]
+        dataformat = form_dict["dataformat"]
 
         with transaction.atomic():
             # Project
@@ -198,20 +226,26 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             advanced_data = advanced.cleaned_data
 
             proj_obj.creator = self.request.user.profile
+
             # Advanced Options
             proj_obj.save()
             proj_pk = proj_obj.pk
             # Save the codebook file
 
-            cb_data = codebook_data.cleaned_data['data']
+            cb_data = codebook_data.cleaned_data["data"]
             if cb_data != "":
                 cb_filepath = save_codebook_file(cb_data, proj_pk)
             else:
                 cb_filepath = ""
             proj_obj.codebook_file = cb_filepath
             if advanced_data["batch_size"] == 0:
-                batch_size = 10 * len([x for x in labels if x.cleaned_data
-                                       != {} and not x.cleaned_data['DELETE']])
+                batch_size = 10 * len(
+                    [
+                        x
+                        for x in labels
+                        if x.cleaned_data != {} and not x.cleaned_data["DELETE"]
+                    ]
+                )
             else:
                 batch_size = advanced_data["batch_size"]
 
@@ -221,6 +255,18 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             proj_obj.num_users_irr = advanced_data["num_users_irr"]
             proj_obj.classifier = advanced_data["classifier"]
             proj_obj.save()
+
+            # Project metadata options
+            cleaned_dataformat = dataformat.cleaned_data
+            if cleaned_dataformat["data_type_choice"] == "Media":
+                project_meta = ProjectMetaData.objects.create(
+                    project=proj_obj,
+                    has_title=cleaned_dataformat["has_title"],
+                    has_url=cleaned_dataformat["has_url"],
+                    has_created_date=cleaned_dataformat["has_created_date"],
+                    has_username=cleaned_dataformat["has_username"],
+                    has_user_url=cleaned_dataformat["has_user_url"],
+                )
 
             # Training Set
             TrainingSet.objects.create(project=proj_obj, set_number=0)
@@ -235,14 +281,22 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
             # Queue
 
-            num_coders = len([x for x in permissions if x.cleaned_data
-                              != {} and not x.cleaned_data['DELETE']]) + 1
+            num_coders = (
+                len(
+                    [
+                        x
+                        for x in permissions
+                        if x.cleaned_data != {} and not x.cleaned_data["DELETE"]
+                    ]
+                )
+                + 1
+            )
             q_length = find_queue_length(batch_size, num_coders)
 
             queue = add_queue(project=proj_obj, length=q_length)
 
             # Data
-            f_data = data.cleaned_data['data']
+            f_data = data.cleaned_data["data"]
             add_queue(project=proj_obj, length=2000000, type="admin")
             irr_queue = add_queue(project=proj_obj, length=2000000, type="irr")
             upload_data(f_data, proj_obj, queue, irr_queue, batch_size)
@@ -251,19 +305,24 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
 
 class ProjectUpdateLanding(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
-    template_name = 'projects/update_landing.html'
-    permission_denied_message = 'You must be an Admin or Project Creator to access the Admin page.'
+    template_name = "projects/update_landing.html"
+    permission_denied_message = (
+        "You must be an Admin or Project Creator to access the Admin page."
+    )
     raise_exception = True
 
     def test_func(self):
-        project = Project.objects.get(pk=self.kwargs['pk'])
+        project = Project.objects.get(pk=self.kwargs["pk"])
 
-        return project_extras.proj_permission_level(project, self.request.user.profile) >= 2
+        return (
+            project_extras.proj_permission_level(project, self.request.user.profile)
+            >= 2
+        )
 
     def get_context_data(self, **kwargs):
         ctx = super(ProjectUpdateLanding, self).get_context_data(**kwargs)
 
-        ctx['project'] = Project.objects.get(pk=self.kwargs['pk'])
+        ctx["project"] = Project.objects.get(pk=self.kwargs["pk"])
 
         return ctx
 
@@ -271,14 +330,19 @@ class ProjectUpdateLanding(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 class ProjectUpdateOverview(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Project
     form_class = ProjectUpdateOverviewForm
-    template_name = 'projects/update/overview.html'
-    permission_denied_message = 'You must be an Admin or Project Creator to access the Project Update page.'
+    template_name = "projects/update/overview.html"
+    permission_denied_message = (
+        "You must be an Admin or Project Creator to access the Project Update page."
+    )
     raise_exception = True
 
     def test_func(self):
-        project = Project.objects.get(pk=self.kwargs['pk'])
+        project = Project.objects.get(pk=self.kwargs["pk"])
 
-        return project_extras.proj_permission_level(project, self.request.user.profile) >= 2
+        return (
+            project_extras.proj_permission_level(project, self.request.user.profile)
+            >= 2
+        )
 
     def form_valid(self, form):
         context = self.get_context_data()
@@ -293,29 +357,37 @@ class ProjectUpdateOverview(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
 class ProjectUpdateData(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Project
     form_class = DataWizardForm
-    template_name = 'projects/update/data.html'
-    permission_denied_message = 'You must be an Admin or Project Creator to access the Project Update page.'
+    template_name = "projects/update/data.html"
+    permission_denied_message = (
+        "You must be an Admin or Project Creator to access the Project Update page."
+    )
     raise_exception = True
 
     def test_func(self):
-        project = Project.objects.get(pk=self.kwargs['pk'])
+        project = Project.objects.get(pk=self.kwargs["pk"])
 
-        return project_extras.proj_permission_level(project, self.request.user.profile) >= 2
+        return (
+            project_extras.proj_permission_level(project, self.request.user.profile)
+            >= 2
+        )
 
     def get_form_kwargs(self):
         form_kwargs = super(ProjectUpdateData, self).get_form_kwargs()
 
-        form_kwargs['labels'] = list(Label.objects.filter(
-            project=form_kwargs['instance']).values_list('name', flat=True))
+        form_kwargs["labels"] = list(
+            Label.objects.filter(project=form_kwargs["instance"]).values_list(
+                "name", flat=True
+            )
+        )
 
-        del form_kwargs['instance']
+        del form_kwargs["instance"]
 
         return form_kwargs
 
     def get_context_data(self, **kwargs):
         data = super(ProjectUpdateData, self).get_context_data(**kwargs)
 
-        data['num_data'] = Data.objects.filter(project=data['project']).count()
+        data["num_data"] = Data.objects.filter(project=data["project"]).count()
 
         return data
 
@@ -324,7 +396,7 @@ class ProjectUpdateData(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
         if form.is_valid():
             with transaction.atomic():
-                f_data = form.cleaned_data.get('data', False)
+                f_data = form.cleaned_data.get("data", False)
                 if isinstance(f_data, pd.DataFrame):
                     upload_data(f_data, self.object, batch_size=self.object.batch_size)
 
@@ -336,19 +408,24 @@ class ProjectUpdateData(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 class ProjectUpdateCodebook(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Project
     form_class = CodeBookWizardForm
-    template_name = 'projects/update/codebook.html'
-    permission_denied_message = 'You must be an Admin or Project Creator to access the Project Update page.'
+    template_name = "projects/update/codebook.html"
+    permission_denied_message = (
+        "You must be an Admin or Project Creator to access the Project Update page."
+    )
     raise_exception = True
 
     def test_func(self):
-        project = Project.objects.get(pk=self.kwargs['pk'])
+        project = Project.objects.get(pk=self.kwargs["pk"])
 
-        return project_extras.proj_permission_level(project, self.request.user.profile) >= 2
+        return (
+            project_extras.proj_permission_level(project, self.request.user.profile)
+            >= 2
+        )
 
     def get_form_kwargs(self):
         form_kwargs = super(ProjectUpdateCodebook, self).get_form_kwargs()
 
-        del form_kwargs['instance']
+        del form_kwargs["instance"]
 
         return form_kwargs
 
@@ -356,7 +433,7 @@ class ProjectUpdateCodebook(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
         context = self.get_context_data()
         if form.is_valid():
             with transaction.atomic():
-                cb_data = form.cleaned_data.get('data', False)
+                cb_data = form.cleaned_data.get("data", False)
                 if cb_data and cb_data != "":
                     cb_filepath = save_codebook_file(cb_data, self.object.pk)
                     self.object.codebook_file = cb_filepath
@@ -369,44 +446,66 @@ class ProjectUpdateCodebook(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
 
 class ProjectUpdatePermissions(LoginRequiredMixin, UserPassesTestMixin, View):
     model = Project
-    template_name = 'projects/update/permissions.html'
-    permission_denied_message = 'You must be an Admin or Project Creator to access the Project Update page.'
+    template_name = "projects/update/permissions.html"
+    permission_denied_message = (
+        "You must be an Admin or Project Creator to access the Project Update page."
+    )
     raise_exception = True
 
     def test_func(self):
-        project = Project.objects.get(pk=self.kwargs['pk'])
+        project = Project.objects.get(pk=self.kwargs["pk"])
 
-        return project_extras.proj_permission_level(project, self.request.user.profile) >= 2
+        return (
+            project_extras.proj_permission_level(project, self.request.user.profile)
+            >= 2
+        )
 
     def get_context_data(self, **kwargs):
         context = {}
-        project = Project.objects.get(pk=self.kwargs['pk'])
-        context['project'] = project
+        project = Project.objects.get(pk=self.kwargs["pk"])
+        context["project"] = project
 
         if self.request.POST:
-            context['permissions'] = PermissionsFormSet(self.request.POST, instance=project, prefix='permissions_set', form_kwargs={
-                                                        'action': 'update', 'creator': project.creator, 'profile': self.request.user.profile})
+            context["permissions"] = PermissionsFormSet(
+                self.request.POST,
+                instance=project,
+                prefix="permissions_set",
+                form_kwargs={
+                    "action": "update",
+                    "creator": project.creator,
+                    "profile": self.request.user.profile,
+                },
+            )
         else:
-            context['permissions'] = PermissionsFormSet(instance=project, prefix='permissions_set', form_kwargs={
-                                                        'action': 'update', 'creator': project.creator, 'profile': self.request.user.profile})
+            context["permissions"] = PermissionsFormSet(
+                instance=project,
+                prefix="permissions_set",
+                form_kwargs={
+                    "action": "update",
+                    "creator": project.creator,
+                    "profile": self.request.user.profile,
+                },
+            )
 
         return context
 
     def get_success_url(self):
         context = self.get_context_data()
-        return context['project'].get_absolute_url()
+        return context["project"].get_absolute_url()
 
     def get(self, request, *args, **kwargs):
         return render(request, self.template_name, context=self.get_context_data())
 
     def post(self, request, *args, **kwargs):
         context = self.get_context_data()
-        permissions = context['permissions']
+        permissions = context["permissions"]
         if permissions.is_valid():
             with transaction.atomic():
-                permissions.instance = context['project']
+                permissions.instance = context["project"]
                 for deleted_permissions in permissions.deleted_forms:
-                    del_perm_profile = deleted_permissions.cleaned_data.get('profile', None)
+                    del_perm_profile = deleted_permissions.cleaned_data.get(
+                        "profile", None
+                    )
                     batch_unassign(del_perm_profile)
                 permissions.save()
 
@@ -417,41 +516,53 @@ class ProjectUpdatePermissions(LoginRequiredMixin, UserPassesTestMixin, View):
 
 class ProjectUpdateLabel(LoginRequiredMixin, UserPassesTestMixin, View):
     model = Project
-    template_name = 'projects/update/labels.html'
-    permission_denied_message = 'You must be an Admin or Project Creator to access the Project Update page.'
+    template_name = "projects/update/labels.html"
+    permission_denied_message = (
+        "You must be an Admin or Project Creator to access the Project Update page."
+    )
     raise_exception = True
 
     def test_func(self):
-        project = Project.objects.get(pk=self.kwargs['pk'])
+        project = Project.objects.get(pk=self.kwargs["pk"])
 
-        return project_extras.proj_permission_level(project, self.request.user.profile) >= 2
+        return (
+            project_extras.proj_permission_level(project, self.request.user.profile)
+            >= 2
+        )
 
     def get_context_data(self, **kwargs):
         context = {}
-        project = Project.objects.get(pk=self.kwargs['pk'])
-        context['project'] = project
+        project = Project.objects.get(pk=self.kwargs["pk"])
+        context["project"] = project
 
         if self.request.POST:
-            context['label_descriptions'] = LabelDescriptionFormSet(
-                self.request.POST, instance=project, prefix='label_descriptions_set', form_kwargs={'action': 'update'})
+            context["label_descriptions"] = LabelDescriptionFormSet(
+                self.request.POST,
+                instance=project,
+                prefix="label_descriptions_set",
+                form_kwargs={"action": "update"},
+            )
         else:
-            context['label_descriptions'] = LabelDescriptionFormSet(
-                instance=project, prefix='label_descriptions_set', form_kwargs={'action': 'update'})
+            context["label_descriptions"] = LabelDescriptionFormSet(
+                instance=project,
+                prefix="label_descriptions_set",
+                form_kwargs={"action": "update"},
+            )
         return context
 
     def get_success_url(self):
         context = self.get_context_data()
-        return context['project'].get_absolute_url()
+        return context["project"].get_absolute_url()
 
     def get(self, request, *args, **kwargs):
         return render(request, self.template_name, context=self.get_context_data())
 
     def post(self, request, *args, **kwargs):
         context = self.get_context_data()
-        labels = context['label_descriptions']
+        labels = context["label_descriptions"]
         if labels.is_valid():
             with transaction.atomic():
-                labels.instance = context['project']
+                labels.instance = context["project"]
                 labels.save()
 
                 return redirect(self.get_success_url())
@@ -461,12 +572,17 @@ class ProjectUpdateLabel(LoginRequiredMixin, UserPassesTestMixin, View):
 
 class ProjectDelete(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Project
-    template_name = 'projects/confirm_delete.html'
-    success_url = reverse_lazy('projects:project_list')
-    permission_denied_message = 'You must be an Admin or Project Creator to access the Project Delete page.'
+    template_name = "projects/confirm_delete.html"
+    success_url = reverse_lazy("projects:project_list")
+    permission_denied_message = (
+        "You must be an Admin or Project Creator to access the Project Delete page."
+    )
     raise_exception = True
 
     def test_func(self):
-        project = Project.objects.get(pk=self.kwargs['pk'])
+        project = Project.objects.get(pk=self.kwargs["pk"])
 
-        return project_extras.proj_permission_level(project, self.request.user.profile) >= 2
+        return (
+            project_extras.proj_permission_level(project, self.request.user.profile)
+            >= 2
+        )

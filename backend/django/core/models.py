@@ -12,7 +12,7 @@ class Profile(models.Model):
     # Link to the auth user, since we're basically just extending it
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     labeled_data = models.ManyToManyField(
-        'Data', related_name='labelers', through='DataLabel'
+        "Data", related_name="labelers", through="DataLabel"
     )
 
     def __str__(self):
@@ -33,47 +33,53 @@ def save_user(sender, instance, **kwargs):
 class Project(models.Model):
     name = models.TextField()
     description = models.TextField(blank=True)
-    creator = models.ForeignKey('Profile')
-    percentage_irr = models.FloatField(default=10.0, validators=[
-                                       MinValueValidator(0.0), MaxValueValidator(100.0)])
+    creator = models.ForeignKey("Profile")
+    percentage_irr = models.FloatField(
+        default=10.0, validators=[MinValueValidator(0.0), MaxValueValidator(100.0)]
+    )
     num_users_irr = models.IntegerField(default=2, validators=[MinValueValidator(2)])
-    codebook_file = models.TextField(default='')
+    codebook_file = models.TextField(default="")
     batch_size = models.IntegerField(default=30)
-    ''' Advanced options '''
+    """ Advanced options """
     # the current options are 'random', 'least confident', 'entropy', and 'margin sampling'
     ACTIVE_L_CHOICES = [
         ("least confident", "By Uncertainty using Least Confident"),
         ("margin sampling", "By Uncertainty using the Margin"),
         ("entropy", "By Uncertainty using Entropy"),
-        ("random", "Randomly (No Active Learning)")
+        ("random", "Randomly (No Active Learning)"),
     ]
 
     CLASSIFIER_CHOICES = [
         ("logistic regression", "Logistic Regression (default)"),
         ("svm", "Support Vector Machine (warning: slower for large datasets)"),
         ("random forest", "Random Forest"),
-        ("gnb", "Gaussian Naive Bayes")
+        ("gnb", "Gaussian Naive Bayes"),
     ]
 
     learning_method = models.CharField(
-        max_length=15, default='least confident', choices=ACTIVE_L_CHOICES)
+        max_length=15, default="least confident", choices=ACTIVE_L_CHOICES
+    )
     classifier = models.CharField(
-        max_length=19, default="logistic regression", choices=CLASSIFIER_CHOICES, null=True)
+        max_length=19,
+        default="logistic regression",
+        choices=CLASSIFIER_CHOICES,
+        null=True,
+    )
 
     def get_absolute_url(self):
-        return reverse('projects:project_detail', kwargs={'pk': self.pk})
+        return reverse("projects:project_detail", kwargs={"pk": self.pk})
 
     def get_current_training_set(self):
         try:
-            return self.trainingset_set.all().order_by('-set_number')[0]
+            return self.trainingset_set.all().order_by("-set_number")[0]
         except IndexError:
             return None
 
     def admin_count(self):
-        return self.projectpermissions_set.all().filter(permission='ADMIN').count()
+        return self.projectpermissions_set.all().filter(permission="ADMIN").count()
 
     def coder_count(self):
-        return self.projectpermissions_set.all().filter(permission='CODER').count()
+        return self.projectpermissions_set.all().filter(permission="CODER").count()
 
     def labeled_data_count(self):
         return self.data_set.all().filter(datalabel__isnull=False).count()
@@ -87,33 +93,32 @@ class Project(models.Model):
 
 class ProjectPermissions(models.Model):
     class Meta:
-        unique_together = (('profile', 'project'))
-    PERM_CHOICES = (
-        ('ADMIN', 'Admin'),
-        ('CODER', 'Coder'),
-    )
-    profile = models.ForeignKey('Profile')
-    project = models.ForeignKey('Project')
+        unique_together = ("profile", "project")
+
+    PERM_CHOICES = (("ADMIN", "Admin"), ("CODER", "Coder"))
+    profile = models.ForeignKey("Profile")
+    project = models.ForeignKey("Project")
     permission = models.CharField(max_length=5, choices=PERM_CHOICES)
 
 
 class Model(models.Model):
     pickle_path = models.TextField()
-    project = models.ForeignKey('Project')
-    training_set = models.ForeignKey('TrainingSet')
+    project = models.ForeignKey("Project")
+    training_set = models.ForeignKey("TrainingSet")
     cv_accuracy = models.FloatField()
     cv_metrics = JSONField()
     predictions = models.ManyToManyField(
-        'Data', related_name='models', through='DataPrediction'
+        "Data", related_name="models", through="DataPrediction"
     )
 
 
 class Data(models.Model):
     class Meta:
-        unique_together = (('hash', 'upload_id_hash', 'project'))
+        unique_together = ("hash", "upload_id_hash", "project")
+
     text = models.TextField()
     hash = models.CharField(max_length=128)
-    project = models.ForeignKey('Project')
+    project = models.ForeignKey("Project")
     irr_ind = models.BooleanField(default=False)
     upload_id = models.CharField(max_length=128)
     upload_id_hash = models.CharField(max_length=128)
@@ -124,9 +129,12 @@ class Data(models.Model):
 
 class Label(models.Model):
     class Meta:
-        unique_together = (('name', 'project'))
+        unique_together = ("name", "project")
+
     name = models.TextField()
-    project = models.ForeignKey('Project', related_name='labels', on_delete=models.CASCADE)
+    project = models.ForeignKey(
+        "Project", related_name="labels", on_delete=models.CASCADE
+    )
     description = models.TextField(blank=True)
 
     def __str__(self):
@@ -135,28 +143,30 @@ class Label(models.Model):
 
 class IRRLog(models.Model):
     class Meta:
-        unique_together = (('data', 'profile'))
-    data = models.ForeignKey('Data')
-    profile = models.ForeignKey('Profile')
-    label = models.ForeignKey('Label', null=True)
+        unique_together = ("data", "profile")
+
+    data = models.ForeignKey("Data")
+    profile = models.ForeignKey("Profile")
+    label = models.ForeignKey("Label", null=True)
     timestamp = models.DateTimeField(null=True, default=None)
 
 
 class DataLabel(models.Model):
     class Meta:
-        unique_together = (('data', 'profile'))
-    data = models.ForeignKey('Data')
-    profile = models.ForeignKey('Profile')
-    label = models.ForeignKey('Label')
-    training_set = models.ForeignKey('TrainingSet')
+        unique_together = ("data", "profile")
+
+    data = models.ForeignKey("Data")
+    profile = models.ForeignKey("Profile")
+    label = models.ForeignKey("Label")
+    training_set = models.ForeignKey("TrainingSet")
     time_to_label = models.IntegerField(null=True)
     timestamp = models.DateTimeField(null=True, default=None)
 
 
 class LabelChangeLog(models.Model):
-    project = models.ForeignKey('Project')
-    data = models.ForeignKey('Data')
-    profile = models.ForeignKey('Profile')
+    project = models.ForeignKey("Project")
+    data = models.ForeignKey("Data")
+    profile = models.ForeignKey("Profile")
     old_label = models.TextField()
     new_label = models.TextField()
     change_timestamp = models.DateTimeField(null=True, default=None)
@@ -164,66 +174,84 @@ class LabelChangeLog(models.Model):
 
 class DataPrediction(models.Model):
     class Meta:
-        unique_together = (('data', 'model', 'label'))
-    data = models.ForeignKey('Data')
-    model = models.ForeignKey('Model')
-    label = models.ForeignKey('Label')
+        unique_together = ("data", "model", "label")
+
+    data = models.ForeignKey("Data")
+    model = models.ForeignKey("Model")
+    label = models.ForeignKey("Label")
     predicted_probability = models.FloatField()
 
 
 class DataUncertainty(models.Model):
     class Meta:
-        unique_together = (('data', 'model'))
-    data = models.ForeignKey('Data')
-    model = models.ForeignKey('Model')
+        unique_together = ("data", "model")
+
+    data = models.ForeignKey("Data")
+    model = models.ForeignKey("Model")
     least_confident = models.FloatField()
     margin_sampling = models.FloatField()
     entropy = models.FloatField()
 
 
 class Queue(models.Model):
-    profile = models.ForeignKey('Profile', blank=True, null=True)
-    project = models.ForeignKey('Project')
-    QUEUE_TYPES = (
-        ('admin', 'Admin'),
-        ('irr', 'IRR'),
-        ('normal', 'Normal')
-    )
-    type = models.CharField(max_length=6, default='normal', choices=QUEUE_TYPES)
+    profile = models.ForeignKey("Profile", blank=True, null=True)
+    project = models.ForeignKey("Project")
+    QUEUE_TYPES = (("admin", "Admin"), ("irr", "IRR"), ("normal", "Normal"))
+    type = models.CharField(max_length=6, default="normal", choices=QUEUE_TYPES)
     length = models.IntegerField()
-    data = models.ManyToManyField(
-        'Data', related_name='queues', through='DataQueue'
-    )
+    data = models.ManyToManyField("Data", related_name="queues", through="DataQueue")
 
 
 class DataQueue(models.Model):
     class Meta:
-        unique_together = (('queue', 'data'))
-    queue = models.ForeignKey('Queue')
-    data = models.ForeignKey('Data')
+        unique_together = ("queue", "data")
+
+    queue = models.ForeignKey("Queue")
+    data = models.ForeignKey("Data")
 
 
 class AssignedData(models.Model):
     class Meta:
-        unique_together = (('profile', 'queue', 'data'))
-    profile = models.ForeignKey('Profile')
-    data = models.ForeignKey('Data')
-    queue = models.ForeignKey('Queue')
+        unique_together = ("profile", "queue", "data")
+
+    profile = models.ForeignKey("Profile")
+    data = models.ForeignKey("Data")
+    queue = models.ForeignKey("Queue")
     assigned_timestamp = models.DateTimeField(default=timezone.now)
 
 
 class TrainingSet(models.Model):
-    project = models.ForeignKey('Project')
+    project = models.ForeignKey("Project")
     set_number = models.IntegerField()
     celery_task_id = models.TextField(blank=True)
 
 
 class RecycleBin(models.Model):
-    data = models.ForeignKey('Data')
+    data = models.ForeignKey("Data")
     timestamp = models.DateTimeField(default=timezone.now)
 
 
 class AdminProgress(models.Model):
-    project = models.ForeignKey('Project')
-    profile = models.ForeignKey('Profile')
+    project = models.ForeignKey("Project")
+    profile = models.ForeignKey("Profile")
     timestamp = models.DateTimeField(default=timezone.now)
+
+
+class ProjectMetaData(models.Model):
+    project = models.ForeignKey("Project")
+
+    has_title = models.BooleanField(default=False)
+    has_created_date = models.BooleanField(default=False)
+    has_username = models.BooleanField(default=False)
+    has_url = models.BooleanField(default=False)
+    has_user_url = models.BooleanField(default=False)
+
+
+class MetaData(models.Model):
+    data = models.OneToOneField(Data, on_delete=models.CASCADE, primary_key=True)
+    title = models.TextField(null=True, blank=True)
+
+    created_date = models.DateTimeField(null=True)
+    username = models.TextField(blank=True, null=True)
+    url = models.URLField(null=True)
+    user_url = models.URLField(null=True)

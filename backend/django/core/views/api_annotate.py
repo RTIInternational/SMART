@@ -8,18 +8,35 @@ import math
 import random
 
 from core.serializers import LabelSerializer, DataSerializer
-from core.models import (Project, Data, Label, DataLabel,
-                         Queue, DataQueue, AssignedData,
-                         LabelChangeLog, RecycleBin, IRRLog, AdminProgress)
+from core.models import (
+    Project,
+    Data,
+    Label,
+    DataLabel,
+    Queue,
+    DataQueue,
+    AssignedData,
+    LabelChangeLog,
+    RecycleBin,
+    IRRLog,
+    AdminProgress,
+    MetaData,
+)
 from core.templatetags import project_extras
 from core.permissions import IsAdminOrCreator, IsCoder
-from core.utils.utils_annotate import (process_irr_label, move_skipped_to_admin_queue,
-                                       label_data, unassign_datum, get_assignments)
+from core.utils.utils_annotate import (
+    process_irr_label,
+    move_skipped_to_admin_queue,
+    label_data,
+    unassign_datum,
+    get_assignments,
+    add_metadata_to_data,
+)
 from core.utils.utils_model import check_and_trigger_model
 
 
-@api_view(['GET'])
-@permission_classes((IsCoder, ))
+@api_view(["GET"])
+@permission_classes((IsCoder,))
 def get_card_deck(request, project_pk):
     """Grab data using get_assignments and send it to the frontend react app.
 
@@ -43,11 +60,18 @@ def get_card_deck(request, project_pk):
     random.shuffle(data)
     labels = Label.objects.all().filter(project=project)
 
-    return Response({'labels': LabelSerializer(labels, many=True).data, 'data': DataSerializer(data, many=True).data})
+    cards = [
+        {"id": d.pk, "text": d.text, "irr_ind": d.irr_ind, "project": d.project.pk}
+        for d in data
+    ]
+    # also return any metadata
+    cards = add_metadata_to_data(cards)
+
+    return Response({"labels": LabelSerializer(labels, many=True).data, "data": cards})
 
 
-@api_view(['GET'])
-@permission_classes((IsAdminOrCreator, ))
+@api_view(["GET"])
+@permission_classes((IsAdminOrCreator,))
 def label_distribution_inverted(request, project_pk):
     """This function finds and returns the number of each label. The format
     is more focussed on showing the total amount of each label then the user
@@ -73,8 +97,8 @@ def label_distribution_inverted(request, project_pk):
         for l in labels:
             label_count = DataLabel.objects.filter(profile=u, label=l).count()
             all_counts.append(label_count)
-            temp_values.append({'x': l.name, 'y': label_count})
-        dataset.append({'key': u.__str__(), 'values': temp_values})
+            temp_values.append({"x": l.name, "y": label_count})
+        dataset.append({"key": u.__str__(), "values": temp_values})
 
     if not any(count > 0 for count in all_counts):
         dataset = []
@@ -82,8 +106,8 @@ def label_distribution_inverted(request, project_pk):
     return Response(dataset)
 
 
-@api_view(['POST'])
-@permission_classes((IsCoder, ))
+@api_view(["POST"])
+@permission_classes((IsCoder,))
 def skip_data(request, data_pk):
     """Take a datum that is in the assigneddata queue for that user
     and place it in the admin queue. Remove it from the
@@ -112,7 +136,9 @@ def skip_data(request, data_pk):
         assignment.delete()
 
         # log the data and check IRR but don't put in admin queue yet
-        IRRLog.objects.create(data=data, profile=profile, label=None, timestamp=timezone.now())
+        IRRLog.objects.create(
+            data=data, profile=profile, label=None, timestamp=timezone.now()
+        )
         # if the IRR history has more than the needed number of labels , it is
         # already processed so don't do anything else
         if num_history <= project.num_users_irr:
@@ -127,8 +153,8 @@ def skip_data(request, data_pk):
     return Response(response)
 
 
-@api_view(['POST'])
-@permission_classes((IsCoder, ))
+@api_view(["POST"])
+@permission_classes((IsCoder,))
 def annotate_data(request, data_pk):
     """Annotate a single datum which is in the assigneddata queue given the user,
        data_id, and label_id.  This will remove it from assigneddata, remove it
@@ -145,8 +171,8 @@ def annotate_data(request, data_pk):
     project = data.project
     profile = request.user.profile
     response = {}
-    label = Label.objects.get(pk=request.data['labelID'])
-    labeling_time = request.data['labeling_time']
+    label = Label.objects.get(pk=request.data["labelID"])
+    labeling_time = request.data["labeling_time"]
 
     num_history = IRRLog.objects.filter(data=data).count()
 
@@ -157,7 +183,9 @@ def annotate_data(request, data_pk):
     elif num_history >= project.num_users_irr:
         # if the IRR history has more than the needed number of labels , it is
         # already processed so just add this label to the history.
-        IRRLog.objects.create(data=data, profile=profile, label=label, timestamp=timezone.now())
+        IRRLog.objects.create(
+            data=data, profile=profile, label=label, timestamp=timezone.now()
+        )
         assignment = AssignedData.objects.get(data=data, profile=profile)
         assignment.delete()
     else:
@@ -172,8 +200,8 @@ def annotate_data(request, data_pk):
     return Response(response)
 
 
-@api_view(['POST'])
-@permission_classes((IsAdminOrCreator, ))
+@api_view(["POST"])
+@permission_classes((IsAdminOrCreator,))
 def discard_data(request, data_pk):
     """Move a datum to the RecycleBin. This removes it from
        the admin dataqueue. This is used only in the skew table by the admin.
@@ -203,13 +231,13 @@ def discard_data(request, data_pk):
         irr_records.delete()
 
     else:
-        response['error'] = 'Invalid credentials. Must be an admin.'
+        response["error"] = "Invalid credentials. Must be an admin."
 
     return Response(response)
 
 
-@api_view(['POST'])
-@permission_classes((IsAdminOrCreator, ))
+@api_view(["POST"])
+@permission_classes((IsAdminOrCreator,))
 def restore_data(request, data_pk):
     """Move a datum out of the RecycleBin.
     Args:
@@ -227,13 +255,13 @@ def restore_data(request, data_pk):
         # remove it from the recycle bin
         RecycleBin.objects.get(data=data).delete()
     else:
-        response['error'] = 'Invalid credentials. Must be an admin.'
+        response["error"] = "Invalid credentials. Must be an admin."
 
     return Response(response)
 
 
-@api_view(['POST'])
-@permission_classes((IsCoder, ))
+@api_view(["POST"])
+@permission_classes((IsCoder,))
 def modify_label(request, data_pk):
     """Take a single datum with a label and change the label in the DataLabel table
 
@@ -248,20 +276,27 @@ def modify_label(request, data_pk):
     response = {}
     project = data.project
 
-    label = Label.objects.get(pk=request.data['labelID'])
-    old_label = Label.objects.get(pk=request.data['oldLabelID'])
+    label = Label.objects.get(pk=request.data["labelID"])
+    old_label = Label.objects.get(pk=request.data["oldLabelID"])
     with transaction.atomic():
-        DataLabel.objects.filter(data=data, label=old_label).update(label=label,
-                                                                    time_to_label=0, timestamp=timezone.now())
+        DataLabel.objects.filter(data=data, label=old_label).update(
+            label=label, time_to_label=0, timestamp=timezone.now()
+        )
 
-        LabelChangeLog.objects.create(project=project, data=data, profile=profile,
-                                      old_label=old_label.name, new_label=label.name, change_timestamp=timezone.now())
+        LabelChangeLog.objects.create(
+            project=project,
+            data=data,
+            profile=profile,
+            old_label=old_label.name,
+            new_label=label.name,
+            change_timestamp=timezone.now(),
+        )
 
     return Response(response)
 
 
-@api_view(['POST'])
-@permission_classes((IsCoder, ))
+@api_view(["POST"])
+@permission_classes((IsCoder,))
 def modify_label_to_skip(request, data_pk):
     """Take a datum that is in the assigneddata queue for that user
     and place it in the admin queue. Remove it from the assignedData queue.
@@ -276,7 +311,7 @@ def modify_label_to_skip(request, data_pk):
     profile = request.user.profile
     response = {}
     project = data.project
-    old_label = Label.objects.get(pk=request.data['oldLabelID'])
+    old_label = Label.objects.get(pk=request.data["oldLabelID"])
     queue = Queue.objects.get(project=project, type="admin")
 
     with transaction.atomic():
@@ -284,24 +319,31 @@ def modify_label_to_skip(request, data_pk):
         if data.irr_ind:
             # if it was irr, add it to the log
             if len(IRRLog.objects.filter(data=data, profile=profile)) == 0:
-                IRRLog.objects.create(data=data, profile=profile,
-                                      label=None, timestamp=timezone.now())
+                IRRLog.objects.create(
+                    data=data, profile=profile, label=None, timestamp=timezone.now()
+                )
         else:
             # if it's not irr, add it to the admin queue immediately
             DataQueue.objects.create(data=data, queue=queue)
-        LabelChangeLog.objects.create(project=project, data=data, profile=profile,
-                                      old_label=old_label.name, new_label="skip", change_timestamp=timezone.now())
+        LabelChangeLog.objects.create(
+            project=project,
+            data=data,
+            profile=profile,
+            old_label=old_label.name,
+            new_label="skip",
+            change_timestamp=timezone.now(),
+        )
 
     return Response(response)
 
 
-@api_view(['GET'])
-@permission_classes((IsAdminOrCreator, ))
+@api_view(["GET"])
+@permission_classes((IsAdminOrCreator,))
 def check_admin_in_progress(request, project_pk):
-    '''
+    """
     This api is called by the admin tabs on the annotate page to check
     if it is alright to show the data.
-    '''
+    """
     profile = request.user.profile
     project = Project.objects.get(pk=project_pk)
 
@@ -314,7 +356,7 @@ def check_admin_in_progress(request, project_pk):
         return Response({"available": 1})
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 def enter_coding_page(request, project_pk):
     """API request meant to be sent when a user navigates onto the coding page
        captured with 'beforeload' event.
@@ -328,11 +370,13 @@ def enter_coding_page(request, project_pk):
     # check that no other admin is using it. If they are not, give this admin permission
     if project_extras.proj_permission_level(project, profile) > 1:
         if AdminProgress.objects.filter(project=project).count() == 0:
-            AdminProgress.objects.create(project=project, profile=profile, timestamp=timezone.now())
+            AdminProgress.objects.create(
+                project=project, profile=profile, timestamp=timezone.now()
+            )
     return Response({})
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 def leave_coding_page(request, project_pk):
     """API request meant to be sent when a user navigates away from the coding page
        captured with 'beforeunload' event.  This should use assign_data to remove
@@ -357,8 +401,8 @@ def leave_coding_page(request, project_pk):
     return Response({})
 
 
-@api_view(['GET'])
-@permission_classes((IsAdminOrCreator, ))
+@api_view(["GET"])
+@permission_classes((IsAdminOrCreator,))
 def data_unlabeled_table(request, project_pk):
     """This returns the unlebeled data not in a queue for the skew table
 
@@ -373,23 +417,27 @@ def data_unlabeled_table(request, project_pk):
     stuff_in_queue = DataQueue.objects.filter(queue__project=project)
     queued_ids = [queued.data.id for queued in stuff_in_queue]
 
-    recycle_ids = RecycleBin.objects.filter(
-        data__project=project).values_list('data__pk', flat=True)
-    unlabeled_data = project.data_set.filter(datalabel__isnull=True).exclude(
-        id__in=queued_ids).exclude(id__in=recycle_ids)
+    recycle_ids = RecycleBin.objects.filter(data__project=project).values_list(
+        "data__pk", flat=True
+    )
+    unlabeled_data = (
+        project.data_set.filter(datalabel__isnull=True)
+        .exclude(id__in=queued_ids)
+        .exclude(id__in=recycle_ids)
+    )
     data = []
     for d in unlabeled_data:
-        temp = {
-            'Text': escape(d.text),
-            'ID': d.id
-        }
+        temp = {"data": escape(d.text), "id": d.id}
         data.append(temp)
 
-    return Response({'data': data})
+    # also return any metadata
+    data = add_metadata_to_data(data)
+
+    return Response({"data": data})
 
 
-@api_view(['GET'])
-@permission_classes((IsAdminOrCreator, ))
+@api_view(["GET"])
+@permission_classes((IsAdminOrCreator,))
 def data_admin_table(request, project_pk):
     """This returns the elements in the admin queue for annotation
 
@@ -410,18 +458,17 @@ def data_admin_table(request, project_pk):
             reason = "IRR"
         else:
             reason = "Skipped"
-        temp = {
-            'Text': d.data.text,
-            'ID': d.data.id,
-            'Reason': reason
-        }
+        temp = {"data": d.data.text, "id": d.data.id, "reason": reason}
         data.append(temp)
 
-    return Response({'data': data})
+    # also return any metadata
+    data = add_metadata_to_data(data)
+
+    return Response({"data": data})
 
 
-@api_view(['GET'])
-@permission_classes((IsAdminOrCreator, ))
+@api_view(["GET"])
+@permission_classes((IsAdminOrCreator,))
 def data_admin_counts(request, project_pk):
     """This returns the number of irr and admin objects
 
@@ -438,13 +485,13 @@ def data_admin_counts(request, project_pk):
     skip_count = data_objs.filter(data__irr_ind=False).count()
     # only give both counts if both counts are relevent
     if project.percentage_irr == 0:
-        return Response({'data': {"SKIP": skip_count}})
+        return Response({"data": {"SKIP": skip_count}})
     else:
-        return Response({'data': {"IRR": irr_count, "SKIP": skip_count}})
+        return Response({"data": {"IRR": irr_count, "SKIP": skip_count}})
 
 
-@api_view(['GET'])
-@permission_classes((IsAdminOrCreator, ))
+@api_view(["GET"])
+@permission_classes((IsAdminOrCreator,))
 def recycle_bin_table(request, project_pk):
     """This returns the elements in the recycle bin
 
@@ -459,17 +506,17 @@ def recycle_bin_table(request, project_pk):
 
     data = []
     for d in data_objs:
-        temp = {
-            'Text': d.data.text,
-            'ID': d.data.id
-        }
+        temp = {"data": d.data.text, "id": d.data.id}
         data.append(temp)
 
-    return Response({'data': data})
+    # also return any metadata
+    data = add_metadata_to_data(data)
+
+    return Response({"data": data})
 
 
-@api_view(['POST'])
-@permission_classes((IsAdminOrCreator, ))
+@api_view(["POST"])
+@permission_classes((IsAdminOrCreator,))
 def label_skew_label(request, data_pk):
     """This is called when an admin manually labels a datum on the skew page. It
     annotates a single datum with the given label, and profile with null as the time.
@@ -483,28 +530,29 @@ def label_skew_label(request, data_pk):
 
     datum = Data.objects.get(pk=data_pk)
     project = datum.project
-    label = Label.objects.get(pk=request.data['labelID'])
+    label = Label.objects.get(pk=request.data["labelID"])
     profile = request.user.profile
     response = {}
 
     current_training_set = project.get_current_training_set()
     if project_extras.proj_permission_level(datum.project, profile) >= 2:
         with transaction.atomic():
-            DataLabel.objects.create(data=datum,
-                                     label=label,
-                                     profile=profile,
-                                     training_set=current_training_set,
-                                     time_to_label=None,
-                                     timestamp=timezone.now()
-                                     )
+            DataLabel.objects.create(
+                data=datum,
+                label=label,
+                profile=profile,
+                training_set=current_training_set,
+                time_to_label=None,
+                timestamp=timezone.now(),
+            )
     else:
-        response['error'] = "Invalid permission. Must be an admin."
+        response["error"] = "Invalid permission. Must be an admin."
 
     return Response(response)
 
 
-@api_view(['POST'])
-@permission_classes((IsAdminOrCreator, ))
+@api_view(["POST"])
+@permission_classes((IsAdminOrCreator,))
 def label_admin_label(request, data_pk):
     """This is called when an admin manually labels a datum on the admin
     annotation page. It labels a single datum with the given label and profile,
@@ -518,7 +566,7 @@ def label_admin_label(request, data_pk):
     """
     datum = Data.objects.get(pk=data_pk)
     project = datum.project
-    label = Label.objects.get(pk=request.data['labelID'])
+    label = Label.objects.get(pk=request.data["labelID"])
     profile = request.user.profile
     response = {}
 
@@ -526,12 +574,14 @@ def label_admin_label(request, data_pk):
 
     with transaction.atomic():
         queue = project.queue_set.get(type="admin")
-        DataLabel.objects.create(data=datum,
-                                 label=label,
-                                 profile=profile,
-                                 training_set=current_training_set,
-                                 time_to_label=None,
-                                 timestamp=timezone.now())
+        DataLabel.objects.create(
+            data=datum,
+            label=label,
+            profile=profile,
+            training_set=current_training_set,
+            time_to_label=None,
+            timestamp=timezone.now(),
+        )
 
         DataQueue.objects.filter(data=datum, queue=queue).delete()
 
@@ -546,8 +596,8 @@ def label_admin_label(request, data_pk):
     return Response(response)
 
 
-@api_view(['GET'])
-@permission_classes((IsCoder, ))
+@api_view(["GET"])
+@permission_classes((IsCoder,))
 def get_label_history(request, project_pk):
     """Grab items previously labeled by this user
     and send it to the frontend react app.
@@ -563,7 +613,9 @@ def get_label_history(request, project_pk):
     project = Project.objects.get(pk=project_pk)
 
     labels = Label.objects.all().filter(project=project)
-    data = DataLabel.objects.filter(profile=profile, data__project=project_pk, label__in=labels)
+    data = DataLabel.objects.filter(
+        profile=profile, data__project=project_pk, label__in=labels
+    )
 
     data_list = []
     results = []
@@ -582,16 +634,30 @@ def get_label_history(request, project_pk):
                 second = "0" + str(d.timestamp.second)
             else:
                 second = str(d.timestamp.second)
-            new_timestamp = str(d.timestamp.date()) + ", " + str(d.timestamp.hour)\
-                + ":" + minute + "." + second
+            new_timestamp = (
+                str(d.timestamp.date())
+                + ", "
+                + str(d.timestamp.hour)
+                + ":"
+                + minute
+                + "."
+                + second
+            )
         else:
             new_timestamp = "None"
-        temp_dict = {"data": d.data.text,
-                     "id": d.data.id, "label": d.label.name,
-                     "labelID": d.label.id, "timestamp": new_timestamp, "edit": "yes"}
+        temp_dict = {
+            "data": d.data.text,
+            "id": d.data.id,
+            "label": d.label.name,
+            "labelID": d.label.id,
+            "timestamp": new_timestamp,
+            "edit": "yes",
+        }
         results.append(temp_dict)
 
-    data_irr = IRRLog.objects.filter(profile=profile, data__project=project_pk, label__isnull=False)
+    data_irr = IRRLog.objects.filter(
+        profile=profile, data__project=project_pk, label__isnull=False
+    )
 
     for d in data_irr:
         # if the data was labeled by that person (they were the admin), don't add
@@ -608,13 +674,29 @@ def get_label_history(request, project_pk):
                 second = "0" + str(d.timestamp.second)
             else:
                 second = str(d.timestamp.second)
-            new_timestamp = str(d.timestamp.date()) + ", " + str(d.timestamp.hour)\
-                + ":" + minute + "." + second
+            new_timestamp = (
+                str(d.timestamp.date())
+                + ", "
+                + str(d.timestamp.hour)
+                + ":"
+                + minute
+                + "."
+                + second
+            )
         else:
             new_timestamp = "None"
-        temp_dict = {"data": d.data.text,
-                     "id": d.data.id, "label": d.label.name,
-                     "labelID": d.label.id, "timestamp": new_timestamp, "edit": "no"}
+        temp_dict = {
+            "data": d.data.text,
+            "id": d.data.id,
+            "label": d.label.name,
+            "labelID": d.label.id,
+            "timestamp": new_timestamp,
+            "edit": "no",
+        }
+
         results.append(temp_dict)
 
-    return Response({'data': results})
+    # also return any metadata
+    results = add_metadata_to_data(results)
+
+    return Response({"data": results})

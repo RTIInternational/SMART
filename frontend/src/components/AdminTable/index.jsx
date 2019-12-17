@@ -69,6 +69,7 @@ class AdminTable extends React.Component {
             page_sizes.push(i);
         }
         page_sizes.push(admin_data.length);
+        console.log(admin_data);
 
         return (
             <div>
