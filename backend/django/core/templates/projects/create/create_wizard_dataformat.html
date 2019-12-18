@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block page_title %}Add Project - Step {{ wizard.steps.step1 }}{% endblock %}
+
+{% load i18n %}
+{% load static %}
+{% load render_bundle from webpack_loader %}
+
+{% block head %}
+{{ wizard.form.media }}
+{{ form.media.css }}
+{% endblock %}
+
+{% block content %}
+<div class="error-messages">{{ wizard.non_form_errors }}</div>
+<div class="row">
+    <div class="col-md-8 col-md-offset-2">
+        <div class="card">
+            <div class="cardface">
+                <form action="." method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{ wizard.management_form }}
+
+                    <h1>Data Format</h1>
+                    <div class="form-group">
+                        <div class="panel panel-default" id="dt_tab">
+                            <div class="panel-heading">
+                                <h5 class="panel-title">
+                                    <a data-toggle="collapse" href="#dt-panel" class="accordion-toggle">
+                                        Overall Data Format
+                                    </a>
+                                </h5>
+                            </div>
+                            <div d="c-panel" class="panel-collapse collapse in">
+                                <div class="panel-body">
+                                    <p>Please choose the option that most matches the type of data you are labeling:</p>
+                                    <div id="choose_data_type_box">
+                                        {% for radio2 in wizard.form.data_type_choice %}
+                                        <div class="choose_data_type" name="dt_choice" id="{{radio2.value}}">
+                                            {{radio2}}
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="af-panel" class="panel panel-default">
+                            <div class="panel-heading">
+                                <h5 class="panel-title">
+                                    <a data-toggle="collapse" href="#c-panel" class="accordion-toggle">
+                                        Additional Field Selection
+                                    </a>
+                                </h5>
+                            </div>
+                            <div id="c-panel" class="panel-collapse collapse in">
+                                <div class="panel-body">
+
+                                    <div id="choose_fields_box">
+                                        <b>Select which fields you are providing for your media data:</b>
+                                        <div id="have_fields_div">
+                                            <p>Display a Title: {{ wizard.form.has_title }}</p>
+                                            <p>Display a post URL: {{ wizard.form.has_url }}</p>
+                                            <p>Display a post created date: {{ wizard.form.has_created_date }}</p>
+                                            <p>Display an author name: {{ wizard.form.has_username }}</p>
+                                            <p>Display an author URL: {{ wizard.form.has_user_url }}</p>
+                                        </div>
+                                        <p>NOTE: the image below shows where these fields will be displayed on the data annotation page if present.</p>
+                                        <img style='height: 100%; width: 100%; object-fit: contain' src="{% static 'media_annotation_diagram.png' %}" alt="Sample median annotation page">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="wizard_nav_bar">
+                        <button class="btn btn-info" name="wizard_goto_step" type="submit" value="project">1. Info</button>
+                        <button class="btn btn-info" name="wizard_goto_step" type="submit" value="labels">2. Labels</button>
+                        <button class="btn btn-info" name="wizard_goto_step" type="submit" value="permissions">3. Permissions</button>
+                        <button class="btn btn-info" name="wizard_goto_step" type="submit" value="advanced">4. Advanced</button>
+                        <input class="btn btn-primary" type="submit" value="Next Step" />
+                        <p class="pull-right">Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_body %}
+<script type="text/javascript">
+    /*
+     *  Custom code to handle what options are shown on page load and on option selection
+     */
+    var af_box = $('div#af-panel');
+    var dt_choice = $('#choose_data_type_box');
+
+    if ($('input#id_data_type_choice_0').prop('checked') == true) {
+        af_box.hide();
+    } else {
+        af_box.show();
+    }
+
+
+    $('input#id_data_type_choice_0').change(function() {
+        if ($(this).prop('checked') == true) {
+            af_box.hide();
+        } else {
+            af_box.show();
+        }
+    });
+    $('input#id_data_type_choice_1').change(function() {
+        if ($(this).prop('checked') == false) {
+            af_box.hide();
+        } else {
+            af_box.show();
+        }
+    });
+</script>
+{% endblock %}
