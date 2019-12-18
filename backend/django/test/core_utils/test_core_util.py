@@ -191,8 +191,8 @@ def test_save_data_file_multiple_files(test_project, tmpdir, settings):
 
 
 def test_save_codebook(test_project, tmpdir, settings):
-    """This tests that a user can upload a pdf codebook
-    and have it be saved properly internally."""
+    """This tests that a user can upload a pdf codebook and have it be saved properly
+    internally."""
     test_file = open("./core/data/test_files/test_codebook.pdf", "rb")
 
     temp_data_file_path = tmpdir.mkdir("data").mkdir("code_books")

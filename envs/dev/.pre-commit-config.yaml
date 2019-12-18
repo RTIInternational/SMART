@@ -3,30 +3,30 @@
     - id: isort
       name: isort
       pass_filenames: false
-      entry: docker-compose run --rm smart_backend bash -c "scripts/isort.sh --format"
+      entry: docker-compose -f envs/dev/docker-compose.yml run --rm smart_backend bash -c "/code/scripts/isort.sh --format"
       language: system
       types: [python]
     - id: docformatter
       name: docformatter
       pass_filenames: false
-      entry: docker-compose run --rm smart_backend bash -c "scripts/docformatter.sh --format"
+      entry: docker-compose -f envs/dev/docker-compose.yml run --rm smart_backend bash -c "/code/scripts/docformatter.sh --format"
       language: system
       types: [python]
     - id: black
       name: black
       pass_filenames: false
-      entry: docker-compose run --rm smart_backend bash -c "scripts/black.sh --format"
+      entry: docker-compose -f envs/dev/docker-compose.yml run --rm smart_backend bash -c "/code/scripts/black.sh --format"
       language: system
       types: [python]
     - id: flake8
       name: flake8
       pass_filenames: false
-      entry: docker-compose run --rm smart_backend bash -c "scripts/flake8.sh"
+      entry: docker-compose -f envs/dev/docker-compose.yml run --rm smart_backend bash -c "/code/scripts/flake8.sh"
       language: system
       types: [python]
     - id: eslint-js
       name: eslint-js
       pass_filenames: false
-      entry: docker-compose run --rm smart_frontend yarn lint
+      entry: docker-compose -f envs/dev/docker-compose.yml run --rm smart_frontend yarn lint
       language: system
       types: [javascript]
