@@ -8,13 +8,22 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0037_project_batch_size'),
+        ("core", "0037_project_batch_size"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='project',
-            name='classifier',
-            field=models.CharField(choices=[('logistic_regression', 'Logistic Regression'), ('svm', 'Nonlinear Support Vector Machine (SVM)'), ('lsvm', 'Linear Support Vector Machine (SVM)'), ('random_forest', 'Random Forest')], default='logistic_regression', max_length=19),
+            model_name="project",
+            name="classifier",
+            field=models.CharField(
+                choices=[
+                    ("logistic_regression", "Logistic Regression"),
+                    ("svm", "Nonlinear Support Vector Machine (SVM)"),
+                    ("lsvm", "Linear Support Vector Machine (SVM)"),
+                    ("random_forest", "Random Forest"),
+                ],
+                default="logistic_regression",
+                max_length=19,
+            ),
         ),
     ]

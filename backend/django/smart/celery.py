@@ -1,7 +1,8 @@
 from __future__ import absolute_import, unicode_literals
 
-import configurations
 import os
+
+import configurations
 from celery import Celery
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "smart.settings")

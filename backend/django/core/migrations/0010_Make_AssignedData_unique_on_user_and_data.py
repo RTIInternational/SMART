@@ -8,12 +8,12 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0009_Rename_User_labels'),
+        ("core", "0009_Rename_User_labels"),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='assigneddata',
-            unique_together=set([('user', 'queue'), ('user', 'data')]),
+            name="assigneddata",
+            unique_together=set([("user", "queue"), ("user", "data")]),
         ),
     ]
