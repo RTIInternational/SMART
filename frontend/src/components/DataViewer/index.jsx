@@ -26,7 +26,7 @@ class DataViewer extends React.Component {
         if (url == null || url == "nan") {
             return <p></p>;
         } else {
-            return <a>{url}</a>;
+            return <a href={url}>{url}</a>;
         }
     }
 
@@ -35,7 +35,7 @@ class DataViewer extends React.Component {
         let userurl = this.props.data.user_url;
 
         let usernameRen = <p>User: {username}</p>;
-        let userURLRen = <a>User URL: {userurl}</a>;
+        let userURLRen = <a href={userurl}>User URL: {userurl}</a>;
 
         if (username == null || username == "nan") {
             usernameRen = <p>User: anonymous</p>;
@@ -65,7 +65,7 @@ class DataViewer extends React.Component {
 
     renderText() {
         let title = this.props.data.title;
-        let text = this.props.data.text;
+        let text = this.props.data.data;
 
         if (
             title == null ||
@@ -86,8 +86,9 @@ class DataViewer extends React.Component {
     }
 
     render() {
+
         if (this.props.data.title == undefined) {
-            return <p>{this.props.data.text}</p>;
+            return <p>{this.props.data.data}</p>;
         } else {
             return (
                 <div>

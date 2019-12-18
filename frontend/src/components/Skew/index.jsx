@@ -5,6 +5,7 @@ import { Button, ButtonToolbar, Panel } from "react-bootstrap";
 import NVD3Chart from "react-nvd3";
 import d3 from 'd3';
 import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
+import DataViewer from "../DataViewer";
 
 const COLUMNS = [
     {
@@ -84,7 +85,7 @@ class Skew extends React.Component {
                     SubComponent={row => {
                         return (
                             <div className="sub-row">
-                                <p id="skew_text">{row.row.data}</p>
+                                <DataViewer data={unlabeled_data[row.row._index]} />
                                 <div id="skew_buttons">
                                     <ButtonToolbar bsClass="btn-toolbar pull-right">
                                         {labels.map( (label) => (

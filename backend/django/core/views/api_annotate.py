@@ -61,7 +61,7 @@ def get_card_deck(request, project_pk):
     labels = Label.objects.all().filter(project=project)
 
     cards = [
-        {"id": d.pk, "text": d.text, "irr_ind": d.irr_ind, "project": d.project.pk}
+        {"id": d.pk, "data": d.text, "irr_ind": d.irr_ind, "project": d.project.pk}
         for d in data
     ]
     # also return any metadata

@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import ReactTable from 'react-table';
 import { Button, ButtonToolbar, Tooltip, OverlayTrigger } from "react-bootstrap";
 import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
-
+import DataViewer from "../DataViewer";
 
 class AdminTable extends React.Component {
 
@@ -31,7 +31,7 @@ class AdminTable extends React.Component {
                 accessor: "data",
                 Cell: row => (
                     <div>
-                        <p id="admin_text">{row.row.data}</p>
+                        <DataViewer data={admin_data[row.row._index]} />
                         <div id="admin_buttons">
                             <ButtonToolbar bsClass="btn-toolbar pull-right">
                                 {labels.map( (label) => {
@@ -69,7 +69,6 @@ class AdminTable extends React.Component {
             page_sizes.push(i);
         }
         page_sizes.push(admin_data.length);
-        console.log(admin_data);
 
         return (
             <div>

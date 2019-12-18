@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import ReactTable from 'react-table';
 import { Button, ButtonToolbar, Tooltip, OverlayTrigger } from "react-bootstrap";
 import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
+import DataViewer from "../DataViewer";
 
 const COLUMNS = [
     {
@@ -31,11 +32,11 @@ class RecycleBin extends React.Component {
     }
 
     getSubComponent(row) {
-        const { restoreData } = this.props;
+        const { restoreData, discarded_data } = this.props;
 
         return (
             <div className="sub-row">
-                <p id="disc_text">{row.row.data}</p>
+                <DataViewer data={discarded_data[row.row._index]} />
                 <div id="disc_buttons">
                     <ButtonToolbar bsClass="btn-toolbar pull-right">
                         <OverlayTrigger
