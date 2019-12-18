@@ -146,8 +146,6 @@ def clean_data_helper(data, supplied_labels, metadata):
     except ValidationError as e:
         raise ValidationError("ERROR: There is an invalid URL in the url column.")
 
-    ####################
-
     if len(data) < 1:
         raise ValidationError("File should contain some data.")
 

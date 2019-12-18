@@ -1,18 +1,18 @@
-import { createAction } from 'redux-actions';
-import 'whatwg-fetch';
-import moment from 'moment';
+import { createAction } from "redux-actions";
+import "whatwg-fetch";
+import moment from "moment";
 
-import { getConfig, postConfig } from '../utils/fetch_configs';
-import { getHistory } from './history';
-import { getAdmin } from './adminTables';
-import { getLabelCounts } from './skew';
-import { getAdminCounts } from './smart';
+import { getConfig, postConfig } from "../utils/fetch_configs";
+import { getHistory } from "./history";
+import { getAdmin } from "./adminTables";
+import { getLabelCounts } from "./skew";
+import { getAdminCounts } from "./smart";
 
-export const POP_CARD = 'POP_CARD';
-export const PUSH_CARD = 'PUSH_CARD';
-export const SET_LABEL = 'SET_LABEL';
-export const SET_MESSAGE = 'SET_MESSAGE';
-export const CLEAR_DECK = 'CLEAR_DECK';
+export const POP_CARD = "POP_CARD";
+export const PUSH_CARD = "PUSH_CARD";
+export const SET_LABEL = "SET_LABEL";
+export const SET_MESSAGE = "SET_MESSAGE";
+export const CLEAR_DECK = "CLEAR_DECK";
 
 export const popCard = createAction(POP_CARD);
 export const pushCard = createAction(PUSH_CARD);
@@ -21,7 +21,7 @@ export const setMessage = createAction(SET_MESSAGE);
 export const clearDeck = createAction(CLEAR_DECK);
 
 // Create cards by reading from a queue
-export const fetchCards = (projectID) => {
+export const fetchCards = projectID => {
     let apiURL = `/api/get_card_deck/${projectID}/`;
     return dispatch => {
         return fetch(apiURL, getConfig())
@@ -36,15 +36,15 @@ export const fetchCards = (projectID) => {
             })
             .then(response => {
                 // If error was in the response then set that message
-                if ('error' in response) return dispatch(setMessage(response.error));
+                if ("error" in response)
+                    return dispatch(setMessage(response.error));
 
                 dispatch(setLabel(response.labels));
 
                 for (let i = 0; i < response.data.length; i++) {
-                    const card = {
-                        id: i,
-                        text: response.data[i]
-                    };
+                    let card = response.data[i];
+                    card["pk"] = card.id;
+                    card["id"] = i;
                     dispatch(pushCard(card));
                 }
             })
@@ -52,12 +52,18 @@ export const fetchCards = (projectID) => {
     };
 };
 
-export const annotateCard = (card, labelID, num_cards_left, projectID, is_admin) => {
+export const annotateCard = (
+    card,
+    labelID,
+    num_cards_left,
+    projectID,
+    is_admin
+) => {
     let payload = {
         labelID: labelID,
-        labeling_time: moment().diff(card['start_time'], 'seconds') // now - start_time rounded to whole seconds
+        labeling_time: moment().diff(card["start_time"], "seconds") // now - start_time rounded to whole seconds
     };
-    let apiURL = `/api/annotate_data/${card.text.id}/`;
+    let apiURL = `/api/annotate_data/${card.pk}/`;
     return dispatch => {
         return fetch(apiURL, postConfig(payload))
             .then(response => {
@@ -70,7 +76,7 @@ export const annotateCard = (card, labelID, num_cards_left, projectID, is_admin)
                 }
             })
             .then(response => {
-                if ('error' in response) {
+                if ("error" in response) {
                     dispatch(clearDeck());
                     return dispatch(setMessage(response.error));
                 } else {
@@ -89,8 +95,8 @@ export const annotateCard = (card, labelID, num_cards_left, projectID, is_admin)
 };
 
 //skip a card and put it in the admin table
-export const passCard = (card, num_cards_left, is_admin, projectID ) => {
-    let apiURL = `/api/skip_data/${card.text.id}/`;
+export const passCard = (card, num_cards_left, is_admin, projectID) => {
+    let apiURL = `/api/skip_data/${card.pk}/`;
     return dispatch => {
         return fetch(apiURL, postConfig())
             .then(response => {
@@ -103,7 +109,7 @@ export const passCard = (card, num_cards_left, is_admin, projectID ) => {
                 }
             })
             .then(response => {
-                if ('error' in response) {
+                if ("error" in response) {
                     dispatch(clearDeck());
                     return dispatch(setMessage(response.error));
                 } else {

@@ -65,7 +65,7 @@ def get_card_deck(request, project_pk):
         for d in data
     ]
     # also return any metadata
-    cards = add_metadata_to_data(cards)
+    cards = add_metadata_to_data(cards, project)
 
     return Response({"labels": LabelSerializer(labels, many=True).data, "data": cards})
 
@@ -431,7 +431,7 @@ def data_unlabeled_table(request, project_pk):
         data.append(temp)
 
     # also return any metadata
-    data = add_metadata_to_data(data)
+    data = add_metadata_to_data(data, project)
 
     return Response({"data": data})
 
@@ -462,7 +462,7 @@ def data_admin_table(request, project_pk):
         data.append(temp)
 
     # also return any metadata
-    data = add_metadata_to_data(data)
+    data = add_metadata_to_data(data, project)
 
     return Response({"data": data})
 
@@ -510,7 +510,7 @@ def recycle_bin_table(request, project_pk):
         data.append(temp)
 
     # also return any metadata
-    data = add_metadata_to_data(data)
+    data = add_metadata_to_data(data, project)
 
     return Response({"data": data})
 
@@ -697,6 +697,6 @@ def get_label_history(request, project_pk):
         results.append(temp_dict)
 
     # also return any metadata
-    results = add_metadata_to_data(results)
+    results = add_metadata_to_data(results, project)
 
     return Response({"data": results})

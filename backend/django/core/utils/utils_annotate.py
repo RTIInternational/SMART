@@ -9,6 +9,7 @@ from core.models import (
     AssignedData,
     DataLabel,
     IRRLog,
+    ProjectMetaData,
     MetaData,
 )
 
@@ -23,13 +24,18 @@ from core.utils.utils_redis import (
 from core.templatetags import project_extras
 
 
-def add_metadata_to_data(data):
+def add_metadata_to_data(data, project):
     """This takes in a list of dictionaries with data
     objects and adds in the metadata information if relevant.
 
-    Args: data: a list of dictionaries where each dictionary has
+    Args:
+    data: a list of dictionaries where each dictionary has
     a data point with an "id" field
+    project: the project this data is from
     """
+    if not ProjectMetaData.objects.filter(project=project).exists():
+        return data
+
     for i in range(len(data)):
         if MetaData.objects.filter(data__pk=data[i]["id"]).exists():
             metadata = MetaDataSerializer(
