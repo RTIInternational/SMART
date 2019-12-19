@@ -2,30 +2,15 @@ import pytest
 import os
 import numpy as np
 
-from core.models import (
-    Data,
-    DataQueue,
-    Model,
-    DataLabel,
-    DataPrediction,
-    DataUncertainty,
-    ProjectPermissions,
-)
+from core.models import (Data, DataQueue, Model, DataLabel, DataPrediction,
+                         DataUncertainty, ProjectPermissions)
 from core.utils.utils_annotate import assign_datum, label_data
 from core.utils.utils_queue import fill_queue, find_queue_length
 from core.utils.utils_redis import get_ordered_data
-from core.utils.utils_model import (
-    save_tfidf_matrix,
-    load_tfidf_matrix,
-    train_and_save_model,
-    predict_data,
-    least_confident,
-    margin_sampling,
-    entropy,
-    check_and_trigger_model,
-    cohens_kappa,
-    fleiss_kappa,
-)
+from core.utils.utils_model import (save_tfidf_matrix, load_tfidf_matrix,
+                                    train_and_save_model, predict_data,
+                                    least_confident, margin_sampling, entropy,
+                                    check_and_trigger_model, cohens_kappa, fleiss_kappa)
 from test.util import assert_obj_exists, assert_redis_matches_db
 from test.conftest import TEST_QUEUE_LEN
 
@@ -40,21 +25,17 @@ def test_create_tfidf_matrix(test_tfidf_matrix):
 
 
 def test_save_tfidf_matrix(test_project_data, test_tfidf_matrix, tmpdir, settings):
-    data_temp = tmpdir.mkdir("data").mkdir("tf_idf")
+    data_temp = tmpdir.mkdir('data').mkdir('tf_idf')
     settings.TF_IDF_PATH = str(data_temp)
 
     file = save_tfidf_matrix(test_tfidf_matrix, test_project_data.pk)
 
     assert os.path.isfile(file)
-    assert file == os.path.join(
-        settings.TF_IDF_PATH,
-        "project_" + str(test_project_data.pk) + "_tfidf_matrix.pkl",
-    )
+    assert file == os.path.join(settings.TF_IDF_PATH, 'project_'
+                                + str(test_project_data.pk) + '_tfidf_matrix.pkl')
 
 
-def test_load_tfidf_matrix(
-    test_project_labeled_and_tfidf, test_tfidf_matrix_labeled, tmpdir, settings
-):
+def test_load_tfidf_matrix(test_project_labeled_and_tfidf, test_tfidf_matrix_labeled, tmpdir, settings):
     matrix = load_tfidf_matrix(test_project_labeled_and_tfidf.pk)
 
     for key in matrix:
@@ -68,7 +49,7 @@ def test_least_confident_notarray():
     with pytest.raises(ValueError) as excinfo:
         least_confident(probs)
 
-    assert "Probs should be a numpy array" in str(excinfo.value)
+    assert 'Probs should be a numpy array' in str(excinfo.value)
 
 
 def test_least_confident_threeclass():
@@ -101,7 +82,7 @@ def test_margin_sampling_notarray():
     with pytest.raises(ValueError) as excinfo:
         margin_sampling(probs)
 
-    assert "Probs should be a numpy array" in str(excinfo.value)
+    assert 'Probs should be a numpy array' in str(excinfo.value)
 
 
 def test_margin_sampling_threeclass():
@@ -141,7 +122,7 @@ def test_entropy_notarray():
     with pytest.raises(ValueError) as excinfo:
         entropy(probs)
 
-    assert "Probs should be a numpy array" in str(excinfo.value)
+    assert 'Probs should be a numpy array' in str(excinfo.value)
 
 
 def test_entropy_threeclass():
@@ -179,22 +160,21 @@ def test_entropy_with_zero():
 def test_train_and_save_model(test_project_labeled_and_tfidf, tmpdir, settings):
     project = test_project_labeled_and_tfidf
 
-    model_path_temp = tmpdir.listdir()[0].mkdir("model_pickles")
+    model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
     settings.MODEL_PICKLE_PATH = str(model_path_temp)
 
     model = train_and_save_model(project)
 
     assert isinstance(model, Model)
-    assert_obj_exists(Model, {"pickle_path": model.pickle_path, "project": project})
+    assert_obj_exists(Model, {
+        'pickle_path': model.pickle_path,
+        'project': project
+    })
     assert os.path.isfile(model.pickle_path)
-    assert model.pickle_path == os.path.join(
-        str(model_path_temp),
-        "project_"
-        + str(project.pk)
-        + "_training_"
-        + str(project.get_current_training_set().set_number)
-        + ".pkl",
-    )
+    assert model.pickle_path == os.path.join(str(model_path_temp), 'project_' + str(project.pk)
+                                             + '_training_'
+                                             + str(project.get_current_training_set().set_number)
+                                             + '.pkl')
 
 
 def test_predict_data(test_project_with_trained_model, tmpdir):
@@ -203,37 +183,31 @@ def test_predict_data(test_project_with_trained_model, tmpdir):
     predictions = predict_data(project, project.model_set.get())
 
     # Number of unlabeled data * number of labels.  Each data gets a prediction for each label.
-    expected_predction_count = (
-        project.data_set.filter(datalabel__isnull=True).count() * project.labels.count()
-    )
+    expected_predction_count = project.data_set.filter(
+        datalabel__isnull=True).count() * project.labels.count()
     assert len(predictions) == expected_predction_count
 
     for prediction in predictions:
         assert isinstance(prediction, DataPrediction)
-        assert_obj_exists(
-            DataPrediction,
-            {
-                "data": prediction.data,
-                "model": prediction.model,
-                "label": prediction.label,
-                "predicted_probability": prediction.predicted_probability,
-            },
-        )
+        assert_obj_exists(DataPrediction, {
+            'data': prediction.data,
+            'model': prediction.model,
+            'label': prediction.label,
+            'predicted_probability': prediction.predicted_probability
+        })
 
 
-def test_check_and_trigger_model_first_labeled(
-    setup_celery, test_project_data, test_labels, test_queue, test_profile
-):
+def test_check_and_trigger_model_first_labeled(setup_celery, test_project_data, test_labels, test_queue, test_profile):
     initial_training_set = test_project_data.get_current_training_set()
 
-    fill_queue(test_queue, orderby="random")
+    fill_queue(test_queue, orderby='random')
 
     datum = assign_datum(test_profile, test_queue.project)
     test_label = test_labels[0]
     label_data(test_label, datum, test_profile, 3)
 
     check = check_and_trigger_model(datum)
-    assert check == "no trigger"
+    assert check == 'no trigger'
 
     assert test_project_data.get_current_training_set() == initial_training_set
     assert test_project_data.model_set.count() == 0
@@ -242,12 +216,10 @@ def test_check_and_trigger_model_first_labeled(
     assert DataQueue.objects.filter(queue=test_queue).count() == TEST_QUEUE_LEN - 1
 
 
-def test_check_and_trigger_lt_batch_labeled(
-    setup_celery, test_project_data, test_labels, test_queue, test_profile
-):
+def test_check_and_trigger_lt_batch_labeled(setup_celery, test_project_data, test_labels, test_queue, test_profile):
     initial_training_set = test_project_data.get_current_training_set()
 
-    fill_queue(test_queue, orderby="random")
+    fill_queue(test_queue, orderby='random')
 
     for i in range(TEST_QUEUE_LEN // 2):
         datum = assign_datum(test_profile, test_queue.project)
@@ -255,92 +227,71 @@ def test_check_and_trigger_lt_batch_labeled(
         label_data(test_label, datum, test_profile, 3)
 
     check = check_and_trigger_model(datum)
-    assert check == "no trigger"
+    assert check == 'no trigger'
 
     assert test_project_data.get_current_training_set() == initial_training_set
     assert test_project_data.model_set.count() == 0
     assert DataPrediction.objects.filter(data__project=test_project_data).count() == 0
     assert DataUncertainty.objects.filter(data__project=test_project_data).count() == 0
-    assert DataQueue.objects.filter(queue=test_queue).count() == TEST_QUEUE_LEN - (
-        TEST_QUEUE_LEN // 2
-    )
+    assert DataQueue.objects.filter(queue=test_queue).count(
+    ) == TEST_QUEUE_LEN - (TEST_QUEUE_LEN // 2)
 
 
-def test_check_and_trigger_batched_success(
-    setup_celery,
-    test_project_labeled_and_tfidf,
-    test_queue_labeled,
-    test_irr_queue_labeled,
-    test_redis,
-    tmpdir,
-    settings,
-):
+def test_check_and_trigger_batched_success(setup_celery, test_project_labeled_and_tfidf,
+                                           test_queue_labeled, test_irr_queue_labeled, test_redis, tmpdir, settings):
     project = test_project_labeled_and_tfidf
     test_queue = test_queue_labeled
     initial_training_set = project.get_current_training_set()
     initial_queue_size = test_queue.length
-    model_path_temp = tmpdir.listdir()[0].mkdir("model_pickles")
+    model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
     settings.MODEL_PICKLE_PATH = str(model_path_temp)
 
     datum = DataLabel.objects.filter(data__project=project).first().data
     check = check_and_trigger_model(datum)
-    assert check == "model running"
+    assert check == 'model running'
 
     # Assert model created and saved
-    assert_obj_exists(Model, {"project": project})
+    assert_obj_exists(Model, {
+        'project': project
+    })
     model = Model.objects.get(project=project)
     assert os.path.isfile(model.pickle_path)
-    assert model.pickle_path == os.path.join(
-        str(model_path_temp),
-        "project_"
-        + str(project.pk)
-        + "_training_"
-        + str(initial_training_set.set_number)
-        + ".pkl",
-    )
+    assert model.pickle_path == os.path.join(str(model_path_temp), 'project_' + str(project.pk)
+                                             + '_training_' + str(initial_training_set.set_number)
+                                             + '.pkl')
 
     # Assert predictions created
     predictions = DataPrediction.objects.filter(data__project=project)
-    assert (
-        len(predictions)
-        == Data.objects.filter(project=project, labelers=None).count()
-        * project.labels.count()
-    )
+    assert len(predictions) == Data.objects.filter(project=project,
+                                                   labelers=None).count() * project.labels.count()
 
     # Assert queue filled and redis sycned
-    assert (
-        test_queue.data.count() + test_irr_queue_labeled.data.count()
-    ) == test_queue.length
+    assert (test_queue.data.count() + test_irr_queue_labeled.data.count()) == test_queue.length
     assert_redis_matches_db(test_redis)
     assert test_queue.length == initial_queue_size
 
     # Assert least confident in queue
-    data_list = get_ordered_data(test_queue.data.all(), "least confident")
+    data_list = get_ordered_data(test_queue.data.all(), 'least confident')
     previous_lc = data_list[0].datauncertainty_set.get().least_confident
     for datum in data_list:
         assert len(datum.datalabel_set.all()) == 0
-        assert_obj_exists(DataUncertainty, {"data": datum})
+        assert_obj_exists(DataUncertainty, {
+            'data': datum
+        })
         assert datum.datauncertainty_set.get().least_confident <= previous_lc
         previous_lc = datum.datauncertainty_set.get().least_confident
-    assert (
-        DataQueue.objects.filter(queue=test_queue).count()
-        + DataQueue.objects.filter(queue=test_irr_queue_labeled).count()
-    ) == TEST_QUEUE_LEN
+    assert (DataQueue.objects.filter(queue=test_queue).count()
+            + DataQueue.objects.filter(queue=test_irr_queue_labeled).count()) == TEST_QUEUE_LEN
 
     # Assert new training set
     assert project.get_current_training_set() != initial_training_set
-    assert (
-        project.get_current_training_set().set_number
-        == initial_training_set.set_number + 1
-    )
+    assert project.get_current_training_set().set_number == initial_training_set.set_number + 1
 
 
-def test_check_and_trigger_batched_onlyone_label(
-    setup_celery, test_project_data, test_labels, test_queue, test_profile
-):
+def test_check_and_trigger_batched_onlyone_label(setup_celery, test_project_data, test_labels, test_queue, test_profile):
     initial_training_set = test_project_data.get_current_training_set()
 
-    fill_queue(test_queue, orderby="random")
+    fill_queue(test_queue, orderby='random')
 
     for i in range(TEST_QUEUE_LEN):
         datum = assign_datum(test_profile, test_queue.project)
@@ -348,7 +299,7 @@ def test_check_and_trigger_batched_onlyone_label(
         label_data(test_label, datum, test_profile, 3)
 
     check = check_and_trigger_model(datum)
-    assert check == "random"
+    assert check == 'random'
 
     assert test_project_data.get_current_training_set() == initial_training_set
     assert test_project_data.model_set.count() == 0
@@ -357,51 +308,37 @@ def test_check_and_trigger_batched_onlyone_label(
     assert DataQueue.objects.filter(queue=test_queue).count() == TEST_QUEUE_LEN
 
 
-def test_check_and_trigger_queue_changes_success(
-    setup_celery,
-    test_project_labeled_and_tfidf,
-    test_queue_labeled,
-    test_irr_queue_labeled,
-    test_redis,
-    tmpdir,
-    settings,
-    test_profile2,
-):
+def test_check_and_trigger_queue_changes_success(setup_celery, test_project_labeled_and_tfidf,
+                                                 test_queue_labeled, test_irr_queue_labeled, test_redis, tmpdir, settings, test_profile2):
     project = test_project_labeled_and_tfidf
     test_queue = test_queue_labeled
     initial_training_set = project.get_current_training_set()
-    model_path_temp = tmpdir.listdir()[0].mkdir("model_pickles")
+    model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
     settings.MODEL_PICKLE_PATH = str(model_path_temp)
 
     # Add another user to permissions
-    ProjectPermissions.objects.create(
-        profile=test_profile2, project=project, permission="CODER"
-    )
+    ProjectPermissions.objects.create(profile=test_profile2,
+                                      project=project,
+                                      permission='CODER')
 
     datum = DataLabel.objects.filter(data__project=project).first().data
     check = check_and_trigger_model(datum)
-    assert check == "model running"
+    assert check == 'model running'
 
     # Assert model created and saved
-    assert_obj_exists(Model, {"project": project})
+    assert_obj_exists(Model, {
+        'project': project
+    })
     model = Model.objects.get(project=project)
     assert os.path.isfile(model.pickle_path)
-    assert model.pickle_path == os.path.join(
-        str(model_path_temp),
-        "project_"
-        + str(project.pk)
-        + "_training_"
-        + str(initial_training_set.set_number)
-        + ".pkl",
-    )
+    assert model.pickle_path == os.path.join(str(model_path_temp), 'project_' + str(project.pk)
+                                             + '_training_' + str(initial_training_set.set_number)
+                                             + '.pkl')
 
     # Assert predictions created
     predictions = DataPrediction.objects.filter(data__project=project)
-    assert (
-        len(predictions)
-        == Data.objects.filter(project=project, labelers=None).count()
-        * project.labels.count()
-    )
+    assert len(predictions) == Data.objects.filter(project=project,
+                                                   labelers=None).count() * project.labels.count()
 
     # Assert queue filled and redis sycned
     batch_size = project.batch_size
@@ -415,40 +352,29 @@ def test_check_and_trigger_queue_changes_success(
     assert q.length == new_queue_length
 
     # Assert least confident in queue
-    data_list = get_ordered_data(test_queue.data.all(), "least confident")
+    data_list = get_ordered_data(test_queue.data.all(), 'least confident')
     previous_lc = data_list[0].datauncertainty_set.get().least_confident
     for datum in data_list:
         assert len(datum.datalabel_set.all()) == 0
-        assert_obj_exists(DataUncertainty, {"data": datum})
+        assert_obj_exists(DataUncertainty, {
+            'data': datum
+        })
         assert datum.datauncertainty_set.get().least_confident <= previous_lc
         previous_lc = datum.datauncertainty_set.get().least_confident
-    assert (
-        DataQueue.objects.filter(queue=test_queue).count()
-        + DataQueue.objects.filter(queue=test_irr_queue_labeled).count()
-    ) == batch_size
+    assert (DataQueue.objects.filter(queue=test_queue).count()
+            + DataQueue.objects.filter(queue=test_irr_queue_labeled).count()) == batch_size
 
     # Assert new training set
     assert project.get_current_training_set() != initial_training_set
-    assert (
-        project.get_current_training_set().set_number
-        == initial_training_set.set_number + 1
-    )
+    assert project.get_current_training_set().set_number == initial_training_set.set_number + 1
 
 
-def test_svm_classifier(
-    setup_celery,
-    test_project_svm_data_tfidf,
-    test_svm_labels,
-    test_svm_queue_list,
-    test_profile,
-    test_redis,
-    tmpdir,
-    settings,
-):
-    """
+def test_svm_classifier(setup_celery, test_project_svm_data_tfidf, test_svm_labels,
+                        test_svm_queue_list, test_profile, test_redis, tmpdir, settings):
+    '''
     This tests that a project with the svm classifier can successfully train
     and give predictions for a model
-    """
+    '''
     normal_queue, admin_queue, irr_queue = test_svm_queue_list
     labels = test_svm_labels
     project = test_project_svm_data_tfidf
@@ -456,13 +382,13 @@ def test_svm_classifier(
     active_l = project.learning_method
     batch_size = project.batch_size
     initial_training_set = project.get_current_training_set()
-    model_path_temp = tmpdir.listdir()[0].mkdir("model_pickles")
+    model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
     settings.MODEL_PICKLE_PATH = str(model_path_temp)
 
     assert project.classifier == "svm"
-    assert active_l == "least confident"
+    assert active_l == 'least confident'
 
-    fill_queue(normal_queue, "random")
+    fill_queue(normal_queue, 'random')
 
     assert DataQueue.objects.filter(queue=normal_queue).count() == batch_size
 
@@ -471,44 +397,30 @@ def test_svm_classifier(
         label_data(labels[i % 3], datum, test_profile, 3)
 
     ret_str = check_and_trigger_model(datum)
-    assert ret_str == "model running"
+    assert ret_str == 'model running'
 
     # Assert model created and saved
-    assert_obj_exists(Model, {"project": project})
+    assert_obj_exists(Model, {
+        'project': project
+    })
     model = Model.objects.get(project=project)
     assert os.path.isfile(model.pickle_path)
-    assert model.pickle_path == os.path.join(
-        str(model_path_temp),
-        "project_"
-        + str(project.pk)
-        + "_training_"
-        + str(initial_training_set.set_number)
-        + ".pkl",
-    )
+    assert model.pickle_path == os.path.join(str(model_path_temp), 'project_' + str(project.pk)
+                                             + '_training_' + str(initial_training_set.set_number)
+                                             + '.pkl')
 
     # Assert predictions created
     predictions = DataPrediction.objects.filter(data__project=project)
-    assert (
-        len(predictions)
-        == Data.objects.filter(project=project, labelers=None).count()
-        * project.labels.count()
-    )
+    assert len(predictions) == Data.objects.filter(project=project,
+                                                   labelers=None).count() * project.labels.count()
 
 
-def test_randomforest_classifier(
-    setup_celery,
-    test_project_randomforest_data_tfidf,
-    test_randomforest_labels,
-    test_randomforest_queue_list,
-    test_profile,
-    test_redis,
-    tmpdir,
-    settings,
-):
-    """
+def test_randomforest_classifier(setup_celery, test_project_randomforest_data_tfidf, test_randomforest_labels,
+                                 test_randomforest_queue_list, test_profile, test_redis, tmpdir, settings):
+    '''
     This tests that a project with the random forest classifier can successfully train
     and give predictions for a model
-    """
+    '''
     normal_queue, admin_queue, irr_queue = test_randomforest_queue_list
     labels = test_randomforest_labels
     project = test_project_randomforest_data_tfidf
@@ -516,13 +428,13 @@ def test_randomforest_classifier(
     active_l = project.learning_method
     batch_size = project.batch_size
     initial_training_set = project.get_current_training_set()
-    model_path_temp = tmpdir.listdir()[0].mkdir("model_pickles")
+    model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
     settings.MODEL_PICKLE_PATH = str(model_path_temp)
 
     assert project.classifier == "random forest"
-    assert active_l == "least confident"
+    assert active_l == 'least confident'
 
-    fill_queue(normal_queue, "random")
+    fill_queue(normal_queue, 'random')
 
     assert DataQueue.objects.filter(queue=normal_queue).count() == batch_size
 
@@ -531,44 +443,30 @@ def test_randomforest_classifier(
         label_data(labels[i % 3], datum, test_profile, 3)
 
     ret_str = check_and_trigger_model(datum)
-    assert ret_str == "model running"
+    assert ret_str == 'model running'
 
     # Assert model created and saved
-    assert_obj_exists(Model, {"project": project})
+    assert_obj_exists(Model, {
+        'project': project
+    })
     model = Model.objects.get(project=project)
     assert os.path.isfile(model.pickle_path)
-    assert model.pickle_path == os.path.join(
-        str(model_path_temp),
-        "project_"
-        + str(project.pk)
-        + "_training_"
-        + str(initial_training_set.set_number)
-        + ".pkl",
-    )
+    assert model.pickle_path == os.path.join(str(model_path_temp), 'project_' + str(project.pk)
+                                             + '_training_' + str(initial_training_set.set_number)
+                                             + '.pkl')
 
     # Assert predictions created
     predictions = DataPrediction.objects.filter(data__project=project)
-    assert (
-        len(predictions)
-        == Data.objects.filter(project=project, labelers=None).count()
-        * project.labels.count()
-    )
+    assert len(predictions) == Data.objects.filter(project=project,
+                                                   labelers=None).count() * project.labels.count()
 
 
-def test_g_naivebayes_classifier(
-    setup_celery,
-    test_project_gnb_data_tfidf,
-    test_gnb_labels,
-    test_gnb_queue_list,
-    test_profile,
-    test_redis,
-    tmpdir,
-    settings,
-):
-    """
+def test_g_naivebayes_classifier(setup_celery, test_project_gnb_data_tfidf, test_gnb_labels,
+                                 test_gnb_queue_list, test_profile, test_redis, tmpdir, settings):
+    '''
     This tests that a project with the Gaussian Naiive Bayes classifier can successfully train
     and give predictions for a model
-    """
+    '''
     normal_queue, admin_queue, irr_queue = test_gnb_queue_list
     labels = test_gnb_labels
     project = test_project_gnb_data_tfidf
@@ -576,13 +474,13 @@ def test_g_naivebayes_classifier(
     active_l = project.learning_method
     batch_size = project.batch_size
     initial_training_set = project.get_current_training_set()
-    model_path_temp = tmpdir.listdir()[0].mkdir("model_pickles")
+    model_path_temp = tmpdir.listdir()[0].mkdir('model_pickles')
     settings.MODEL_PICKLE_PATH = str(model_path_temp)
 
     assert project.classifier == "gnb"
-    assert active_l == "least confident"
+    assert active_l == 'least confident'
 
-    fill_queue(normal_queue, "random")
+    fill_queue(normal_queue, 'random')
 
     assert DataQueue.objects.filter(queue=normal_queue).count() == batch_size
 
@@ -591,56 +489,38 @@ def test_g_naivebayes_classifier(
         label_data(labels[i % 3], datum, test_profile, 3)
 
     ret_str = check_and_trigger_model(datum)
-    assert ret_str == "model running"
+    assert ret_str == 'model running'
 
     # Assert model created and saved
-    assert_obj_exists(Model, {"project": project})
+    assert_obj_exists(Model, {
+        'project': project
+    })
     model = Model.objects.get(project=project)
     assert os.path.isfile(model.pickle_path)
-    assert model.pickle_path == os.path.join(
-        str(model_path_temp),
-        "project_"
-        + str(project.pk)
-        + "_training_"
-        + str(initial_training_set.set_number)
-        + ".pkl",
-    )
+    assert model.pickle_path == os.path.join(str(model_path_temp), 'project_' + str(project.pk)
+                                             + '_training_' + str(initial_training_set.set_number)
+                                             + '.pkl')
 
     # Assert predictions created
     predictions = DataPrediction.objects.filter(data__project=project)
-    assert (
-        len(predictions)
-        == Data.objects.filter(project=project, labelers=None).count()
-        * project.labels.count()
-    )
+    assert len(predictions) == Data.objects.filter(project=project,
+                                                   labelers=None).count() * project.labels.count()
 
 
-def test_cohens_kappa_perc_agreement(
-    setup_celery,
-    test_project_half_irr_data,
-    test_half_irr_all_queues,
-    test_profile,
-    test_profile2,
-    test_labels_half_irr,
-    test_redis,
-    tmpdir,
-    settings,
-):
-    """
+def test_cohens_kappa_perc_agreement(setup_celery, test_project_half_irr_data, test_half_irr_all_queues, test_profile, test_profile2, test_labels_half_irr, test_redis, tmpdir, settings):
+    '''
     want to check several different configurations including empty, no agreement
     Should throw an error if no irr data processed yet
-    """
+    '''
     project = test_project_half_irr_data
     labels = test_labels_half_irr
     normal_queue, admin_queue, irr_queue = test_half_irr_all_queues
-    fill_queue(
-        normal_queue, "random", irr_queue, project.percentage_irr, project.batch_size
-    )
+    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size)
 
     # check that before anything is labeled, an error is thrown
     with pytest.raises(ValueError) as excinfo:
         cohens_kappa(project)
-    assert "No irr data" in str(excinfo.value)
+    assert 'No irr data' in str(excinfo.value)
 
     # have two labelers label two datum the same.
     for i in range(2):
@@ -652,7 +532,7 @@ def test_cohens_kappa_perc_agreement(
     # kappa requires at least two labels be represented
     with pytest.raises(ValueError) as excinfo:
         cohens_kappa(project)
-    assert "Need at least two labels represented" in str(excinfo.value)
+    assert 'Need at least two labels represented' in str(excinfo.value)
 
     datum = assign_datum(test_profile, project, "irr")
     assign_datum(test_profile2, project, "irr")
@@ -680,26 +560,14 @@ def test_cohens_kappa_perc_agreement(
     assert perc == 0.6
 
 
-def test_cohens_kappa_perc_agreement_no_agreement(
-    setup_celery,
-    test_project_half_irr_data,
-    test_half_irr_all_queues,
-    test_profile,
-    test_profile2,
-    test_labels_half_irr,
-    test_redis,
-    tmpdir,
-    settings,
-):
-    """
+def test_cohens_kappa_perc_agreement_no_agreement(setup_celery, test_project_half_irr_data, test_half_irr_all_queues, test_profile, test_profile2, test_labels_half_irr, test_redis, tmpdir, settings):
+    '''
     This just tests the kappa and percent if nobody ever agreed
-    """
+    '''
     project = test_project_half_irr_data
     labels = test_labels_half_irr
     normal_queue, admin_queue, irr_queue = test_half_irr_all_queues
-    fill_queue(
-        normal_queue, "random", irr_queue, project.percentage_irr, project.batch_size
-    )
+    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size)
 
     # label 5 irr elements but disagree on all of them
     for i in range(5):
@@ -712,32 +580,19 @@ def test_cohens_kappa_perc_agreement_no_agreement(
     assert perc == 0.0
 
 
-def test_fleiss_kappa_perc_agreement(
-    setup_celery,
-    test_project_all_irr_3_coders_data,
-    test_all_irr_3_coders_all_queues,
-    test_profile,
-    test_profile2,
-    test_profile3,
-    test_labels_all_irr_3_coders,
-    test_redis,
-    tmpdir,
-    settings,
-):
-    """
+def test_fleiss_kappa_perc_agreement(setup_celery, test_project_all_irr_3_coders_data, test_all_irr_3_coders_all_queues, test_profile, test_profile2, test_profile3, test_labels_all_irr_3_coders, test_redis, tmpdir, settings):
+    '''
     This tests the results of the Fleiss's kappa function when fed different situations
-    """
+    '''
     project = test_project_all_irr_3_coders_data
     labels = test_labels_all_irr_3_coders
     normal_queue, admin_queue, irr_queue = test_all_irr_3_coders_all_queues
-    fill_queue(
-        normal_queue, "random", irr_queue, project.percentage_irr, project.batch_size
-    )
+    fill_queue(normal_queue, 'random', irr_queue, project.percentage_irr, project.batch_size)
 
     # first check that an error is thrown if there is no data
     with pytest.raises(ValueError) as excinfo:
         fleiss_kappa(project)
-    assert "No irr data" in str(excinfo.value)
+    assert 'No irr data' in str(excinfo.value)
 
     # next, check that the same error happens if only two have labeled it
     datum = assign_datum(test_profile, project, "irr")
@@ -748,7 +603,7 @@ def test_fleiss_kappa_perc_agreement(
 
     with pytest.raises(ValueError) as excinfo:
         fleiss_kappa(project)
-    assert "No irr data" in str(excinfo.value)
+    assert 'No irr data' in str(excinfo.value)
 
     # have everyone label a datum differenty
     # [1 1 1], kappa = -0.5, pa = 0
