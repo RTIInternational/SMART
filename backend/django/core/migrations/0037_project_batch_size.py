@@ -8,13 +8,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0036_project_codebook_file'),
+        ("core", "0036_project_codebook_file"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='project',
-            name='batch_size',
+            model_name="project",
+            name="batch_size",
             field=models.IntegerField(default=30),
         ),
     ]

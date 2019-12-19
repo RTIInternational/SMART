@@ -8,9 +8,8 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0009_data_hash'),
-        ('core', '0010_Make_AssignedData_unique_on_user_and_data'),
+        ("core", "0009_data_hash"),
+        ("core", "0010_Make_AssignedData_unique_on_user_and_data"),
     ]
 
-    operations = [
-    ]
+    operations = []

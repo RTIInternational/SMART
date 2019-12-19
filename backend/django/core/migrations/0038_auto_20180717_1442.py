@@ -8,12 +8,9 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0037_labelchangelog_project'),
+        ("core", "0037_labelchangelog_project"),
     ]
 
     operations = [
-        migrations.AlterUniqueTogether(
-            name='labelchangelog',
-            unique_together=set([]),
-        ),
+        migrations.AlterUniqueTogether(name="labelchangelog", unique_together=set([]),),
     ]

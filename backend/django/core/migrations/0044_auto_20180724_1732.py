@@ -8,21 +8,19 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0043_auto_20180724_1717'),
+        ("core", "0043_auto_20180724_1717"),
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='queue',
-            name='admin',
-        ),
-        migrations.RemoveField(
-            model_name='queue',
-            name='irr',
-        ),
+        migrations.RemoveField(model_name="queue", name="admin",),
+        migrations.RemoveField(model_name="queue", name="irr",),
         migrations.AddField(
-            model_name='queue',
-            name='type',
-            field=models.CharField(choices=[('admin', 'Admin'), ('irr', 'IRR'), ('normal', 'Normal')], default='normal', max_length=6),
+            model_name="queue",
+            name="type",
+            field=models.CharField(
+                choices=[("admin", "Admin"), ("irr", "IRR"), ("normal", "Normal")],
+                default="normal",
+                max_length=6,
+            ),
         ),
     ]
