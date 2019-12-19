@@ -104,3 +104,4 @@ If you would like to contribute to SMART feel free to submit issues and pull req
        * [flake8](https://github.com/PyCQA/flake8): Your tool for style guide enforcement
        * [docformatter](https://github.com/myint/docformatter): Formats docstrings to follow [PEP 257](https://www.python.org/dev/peps/pep-0257/)
        * [isort](https://github.com/timothycrosley/isort): A python utility to sort imports
+       * [eslint](https://github.com/eslint/eslint): A fully pluggable tool for identifying and reporting on patterns in JavaScript
