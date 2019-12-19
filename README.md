@@ -5,7 +5,7 @@
 
 SMART is an open source application designed to help data scientists and research teams efficiently build labeled training datasets for supervised machine learning tasks.
 
-- **[SMART Landing Page](https://rtiinternational.github.io/SMART/)** 
+- **[SMART Landing Page](https://rtiinternational.github.io/SMART/)**
 - **[SMART User Documentation](https://smart-app.readthedocs.io/en/latest/#)**
 - **[SMART Publication](http://jmlr.org/papers/v20/18-859.html)**
 
@@ -87,6 +87,7 @@ Frontend tests use [mocha](https://mochajs.org/api/mocha.js.html) and [eslint](h
 docker-compose run --rm smart_frontend ./run_tests.sh
 ```
 
+
 ### Contributing
 
 If you would like to contribute to SMART feel free to submit issues and pull requests addressing any bugs or features. Before submitting a pull request make sure to follow the few guidelines below:
@@ -95,3 +96,11 @@ If you would like to contribute to SMART feel free to submit issues and pull req
 * For new features include unit tests to ensure the feature is working correctly and the new feature is maintainable going forward.
 * For bug fixes include unit tests to ensure that previously untested code is now covered.
 * Make sure your branch passes all the existing backend and frontend tests.
+* It is recommended that you enable pre-commit hooks. These are format checks that run whenever you commit to the project.
+   * In order to run the pre-commit hooks you will need to have [pre-commit](https://pre-commit.com/) installed in your local environment.  
+   * Once your environment is active you will need to install the pre-commit hooks with `pre-commit install`
+   * This project uses the following formatters:
+       * [black](https://github.com/python/black): The uncompromising Python code formatter
+       * [flake8](https://github.com/PyCQA/flake8): Your tool for style guide enforcement
+       * [docformatter](https://github.com/myint/docformatter): Formats docstrings to follow [PEP 257](https://www.python.org/dev/peps/pep-0257/)
+       * [isort](https://github.com/timothycrosley/isort): A python utility to sort imports
