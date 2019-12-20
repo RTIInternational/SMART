@@ -8,9 +8,8 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0046_merge_20180731_1734'),
-        ('core', '0045_recyclebin'),
+        ("core", "0046_merge_20180731_1734"),
+        ("core", "0045_recyclebin"),
     ]
 
-    operations = [
-    ]
+    operations = []

@@ -20,6 +20,10 @@ script:
   - docker-compose up -d
   - docker-compose exec smart_frontend bash -c "./run_tests.sh"
   - docker-compose exec smart_backend bash -c "./run_tests.sh"
+  - docker-compose exec smart_backend bash -c "./scripts/isort.sh"
+  - docker-compose exec smart_backend bash -c "./scripts/docformatter.sh"
+  - docker-compose exec smart_backend bash -c "./scripts/black.sh"
+  - docker-compose exec smart_backend bash -c "./scripts/flake8.sh"
 
 after_script:
   - docker-compose down

@@ -1,17 +1,18 @@
-import dateparser
-from django import forms
-from django.core.exceptions import ValidationError
-from django.core.validators import URLValidator
-from django.forms.widgets import RadioSelect, Textarea, TextInput, Select
-
-import pandas as pd
-import numpy as np
-from pandas.errors import ParserError
 import copy
 from io import StringIO
 
+import numpy as np
+import pandas as pd
+from django import forms
+from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
+from django.forms.widgets import RadioSelect, Select, Textarea, TextInput
+from pandas.errors import ParserError
+
+import dateparser
 from core.utils.util import md5_hash
-from .models import Project, ProjectPermissions, Label, ProjectMetaData
+
+from .models import Label, Project, ProjectMetaData, ProjectPermissions
 
 
 def clean_data_helper(data, supplied_labels, metadata):
@@ -161,8 +162,10 @@ def clean_data_helper(data, supplied_labels, metadata):
     num_unlabeled_data = len(data[pd.isnull(data["Label"])])
     if num_unlabeled_data < 1:
         raise ValidationError(
-            "All text in the file already has a label.  SMART needs unlabeled data "
-            "to do active learning.  Please upload a file that has less labels."
+            "All text in the file already has a label."
+            "  SMART needs unlabeled data "
+            "to do active learning.  Please upload "
+            "a file that has less labels."
         )
 
     if len(data.columns) == len(ALLOWED_HEADER_ID):

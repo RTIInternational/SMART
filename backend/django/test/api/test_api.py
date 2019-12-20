@@ -1,16 +1,17 @@
+from test.util import compare_get_response, read_test_data_api
+
 from core.management.commands.seed import (
+    SEED_EMAIL,
+    SEED_LABELS,
+    SEED_PASSWORD,
+    SEED_PASSWORD2,
     SEED_PROJECT,
     SEED_USERNAME,
-    SEED_EMAIL,
-    SEED_PASSWORD,
-    SEED_LABELS,
     SEED_USERNAME2,
-    SEED_PASSWORD2,
 )
-from core.pagination import SmartPagination
 from core.models import Profile, ProjectPermissions
+from core.pagination import SmartPagination
 from core.utils.utils_queue import fill_queue
-from test.util import read_test_data_api, compare_get_response
 
 
 def test_get_projects(seeded_database, admin_client):
@@ -66,9 +67,7 @@ def test_queue_refills_after_empty(
     test_half_irr_all_queues,
     test_labels_half_irr,
 ):
-    """
-    This tests that the queue refills when it should.
-    """
+    """This tests that the queue refills when it should."""
 
     # sign in users
     labels = test_labels_half_irr
@@ -113,9 +112,7 @@ def test_download_model(
     test_irr_queue_labeled,
     test_admin_queue_labeled,
 ):
-    """
-    This tests the download model api call
-    """
+    """This tests the download model api call."""
     project = test_project_with_trained_model
     fill_queue(
         test_queue_labeled,
@@ -160,9 +157,7 @@ def test_download_labeled_data(
     test_irr_queue_labeled,
     test_admin_queue_labeled,
 ):
-    """
-    This tests the download labeled data api call
-    """
+    """This tests the download labeled data api call."""
     project = test_project_labeled
     fill_queue(
         test_queue_labeled,

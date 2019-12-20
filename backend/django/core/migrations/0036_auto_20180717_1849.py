@@ -8,18 +8,14 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0035_auto_20180717_1825'),
+        ("core", "0035_auto_20180717_1825"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='data',
-            name='irr_ind',
-            field=models.BooleanField(default=False),
+            model_name="data", name="irr_ind", field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='queue',
-            name='irr',
-            field=models.BooleanField(default=False),
+            model_name="queue", name="irr", field=models.BooleanField(default=False),
         ),
     ]

@@ -8,18 +8,16 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0055_auto_20191212_2153'),
+        ("core", "0055_auto_20191212_2153"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='metadata',
-            name='user_url',
-            field=models.URLField(null=True),
+            model_name="metadata", name="user_url", field=models.URLField(null=True),
         ),
         migrations.AddField(
-            model_name='projectmetadata',
-            name='has_user_url',
+            model_name="projectmetadata",
+            name="has_user_url",
             field=models.BooleanField(default=False),
         ),
     ]

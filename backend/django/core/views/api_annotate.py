@@ -1,36 +1,35 @@
-from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes
-from django.db import transaction
-from django.utils import timezone
-from django.utils.html import escape
-
 import math
 import random
 
-from core.serializers import LabelSerializer, DataSerializer
+from django.db import transaction
+from django.utils import timezone
+from django.utils.html import escape
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+
 from core.models import (
-    Project,
-    Data,
-    Label,
-    DataLabel,
-    Queue,
-    DataQueue,
-    AssignedData,
-    LabelChangeLog,
-    RecycleBin,
-    IRRLog,
     AdminProgress,
-    MetaData,
+    AssignedData,
+    Data,
+    DataLabel,
+    DataQueue,
+    IRRLog,
+    Label,
+    LabelChangeLog,
+    Project,
+    Queue,
+    RecycleBin,
 )
-from core.templatetags import project_extras
 from core.permissions import IsAdminOrCreator, IsCoder
+from core.serializers import LabelSerializer
+from core.templatetags import project_extras
 from core.utils.utils_annotate import (
-    process_irr_label,
-    move_skipped_to_admin_queue,
-    label_data,
-    unassign_datum,
-    get_assignments,
     add_metadata_to_data,
+    get_assignments,
+    label_data,
+    move_skipped_to_admin_queue,
+    process_irr_label,
+    unassign_datum,
 )
 from core.utils.utils_model import check_and_trigger_model
 
@@ -73,10 +72,10 @@ def get_card_deck(request, project_pk):
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))
 def label_distribution_inverted(request, project_pk):
-    """This function finds and returns the number of each label. The format
-    is more focussed on showing the total amount of each label then the user
-    label distribution, so the data is inverted from the function below.
-    This is used by a graph on the front end admin page.
+    """This function finds and returns the number of each label. The format is more
+    focussed on showing the total amount of each label then the user label distribution,
+    so the data is inverted from the function below. This is used by a graph on the
+    front end admin page.
 
     Args:
         request: The POST request
@@ -109,9 +108,8 @@ def label_distribution_inverted(request, project_pk):
 @api_view(["POST"])
 @permission_classes((IsCoder,))
 def skip_data(request, data_pk):
-    """Take a datum that is in the assigneddata queue for that user
-    and place it in the admin queue. Remove it from the
-    assignedData queue.
+    """Take a datum that is in the assigneddata queue for that user and place it in the
+    admin queue. Remove it from the assignedData queue.
 
     Args:
         request: The POST request
@@ -157,9 +155,9 @@ def skip_data(request, data_pk):
 @permission_classes((IsCoder,))
 def annotate_data(request, data_pk):
     """Annotate a single datum which is in the assigneddata queue given the user,
-       data_id, and label_id.  This will remove it from assigneddata, remove it
-       from dataqueue and add it to labeleddata.  Also check if project is ready
-       to have model run, if so start that process.
+    data_id, and label_id.  This will remove it from assigneddata, remove it from
+    dataqueue and add it to labeleddata.  Also check if project is ready to have model
+    run, if so start that process.
 
     Args:
         request: The POST request
@@ -203,8 +201,8 @@ def annotate_data(request, data_pk):
 @api_view(["POST"])
 @permission_classes((IsAdminOrCreator,))
 def discard_data(request, data_pk):
-    """Move a datum to the RecycleBin. This removes it from
-       the admin dataqueue. This is used only in the skew table by the admin.
+    """Move a datum to the RecycleBin. This removes it from the admin dataqueue. This is
+    used only in the skew table by the admin.
 
     Args:
         request: The POST request
@@ -263,7 +261,7 @@ def restore_data(request, data_pk):
 @api_view(["POST"])
 @permission_classes((IsCoder,))
 def modify_label(request, data_pk):
-    """Take a single datum with a label and change the label in the DataLabel table
+    """Take a single datum with a label and change the label in the DataLabel table.
 
     Args:
         request: The POST request
@@ -298,8 +296,8 @@ def modify_label(request, data_pk):
 @api_view(["POST"])
 @permission_classes((IsCoder,))
 def modify_label_to_skip(request, data_pk):
-    """Take a datum that is in the assigneddata queue for that user
-    and place it in the admin queue. Remove it from the assignedData queue.
+    """Take a datum that is in the assigneddata queue for that user and place it in the
+    admin queue. Remove it from the assignedData queue.
 
     Args:
         request: The POST request
@@ -340,10 +338,8 @@ def modify_label_to_skip(request, data_pk):
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))
 def check_admin_in_progress(request, project_pk):
-    """
-    This api is called by the admin tabs on the annotate page to check
-    if it is alright to show the data.
-    """
+    """This api is called by the admin tabs on the annotate page to check if it is
+    alright to show the data."""
     profile = request.user.profile
     project = Project.objects.get(pk=project_pk)
 
@@ -379,8 +375,8 @@ def enter_coding_page(request, project_pk):
 @api_view(["GET"])
 def leave_coding_page(request, project_pk):
     """API request meant to be sent when a user navigates away from the coding page
-       captured with 'beforeunload' event.  This should use assign_data to remove
-       any data currently assigned to the user and re-add it to redis
+    captured with 'beforeunload' event.  This should use assign_data to remove any data
+    currently assigned to the user and re-add it to redis.
 
     Args:
         request: The GET request
@@ -404,7 +400,7 @@ def leave_coding_page(request, project_pk):
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))
 def data_unlabeled_table(request, project_pk):
-    """This returns the unlebeled data not in a queue for the skew table
+    """This returns the unlebeled data not in a queue for the skew table.
 
     Args:
         request: The POST request
@@ -439,7 +435,7 @@ def data_unlabeled_table(request, project_pk):
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))
 def data_admin_table(request, project_pk):
-    """This returns the elements in the admin queue for annotation
+    """This returns the elements in the admin queue for annotation.
 
     Args:
         request: The POST request
@@ -470,7 +466,7 @@ def data_admin_table(request, project_pk):
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))
 def data_admin_counts(request, project_pk):
-    """This returns the number of irr and admin objects
+    """This returns the number of irr and admin objects.
 
     Args:
         request: The POST request
@@ -493,7 +489,7 @@ def data_admin_counts(request, project_pk):
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))
 def recycle_bin_table(request, project_pk):
-    """This returns the elements in the recycle bin
+    """This returns the elements in the recycle bin.
 
     Args:
         request: The POST request
@@ -554,9 +550,9 @@ def label_skew_label(request, data_pk):
 @api_view(["POST"])
 @permission_classes((IsAdminOrCreator,))
 def label_admin_label(request, data_pk):
-    """This is called when an admin manually labels a datum on the admin
-    annotation page. It labels a single datum with the given label and profile,
-    with null as the time.
+    """This is called when an admin manually labels a datum on the admin annotation
+    page. It labels a single datum with the given label and profile, with null as the
+    time.
 
     Args:
         request: The POST request
@@ -599,8 +595,7 @@ def label_admin_label(request, data_pk):
 @api_view(["GET"])
 @permission_classes((IsCoder,))
 def get_label_history(request, project_pk):
-    """Grab items previously labeled by this user
-    and send it to the frontend react app.
+    """Grab items previously labeled by this user and send it to the frontend react app.
 
     Args:
         request: The request to the endpoint

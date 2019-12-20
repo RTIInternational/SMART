@@ -1,18 +1,20 @@
-from django.contrib.auth.models import Group, User as AuthUser
+from django.contrib.auth.models import Group
+from django.contrib.auth.models import User as AuthUser
 from rest_framework import serializers
+
 from core.models import (
-    Profile,
-    Project,
-    Model,
-    Data,
-    Label,
-    DataLabel,
-    IRRLog,
-    DataPrediction,
-    Queue,
     AssignedData,
+    Data,
+    DataLabel,
+    DataPrediction,
+    IRRLog,
+    Label,
     LabelChangeLog,
     MetaData,
+    Model,
+    Profile,
+    Project,
+    Queue,
 )
 
 

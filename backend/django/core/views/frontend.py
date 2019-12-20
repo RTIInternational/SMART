@@ -1,33 +1,32 @@
-from django.shortcuts import redirect, render
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.views.generic import TemplateView, ListView, DetailView, View
-from django.views.generic.edit import UpdateView, DeleteView
-from django.urls import reverse_lazy
-from django.http import HttpResponseRedirect
-from django.db import transaction
-from django.core.files.storage import FileSystemStorage
-from django.conf import settings
+import pandas as pd
 from django import forms
+from django.conf import settings
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.core.files.storage import FileSystemStorage
+from django.db import transaction
+from django.http import HttpResponseRedirect
+from django.shortcuts import redirect, render
+from django.urls import reverse_lazy
+from django.views.generic import DetailView, ListView, TemplateView, View
+from django.views.generic.edit import DeleteView, UpdateView
 from formtools.wizard.views import SessionWizardView
 
-import pandas as pd
-
-from core.models import Project, Data, Label, TrainingSet, ProjectMetaData
 from core.forms import (
-    ProjectUpdateOverviewForm,
-    PermissionsFormSet,
-    LabelFormSet,
-    ProjectWizardForm,
-    DataFormatWizardForm,
-    DataWizardForm,
     AdvancedWizardForm,
     CodeBookWizardForm,
+    DataFormatWizardForm,
+    DataWizardForm,
     LabelDescriptionFormSet,
+    LabelFormSet,
+    PermissionsFormSet,
+    ProjectUpdateOverviewForm,
+    ProjectWizardForm,
 )
+from core.models import Data, Label, Project, ProjectMetaData, TrainingSet
 from core.templatetags import project_extras
 from core.utils.util import save_codebook_file, upload_data
-from core.utils.utils_queue import add_queue, find_queue_length
 from core.utils.utils_annotate import batch_unassign
+from core.utils.utils_queue import add_queue, find_queue_length
 
 
 # Projects
@@ -176,12 +175,13 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         return prefix
 
     def get_form(self, step=None, data=None, files=None):
-        """
-        Overriding get_form.  All the code is exactly the same except the if
-        statement by the return.  InlineLabelFormsets do not allow kwargs to be
-        added to them through the traditional method of adding the kwargs to
-        their init method.  Instead they must be passed using the `form_kwargs`
-        parameter.  So If the step is a inline formset pass those special kwargs
+        """Overriding get_form.
+
+        All the code is exactly the same except the if statement by the return.
+        InlineLabelFormsets do not allow kwargs to be added to them through the
+        traditional method of adding the kwargs to their init method.  Instead they must
+        be passed using the `form_kwargs` parameter.  So If the step is a inline formset
+        pass those special kwargs
         """
         if step is None:
             step = self.steps.current
@@ -259,7 +259,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             # Project metadata options
             cleaned_dataformat = dataformat.cleaned_data
             if cleaned_dataformat["data_type_choice"] == "Media":
-                project_meta = ProjectMetaData.objects.create(
+                ProjectMetaData.objects.create(
                     project=proj_obj,
                     has_title=cleaned_dataformat["has_title"],
                     has_url=cleaned_dataformat["has_url"],

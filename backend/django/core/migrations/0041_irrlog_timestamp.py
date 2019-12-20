@@ -8,13 +8,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0040_auto_20180718_1335'),
+        ("core", "0040_auto_20180718_1335"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='irrlog',
-            name='timestamp',
+            model_name="irrlog",
+            name="timestamp",
             field=models.DateTimeField(default=None, null=True),
         ),
     ]

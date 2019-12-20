@@ -1,23 +1,24 @@
+from test.util import assert_collections_equal, sign_in_and_fill_queue
+
 from core.management.commands.seed import (
-    SEED_USERNAME,
     SEED_PASSWORD,
-    SEED_USERNAME2,
     SEED_PASSWORD2,
+    SEED_USERNAME,
+    SEED_USERNAME2,
 )
 from core.models import (
-    Profile,
-    DataQueue,
-    DataLabel,
-    Data,
-    ProjectPermissions,
-    LabelChangeLog,
     AssignedData,
+    Data,
+    DataLabel,
+    DataQueue,
     IRRLog,
+    LabelChangeLog,
+    Profile,
+    ProjectPermissions,
     RecycleBin,
 )
 from core.utils.utils_annotate import get_assignments
 from core.utils.utils_queue import fill_queue
-from test.util import assert_collections_equal, sign_in_and_fill_queue
 
 
 def test_get_label_history(
@@ -30,7 +31,8 @@ def test_get_label_history(
     test_admin_queue,
     test_irr_queue,
 ):
-    """This tests the function that returns the elements that user has already labeled"""
+    """This tests the function that returns the elements that user has already
+    labeled."""
     project = test_project_data
     client_profile, admin_profile = sign_in_and_fill_queue(
         project, test_queue, client, admin_client
@@ -76,7 +78,7 @@ def test_annotate_data(
     test_admin_queue,
     test_irr_queue,
 ):
-    """This tests the basic ability to annotate a datum"""
+    """This tests the basic ability to annotate a datum."""
     # get a datum from the queue
     project = test_project_data
     fill_queue(test_queue, "random")
@@ -118,9 +120,7 @@ def test_skip_data(
     test_labels,
     test_admin_queue,
 ):
-    """
-    This tests that the skip data api works
-    """
+    """This tests that the skip data api works."""
     project = test_project_data
     fill_queue(test_queue, "random")
     permission_message = (
@@ -162,9 +162,7 @@ def test_modify_label(
     test_irr_queue,
     test_admin_queue,
 ):
-    """
-    This tests the history table's ability to modify a label
-    """
+    """This tests the history table's ability to modify a label."""
     request_info = {"labelID": test_labels[0].pk, "labeling_time": 3}
     project = test_project_data
     client_profile, admin_profile = sign_in_and_fill_queue(project, test_queue, client)
@@ -199,8 +197,8 @@ def test_modify_label_to_skip(
     test_labels,
     test_admin_queue,
 ):
-    """This tests the history table's ability to change labeled items
-    to skipped items."""
+    """This tests the history table's ability to change labeled items to skipped
+    items."""
     request_info = {"labelID": test_labels[0].pk, "labeling_time": 3}
     project = test_project_data
     client_profile, admin_profile = sign_in_and_fill_queue(project, test_queue, client)
@@ -234,10 +232,8 @@ def test_skew_label(
     test_irr_queue,
     test_admin_queue,
 ):
-    """
-    This tests the skew label functionalty, which takes unlabeled and
-    unnasigned data and labels it.
-    """
+    """This tests the skew label functionalty, which takes unlabeled and unnasigned data
+    and labels it."""
     request_info = {"labelID": test_labels[0].pk, "labeling_time": 3}
     project = test_project_data
     admin_client.login(username=SEED_USERNAME2, password=SEED_PASSWORD2)
@@ -274,9 +270,7 @@ def test_skip_data_api(
     test_half_irr_all_queues,
     test_labels_half_irr,
 ):
-    """
-    This tests that skipping works properly from the api side
-    """
+    """This tests that skipping works properly from the api side."""
     # sign in users
     normal_queue, admin_queue, irr_queue = test_half_irr_all_queues
     project = test_project_half_irr_data
@@ -342,9 +336,7 @@ def test_admin_label(
     test_irr_queue,
     test_admin_queue,
 ):
-    """
-    This tests the admin ability to label skipped items in the admin table
-    """
+    """This tests the admin ability to label skipped items in the admin table."""
     # fill queue. The admin queue should be empty
     project = test_project_data
     client_profile, admin_profile = sign_in_and_fill_queue(
@@ -389,9 +381,9 @@ def test_label_distribution_inverted(
     test_labels,
     test_admin_queue,
 ):
-    """
-    This tests the api that produces the label counts chart for
-    the skew page. It is stacked differently than the previous.
+    """This tests the api that produces the label counts chart for the skew page.
+
+    It is stacked differently than the previous.
     """
     project = test_project_data
     client_profile, admin_profile = sign_in_and_fill_queue(
@@ -484,9 +476,7 @@ def test_unlabeled_table(
     test_irr_queue,
     test_labels,
 ):
-    """
-    This tests that the unlabeled data table contains what it should
-    """
+    """This tests that the unlabeled data table contains what it should."""
     project = test_project_unlabeled_and_tfidf
     # first, check that it has all the unlabeled data
     client_profile, admin_profile = sign_in_and_fill_queue(
@@ -539,9 +529,7 @@ def test_admin_table(
     test_admin_queue,
     test_labels,
 ):
-    """
-    This tests that the admin table holds the correct items
-    """
+    """This tests that the admin table holds the correct items."""
     project = test_project_data
     client_profile, admin_profile = sign_in_and_fill_queue(
         project, test_queue, client, admin_client
@@ -589,11 +577,9 @@ def test_multiple_admin_on_admin_annotation(
     test_all_irr_all_queues,
     test_labels_all_irr,
 ):
-    """
-    This tests the functions that prevent the race condition of multiple admin
-    editing any of the three admin-only tables by only allowing one admin at a time
-    to view them.
-    """
+    """This tests the functions that prevent the race condition of multiple admin
+    editing any of the three admin-only tables by only allowing one admin at a time to
+    view them."""
     normal_queue, admin_queue, irr_queue = test_all_irr_all_queues
     project = test_project_all_irr_data
 
@@ -661,9 +647,7 @@ def test_discard_data(
     test_labels,
     test_admin_queue,
 ):
-    """
-    This tests that data can be discarded
-    """
+    """This tests that data can be discarded."""
     project = test_project_data
     fill_queue(
         test_queue, "random", test_irr_queue, project.percentage_irr, project.batch_size
@@ -743,9 +727,7 @@ def test_restore_data(
     test_labels,
     test_admin_queue,
 ):
-    """
-    This tests that data can be restored after it is discarded
-    """
+    """This tests that data can be restored after it is discarded."""
     project = test_project_data
     fill_queue(
         test_queue, "random", test_irr_queue, project.percentage_irr, project.batch_size
@@ -805,9 +787,7 @@ def test_recycle_bin_table(
     test_labels,
     test_admin_queue,
 ):
-    """
-    This tests that the recycle bin table is populated correctly
-    """
+    """This tests that the recycle bin table is populated correctly."""
     project = test_project_data
     fill_queue(
         test_queue, "random", test_irr_queue, project.percentage_irr, project.batch_size
@@ -901,9 +881,7 @@ def test_admin_counts(
     test_no_irr_all_queues,
     test_labels_no_irr,
 ):
-    """
-    This tests the admin counts api
-    """
+    """This tests the admin counts api."""
     projects = [test_project_data, test_project_no_irr_data]
     normal_queues = [test_queue, test_no_irr_all_queues[0]]
     irr_queues = [test_irr_queue, test_no_irr_all_queues[2]]
