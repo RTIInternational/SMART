@@ -1,11 +1,11 @@
-import React from "react";
-import PropTypes from "prop-types";
-import ReactTable from "react-table";
-import { Panel } from "react-bootstrap";
-import NVD3Chart from "react-nvd3";
-import d3 from "d3";
-import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
-import LabelForm from "../LabelForm";
+import React from 'react';
+import PropTypes from 'prop-types';
+import ReactTable from 'react-table';
+import { Panel } from 'react-bootstrap';
+import NVD3Chart from 'react-nvd3';
+import d3 from 'd3';
+import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
+import LabelForm from '../LabelForm';
 
 const COLUMNS = [
     {
@@ -17,11 +17,7 @@ const COLUMNS = [
         Header: "Unlabeled Data",
         accessor: "data",
         filterMethod: (filter, row) => {
-            if (
-                String(row["data"])
-                .toLowerCase()
-                .includes(filter.value.toLowerCase())
-            ) {
+            if (String(row["data"]).toLowerCase().includes(filter.value.toLowerCase())) {
                 return true;
             } else {
                 return false;
@@ -73,7 +69,7 @@ class Skew extends React.Component {
                                 yAxis={{
                                     axisLabel: "Number of Data Annotated",
                                     axisLabelDistance: -5,
-                                    tickFormat: d3.format(",.01f")
+                                    tickFormat: d3.format(',.01f')
                                 }}
                                 xAxis={{
                                     axisLabel: "Label",
@@ -95,9 +91,7 @@ class Skew extends React.Component {
                     columns={COLUMNS}
                     filterable={true}
                     showPageSizeOptions={false}
-                    pageSize={
-                        unlabeled_data.length < 50 ? unlabeled_data.length : 50
-                    }
+                    pageSize={(unlabeled_data.length < 50) ? unlabeled_data.length : 50}
                     SubComponent={row => {
                         return (
                             <div className="sub-row">

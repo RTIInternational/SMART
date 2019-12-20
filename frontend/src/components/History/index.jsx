@@ -1,9 +1,9 @@
-import React from "react";
-import PropTypes from "prop-types";
-import ReactTable from "react-table";
-import { Alert } from "react-bootstrap";
-import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
-import LabelForm from "../LabelForm";
+import React from 'react';
+import PropTypes from 'prop-types';
+import ReactTable from 'react-table';
+import { Alert } from 'react-bootstrap';
+import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
+import LabelForm from '../LabelForm';
 
 const COLUMNS = [
     {
@@ -20,11 +20,7 @@ const COLUMNS = [
         Header: "Data",
         accessor: "data",
         filterMethod: (filter, row) => {
-            if (
-                String(row["data"])
-                .toLowerCase()
-                .includes(filter.value.toLowerCase())
-            ) {
+            if (String(row["data"]).toLowerCase().includes(filter.value.toLowerCase())) {
                 return true;
             } else {
                 return false;
@@ -88,8 +84,7 @@ class History extends React.Component {
                     <p>{row.row.data}</p>
                     <Alert bsStyle="warning">
                         <strong>Note:</strong>
-                        This is Inter-rater Reliability data and is not
-                        editable.
+                        This is Inter-rater Reliability data and is not editable.
                     </Alert>
                 </div>
             );
@@ -128,9 +123,7 @@ class History extends React.Component {
                 <ReactTable
                     data={history_data}
                     columns={COLUMNS}
-                    pageSize={
-                        history_data.length < 50 ? history_data.length : 50
-                    }
+                    pageSize={(history_data.length < 50) ? history_data.length : 50}
                     showPageSizeOptions={false}
                     SubComponent={row => this.getSubComponent(row)}
                     filterable={true}

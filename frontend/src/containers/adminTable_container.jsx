@@ -1,14 +1,14 @@
-import React from "react";
-import { connect } from "react-redux";
+import React from 'react';
+import { connect } from 'react-redux';
 
-import { adminLabel, getAdmin, discardData } from "../actions/adminTables";
-import AdminTable from "../components/AdminTable";
+import { adminLabel, getAdmin, discardData } from '../actions/adminTables';
+import AdminTable from '../components/AdminTable';
 
 const PROJECT_ID = window.PROJECT_ID;
 
-const AdminTableContainer = props => <AdminTable {...props} />;
+const AdminTableContainer = (props) => <AdminTable {...props} />;
 
-const mapStateToProps = state => {
+const mapStateToProps = (state) => {
     return {
         admin_data: state.adminTables.admin_data,
         labels: state.card.labels,
@@ -16,7 +16,7 @@ const mapStateToProps = state => {
     };
 };
 
-const mapDispatchToProps = dispatch => {
+const mapDispatchToProps = (dispatch) => {
     return {
         adminLabel: (dataID, labelID, labelReason) => {
             dispatch(adminLabel(dataID, labelID, labelReason, PROJECT_ID));
@@ -24,13 +24,10 @@ const mapDispatchToProps = dispatch => {
         getAdmin: () => {
             dispatch(getAdmin(PROJECT_ID));
         },
-        discardData: dataID => {
+        discardData: (dataID) => {
             dispatch(discardData(dataID, PROJECT_ID));
         }
     };
 };
 
-export default connect(
-    mapStateToProps,
-    mapDispatchToProps
-)(AdminTableContainer);
+export default connect(mapStateToProps, mapDispatchToProps)(AdminTableContainer);

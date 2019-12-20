@@ -1,5 +1,5 @@
-import React from "react";
-import PropTypes from "prop-types";
+import React from 'react';
+import PropTypes from 'prop-types';
 import {
     Button,
     ButtonToolbar,
@@ -11,7 +11,7 @@ import {
     DropdownButton,
     MenuItem,
     FormGroup
-} from "react-bootstrap";
+} from 'react-bootstrap';
 
 class LabelForm extends React.Component {
     constructor(props) {

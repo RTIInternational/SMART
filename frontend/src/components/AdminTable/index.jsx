@@ -1,8 +1,8 @@
-import React from "react";
-import PropTypes from "prop-types";
-import ReactTable from "react-table";
-import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
-import LabelForm from "../LabelForm";
+import React from 'react';
+import PropTypes from 'prop-types';
+import ReactTable from 'react-table';
+import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
+import LabelForm from '../LabelForm';
 
 class AdminTable extends React.Component {
     componentWillMount() {

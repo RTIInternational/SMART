@@ -1,17 +1,17 @@
-import { createAction } from "redux-actions";
-import "whatwg-fetch";
+import { createAction } from 'redux-actions';
+import 'whatwg-fetch';
 
-import { getConfig, postConfig } from "../utils/fetch_configs";
-import { getAdmin } from "./adminTables";
-import { getAdminCounts } from "./smart";
-import { getLabelCounts } from "./skew";
+import { getConfig, postConfig } from '../utils/fetch_configs';
+import { getAdmin } from './adminTables';
+import { getAdminCounts } from './smart';
+import { getLabelCounts } from './skew';
 
-export const SET_HIST_DATA = "SET_HIST_DATA";
+export const SET_HIST_DATA = 'SET_HIST_DATA';
 
 export const set_hist_data = createAction(SET_HIST_DATA);
 
 //Get the data for the history table
-export const getHistory = projectID => {
+export const getHistory = (projectID) => {
     let apiURL = `/api/get_label_history/${projectID}/`;
     return dispatch => {
         return fetch(apiURL, getConfig())
@@ -41,7 +41,7 @@ export const getHistory = projectID => {
                 }
                 dispatch(set_hist_data(all_data));
             })
-            .catch(err => console.log("Error: ", err));
+            .catch(err => console.log('Error: ', err));
     };
 };
 

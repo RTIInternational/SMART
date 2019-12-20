@@ -1,8 +1,8 @@
-import React from "react";
-import PropTypes from "prop-types";
-import { Well, Alert } from "react-bootstrap";
+import React from 'react';
+import PropTypes from 'prop-types';
+import { Well, Alert } from 'react-bootstrap';
 
-import LabelForm from "../LabelForm";
+import LabelForm from '../LabelForm';
 
 class Card extends React.Component {
     constructor(props) {
@@ -90,9 +90,7 @@ class Card extends React.Component {
                 </div>
             );
         } else {
-            let blankDeckMessage = message
-                ? message
-                : "No more data to label at this time. Please check back later";
+            let blankDeckMessage = message ? message : "No more data to label at this time. Please check back later";
             card = <Well bsSize="large"> {blankDeckMessage} </Well>;
         }
 

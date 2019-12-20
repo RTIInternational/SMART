@@ -1,15 +1,15 @@
-import React from "react";
-import { connect } from "react-redux";
+import React from 'react';
+import { connect } from 'react-redux';
 
-import { fetchCards, annotateCard, passCard } from "../actions/card";
-import Card from "../components/Card";
+import { fetchCards, annotateCard, passCard } from '../actions/card';
+import Card from '../components/Card';
 
 const PROJECT_ID = window.PROJECT_ID;
 const ADMIN = window.ADMIN;
 
-const CardContainer = props => <Card {...props} />;
+const CardContainer = (props) => <Card {...props} />;
 
-const mapStateToProps = state => {
+const mapStateToProps = (state) => {
     return {
         cards: state.card.cards,
         message: state.card.message,
@@ -17,7 +17,7 @@ const mapStateToProps = state => {
     };
 };
 
-const mapDispatchToProps = dispatch => {
+const mapDispatchToProps = (dispatch) => {
     return {
         fetchCards: () => {
             dispatch(fetchCards(PROJECT_ID));
@@ -40,7 +40,4 @@ const mapDispatchToProps = dispatch => {
     };
 };
 
-export default connect(
-    mapStateToProps,
-    mapDispatchToProps
-)(CardContainer);
+export default connect(mapStateToProps, mapDispatchToProps)(CardContainer);

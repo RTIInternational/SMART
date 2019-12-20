@@ -1,18 +1,18 @@
-import { createAction } from "redux-actions";
-import "whatwg-fetch";
-import moment from "moment";
+import { createAction } from 'redux-actions';
+import 'whatwg-fetch';
+import moment from 'moment';
 
-import { getConfig, postConfig } from "../utils/fetch_configs";
-import { getHistory } from "./history";
-import { getAdmin } from "./adminTables";
-import { getLabelCounts } from "./skew";
-import { getAdminCounts } from "./smart";
+import { getConfig, postConfig } from '../utils/fetch_configs';
+import { getHistory } from './history';
+import { getAdmin } from './adminTables';
+import { getLabelCounts } from './skew';
+import { getAdminCounts } from './smart';
 
-export const POP_CARD = "POP_CARD";
-export const PUSH_CARD = "PUSH_CARD";
-export const SET_LABEL = "SET_LABEL";
-export const SET_MESSAGE = "SET_MESSAGE";
-export const CLEAR_DECK = "CLEAR_DECK";
+export const POP_CARD = 'POP_CARD';
+export const PUSH_CARD = 'PUSH_CARD';
+export const SET_LABEL = 'SET_LABEL';
+export const SET_MESSAGE = 'SET_MESSAGE';
+export const CLEAR_DECK = 'CLEAR_DECK';
 
 export const popCard = createAction(POP_CARD);
 export const pushCard = createAction(PUSH_CARD);
@@ -36,7 +36,7 @@ export const fetchCards = projectID => {
             })
             .then(response => {
                 // If error was in the response then set that message
-                if ("error" in response)
+                if ('error' in response)
                     return dispatch(setMessage(response.error));
 
                 dispatch(setLabel(response.labels));
@@ -49,7 +49,7 @@ export const fetchCards = projectID => {
                     dispatch(pushCard(card));
                 }
             })
-            .catch(err => console.log("Error: ", err));
+            .catch(err => console.log('Error: ', err));
     };
 };
 
@@ -63,7 +63,7 @@ export const annotateCard = (
 ) => {
     let payload = {
         labelID: labelID,
-        labeling_time: moment().diff(card["start_time"], "seconds"), // now - start_time rounded to whole seconds
+        labeling_time: moment().diff(card['start_time'], 'seconds'), // now - start_time rounded to whole seconds
         labelReason: labelReason
     };
     let apiURL = `/api/annotate_data/${card.text.pk}/`;
@@ -79,7 +79,7 @@ export const annotateCard = (
                 }
             })
             .then(response => {
-                if ("error" in response) {
+                if ('error' in response) {
                     dispatch(clearDeck());
                     return dispatch(setMessage(response.error));
                 } else {
@@ -98,7 +98,7 @@ export const annotateCard = (
 };
 
 //skip a card and put it in the admin table
-export const passCard = (card, num_cards_left, is_admin, projectID) => {
+export const passCard = (card, num_cards_left, is_admin, projectID ) => {
     let apiURL = `/api/skip_data/${card.text.pk}/`;
     return dispatch => {
         return fetch(apiURL, postConfig())
@@ -112,7 +112,7 @@ export const passCard = (card, num_cards_left, is_admin, projectID) => {
                 }
             })
             .then(response => {
-                if ("error" in response) {
+                if ('error' in response) {
                     dispatch(clearDeck());
                     return dispatch(setMessage(response.error));
                 } else {
