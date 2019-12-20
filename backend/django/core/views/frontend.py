@@ -380,6 +380,26 @@ class ProjectUpdateData(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
             )
         )
 
+        if ProjectMetaData.objects.filter(project=form_kwargs["instance"]).exists():
+            proj_md = ProjectMetaData.objects.get(project=form_kwargs["instance"])
+            form_kwargs["dataformat"] = {
+                "data_type_choice": "Media",
+                "has_title": proj_md.has_title,
+                "has_created_date": proj_md.has_created_date,
+                "has_user_url": proj_md.has_user_url,
+                "has_username": proj_md.has_username,
+                "has_url": proj_md.has_url,
+            }
+        else:
+            form_kwargs["dataformat"] = {
+                "data_type_choice": "Text",
+                "has_title": False,
+                "has_created_date": False,
+                "has_user_url": False,
+                "has_username": False,
+                "has_url": False,
+            }
+
         del form_kwargs["instance"]
 
         return form_kwargs

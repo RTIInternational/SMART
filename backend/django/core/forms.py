@@ -1,6 +1,7 @@
 import copy
 from io import StringIO
 
+import dateparser
 import numpy as np
 import pandas as pd
 from django import forms
@@ -9,7 +10,6 @@ from django.core.validators import URLValidator
 from django.forms.widgets import RadioSelect, Select, Textarea, TextInput
 from pandas.errors import ParserError
 
-import dateparser
 from core.utils.util import md5_hash
 
 from .models import Label, Project, ProjectMetaData, ProjectPermissions
@@ -206,6 +206,7 @@ class ProjectUpdateForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         self.project_labels = kwargs.pop("labels", None)
+        self.metadata = kwargs.pop("dataformat", None)
         super(ProjectUpdateForm, self).__init__(*args, **kwargs)
 
     def clean_data(self):
@@ -213,7 +214,7 @@ class ProjectUpdateForm(forms.ModelForm):
         labels = self.project_labels
         cb_data = self.cleaned_data.get("cb_data", False)
         if data:
-            return clean_data_helper(data, labels)
+            return clean_data_helper(data, labels, self.metadata)
         if cb_data:
             return cleanCodebookDataHelper(cb_data)
 
