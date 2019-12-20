@@ -165,14 +165,12 @@ class History extends React.Component {
                     active learning in the past. The training data will only be
                     updated for the next run of the model
                 </p>
-                
+
                 <CodebookLabelMenuContainer />
                 <ReactTable
                     data={history_data}
                     columns={COLUMNS}
-                    pageSize={
-                        history_data.length < 50 ? history_data.length : 50
-                    }
+                    pageSize={(history_data.length < 50) ? history_data.length : 50}
                     showPageSizeOptions={false}
                     SubComponent={row => this.getSubComponent(row)}
                     filterable={true}
