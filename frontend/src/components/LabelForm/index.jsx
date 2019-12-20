@@ -6,7 +6,11 @@ import {
     Clearfix,
     Tooltip,
     OverlayTrigger,
-    Alert
+    Alert,
+    Radio,
+    DropdownButton,
+    MenuItem,
+    FormGroup
 } from "react-bootstrap";
 
 class LabelForm extends React.Component {
@@ -38,6 +42,7 @@ class LabelForm extends React.Component {
         this.warningRender = this.warningRender.bind(this);
         this.passRender = this.passRender.bind(this);
         this.discardRender = this.discardRender.bind(this);
+        this.labelButtonRender = this.labelButtonRender.bind(this);
 
         this.skipData = this.skipData.bind(this);
         this.annotateData = this.annotateData.bind(this);
@@ -176,40 +181,71 @@ class LabelForm extends React.Component {
         }
     }
 
+    labelButtonRender(labels) {
+        if (labels.length < 5) {
+            return (
+                <div>
+                    {labels.map(opt => (
+                        <Radio
+                            name="labelGroup"
+                            key={`deck-button-${opt["name"]}`}
+                            onClick={() => this.handleLabelSelect(opt)}
+                        >
+                            {opt["name"]}
+                        </Radio>
+                    ))}
+                </div>
+            );
+        } else {
+            return (
+                <div>
+                    <DropdownButton
+                        id="label-dropdown"
+                        title="Choose a Label"
+                        bsStyle="info"
+                    >
+                        {labels.map(opt => (
+                            <MenuItem
+                                key={`deck-button-${opt["name"]}`}
+                                onSelect={() => this.handleLabelSelect(opt)}
+                            >
+                                {opt["name"]}
+                            </MenuItem>
+                        ))}
+                    </DropdownButton>
+                    <b>Selected Label: {this.state.selected_label.name}</b>
+                </div>
+            );
+        }
+    }
+
     render() {
         const { labels } = this.props;
         return (
             <form onSubmit={this.handleSubmitLabel}>
-                <ButtonToolbar>
-                    {labels.map(opt => (
-                        <Button
-                            key={`deck-button-${opt["name"]}`}
-                            bsStyle="info"
-                            onClick={() => this.handleLabelSelect(opt)}
-                        >
-                            {opt["name"]}
-                        </Button>
-                    ))}
-                    <p>
-                        (Optional) Reason for Label:
-                        <input
-                            type="text"
-                            value={this.state.label_reason}
-                            onChange={this.handleReasonChange}
-                        />
-                    </p>
-                    <b>Label: {this.state.selected_label.name}</b>
-                </ButtonToolbar>
+                <FormGroup>
+                    <ButtonToolbar>
+                        {this.labelButtonRender(labels)}
+                        <p>
+                            (Optional) Reason for Label:
+                            <input
+                                type="text"
+                                value={this.state.label_reason}
+                                onChange={this.handleReasonChange}
+                            />
+                        </p>
+                    </ButtonToolbar>
 
-                <ButtonToolbar bsClass="btn-toolbar pull-right">
-                    {this.warningRender()}
-                    {this.passRender()}
-                    {this.discardRender()}
-                    <Button type="submit" bsStyle="success">
-                        Submit
-                    </Button>
-                </ButtonToolbar>
-                <Clearfix />
+                    <ButtonToolbar bsClass="btn-toolbar pull-right">
+                        {this.warningRender()}
+                        {this.passRender()}
+                        {this.discardRender()}
+                        <Button type="submit" bsStyle="success">
+                            Submit
+                        </Button>
+                    </ButtonToolbar>
+                    <Clearfix />
+                </FormGroup>
             </form>
         );
     }
