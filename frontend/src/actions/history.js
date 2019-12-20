@@ -41,7 +41,7 @@ export const getHistory = (projectID) => {
                 }
                 dispatch(set_hist_data(all_data));
             })
-            .catch(err => console.log('Error: ', err));
+            .catch(err => console.log("Error: ", err));
     };
 };
 

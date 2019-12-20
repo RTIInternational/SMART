@@ -38,7 +38,7 @@ export const getUnlabeled = (projectID) => {
                 }
                 dispatch(set_unlabeled_data(all_data));
             })
-            .catch(err => console.log('Error: ', err));
+            .catch(err => console.log("Error: ", err));
     };
 };
 
@@ -59,7 +59,7 @@ export const getLabelCounts = (projectID) => {
             .then(response => {
                 dispatch(set_label_counts(response));
             })
-            .catch(err => console.log('Error: ', err));
+            .catch(err => console.log("Error: ", err));
     };
 };
 

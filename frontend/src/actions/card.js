@@ -21,7 +21,7 @@ export const setMessage = createAction(SET_MESSAGE);
 export const clearDeck = createAction(CLEAR_DECK);
 
 // Create cards by reading from a queue
-export const fetchCards = projectID => {
+export const fetchCards = (projectID) => {
     let apiURL = `/api/get_card_deck/${projectID}/`;
     return dispatch => {
         return fetch(apiURL, getConfig())
@@ -36,8 +36,7 @@ export const fetchCards = projectID => {
             })
             .then(response => {
                 // If error was in the response then set that message
-                if ('error' in response)
-                    return dispatch(setMessage(response.error));
+                if ('error' in response) return dispatch(setMessage(response.error));
 
                 dispatch(setLabel(response.labels));
 
@@ -49,7 +48,7 @@ export const fetchCards = projectID => {
                     dispatch(pushCard(card));
                 }
             })
-            .catch(err => console.log('Error: ', err));
+            .catch(err => console.log("Error: ", err));
     };
 };
 
