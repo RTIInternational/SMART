@@ -8,13 +8,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0021_auto_20171026_1513'),
+        ("core", "0021_auto_20171026_1513"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='data',
-            name='df_idx',
+            model_name="data",
+            name="df_idx",
             field=models.IntegerField(default=1),
             preserve_default=False,
         ),

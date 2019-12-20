@@ -1,11 +1,11 @@
-from django.db import models
 from django.conf import settings
-from django.utils import timezone
-from django.urls import reverse
-from django.db.models.signals import post_save
-from django.dispatch import receiver
 from django.contrib.postgres.fields import JSONField
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.urls import reverse
+from django.utils import timezone
 
 
 class Profile(models.Model):
@@ -41,7 +41,8 @@ class Project(models.Model):
     codebook_file = models.TextField(default="")
     batch_size = models.IntegerField(default=30)
     """ Advanced options """
-    # the current options are 'random', 'least confident', 'entropy', and 'margin sampling'
+    # the current options are 'random',
+    # 'least confident', 'entropy', and 'margin sampling'
     ACTIVE_L_CHOICES = [
         ("least confident", "By Uncertainty using Least Confident"),
         ("margin sampling", "By Uncertainty using the Margin"),
@@ -76,10 +77,12 @@ class Project(models.Model):
             return None
 
     def admin_count(self):
-        return self.projectpermissions_set.all().filter(permission="ADMIN").count()
+        permissions = self.projectpermissions_set.all()
+        return permissions.filter(permission="ADMIN").count()
 
     def coder_count(self):
-        return self.projectpermissions_set.all().filter(permission="CODER").count()
+        permissions = self.projectpermissions_set.all()
+        return permissions.filter(permission="CODER").count()
 
     def labeled_data_count(self):
         return self.data_set.all().filter(datalabel__isnull=False).count()

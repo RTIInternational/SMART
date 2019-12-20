@@ -8,12 +8,11 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0006_assigneddata_assigned_timestamp'),
+        ("core", "0006_assigneddata_assigned_timestamp"),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='assigneddata',
-            unique_together=set([('user', 'queue')]),
+            name="assigneddata", unique_together=set([("user", "queue")]),
         ),
     ]

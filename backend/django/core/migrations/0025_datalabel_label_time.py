@@ -8,13 +8,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0024_auto_20171030_1449'),
+        ("core", "0024_auto_20171030_1449"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='datalabel',
-            name='time_to_label',
+            model_name="datalabel",
+            name="time_to_label",
             field=models.IntegerField(default=0),
             preserve_default=False,
         ),

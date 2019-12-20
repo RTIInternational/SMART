@@ -1,33 +1,34 @@
-import pytest
 import os
+from test.conftest import TEST_QUEUE_LEN
+from test.util import assert_obj_exists, assert_redis_matches_db
+
 import numpy as np
+import pytest
 
 from core.models import (
     Data,
-    DataQueue,
-    Model,
     DataLabel,
     DataPrediction,
+    DataQueue,
     DataUncertainty,
+    Model,
     ProjectPermissions,
 )
 from core.utils.utils_annotate import assign_datum, label_data
-from core.utils.utils_queue import fill_queue, find_queue_length
-from core.utils.utils_redis import get_ordered_data
 from core.utils.utils_model import (
-    save_tfidf_matrix,
-    load_tfidf_matrix,
-    train_and_save_model,
-    predict_data,
-    least_confident,
-    margin_sampling,
-    entropy,
     check_and_trigger_model,
     cohens_kappa,
+    entropy,
     fleiss_kappa,
+    least_confident,
+    load_tfidf_matrix,
+    margin_sampling,
+    predict_data,
+    save_tfidf_matrix,
+    train_and_save_model,
 )
-from test.util import assert_obj_exists, assert_redis_matches_db
-from test.conftest import TEST_QUEUE_LEN
+from core.utils.utils_queue import fill_queue, find_queue_length
+from core.utils.utils_redis import get_ordered_data
 
 
 def test_create_tfidf_matrix(test_tfidf_matrix):
@@ -445,10 +446,8 @@ def test_svm_classifier(
     tmpdir,
     settings,
 ):
-    """
-    This tests that a project with the svm classifier can successfully train
-    and give predictions for a model
-    """
+    """This tests that a project with the svm classifier can successfully train and give
+    predictions for a model."""
     normal_queue, admin_queue, irr_queue = test_svm_queue_list
     labels = test_svm_labels
     project = test_project_svm_data_tfidf
@@ -505,10 +504,8 @@ def test_randomforest_classifier(
     tmpdir,
     settings,
 ):
-    """
-    This tests that a project with the random forest classifier can successfully train
-    and give predictions for a model
-    """
+    """This tests that a project with the random forest classifier can successfully
+    train and give predictions for a model."""
     normal_queue, admin_queue, irr_queue = test_randomforest_queue_list
     labels = test_randomforest_labels
     project = test_project_randomforest_data_tfidf
@@ -565,10 +562,8 @@ def test_g_naivebayes_classifier(
     tmpdir,
     settings,
 ):
-    """
-    This tests that a project with the Gaussian Naiive Bayes classifier can successfully train
-    and give predictions for a model
-    """
+    """This tests that a project with the Gaussian Naiive Bayes classifier can
+    successfully train and give predictions for a model."""
     normal_queue, admin_queue, irr_queue = test_gnb_queue_list
     labels = test_gnb_labels
     project = test_project_gnb_data_tfidf
@@ -626,10 +621,8 @@ def test_cohens_kappa_perc_agreement(
     tmpdir,
     settings,
 ):
-    """
-    want to check several different configurations including empty, no agreement
-    Should throw an error if no irr data processed yet
-    """
+    """want to check several different configurations including empty, no agreement
+    Should throw an error if no irr data processed yet."""
     project = test_project_half_irr_data
     labels = test_labels_half_irr
     normal_queue, admin_queue, irr_queue = test_half_irr_all_queues
@@ -691,9 +684,7 @@ def test_cohens_kappa_perc_agreement_no_agreement(
     tmpdir,
     settings,
 ):
-    """
-    This just tests the kappa and percent if nobody ever agreed
-    """
+    """This just tests the kappa and percent if nobody ever agreed."""
     project = test_project_half_irr_data
     labels = test_labels_half_irr
     normal_queue, admin_queue, irr_queue = test_half_irr_all_queues
@@ -724,9 +715,8 @@ def test_fleiss_kappa_perc_agreement(
     tmpdir,
     settings,
 ):
-    """
-    This tests the results of the Fleiss's kappa function when fed different situations
-    """
+    """This tests the results of the Fleiss's kappa function when fed different
+    situations."""
     project = test_project_all_irr_3_coders_data
     labels = test_labels_all_irr_3_coders
     normal_queue, admin_queue, irr_queue = test_all_irr_3_coders_all_queues

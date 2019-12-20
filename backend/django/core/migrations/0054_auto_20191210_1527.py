@@ -8,18 +8,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0053_irrlog_label_reason'),
+        ("core", "0053_irrlog_label_reason"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='datalabel',
-            name='label_reason',
-            field=models.TextField(default='', null=True),
+            model_name="datalabel",
+            name="label_reason",
+            field=models.TextField(default="", null=True),
         ),
         migrations.AlterField(
-            model_name='irrlog',
-            name='label_reason',
-            field=models.TextField(default='', null=True),
+            model_name="irrlog",
+            name="label_reason",
+            field=models.TextField(default="", null=True),
         ),
     ]

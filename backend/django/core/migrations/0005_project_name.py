@@ -8,14 +8,14 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0004_auto_20170619_1507'),
+        ("core", "0004_auto_20170619_1507"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='project',
-            name='name',
-            field=models.TextField(default=''),
+            model_name="project",
+            name="name",
+            field=models.TextField(default=""),
             preserve_default=False,
         ),
     ]

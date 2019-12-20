@@ -8,13 +8,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0051_adminprogress'),
+        ("core", "0051_adminprogress"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='datalabel',
-            name='label_reason',
-            field=models.TextField(default=''),
+            model_name="datalabel",
+            name="label_reason",
+            field=models.TextField(default=""),
         ),
     ]

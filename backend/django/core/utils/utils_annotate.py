@@ -1,22 +1,20 @@
-from django.utils import timezone
-from django.db import transaction
 from django.conf import settings
+from django.db import transaction
+from django.utils import timezone
 
-from core.models import Data, Queue, DataQueue, AssignedData, DataLabel, IRRLog
+from core.models import AssignedData, Data, DataLabel, DataQueue, IRRLog, Queue
+from core.templatetags import project_extras
 from core.utils.utils_queue import pop_first_nonempty_queue
 from core.utils.utils_redis import (
     redis_serialize_data,
     redis_serialize_queue,
     redis_serialize_set,
 )
-from core.templatetags import project_extras
 
 
 def assign_datum(profile, project, type="normal"):
-    """
-    Given a profile and project, figure out which queue to pull from;
-    then pop a datum off that queue and assign it to the profile.
-    """
+    """Given a profile and project, figure out which queue to pull from; then pop a
+    datum off that queue and assign it to the profile."""
     with transaction.atomic():
         queue, datum = pop_first_nonempty_queue(project, profile=profile, type=type)
         if datum is None:
@@ -31,8 +29,7 @@ def assign_datum(profile, project, type="normal"):
 
 
 def move_skipped_to_admin_queue(datum, profile, project):
-    """
-    Remove the data from AssignedData and redis
+    """Remove the data from AssignedData and redis.
 
     Change the assigned queue to the admin one for this project
     """
@@ -51,9 +48,9 @@ def move_skipped_to_admin_queue(datum, profile, project):
 
 
 def get_assignments(profile, project, num_assignments):
-    """
-    Check if a data is currently assigned to this profile/project;
-    If so, return max(num_assignments, len(assigned) of it.
+    """Check if a data is currently assigned to this profile/project; If so, return
+    max(num_assignments, len(assigned) of it.
+
     If not, try to get a num_assigments of new assignments and return them.
     """
     existing_assignments = AssignedData.objects.filter(
@@ -86,9 +83,9 @@ def get_assignments(profile, project, num_assignments):
 
 
 def unassign_datum(datum, profile):
-    """
-    Remove a profile's assignment to a datum.  Re-add the datum to its
-    respective queue in Redis.
+    """Remove a profile's assignment to a datum.
+
+    Re-add the datum to its respective queue in Redis.
     """
     assignment = AssignedData.objects.filter(profile=profile, data=datum).get()
 
@@ -99,10 +96,8 @@ def unassign_datum(datum, profile):
 
 
 def batch_unassign(profile):
-    """
-    Remove all of a profile's assignments and Re-add them to its respective
-    queue in Redis.
-    """
+    """Remove all of a profile's assignments and Re-add them to its respective queue in
+    Redis."""
     assignments = AssignedData.objects.filter(profile=profile)
 
     for a in assignments:
@@ -110,9 +105,7 @@ def batch_unassign(profile):
 
 
 def skip_data(datum, profile):
-    """
-    Record that a given datum has been skipped
-    """
+    """Record that a given datum has been skipped."""
     project = datum.project
 
     IRRLog.objects.create(
@@ -136,8 +129,7 @@ def skip_data(datum, profile):
 
 
 def label_data(label, datum, profile, time, label_reason=""):
-    """
-    Record that a given datum has been labeled; remove its assignment, if any.
+    """Record that a given datum has been labeled; remove its assignment, if any.
 
     Remove datum from DataQueue and its assocaited redis set.
     """
@@ -182,9 +174,9 @@ def label_data(label, datum, profile, time, label_reason=""):
 
 
 def process_irr_label(data, label):
-    """
-    This function checks if an irr datum has been labeled by enough people. if
-    it has, then it will attempt to resolve the labels and record the irr history
+    """This function checks if an irr datum has been labeled by enough people.
+
+    if it has, then it will attempt to resolve the labels and record the irr history
     """
     # get the number of labels for that data in the project
     labeled = DataLabel.objects.filter(data=data)

@@ -8,12 +8,11 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0018_auto_20171013_1917'),
+        ("core", "0018_auto_20171013_1917"),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='dataprediction',
-            unique_together=set([('data', 'model', 'label')]),
+            name="dataprediction", unique_together=set([("data", "model", "label")]),
         ),
     ]

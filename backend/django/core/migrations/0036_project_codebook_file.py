@@ -8,13 +8,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0035_label_description'),
+        ("core", "0035_label_description"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='project',
-            name='codebook_file',
-            field=models.TextField(default=''),
+            model_name="project",
+            name="codebook_file",
+            field=models.TextField(default=""),
         ),
     ]

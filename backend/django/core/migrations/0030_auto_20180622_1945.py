@@ -8,18 +8,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0029_merge_20171108_2100'),
+        ("core", "0029_merge_20171108_2100"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='project',
-            name='active_l_method',
-            field=models.TextField(default='least confident'),
+            model_name="project",
+            name="active_l_method",
+            field=models.TextField(default="least confident"),
         ),
         migrations.AddField(
-            model_name='project',
-            name='use_active_learning',
+            model_name="project",
+            name="use_active_learning",
             field=models.BooleanField(default=True),
         ),
     ]

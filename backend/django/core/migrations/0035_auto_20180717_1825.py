@@ -9,18 +9,26 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0034_merge_20180628_1801'),
+        ("core", "0034_merge_20180628_1801"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='project',
-            name='num_users_irr',
-            field=models.IntegerField(default=2, validators=[django.core.validators.MinValueValidator(2)]),
+            model_name="project",
+            name="num_users_irr",
+            field=models.IntegerField(
+                default=2, validators=[django.core.validators.MinValueValidator(2)]
+            ),
         ),
         migrations.AddField(
-            model_name='project',
-            name='percentage_irr',
-            field=models.IntegerField(default=10, validators=[django.core.validators.MinValueValidator(0), django.core.validators.MaxValueValidator(100)]),
+            model_name="project",
+            name="percentage_irr",
+            field=models.IntegerField(
+                default=10,
+                validators=[
+                    django.core.validators.MinValueValidator(0),
+                    django.core.validators.MaxValueValidator(100),
+                ],
+            ),
         ),
     ]
