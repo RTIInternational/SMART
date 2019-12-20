@@ -1,15 +1,15 @@
-import React from "react";
-import PropTypes from "prop-types";
-import ReactTable from "react-table";
+import React from 'react';
+import PropTypes from 'prop-types';
+import ReactTable from 'react-table';
 import {
     Button,
     ButtonToolbar,
     Tooltip,
     OverlayTrigger,
     Alert
-} from "react-bootstrap";
-import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
-import DataViewer from "../DataViewer";
+} from 'react-bootstrap';
+import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
+import DataViewer from '../DataViewer';
 
 const COLUMNS = [
     {
@@ -26,11 +26,7 @@ const COLUMNS = [
         Header: "Data",
         accessor: "data",
         filterMethod: (filter, row) => {
-            if (
-                String(row["data"])
-                .toLowerCase()
-                .includes(filter.value.toLowerCase())
-            ) {
+            if (String(row["data"]).toLowerCase().includes(filter.value.toLowerCase())) {
                 return true;
             } else {
                 return false;
@@ -78,9 +74,7 @@ class History extends React.Component {
             return (
                 <Button
                     key={label.pk.toString() + "_" + row.row.id.toString()}
-                    onClick={() =>
-                        changeLabel(row.row.id, row.row.old_label_id, label.pk)
-                    }
+                    onClick={() => changeLabel(row.row.id, row.row.old_label_id, label.pk)}
                     bsStyle="primary"
                 >
                     {label.name}
@@ -108,15 +102,8 @@ class History extends React.Component {
                                 </Tooltip>
                             }
                         >
-                            <Button
-                                onClick={() =>
-                                    changeToSkip(
-                                        row.row.id,
-                                        row.row.old_label_id
-                                    )
-                                }
-                                bsStyle="info"
-                            >
+                            <Button onClick={() => changeToSkip(row.row.id, row.row.old_label_id)}
+                                bsStyle="info">
                                 Skip
                             </Button>
                         </OverlayTrigger>
