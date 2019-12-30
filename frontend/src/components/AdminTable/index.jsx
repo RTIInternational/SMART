@@ -32,7 +32,7 @@ class AdminTable extends React.Component {
 
 
     render() {
-        const { admin_data, labels, adminLabel, discardData } = this.props;
+        const { admin_data } = this.props;
 
         const columns = [
             {
