@@ -149,7 +149,7 @@ class LabelForm extends React.Component {
                 </OverlayTrigger>
             );
         } else {
-            return <div></div>;
+            return null;
         }
     }
 
@@ -177,7 +177,7 @@ class LabelForm extends React.Component {
                 </OverlayTrigger>
             );
         } else {
-            return <div></div>;
+            return null;
         }
     }
 
@@ -235,9 +235,9 @@ class LabelForm extends React.Component {
                             />
                         </p>
                     </ButtonToolbar>
-
+                    {this.warningRender()}
                     <ButtonToolbar bsClass="btn-toolbar pull-right">
-                        {this.warningRender()}
+
                         {this.passRender()}
                         {this.discardRender()}
                         <Button type="submit" bsStyle="success">
