@@ -169,9 +169,7 @@ def annotate_data(request, data_pk):
     label = Label.objects.get(pk=request.data["labelID"])
     labeling_time = request.data["labeling_time"]
 
-    label_reason = ""
-    if "labelReason" in request.data:
-        label_reason = request.data["labelReason"]
+    label_reason = request.data.get("labelReason", "")
 
     num_history = IRRLog.objects.filter(data=data).count()
 
@@ -282,9 +280,7 @@ def modify_label(request, data_pk):
     label = Label.objects.get(pk=request.data["labelID"])
     old_label = Label.objects.get(pk=request.data["oldLabelID"])
 
-    label_reason = ""
-    if "labelReason" in request.data:
-        label_reason = request.data["labelReason"]
+    label_reason = request.data.get("labelReason", "")
 
     with transaction.atomic():
         DataLabel.objects.filter(data=data, label=old_label).update(
@@ -531,9 +527,8 @@ def label_skew_label(request, data_pk):
     datum = Data.objects.get(pk=data_pk)
     project = datum.project
     label = Label.objects.get(pk=request.data["labelID"])
-    label_reason = ""
-    if "labelReason" in request.data:
-        label_reason = request.data["labelReason"]
+    label_reason = request.data.get("labelReason", "")
+
     profile = request.user.profile
     response = {}
 
@@ -571,9 +566,8 @@ def label_admin_label(request, data_pk):
     datum = Data.objects.get(pk=data_pk)
     project = datum.project
     label = Label.objects.get(pk=request.data["labelID"])
-    label_reason = ""
-    if "labelReason" in request.data:
-        label_reason = request.data["labelReason"]
+    label_reason = request.data.get("labelReason", "")
+
     profile = request.user.profile
     response = {}
 
