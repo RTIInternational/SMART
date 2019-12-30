@@ -18,7 +18,7 @@ class LabelForm extends React.Component {
         super(props);
 
         let selected_label = {
-            name: null,
+            name: "Choose a label",
             pk: null
         };
 
@@ -63,7 +63,7 @@ class LabelForm extends React.Component {
 
     handleSubmitLabel(event) {
         /* This function is for when the form is submitted*/
-        if (this.state.selected_label.name == null) {
+        if (this.state.selected_label.pk == null) {
             this.setState({
                 error_message: "Error: You must choose a label!"
             });
@@ -184,7 +184,7 @@ class LabelForm extends React.Component {
     labelButtonRender(labels) {
         if (labels.length < 5) {
             return (
-                <div>
+                <ButtonToolbar>
                     {labels.map(opt => (
                         <Radio
                             name="labelGroup"
@@ -194,7 +194,7 @@ class LabelForm extends React.Component {
                             {opt["name"]}
                         </Radio>
                     ))}
-                </div>
+                </ButtonToolbar>
             );
         } else {
             return (
@@ -213,7 +213,9 @@ class LabelForm extends React.Component {
                             </MenuItem>
                         ))}
                     </DropdownButton>
-                    <b>Selected Label: {this.state.selected_label.name}</b>
+                    <br />
+                    <b>{this.state.selected_label.name}</b>
+                    <br />
                 </div>
             );
         }
@@ -224,17 +226,15 @@ class LabelForm extends React.Component {
         return (
             <form onSubmit={this.handleSubmitLabel}>
                 <FormGroup>
-                    <ButtonToolbar>
-                        {this.labelButtonRender(labels)}
-                        <p>
-                            (Optional) Reason for Label:
-                            <input
-                                type="text"
-                                value={this.state.label_reason}
-                                onChange={this.handleReasonChange}
-                            />
-                        </p>
-                    </ButtonToolbar>
+                    {this.labelButtonRender(labels)}
+                    <p>
+                        (Optional) Reason for Label:
+                        <input
+                            type="text"
+                            value={this.state.label_reason}
+                            onChange={this.handleReasonChange}
+                        />
+                    </p>
                     {this.warningRender()}
                     <ButtonToolbar bsClass="btn-toolbar pull-right">
 

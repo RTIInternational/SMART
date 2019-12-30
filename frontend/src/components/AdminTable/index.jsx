@@ -9,6 +9,28 @@ class AdminTable extends React.Component {
         this.props.getAdmin();
     }
 
+    getSubComponent(row) {
+        const { labels, adminLabel, discardData } = this.props;
+
+        return (
+            <div>
+                <p id="admin_text">{row.row.data}</p>
+                <div id="admin_buttons">
+                    <LabelForm
+                        data={row.row.id}
+                        labelFunction={adminLabel}
+                        passButton={false}
+                        discardButton={true}
+                        skipFunction={() => {}}
+                        discardFunction={discardData}
+                        labels={labels}
+                    />
+                </div>
+            </div>
+        );
+    }
+
+
     render() {
         const { admin_data, labels, adminLabel, discardData } = this.props;
 
@@ -26,23 +48,7 @@ class AdminTable extends React.Component {
             },
             {
                 Header: "Unlabeled Data",
-                accessor: "data",
-                Cell: row => (
-                    <div>
-                        <p id="admin_text">{row.row.data}</p>
-                        <div id="admin_buttons">
-                            <LabelForm
-                                data={row.row.id}
-                                labelFunction={adminLabel}
-                                passButton={false}
-                                discardButton={true}
-                                skipFunction={() => {}}
-                                discardFunction={discardData}
-                                labels={labels}
-                            />
-                        </div>
-                    </div>
-                )
+                accessor: "data"
             }
         ];
 
@@ -67,6 +73,7 @@ class AdminTable extends React.Component {
                     pageSizeOptions={page_sizes}
                     defaultPageSize={1}
                     filterable={false}
+                    SubComponent={row => this.getSubComponent(row)}
                 />
             </div>
         );
