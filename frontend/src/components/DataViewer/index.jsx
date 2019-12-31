@@ -1,5 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
+import moment from 'moment';
 
 class DataViewer extends React.Component {
     constructor(props) {
@@ -59,7 +60,7 @@ class DataViewer extends React.Component {
         if (date == null || date == "nan") {
             return <p></p>;
         } else {
-            return <p>{date}</p>;
+            return <p>{moment(date).format("LLLL")}</p>;
         }
     }
 
