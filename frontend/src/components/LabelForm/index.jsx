@@ -232,6 +232,7 @@ class LabelForm extends React.Component {
                             type="text"
                             value={this.state.label_reason}
                             onChange={this.handleReasonChange}
+                            className="margin-left"
                         />
                     </p>
                     {this.warningRender()}
