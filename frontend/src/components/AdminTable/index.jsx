@@ -1,18 +1,37 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import ReactTable from 'react-table';
-import { Button, ButtonToolbar, Tooltip, OverlayTrigger } from "react-bootstrap";
 import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
 import DataViewer from "../DataViewer";
+import LabelForm from '../LabelForm';
 
 class AdminTable extends React.Component {
-
     componentWillMount() {
         this.props.getAdmin();
     }
 
+    getSubComponent(row) {
+        const { labels, adminLabel, discardData, admin_data } = this.props;
+
+        return (
+            <div className="sub-row">
+                <DataViewer data={admin_data[row.row._index]} />
+                <LabelForm
+                    data={row.row.id}
+                    labelFunction={adminLabel}
+                    passButton={false}
+                    discardButton={true}
+                    skipFunction={() => {}}
+                    discardFunction={discardData}
+                    labels={labels}
+                />
+            </div>
+        );
+    }
+
+
     render() {
-        const { admin_data, labels, adminLabel, discardData } = this.props;
+        const { admin_data } = this.props;
 
         const columns = [
             {
@@ -28,39 +47,7 @@ class AdminTable extends React.Component {
             },
             {
                 Header: "Unlabeled Data",
-                accessor: "data",
-                Cell: row => (
-                    <div>
-                        <DataViewer data={admin_data[row.row._index]} />
-                        <div id="admin_buttons">
-                            <ButtonToolbar bsClass="btn-toolbar pull-right">
-                                {labels.map( (label) => {
-                                    return (
-                                        <Button key={label.pk.toString() + "_" + row.row.id.toString()}
-                                            onClick={() => adminLabel(row.row.id, label.pk)}
-                                            bsStyle="primary"
-                                        >{label.name}
-                                        </Button>
-                                    );
-                                })}
-                                <OverlayTrigger
-                                    placement = "top"
-                                    overlay={
-                                        <Tooltip id="discard_tooltip">
-                                            This marks this data as uncodable, and will remove it from the active data in this project.
-                                        </Tooltip>
-                                    }>
-                                    <Button
-                                        key={"discard_" + row.row.id.toString()}
-                                        onClick={() => discardData(row.row.id)}
-                                        bsStyle="danger">
-                                        Discard
-                                    </Button>
-                                </OverlayTrigger>
-                            </ButtonToolbar>
-                        </div>
-                    </div>
-                )
+                accessor: "data"
             }
         ];
 
@@ -73,14 +60,20 @@ class AdminTable extends React.Component {
         return (
             <div>
                 <h3>Instructions</h3>
-                <p>This page allows an admin to label data that was skipped by labelers, or was disagreed upon in inter-rater reliability checks.</p>
+                <p>
+                    This page allows an admin to label data that was skipped by
+                    labelers, or was disagreed upon in inter-rater reliability
+                    checks.
+                </p>
                 <CodebookLabelMenuContainer />
                 <ReactTable
                     data={admin_data}
                     columns={columns}
                     pageSizeOptions={page_sizes}
                     defaultPageSize={1}
-                    filterable={false} />
+                    filterable={false}
+                    SubComponent={row => this.getSubComponent(row)}
+                />
             </div>
         );
     }

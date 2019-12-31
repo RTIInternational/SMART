@@ -39,12 +39,18 @@ export const getHistory = (projectID) => {
     };
 };
 
-
-export const changeLabel = (dataID, oldLabelID, labelID, projectID) => {
+export const changeLabel = (
+    dataID,
+    oldLabelID,
+    labelID,
+    labelReason,
+    projectID
+) => {
     let payload = {
         dataID: dataID,
         oldLabelID: oldLabelID,
-        labelID: labelID
+        labelID: labelID,
+        labelReason: labelReason
     };
     let apiURL = `/api/modify_label/${dataID}/`;
     return dispatch => {
@@ -68,7 +74,7 @@ export const changeLabel = (dataID, oldLabelID, labelID, projectID) => {
 export const changeToSkip = (dataID, oldLabelID, projectID) => {
     let payload = {
         dataID: dataID,
-        oldLabelID: oldLabelID,
+        oldLabelID: oldLabelID
     };
     let apiURL = `/api/modify_label_to_skip/${dataID}/`;
     return dispatch => {

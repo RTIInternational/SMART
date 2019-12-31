@@ -10,6 +10,7 @@ import {
 } from 'react-bootstrap';
 import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
 import DataViewer from '../DataViewer';
+import LabelForm from '../LabelForm';
 
 const COLUMNS = [
     {
@@ -39,6 +40,11 @@ const COLUMNS = [
         width: 100
     },
     {
+        Header: "Reason for Label",
+        accessor: "label_reason",
+        width: 200
+    },
+    {
         Header: "Old Label ID",
         accessor: "old_label_id",
         show: false
@@ -52,62 +58,32 @@ const COLUMNS = [
 ];
 
 class History extends React.Component {
-
     componentWillMount() {
         this.props.getHistory();
     }
 
-    getLabelButton(row, label) {
-        const { changeLabel } = this.props;
-
-        if (row.row.old_label_id === label.pk) {
-            return (
-                <Button
-                    key={label.pk.toString() + "_" + row.row.id.toString()}
-                    bsStyle="primary"
-                    disabled
-                >
-                    {label.name}
-                </Button>
-            );
-        } else {
-            return (
-                <Button
-                    key={label.pk.toString() + "_" + row.row.id.toString()}
-                    onClick={() => changeLabel(row.row.id, row.row.old_label_id, label.pk)}
-                    bsStyle="primary"
-                >
-                    {label.name}
-                </Button>
-            );
-        }
-    }
-
     getSubComponent(row) {
         let subComponent;
-        const { labels, changeToSkip } = this.props;
+        const { labels, changeToSkip, changeLabel } = this.props;
 
         if (row.row.edit === "yes") {
             subComponent = (
                 <div className="sub-row">
                     <DataViewer data={this.props.history_data[row.row._index]} />
-                    <ButtonToolbar bsClass="btn-toolbar pull-right">
-                        {labels.map(label => this.getLabelButton(row, label))}
-                        <OverlayTrigger
-                            placement="top"
-                            overlay={
-                                <Tooltip id="skip_tooltip">
-                                    Clicking this button will send this document
-                                    to an administrator for review
-                                </Tooltip>
-                            }
-                        >
-                            <Button onClick={() => changeToSkip(row.row.id, row.row.old_label_id)}
-                                bsStyle="info">
-                                Skip
-                            </Button>
-                        </OverlayTrigger>
-                    </ButtonToolbar>
+                    <LabelForm
+                        data={row.row.id}
+                        previousLabel={{
+                            pk: row.row.old_label_id,
+                            name: row.row.old_label,
+                            reason: row.row.label_reason
+                        }}
+                        labelFunction={changeLabel}
+                        passButton={true}
+                        discardButton={false}
+                        skipFunction={changeToSkip}
+                        discardFunction={() => {}}
+                        labels={labels}
+                    />
                 </div>
             );
         } else {
@@ -116,8 +92,7 @@ class History extends React.Component {
                     <DataViewer data={this.props.history_data[row.row._index]} />
                     <Alert bsStyle="warning">
                         <strong>Note:</strong>
-                        This is Inter-rater Reliability data and is not
-                        editable.
+                        This is Inter-rater Reliability data and is not editable.
                     </Alert>
                 </div>
             );
@@ -172,7 +147,6 @@ class History extends React.Component {
         );
     }
 }
-
 
 //This component will have
 // change label (action)

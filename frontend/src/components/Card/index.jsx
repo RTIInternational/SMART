@@ -1,25 +1,77 @@
-import React from "react";
-import PropTypes from "prop-types";
+import React from 'react';
+import PropTypes from 'prop-types';
 import {
-    Button,
-    ButtonToolbar,
-    Clearfix,
-    Well,
-    Tooltip,
-    OverlayTrigger
+    Alert,
+    Well
 } from "react-bootstrap";
-import DataViewer from "../DataViewer";
 
-const ADMIN = window.ADMIN;
+import DataViewer from "../DataViewer";
+import LabelForm from '../LabelForm';
 
 class Card extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            label_reason: "",
+            selected_label: { name: null, pk: null },
+            error_message: null
+        };
+
+        this.handleReasonChange = this.handleReasonChange.bind(this);
+        this.handleLabelSelect = this.handleLabelSelect.bind(this);
+        this.handleSubmitLabel = this.handleSubmitLabel.bind(this);
+        this.warningRender = this.warningRender.bind(this);
+    }
+
+    handleReasonChange(event) {
+        this.setState({
+            label_reason: event.target.value
+        });
+    }
+
+    handleLabelSelect(option) {
+        this.setState({
+            selected_label: { name: option.name, pk: option.pk }
+        });
+    }
+
+    handleSubmitLabel(event) {
+        if (this.state.selected_label.name == null) {
+            this.setState({
+                error_message: "Error: You must choose a label!"
+            });
+            event.preventDefault();
+        } else {
+            this.props.annotateCard(
+                this.props.cards[0],
+                this.state.selected_label.pk,
+                this.state.label_reason,
+                this.props.cards.length
+            );
+            this.setState({
+                label_reason: "",
+                selected_label: { name: null, pk: null },
+                error_message: null
+            });
+            event.preventDefault();
+        }
+    }
+
+    warningRender() {
+        if (this.state.error_message == null) {
+            return <div></div>;
+        } else {
+            return <Alert bsStyle="danger">{this.state.error_message}</Alert>;
+        }
+    }
+
     componentWillMount() {
         this.props.fetchCards();
     }
 
     render() {
         let card;
-        const { labels, message, cards, passCard, annotateCard } = this.props;
+        const { message, cards, passCard, labels, annotateCard } = this.props;
 
         if (!(cards === undefined) && cards.length > 0) {
             //just get the labels from the cards
@@ -28,51 +80,22 @@ class Card extends React.Component {
                     <div className="cardface">
                         <h2>Card {cards[0].id + 1}</h2>
                         <DataViewer data={cards[0]} />
-                        <ButtonToolbar bsClass="btn-toolbar pull-right">
-                            {labels.map(opt => (
-                                <Button
-                                    onClick={() =>
-                                        annotateCard(
-                                            cards[0],
-                                            opt["pk"],
-                                            cards.length,
-                                            ADMIN
-                                        )
-                                    }
-                                    bsStyle="primary"
-                                    key={`deck-button-${opt["name"]}`}
-                                >
-                                    {opt["name"]}
-                                </Button>
-                            ))}
-                            <OverlayTrigger
-                                placement="top"
-                                overlay={
-                                    <Tooltip id="skip_tooltip">
-                                        Clicking this button will send this
-                                        document to an administrator for review
-                                    </Tooltip>
-                                }
-                            >
-                                <Button
-                                    onClick={() => {
-                                        passCard(cards[0], cards.length, ADMIN);
-                                    }}
-                                    bsStyle="info"
-                                >
-                                    Skip
-                                </Button>
-                            </OverlayTrigger>
-                        </ButtonToolbar>
-                        <Clearfix />
+                        <LabelForm
+                            data={cards[0]}
+                            labelFunction={annotateCard}
+                            passButton={true}
+                            discardButton={false}
+                            skipFunction={passCard}
+                            discardFunction={() => {}}
+                            labels={labels}
+                            optionalInt={cards.length}
+                        />
                     </div>
                 </div>
             );
         } else {
-            let blankDeckMessage = message
-                ? message
-                : "No more data to label at this time. Please check back later";
-            card = <Well bsSize="large">{blankDeckMessage}</Well>;
+            let blankDeckMessage = message ? message : "No more data to label at this time. Please check back later";
+            card = <Well bsSize="large"> {blankDeckMessage} </Well>;
         }
 
         return card;

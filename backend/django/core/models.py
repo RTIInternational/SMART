@@ -149,6 +149,7 @@ class IRRLog(models.Model):
     data = models.ForeignKey("Data")
     profile = models.ForeignKey("Profile")
     label = models.ForeignKey("Label", null=True)
+    label_reason = models.TextField(null=True, default="")
     timestamp = models.DateTimeField(null=True, default=None)
 
 
@@ -159,6 +160,7 @@ class DataLabel(models.Model):
     data = models.ForeignKey("Data")
     profile = models.ForeignKey("Profile")
     label = models.ForeignKey("Label")
+    label_reason = models.TextField(null=True, default="")
     training_set = models.ForeignKey("TrainingSet")
     time_to_label = models.IntegerField(null=True)
     timestamp = models.DateTimeField(null=True, default=None)

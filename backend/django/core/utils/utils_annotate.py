@@ -160,7 +160,7 @@ def skip_data(datum, profile):
             move_skipped_to_admin_queue(datum, profile, project)
 
 
-def label_data(label, datum, profile, time):
+def label_data(label, datum, profile, time, label_reason=""):
     """Record that a given datum has been labeled; remove its assignment, if any.
 
     Remove datum from DataQueue and its assocaited redis set.
@@ -172,6 +172,7 @@ def label_data(label, datum, profile, time):
         DataLabel.objects.create(
             data=datum,
             label=label,
+            label_reason=label_reason,
             profile=profile,
             training_set=current_training_set,
             time_to_label=time,
@@ -191,7 +192,11 @@ def label_data(label, datum, profile, time):
             # already processed so just add this label to the history.
             if num_history >= datum.project.num_users_irr:
                 IRRLog.objects.create(
-                    data=datum, profile=profile, label=label, timestamp=timezone.now()
+                    data=datum,
+                    profile=profile,
+                    label=label,
+                    label_reason=label_reason,
+                    timestamp=timezone.now(),
                 )
                 DataLabel.objects.get(data=datum, profile=profile).delete()
             else:
@@ -216,7 +221,13 @@ def process_irr_label(data, label):
     if (labeled.count() + skipped.count()) >= project.num_users_irr:
         # add all labels to IRRLog
         history_list = [
-            IRRLog(data=data, profile=d.profile, label=d.label, timestamp=d.timestamp)
+            IRRLog(
+                data=data,
+                profile=d.profile,
+                label=d.label,
+                label_reason=d.label_reason,
+                timestamp=d.timestamp,
+            )
             for d in labeled
         ]
         with transaction.atomic():

@@ -11,7 +11,6 @@ export const SET_LABEL_COUNTS = 'SET_LABEL_COUNTS';
 export const set_unlabeled_data = createAction(SET_UNLABELED_DATA);
 export const set_label_counts = createAction(SET_LABEL_COUNTS);
 
-
 //Get the data for the skew table
 export const getUnlabeled = (projectID) => {
     let apiURL = `/api/data_unlabeled_table/${projectID}/`;
@@ -56,10 +55,11 @@ export const getLabelCounts = (projectID) => {
     };
 };
 
-export const skewLabel = (dataID, labelID, projectID) => {
+export const skewLabel = (dataID, labelID, labelReason, projectID) => {
     let payload = {
         labelID: labelID,
-        labeleing_time: null
+        labeleing_time: null,
+        labelReason: labelReason
     };
     let apiURL = `/api/label_skew_label/${dataID}/`;
     return dispatch => {

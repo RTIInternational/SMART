@@ -20,8 +20,16 @@ const mapDispatchToProps = (dispatch) => {
         getHistory: () => {
             dispatch(getHistory(PROJECT_ID));
         },
-        changeLabel: (dataID, oldLabelID, labelID) => {
-            dispatch(changeLabel(dataID, oldLabelID, labelID, PROJECT_ID));
+        changeLabel: (dataID, oldLabelID, labelID, labelReason) => {
+            dispatch(
+                changeLabel(
+                    dataID,
+                    oldLabelID,
+                    labelID,
+                    labelReason,
+                    PROJECT_ID
+                )
+            );
         },
         changeToSkip: (dataID, oldLabelID) => {
             dispatch(changeToSkip(dataID, oldLabelID, PROJECT_ID));

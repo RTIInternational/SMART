@@ -172,6 +172,8 @@ def annotate_data(request, data_pk):
     label = Label.objects.get(pk=request.data["labelID"])
     labeling_time = request.data["labeling_time"]
 
+    label_reason = request.data.get("labelReason", "")
+
     num_history = IRRLog.objects.filter(data=data).count()
 
     if RecycleBin.objects.filter(data=data).count() > 0:
@@ -182,12 +184,16 @@ def annotate_data(request, data_pk):
         # if the IRR history has more than the needed number of labels , it is
         # already processed so just add this label to the history.
         IRRLog.objects.create(
-            data=data, profile=profile, label=label, timestamp=timezone.now()
+            data=data,
+            profile=profile,
+            label=label,
+            timestamp=timezone.now(),
+            label_reason=label_reason,
         )
         assignment = AssignedData.objects.get(data=data, profile=profile)
         assignment.delete()
     else:
-        label_data(label, data, profile, labeling_time)
+        label_data(label, data, profile, labeling_time, label_reason)
         if data.irr_ind:
             # if it is reliability data, run processing step
             process_irr_label(data, label)
@@ -276,9 +282,15 @@ def modify_label(request, data_pk):
 
     label = Label.objects.get(pk=request.data["labelID"])
     old_label = Label.objects.get(pk=request.data["oldLabelID"])
+
+    label_reason = request.data.get("labelReason", "")
+
     with transaction.atomic():
         DataLabel.objects.filter(data=data, label=old_label).update(
-            label=label, time_to_label=0, timestamp=timezone.now()
+            label=label,
+            label_reason=label_reason,
+            time_to_label=0,
+            timestamp=timezone.now(),
         )
 
         LabelChangeLog.objects.create(
@@ -527,6 +539,8 @@ def label_skew_label(request, data_pk):
     datum = Data.objects.get(pk=data_pk)
     project = datum.project
     label = Label.objects.get(pk=request.data["labelID"])
+    label_reason = request.data.get("labelReason", "")
+
     profile = request.user.profile
     response = {}
 
@@ -536,6 +550,7 @@ def label_skew_label(request, data_pk):
             DataLabel.objects.create(
                 data=datum,
                 label=label,
+                label_reason=label_reason,
                 profile=profile,
                 training_set=current_training_set,
                 time_to_label=None,
@@ -563,6 +578,8 @@ def label_admin_label(request, data_pk):
     datum = Data.objects.get(pk=data_pk)
     project = datum.project
     label = Label.objects.get(pk=request.data["labelID"])
+    label_reason = request.data.get("labelReason", "")
+
     profile = request.user.profile
     response = {}
 
@@ -573,6 +590,7 @@ def label_admin_label(request, data_pk):
         DataLabel.objects.create(
             data=datum,
             label=label,
+            label_reason=label_reason,
             profile=profile,
             training_set=current_training_set,
             time_to_label=None,
@@ -644,6 +662,7 @@ def get_label_history(request, project_pk):
             "data": d.data.text,
             "id": d.data.id,
             "label": d.label.name,
+            "label_reason": d.label_reason,
             "labelID": d.label.id,
             "timestamp": new_timestamp,
             "edit": "yes",
@@ -684,6 +703,7 @@ def get_label_history(request, project_pk):
             "data": d.data.text,
             "id": d.data.id,
             "label": d.label.name,
+            "label_reason": d.label_reason,
             "labelID": d.label.id,
             "timestamp": new_timestamp,
             "edit": "no",
