@@ -55,29 +55,28 @@ def cohens_kappa(project):
     num_data = 0
     labels_seen = set()
     for d in irr_data:
-        d_log = IRRLog.objects.filter(data=d, data__project=project)
-        # NOTE: Need to figure out why tests fail when this is not there
-        print(list(d_log), len(d_log))
+        d_log_query = IRRLog.objects.filter(data=d, data__project=project)
+        d_log_list = list(d_log_query)
 
-        labels = list(set(d_log.values_list("label", flat=True)))
+        labels = list(set(d_log_query.values_list("label", flat=True)))
         labels_seen = labels_seen | set(labels)
         # get the percent agreement between the users  = (num agree)/size_data
-        if d_log.count() < 2:
+        if d_log_query.count() < 2:
             # don't use this datum, it isn't processed yet
             continue
         num_data += 1
         if len(labels) == 1:
             if labels[0] is not None:
                 agree += 1
-        if d_log[0].label is None:
+        if d_log_list[0].label is None:
             label1 = "skip"
         else:
-            label1 = d_log[0].label.name
+            label1 = d_log_list[0].label.name
 
-        if d_log[1].label is None:
+        if d_log_list[1].label is None:
             label2 = "skip"
         else:
-            label2 = d_log[1].label.name
+            label2 = d_log_list[1].label.name
 
         rater1_rater2_dict[label1][label2] += 1
     if num_data == 0:
