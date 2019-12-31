@@ -201,7 +201,7 @@ class LabelForm extends React.Component {
                 <div>
                     <DropdownButton
                         id="label-dropdown"
-                        title="Choose a Label"
+                        title={(this.state.selected_label.pk === null) ? "Choose a Label" : this.state.selected_label.name}
                         bsStyle="info"
                     >
                         {labels.map(opt => (
@@ -213,9 +213,6 @@ class LabelForm extends React.Component {
                             </MenuItem>
                         ))}
                     </DropdownButton>
-                    <br />
-                    <b>{this.state.selected_label.name}</b>
-                    <br />
                 </div>
             );
         }
