@@ -67,7 +67,8 @@ class History extends React.Component {
                         data={row.row.id}
                         previousLabel={{
                             pk: row.row.old_label_id,
-                            name: row.row.old_label
+                            name: row.row.old_label,
+                            reason: row.row.label_reason
                         }}
                         labelFunction={changeLabel}
                         passButton={true}

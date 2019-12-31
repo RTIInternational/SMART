@@ -21,16 +21,18 @@ class LabelForm extends React.Component {
             name: "Choose a label",
             pk: null
         };
+        let labelReason = "";
 
         if (this.props.previousLabel != null) {
             selected_label = {
                 name: this.props.previousLabel.name,
                 pk: this.props.previousLabel.pk
             };
+            labelReason = this.props.previousLabel.reason;
         }
 
         this.state = {
-            label_reason: "",
+            label_reason: labelReason,
             selected_label: selected_label,
             error_message: null
         };
