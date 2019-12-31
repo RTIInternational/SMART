@@ -32,6 +32,12 @@
                             </div>
                             <div d="c-panel" class="panel-collapse collapse in">
                                 <div class="panel-body">
+                                    <p>SMART currently supports two different data formats for the labeling interface. The first is the original
+                                        "text" format, which expects that the data consists of blocks of text. The new "social media" format
+                                        is meant to accomodate projects where the data that needs to be labeled is pulled from some online source.
+                                        In these cases, it is possible that additional information such as the url, author, or date need to be
+                                        displayed along with the text for the labelers to make informed decisions.</p>
+                                    <br />
                                     <p>Please choose the option that most matches the type of data you are labeling:</p>
                                     <div id="choose_data_type_box">
                                         {% for radio2 in wizard.form.data_type_choice %}
@@ -55,7 +61,7 @@
                                 <div class="panel-body">
 
                                     <div id="choose_fields_box">
-                                        <b>Select which fields you are providing for your media data:</b>
+                                        <b>Select which fields you are providing for your media data that will be displayed along with the text:</b>
                                         <div id="have_fields_div">
                                             <p>Display a Title: {{ wizard.form.has_title }}</p>
                                             <p>Display a post URL: {{ wizard.form.has_url }}</p>
