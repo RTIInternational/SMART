@@ -14,7 +14,6 @@ export const SET_DISCARDED_DATA = 'SET_DISCARDED_DATA';
 export const set_admin_data = createAction(SET_ADMIN_DATA);
 export const set_discarded_data = createAction(SET_DISCARDED_DATA);
 
-
 //get the skipped data for the admin Table
 export const getAdmin = (projectID) => {
     let apiURL = `/api/data_admin_table/${projectID}/`;
@@ -30,7 +29,7 @@ export const getAdmin = (projectID) => {
                 }
             })
             .then(response => {
-            // If error was in the response then set that message
+                // If error was in the response then set that message
                 if ('error' in response) console.log(response);
                 let all_data = [];
                 for (let i = 0; i < response.data.length; i++) {
@@ -43,13 +42,14 @@ export const getAdmin = (projectID) => {
                 }
                 dispatch(set_admin_data(all_data));
             })
-            .catch(err => console.log("Error: ", err));
+            .catch(err => console.log('Error: ', err));
     };
 };
 
-export const adminLabel = (dataID, labelID, projectID) => {
+export const adminLabel = (dataID, labelID, labelReason, projectID) => {
     let payload = {
         labelID: labelID,
+        labelReason: labelReason
     };
     let apiURL = `/api/label_admin_label/${dataID}/`;
     return dispatch => {
