@@ -124,8 +124,8 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         ("labels", LabelFormSet),
         ("permissions", PermissionsFormSet),
         ("advanced", AdvancedWizardForm),
-        ("dataformat", DataFormatWizardForm),
         ("codebook", CodeBookWizardForm),
+        ("dataformat", DataFormatWizardForm),
         ("data", DataWizardForm),
     ]
     template_list = {
@@ -133,8 +133,8 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         "labels": "projects/create/create_wizard_labels.html",
         "permissions": "projects/create/create_wizard_permissions.html",
         "advanced": "projects/create/create_wizard_advanced.html",
-        "dataformat": "projects/create/create_wizard_dataformat.html",
         "codebook": "projects/create/create_wizard_codebook.html",
+        "dataformat": "projects/create/create_wizard_dataformat.html",
         "data": "projects/create/create_wizard_data.html",
     }
 
