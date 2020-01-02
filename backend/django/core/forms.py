@@ -125,7 +125,7 @@ def clean_data_helper(data, supplied_labels, metadata):
         data["created_date"].replace({pd.NaT: None}, inplace=True)
         if data["created_date"].isnull().sum() == len(data):
             raise ValidationError(
-                "The dates in the created_date column could " "not be interpreted."
+                "The dates in the created_date column could not be interpreted."
             )
         elif data["created_date"].isnull().sum() > missing_dates:
             raise ValidationError(
