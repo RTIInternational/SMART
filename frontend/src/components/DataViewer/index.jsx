@@ -15,8 +15,12 @@ class DataViewer extends React.Component {
 
     renderTitle() {
         let title = this.props.data.title;
-        if (title == null || title == "nan") {
-            return "";
+        let text = this.props.data.data;
+
+        if (title == null || title == "nan" ||
+            (title.replace(/(\r\n|\n|\r)/gm, " ").replace("  ", " ") ==
+                text.replace(/(\r\n|\n|\r)/gm, " ").replace("  ", " "))) {
+            return null;
         } else {
             return title;
         }
@@ -27,7 +31,7 @@ class DataViewer extends React.Component {
         if (url == null || url == "nan") {
             return <p></p>;
         } else {
-            return <a href={url}>{url}</a>;
+            return <a href={url} target="_blank">{url}</a>;
         }
     }
 
@@ -35,21 +39,26 @@ class DataViewer extends React.Component {
         let username = this.props.data.username;
         let userurl = this.props.data.user_url;
 
-        let usernameRen = <p>User: {username}</p>;
-        let userURLRen = <a href={userurl}>User URL: {userurl}</a>;
+        let userURLRen = <p></p>;
+        let userURLName = <p></p>;
 
-        if (username == null || username == "nan") {
-            usernameRen = <p>User: anonymous</p>;
+        if (userurl != null && userurl != "nan") {
+            userURLRen = <a href={userurl} target="_blank">User URL: {userurl}</a>;
         }
 
-        if (userurl == null || userurl == "nan") {
-            userURLRen = <p></p>;
+        if (username != null && username != "nan") {
+            userURLName = <p>{username}</p>;
+        }
+
+        if ((userurl == null || userurl == "nan") && (username == null || username == "nan")) {
+            return null;
         }
 
         return (
             <div>
-                {usernameRen}
+                {userURLName}
                 {userURLRen}
+                <hr />
             </div>
         );
     }
@@ -60,30 +69,19 @@ class DataViewer extends React.Component {
         if (date == null || date == "nan") {
             return <p></p>;
         } else {
-            return <p>{moment(date).format("LLLL")}</p>;
+            return <p id="data_date_p">{moment(date).format("LLLL")}</p>;
         }
     }
 
     renderText() {
-        let title = this.props.data.title;
         let text = this.props.data.data;
 
-        if (
-            title == null ||
-            title == "nan" ||
-            title.replace(/(\r\n|\n|\r)/gm, " ").replace("  ", " ") !=
-                text.replace(/(\r\n|\n|\r)/gm, " ").replace("  ", " ")
-        ) {
-            return (
-                <div>
-                    <hr />
-                    {this.renderDate()}
-                    <p>{text}</p>
-                </div>
-            );
-        } else {
-            return this.renderDate();
-        }
+        return (
+            <div>
+                {this.renderDate()}
+                <p>{text}</p>
+            </div>
+        );
     }
 
     render() {
