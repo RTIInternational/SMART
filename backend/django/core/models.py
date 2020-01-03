@@ -241,7 +241,7 @@ class AdminProgress(models.Model):
 
 
 class ProjectMetaData(models.Model):
-    project = models.ForeignKey("Project")
+    project = models.OneToOneField(Project, on_delete=models.CASCADE, primary_key=True)
 
     has_title = models.BooleanField(default=False)
     has_created_date = models.BooleanField(default=False)
