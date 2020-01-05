@@ -31,34 +31,185 @@
 
                     <h1>Data Upload Instructions</h1>
                     <h3>Description</h3>
-                    <p>Time to upload your data! Please upload a data file that contains text (and optionally labels) for your project. To upload, the file <strong>must pass the following checks:</strong></p>
+                    <p>Time to upload your data! Please upload a data file that contains text
+                        (and optionally labels) for your project. To upload, the file
+                        <strong>must pass the following checks:</strong></p>
                     <ul class="list-group">
-                        <li class="list-group-item">The file needs to have either a <code>.csv</code>, <code>.tsv</code>, or <code>.xlsx</code> file extension.</li>
-                        <li class="list-group-item">If you chose "text" as the data format in step 5: The file requires the data to be formatted into two columns, with header names <code>Text</code> and <code>Label</code> OR three columns with header
-                            names <code>ID</code> <code>Text</code> and
-                            <code>Label</code>.</li>
-                        <li class="list-group-item">If you chose "media" as the data format in step 5: You will need to have either the two columns <code>Text</code> and <code>Label</code>
-                            OR the three columns with header names <code>ID</code> <code>Text</code> and <code>Label</code> along with columns for the additional fields you selected.</li>
+                        <li class="list-group-item">The file needs to have either a
+                            <code>.csv</code>, <code>.tsv</code>, or <code>.xlsx</code> file extension.</li>
+                        <li class="list-group-item">The file requires the data to be
+                            formatted with a column for Text. It can also have any of the additional optional columns listed below,
+                            which each have formatting requirements (expand sections for more information)</li>
                         <li class="list-group-item">The largest file size supported is 500MBs.</li>
                     </ul>
-                    <b>Column Information</b>
-                    <p><i>Main Columns:</i></p>
-                    <p>The (optional) <code>ID</code> column should contain a <b>unique</b> identifier for your data. The identifiers should be no more than 128 characters.</p>
-                    <p>The <code>Text</code> column should contain the text you wish users to label. For example, if you are building a sentiment analysis classifier to predict whether a tweet is positive, negative, or neutral, the <code>Text</code>
-                        column would contain the tweets.</p>
-                    <p>The <code>Label</code> column should contain any pre-exisiting labels for the corresponding text. If none of your data contains existing labels, then this column can be left blank. Extending our sentiment analysis example, if a
-                        lead coder has already annotated some tweets as positive, negative, or neutral, this column would contain those labeled records.</p>
+                    <h3>Columns</h3>
+                    <div id="id-panel" class="panel panel-default">
+                        <div class="panel-heading">
+                            <h5 class="panel-title">
+                                <a data-toggle="collapse" href="#id-panel-body" class="accordion-toggle">
+                                    ID
+                                </a>
+                            </h5>
+                        </div>
+                        <div id="id-panel-body" class="panel-collapse collapse">
+                            <div class="panel-body">
+                                <p>The (optional) <code>ID</code> column
+                                    should contain a <b>unique</b> identifier for your data.
+                                    The identifiers should be no more than 128 characters.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="text-panel" class="panel panel-default">
+                        <div class="panel-heading">
+                            <h5 class="panel-title">
+                                <a data-toggle="collapse" href="#text-panel-body" class="accordion-toggle">
+                                    (Required) Text
+                                </a>
+                            </h5>
+                        </div>
+                        <div id="text-panel-body" class="panel-collapse collapse">
+                            <div class="panel-body">
+                                <p>The <code>Text</code> column should contain
+                                    the text you wish users to label. For example,
+                                    if you are building a sentiment analysis classifier to
+                                    predict whether a tweet is positive, negative, or neutral, the
+                                    <code>Text</code>
+                                    column would contain the tweets.</p>
+                            </div>
+                            <img style='height: 100%; width: 100%; object-fit: contain' src="{% static 'smart_label_example_text.png' %}" alt="Sample annotation page with the text highlighted">
+                        </div>
+                    </div>
 
-                    <p><i>Optional Media Columns</i></p>
-                    <b> NOTE: If you chose the "social media" format in the "Data Format" step of project creation, then you must provide columns in your csv
-                        for each media field you checked in the "Additional Field Selection" section. These fields should not be present if you did not check
-                        them off or you chose the "text" data format.</b>
-                    <p>The (optional) <code>title</code> column should contain titles for the posts.</p>
-                    <p>The (optional) <code>url</code> column should contain valid urls for the posts.</p>
-                    <p>The (optional) <code>created_date</code> column should contain valid dates with or without times for the posts. The parser allows for different variations, though it might have trouble if your
-                        dates/times include timezone information. Some examples of valid date/date-time strings are "06/12/2019" or "21 July 2013 10:15 pm".</p>
-                    <p>The (optional) <code>username</code> column should contain values that represent the writer of the post.</p>
-                    <p>The (optional) <code>user_url</code> column should contain valid urls related to the users (such as profile links).</p>
+
+
+
+
+                    <div id="title-panel" class="panel panel-default">
+                        <div class="panel-heading">
+                            <h5 class="panel-title">
+                                <a data-toggle="collapse" href="#title-panel-body" class="accordion-toggle">
+                                    Title
+                                </a>
+                            </h5>
+                        </div>
+                        <div id="title-panel-body" class="panel-collapse collapse">
+                            <div class="panel-body">
+                                <p>The (optional) <code>Title</code> column should contain
+                                    titles that are connected to the text content.
+                                    For example, if you were labeling blog posts, this would
+                                    contain the titles of the posts.
+                                </p>
+                                <img style='height: 100%; width: 100%; object-fit: contain' src="{% static 'smart_label_example_title.png' %}" alt="Sample annotation page with the title highlighted">
+                            </div>
+                        </div>
+                    </div>
+                    <div id="url-panel" class="panel panel-default">
+                        <div class="panel-heading">
+                            <h5 class="panel-title">
+                                <a data-toggle="collapse" href="#url-panel-body" class="accordion-toggle">
+                                    URL
+                                </a>
+                            </h5>
+                        </div>
+                        <div id="url-panel-body" class="panel-collapse collapse">
+                            <div class="panel-body">
+                                <p>The (optional) <code>URL</code> column should contain valid urls for the source of the
+                                    text content. For example, if you were labeling tweets, these would
+                                    be the URL's to the Twitter page the tweet is on.
+                                </p>
+                                <img style='height: 100%; width: 100%; object-fit: contain' src="{% static 'smart_label_example_url.png' %}" alt="Sample annotation page with the url highlighted">
+                            </div>
+                        </div>
+                    </div>
+                    <div id="date-panel" class="panel panel-default">
+                        <div class="panel-heading">
+                            <h5 class="panel-title">
+                                <a data-toggle="collapse" href="#date-panel-body" class="accordion-toggle">
+                                    CreatedDate or Date or PostedDate
+                                </a>
+                            </h5>
+                        </div>
+                        <div id="date-panel-body" class="panel-collapse collapse">
+                            <div class="panel-body">
+                                <p>The (optional) (must be called either <code>CreatedDate</code>,
+                                    <code>Date</code>, or <code>PostedDate</code>) column
+                                    should contain valid dates with or
+                                    without times for the text content. The parser allows for
+                                    different variations, though it might have trouble if your
+                                    dates/times include timezone information.
+                                    Some examples of valid date/date-time strings are
+                                    "06/12/2019" or "21 July 2013 10:15 pm". For example, if
+                                    your text was newspaper articles, this field would contain the
+                                    date the article was published.
+                                </p>
+                                <img style='height: 100%; width: 100%; object-fit: contain' src="{% static 'smart_label_example_date.png' %}" alt="Sample annotation page with the date highlighted">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="user-panel" class="panel panel-default">
+                        <div class="panel-heading">
+                            <h5 class="panel-title">
+                                <a data-toggle="collapse" href="#user-panel-body" class="accordion-toggle">
+                                    User or Username or Author
+                                </a>
+                            </h5>
+                        </div>
+                        <div id="user-panel-body" class="panel-collapse collapse">
+                            <div class="panel-body">
+                                <p>This (optional) column (must be called either <code>User</code>,
+                                    <code>Username</code>, or <code>Author</code>)
+                                    should contain values that represent the writer of the text content.
+                                    For article labeling, this might be the author's name, while for
+                                    social media this could be a username or handle.
+                                </p>
+                                <img style='height: 100%; width: 100%; object-fit: contain' src="{% static 'smart_label_example_user.png' %}" alt="Sample annotation page with the author highlighted">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="userurl-panel" class="panel panel-default">
+                        <div class="panel-heading">
+                            <h5 class="panel-title">
+                                <a data-toggle="collapse" href="#userurl-panel-body" class="accordion-toggle">
+                                    UserURL or AuthorURL
+                                </a>
+                            </h5>
+                        </div>
+                        <div id="userurl-panel-body" class="panel-collapse collapse">
+                            <div class="panel-body">
+                                <p>This (optional) column (must be called either <code>UserURL</code>
+                                    or <code>AuthorURL</code>)
+                                    should contain valid URL's related to the authors of the text content.
+                                    For example, if you were labeling posts from Reddit, these URL's might
+                                    be links to the author's profile pages.
+                                </p>
+                                <img style='height: 100%; width: 100%; object-fit: contain' src="{% static 'smart_label_example_urserurl.png' %}" alt="Sample annotation page with the user url highlighted">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="label-panel" class="panel panel-default">
+                        <div class="panel-heading">
+                            <h5 class="panel-title">
+                                <a data-toggle="collapse" href="#label-panel-body" class="accordion-toggle">
+                                    Label
+                                </a>
+                            </h5>
+                        </div>
+                        <div id="label-panel-body" class="panel-collapse collapse">
+                            <div class="panel-body">
+                                <p>The <code>Label</code> column should contain any
+                                    pre-exisiting labels for the corresponding text.
+                                    If none of your data contains existing labels,
+                                    then this column can be left blank.
+                                    Extending our sentiment analysis example, if a
+                                    lead coder has already annotated some tweets as
+                                    positive, negative, or neutral, this column
+                                    would contain those labeled records.</p>
+                            </div>
+                        </div>
+                    </div>
 
                     <p><i>Data Upload Notes:</i></p>
                     <ul class="list-group">

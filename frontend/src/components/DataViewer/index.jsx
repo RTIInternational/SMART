@@ -43,7 +43,7 @@ class DataViewer extends React.Component {
         let userURLName = <p></p>;
 
         if (userurl != null && userurl != "nan") {
-            userURLRen = <a href={userurl} target="_blank">User URL: {userurl}</a>;
+            userURLRen = <a href={userurl} target="_blank">{userurl}</a>;
         }
 
         if (username != null && username != "nan") {
