@@ -77,12 +77,10 @@ class Project(models.Model):
             return None
 
     def admin_count(self):
-        permissions = self.projectpermissions_set.all()
-        return permissions.filter(permission="ADMIN").count()
+        return self.projectpermissions_set.all().filter(permission="ADMIN").count()
 
     def coder_count(self):
-        permissions = self.projectpermissions_set.all()
-        return permissions.filter(permission="CODER").count()
+        return self.projectpermissions_set.all().filter(permission="CODER").count()
 
     def labeled_data_count(self):
         return self.data_set.all().filter(datalabel__isnull=False).count()
@@ -240,3 +238,13 @@ class AdminProgress(models.Model):
     project = models.ForeignKey("Project")
     profile = models.ForeignKey("Profile")
     timestamp = models.DateTimeField(default=timezone.now)
+
+
+class MetaData(models.Model):
+    data = models.OneToOneField(Data, on_delete=models.CASCADE, primary_key=True)
+    title = models.TextField(null=True, blank=True)
+
+    created_date = models.DateTimeField(null=True)
+    username = models.TextField(blank=True, null=True)
+    url = models.URLField(null=True)
+    user_url = models.URLField(null=True)

@@ -31,16 +31,7 @@ export const getAdmin = (projectID) => {
             .then(response => {
                 // If error was in the response then set that message
                 if ('error' in response) console.log(response);
-                let all_data = [];
-                for (let i = 0; i < response.data.length; i++) {
-                    const row = {
-                        id: response.data[i].ID,
-                        data: response.data[i].Text,
-                        reason: response.data[i].Reason
-                    };
-                    all_data.push(row);
-                }
-                dispatch(set_admin_data(all_data));
+                dispatch(set_admin_data(response.data));
             })
             .catch(err => console.log('Error: ', err));
     };

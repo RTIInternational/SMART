@@ -1,10 +1,12 @@
 import copy
 from io import StringIO
 
+import dateparser
 import numpy as np
 import pandas as pd
 from django import forms
 from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 from django.forms.widgets import RadioSelect, Select, Textarea, TextInput
 from pandas.errors import ParserError
 
@@ -25,8 +27,7 @@ def clean_data_helper(data, supplied_labels):
         "application/vnd.ms-excel.addin.macroenabled.12",
         "application/vnd.ms-excel.sheet.binary.macroenabled.12",
     ]
-    ALLOWED_HEADER = ["Text", "Label"]
-    ALLOWED_HEADER_ID = ["ID", "Text", "Label"]
+
     MAX_FILE_SIZE = 500 * 1000 * 1000
 
     if data.size > MAX_FILE_SIZE:
@@ -39,17 +40,17 @@ def clean_data_helper(data, supplied_labels):
     try:
         if data.content_type == "text/tab-separated-values":
             data = pd.read_csv(
-                StringIO(data.read().decode("utf8", "ignore")), sep="\t", dtype=str,
+                StringIO(data.read().decode("utf8", "ignore")), sep="\t", dtype=str
             ).dropna(axis=0, how="all")
         elif data.content_type == "text/csv":
             data = pd.read_csv(
-                StringIO(data.read().decode("utf8", "ignore")), dtype=str,
+                StringIO(data.read().decode("utf8", "ignore")), dtype=str
             ).dropna(axis=0, how="all")
         elif data.content_type.startswith("application/vnd") and data.name.endswith(
             ".csv"
         ):
             data = pd.read_csv(
-                StringIO(data.read().decode("utf8", "ignore")), dtype=str,
+                StringIO(data.read().decode("utf8", "ignore")), dtype=str
             ).dropna(axis=0, how="all")
         elif data.content_type.startswith("application/vnd") and data.name.endswith(
             ".xlsx"
@@ -64,36 +65,101 @@ def clean_data_helper(data, supplied_labels):
     except ParserError:
         # If there was an error while parsing then raise invalid file error
         raise ValidationError(
-            "Unable to read file.  " "Please ensure it passes all the requirments"
+            "Unable to read file.  Please ensure it passes all the requirments"
         )
     except UnicodeDecodeError:
         # Some files are not in utf-8, let's just reject those.
         raise ValidationError(
-            "Unable to read the file.  Please "
-            "ensure that the file is encoded in UTF-8."
+            "Unable to read the file.  Please ensure that the file is encoded in UTF-8."
         )
 
-    if (len(data.columns) != len(ALLOWED_HEADER)) and len(data.columns) != len(
-        ALLOWED_HEADER_ID
-    ):
-        raise ValidationError(
-            "File has incorrect number of columns.  "
-            "Received {0} but expected {1} or {2}.".format(
-                len(data.columns), len(ALLOWED_HEADER), len(ALLOWED_HEADER_ID)
-            )
-        )
+    data.rename(
+        columns={
+            col: col.lower()
+            for col in data.columns
+            if col not in ["Text", "ID", "Label"]
+        },
+        inplace=True,
+    )
 
-    if (data.columns.tolist() != ALLOWED_HEADER) and (
-        data.columns.tolist() != ALLOWED_HEADER_ID
-    ):
-        raise ValidationError(
-            "File headers are incorrect. "
-            " Received {0} but header must be {1} or {2}.".format(
-                ", ".join(data.columns),
-                ", ".join(ALLOWED_HEADER),
-                ", ".join(ALLOWED_HEADER_ID),
+    # resolve all of the possible equivalent names
+    data.rename(
+        columns={
+            "user": "username",
+            "author": "username",
+            "createddate": "created_date",
+            "date": "created_date",
+            "posteddate": "created_date",
+            "userurl": "user_url",
+            "authorurl": "user_url",
+        },
+        inplace=True,
+    )
+
+    ALLOWED_HEADER = [
+        "Text",
+        "Label",
+        "title",
+        "created_date",
+        "username",
+        "user_url",
+        "url",
+        "ID",
+    ]
+
+    # subset the data by just the columns we can use
+    allowed_cols = set(ALLOWED_HEADER) & set(data.columns.values.tolist())
+    data = data[list(allowed_cols)].copy()
+
+    for col in ALLOWED_HEADER:
+        if col not in data.columns.tolist():
+            if col == "Text":
+                raise ValidationError(
+                    "File headers are incorrect. Missing Text column."
+                )
+            elif col == "Label":
+                # make an empty label column
+                data["Label"] = None
+
+        elif col != "Label" and data[col].isnull().sum() == len(data):
+            raise ValidationError("Column {0} is completely empty.".format(col))
+
+    # check the data types of the columns (use pandas library)
+    if "created_date" in data.columns:
+        # check that the dates are strings
+        if data["created_date"].dtype != np.object:
+            raise ValidationError(
+                "ERROR: created_date column should contain"
+                " date strings like 12/12/2019."
             )
-        )
+        # check that the dates can be parsed.
+        missing_dates = data["created_date"].isnull().sum()
+        data["created_date"] = data["created_date"].dropna().apply(dateparser.parse)
+        data["created_date"].replace({pd.NaT: None}, inplace=True)
+        if data["created_date"].isnull().sum() == len(data):
+            raise ValidationError(
+                "The dates in the CreatedDate/Date/PostedDate column could not be interpreted."
+            )
+        elif data["created_date"].isnull().sum() > missing_dates:
+            raise ValidationError(
+                "Some of the dates in the CreatedDate/Date/PostedDate "
+                "column could not be interpreted."
+            )
+
+    val = URLValidator()
+    if "user_url" in data.columns:
+        try:
+            data["user_url"].dropna().apply(val)
+        except ValidationError as e:
+            raise ValidationError(
+                "ERROR: There is an invalid URL in the UserURL/AuthorURL column."
+            )
+
+    if "url" in data.columns:
+        try:
+            data["url"].dropna().apply(val)
+        except ValidationError as e:
+            raise ValidationError("ERROR: There is an invalid URL in the URL column.")
 
     if len(data) < 1:
         raise ValidationError("File should contain some data.")
@@ -101,8 +167,7 @@ def clean_data_helper(data, supplied_labels):
     labels_in_data = data["Label"].dropna(inplace=False).unique()
     if len(labels_in_data) > 0 and set(labels_in_data) != set(supplied_labels):
         raise ValidationError(
-            "Labels in file do not match labels "
-            "created in step 2.  File supplied {0} "
+            "Labels in file do not match labels created in step 2.  File supplied {0} "
             "but step 2 was given {1}".format(
                 ", ".join(labels_in_data), ", ".join(supplied_labels)
             )
@@ -117,7 +182,7 @@ def clean_data_helper(data, supplied_labels):
             "a file that has less labels."
         )
 
-    if len(data.columns) == len(ALLOWED_HEADER_ID):
+    if "ID" in data.columns:
         # there should be no null values
         if data["ID"].isnull().sum() > 0:
             raise ValidationError("Unique ID field cannot have missing values.")
@@ -321,6 +386,7 @@ class DataWizardForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         self.supplied_labels = kwargs.pop("labels", None)
+
         super(DataWizardForm, self).__init__(*args, **kwargs)
 
     def clean_data(self):

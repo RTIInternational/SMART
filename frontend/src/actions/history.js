@@ -28,15 +28,9 @@ export const getHistory = (projectID) => {
                 // If error was in the response then set that message
                 let all_data = [];
                 for (let i = 0; i < response.data.length; i++) {
-                    const row = {
-                        id: response.data[i].id,
-                        data: response.data[i].data,
-                        old_label: response.data[i].label,
-                        label_reason: response.data[i].label_reason,
-                        old_label_id: response.data[i].labelID,
-                        timestamp: response.data[i].timestamp,
-                        edit: response.data[i].edit
-                    };
+                    const row = response.data[i];
+                    row["old_label"] = response.data[i].label;
+                    row["old_label_id"] = response.data[i].labelID;
                     all_data.push(row);
                 }
                 dispatch(set_hist_data(all_data));

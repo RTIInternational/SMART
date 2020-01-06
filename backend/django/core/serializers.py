@@ -10,6 +10,7 @@ from core.models import (
     IRRLog,
     Label,
     LabelChangeLog,
+    MetaData,
     Model,
     Profile,
     Project,
@@ -59,6 +60,12 @@ class DataSerializer(serializers.ModelSerializer):
     class Meta:
         model = Data
         fields = ("pk", "text", "project", "irr_ind", "hash", "upload_id_hash")
+
+
+class MetaDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MetaData
+        fields = ("title", "created_date", "username", "url", "user_url")
 
 
 class DataLabelSerializer(serializers.HyperlinkedModelSerializer):

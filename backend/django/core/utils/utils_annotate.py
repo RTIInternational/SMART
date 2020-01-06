@@ -2,7 +2,16 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
-from core.models import AssignedData, Data, DataLabel, DataQueue, IRRLog, Queue
+from core.models import (
+    AssignedData,
+    Data,
+    DataLabel,
+    DataQueue,
+    IRRLog,
+    MetaData,
+    Queue,
+)
+from core.serializers import MetaDataSerializer
 from core.templatetags import project_extras
 from core.utils.utils_queue import pop_first_nonempty_queue
 from core.utils.utils_redis import (
@@ -10,6 +19,25 @@ from core.utils.utils_redis import (
     redis_serialize_queue,
     redis_serialize_set,
 )
+
+
+def add_metadata_to_data(data, project):
+    """This takes in a list of dictionaries with data objects and adds in the metadata
+    information if relevant.
+
+    Args:
+    data: a list of dictionaries where each dictionary has
+    a data point with an "id" field
+    project: the project this data is from
+    """
+    for i in range(len(data)):
+        if MetaData.objects.filter(data__pk=data[i]["id"]).exists():
+            metadata = MetaDataSerializer(
+                MetaData.objects.get(data__pk=data[i]["id"])
+            ).data
+            for key, val in metadata.items():
+                data[i][key] = val
+    return data
 
 
 def assign_datum(profile, project, type="normal"):

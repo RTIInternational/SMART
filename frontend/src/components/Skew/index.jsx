@@ -5,6 +5,7 @@ import { Panel } from 'react-bootstrap';
 import NVD3Chart from 'react-nvd3';
 import d3 from 'd3';
 import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
+import DataViewer from "../DataViewer";
 import LabelForm from '../LabelForm';
 
 const COLUMNS = [
@@ -34,7 +35,6 @@ class Skew extends React.Component {
 
     render() {
         const { unlabeled_data, labels, skewLabel, label_counts } = this.props;
-
         return (
             <div>
                 <div className="row">
@@ -95,7 +95,7 @@ class Skew extends React.Component {
                     SubComponent={row => {
                         return (
                             <div className="sub-row">
-                                <p id="skew_text">{row.row.data}</p>
+                                <DataViewer data={unlabeled_data[row.row._index]} />
                                 <LabelForm
                                     data={row.row.id}
                                     labelFunction={skewLabel}

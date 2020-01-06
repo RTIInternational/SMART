@@ -36,15 +36,15 @@ export const fetchCards = (projectID) => {
             })
             .then(response => {
                 // If error was in the response then set that message
-                if ('error' in response) return dispatch(setMessage(response.error));
+                if ('error' in response)
+                    return dispatch(setMessage(response.error));
 
                 dispatch(setLabel(response.labels));
 
                 for (let i = 0; i < response.data.length; i++) {
-                    const card = {
-                        id: i,
-                        text: response.data[i]
-                    };
+                    let card = response.data[i];
+                    card["pk"] = card.id;
+                    card["id"] = i;
                     dispatch(pushCard(card));
                 }
             })
@@ -65,7 +65,7 @@ export const annotateCard = (
         labeling_time: moment().diff(card['start_time'], 'seconds'), // now - start_time rounded to whole seconds
         labelReason: labelReason
     };
-    let apiURL = `/api/annotate_data/${card.text.pk}/`;
+    let apiURL = `/api/annotate_data/${card.pk}/`;
     return dispatch => {
         return fetch(apiURL, postConfig(payload))
             .then(response => {
@@ -97,8 +97,8 @@ export const annotateCard = (
 };
 
 //skip a card and put it in the admin table
-export const passCard = (card, num_cards_left, is_admin, projectID ) => {
-    let apiURL = `/api/skip_data/${card.text.pk}/`;
+export const passCard = (card, num_cards_left, is_admin, projectID) => {
+    let apiURL = `/api/skip_data/${card.pk}/`;
     return dispatch => {
         return fetch(apiURL, postConfig())
             .then(response => {

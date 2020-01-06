@@ -91,7 +91,7 @@ def test_queue_refills_after_empty(
     i = 0
     for card in response["data"]:
         response = client.post(
-            "/api/annotate_data/" + str(card["pk"]) + "/",
+            "/api/annotate_data/" + str(card["id"]) + "/",
             {"labelID": labels[i % 3].pk, "labeling_time": 3},
         )
         i += 1

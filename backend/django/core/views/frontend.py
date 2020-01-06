@@ -221,6 +221,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             advanced_data = advanced.cleaned_data
 
             proj_obj.creator = self.request.user.profile
+
             # Advanced Options
             proj_obj.save()
             proj_pk = proj_obj.pk

@@ -291,36 +291,36 @@ def test_skip_data_api(
 
     # for each card in the deck, skip it
     for card in response["data"]:
-        response = client.post("/api/skip_data/" + str(card["pk"]) + "/")
+        response = client.post("/api/skip_data/" + str(card["id"]) + "/")
         if card["irr_ind"]:
             # if it was irr data, check that it is not in admin queue
             assert (
-                DataQueue.objects.filter(data__pk=card["pk"], queue=admin_queue).count()
+                DataQueue.objects.filter(data__pk=card["id"], queue=admin_queue).count()
                 == 0
             )
             assert (
-                DataQueue.objects.filter(data__pk=card["pk"], queue=irr_queue).count()
+                DataQueue.objects.filter(data__pk=card["id"], queue=irr_queue).count()
                 == 1
             )
             assert (
                 AssignedData.objects.filter(
-                    data__pk=card["pk"], profile=client_profile
+                    data__pk=card["id"], profile=client_profile
                 ).count()
                 == 0
             )
         else:
             # if it is not irr data, check that it is in admin queue
             assert (
-                DataQueue.objects.filter(data__pk=card["pk"], queue=admin_queue).count()
+                DataQueue.objects.filter(data__pk=card["id"], queue=admin_queue).count()
                 == 1
             )
             assert (
-                DataQueue.objects.filter(data__pk=card["pk"], queue=irr_queue).count()
+                DataQueue.objects.filter(data__pk=card["id"], queue=irr_queue).count()
                 == 0
             )
             assert (
                 AssignedData.objects.filter(
-                    data__pk=card["pk"], profile=client_profile
+                    data__pk=card["id"], profile=client_profile
                 ).count()
                 == 0
             )
@@ -507,7 +507,7 @@ def test_unlabeled_table(
     response = admin_client.get(
         "/api/data_unlabeled_table/" + str(project.pk) + "/"
     ).json()
-    data_ids = [d["ID"] for d in response["data"]]
+    data_ids = [d["id"] for d in response["data"]]
     assert data[0].pk not in data_ids
 
     # skip something. Check it is not in the table.
@@ -515,7 +515,7 @@ def test_unlabeled_table(
     response = admin_client.get(
         "/api/data_unlabeled_table/" + str(project.pk) + "/"
     ).json()
-    data_ids = [d["ID"] for d in response["data"]]
+    data_ids = [d["id"] for d in response["data"]]
     assert data[1].pk not in data_ids
 
 
@@ -558,7 +558,7 @@ def test_admin_table(
     response = client.post("/api/skip_data/" + str(data[1].pk) + "/")
     response = admin_client.get("/api/data_admin_table/" + str(project.pk) + "/").json()
     assert len(response["data"]) == 1
-    assert response["data"][0]["ID"] == data[1].pk
+    assert response["data"][0]["id"] == data[1].pk
 
     # admin annotate the data. Admin table should be empty again.
     response = admin_client.post(
@@ -850,7 +850,7 @@ def test_recycle_bin_table(
     assert "detail" not in response
     assert len(response["data"]) == non_irr_count + irr_count
     assert_collections_equal(
-        [d["ID"] for d in response["data"]],
+        [d["id"] for d in response["data"]],
         RecycleBin.objects.filter(data__project=project).values_list(
             "data__pk", flat=True
         ),

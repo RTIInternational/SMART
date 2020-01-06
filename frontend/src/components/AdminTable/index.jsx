@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import ReactTable from 'react-table';
 import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
+import DataViewer from "../DataViewer";
 import LabelForm from '../LabelForm';
 
 class AdminTable extends React.Component {
@@ -10,22 +11,20 @@ class AdminTable extends React.Component {
     }
 
     getSubComponent(row) {
-        const { labels, adminLabel, discardData } = this.props;
+        const { labels, adminLabel, discardData, admin_data } = this.props;
 
         return (
-            <div>
-                <p id="admin_text">{row.row.data}</p>
-                <div id="admin_buttons">
-                    <LabelForm
-                        data={row.row.id}
-                        labelFunction={adminLabel}
-                        passButton={false}
-                        discardButton={true}
-                        skipFunction={() => {}}
-                        discardFunction={discardData}
-                        labels={labels}
-                    />
-                </div>
+            <div className="sub-row">
+                <DataViewer data={admin_data[row.row._index]} />
+                <LabelForm
+                    data={row.row.id}
+                    labelFunction={adminLabel}
+                    passButton={false}
+                    discardButton={true}
+                    skipFunction={() => {}}
+                    discardFunction={discardData}
+                    labels={labels}
+                />
             </div>
         );
     }

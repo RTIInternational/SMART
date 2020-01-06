@@ -17,6 +17,7 @@ from core.models import (
     DataLabel,
     IRRLog,
     Label,
+    MetaData,
     Profile,
     Project,
     ProjectPermissions,
@@ -182,13 +183,47 @@ def create_labels_from_csv(df, project):
         )
 
 
+def create_metadata_objects(df, project):
+    """Insert metadata objects into database using bulk_create."""
+    columns = ["data_id"]
+
+    if "title" in df.columns:
+        columns.append("title")
+    if "created_date" in df.columns:
+        columns.append("created_date")
+    if "username" in df.columns:
+        columns.append("username")
+    if "url" in df.columns:
+        columns.append("url")
+    if "user_url" in df.columns:
+        columns.append("user_url")
+
+    df["data_id"] = df["hash"].apply(
+        lambda x: Data.objects.get(hash=x, project=project).pk
+    )
+
+    df = df[columns]
+
+    metadata_objects = []
+    for index, row in df.iterrows():
+        metadata_objects.append(MetaData(**row.to_dict()))
+
+    MetaData.objects.bulk_create(metadata_objects)
+
+
 def add_data(project, df):
     """Add data to an existing project.
 
-    df should be two column dataframe with columns Text and Label.  Label can be empty
-    and should have at least one null value.  Any row that has Label should be added to
-    DataLabel
+    df should at minimum be a two column dataframe with columns Text and Label. Label
+    can be empty and should have at least one null value. Any row that has Label should
+    be added to DataLabel
     """
+    df.rename(
+        columns={
+            col: col.lower() for col in df.columns if col not in ["Text", "ID", "Label"]
+        },
+        inplace=True,
+    )
     # Create hash of text and drop duplicates
     df["hash"] = df["Text"].apply(md5_hash)
     df.drop_duplicates(subset="hash", keep="first", inplace=True)
@@ -233,6 +268,16 @@ def add_data(project, df):
     labeled_df = df[~pd.isnull(df["Label"])]
     if len(labeled_df) > 0:
         create_labels_from_csv(labeled_df, project)
+
+    # Make metadata objects if any columns exist with metadata
+    if (
+        len(
+            set(["title", "user", "created_date", "user_url", "url"])
+            & set(df.columns.values.tolist())
+        )
+        > 0
+    ):
+        create_metadata_objects(df.copy(deep=True), project)
 
     return df
 
@@ -387,7 +432,7 @@ def irr_heatmap_data(project):
 
 def save_data_file(df, project_pk):
     """Given the df used to create and save objects save just the data to a file. Make
-    sure to count the number of files in directory assocaited with the project and save
+    sure to count the number of files in directory associated with the project and save
     as next incremented file name.
 
     Args:
@@ -397,6 +442,7 @@ def save_data_file(df, project_pk):
     Returns:
         file: The filepath to the saved datafile
     """
+
     num_proj_files = len(
         [
             f

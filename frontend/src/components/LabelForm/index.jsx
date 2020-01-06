@@ -10,7 +10,8 @@ import {
     Radio,
     DropdownButton,
     MenuItem,
-    FormGroup
+    FormGroup,
+    FormControl
 } from 'react-bootstrap';
 
 class LabelForm extends React.Component {
@@ -192,6 +193,9 @@ class LabelForm extends React.Component {
                             name="labelGroup"
                             key={`deck-button-${opt["name"]}`}
                             onClick={() => this.handleLabelSelect(opt)}
+                            defaultChecked={(this.state.selected_label.pk === null ||
+                              (this.state.selected_label.pk !== null &&
+                                this.state.selected_label.name !== opt["name"] )) ? false : true}
                         >
                             {opt["name"]}
                         </Radio>
@@ -228,11 +232,10 @@ class LabelForm extends React.Component {
                     {this.labelButtonRender(labels)}
                     <p>
                         (Optional) Reason for Label:
-                        <input
-                            type="text"
-                            value={this.state.label_reason}
+                        <FormControl
+                            componentClass="textarea"
+                            placeholder="Type reason here"
                             onChange={this.handleReasonChange}
-                            className="margin-left"
                         />
                     </p>
                     {this.warningRender()}

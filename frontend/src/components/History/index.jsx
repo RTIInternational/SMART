@@ -1,8 +1,15 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import ReactTable from 'react-table';
-import { Alert } from 'react-bootstrap';
+import {
+    Button,
+    ButtonToolbar,
+    Tooltip,
+    OverlayTrigger,
+    Alert
+} from 'react-bootstrap';
 import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
+import DataViewer from '../DataViewer';
 import LabelForm from '../LabelForm';
 
 const COLUMNS = [
@@ -62,7 +69,7 @@ class History extends React.Component {
         if (row.row.edit === "yes") {
             subComponent = (
                 <div className="sub-row">
-                    <p>{row.row.data}</p>
+                    <DataViewer data={this.props.history_data[row.row._index]} />
                     <LabelForm
                         data={row.row.id}
                         previousLabel={{
@@ -82,7 +89,7 @@ class History extends React.Component {
         } else {
             subComponent = (
                 <div className="sub-row">
-                    <p>{row.row.data}</p>
+                    <DataViewer data={this.props.history_data[row.row._index]} />
                     <Alert bsStyle="warning">
                         <strong>Note:</strong>
                         This is Inter-rater Reliability data and is not editable.
@@ -120,6 +127,7 @@ class History extends React.Component {
                     active learning in the past. The training data will only be
                     updated for the next run of the model
                 </p>
+
                 <CodebookLabelMenuContainer />
                 <ReactTable
                     data={history_data}

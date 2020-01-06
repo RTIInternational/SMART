@@ -1,7 +1,11 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Well, Alert } from 'react-bootstrap';
+import {
+    Alert,
+    Well
+} from "react-bootstrap";
 
+import DataViewer from "../DataViewer";
 import LabelForm from '../LabelForm';
 
 class Card extends React.Component {
@@ -74,8 +78,8 @@ class Card extends React.Component {
             card = (
                 <div className="full" key={cards[0].id}>
                     <div className="cardface">
-                        <h2> Card {cards[0].id + 1} </h2>
-                        <p> {cards[0].text["text"]} </p>
+                        <h2>Card {cards[0].id + 1}</h2>
+                        <DataViewer data={cards[0]} />
                         <LabelForm
                             data={cards[0]}
                             labelFunction={annotateCard}

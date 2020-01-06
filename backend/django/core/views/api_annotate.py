@@ -21,9 +21,10 @@ from core.models import (
     RecycleBin,
 )
 from core.permissions import IsAdminOrCreator, IsCoder
-from core.serializers import DataSerializer, LabelSerializer
+from core.serializers import LabelSerializer
 from core.templatetags import project_extras
 from core.utils.utils_annotate import (
+    add_metadata_to_data,
     get_assignments,
     label_data,
     move_skipped_to_admin_queue,
@@ -58,12 +59,14 @@ def get_card_deck(request, project_pk):
     random.shuffle(data)
     labels = Label.objects.all().filter(project=project)
 
-    return Response(
-        {
-            "labels": LabelSerializer(labels, many=True).data,
-            "data": DataSerializer(data, many=True).data,
-        }
-    )
+    cards = [
+        {"id": d.pk, "data": d.text, "irr_ind": d.irr_ind, "project": d.project.pk}
+        for d in data
+    ]
+    # also return any metadata
+    cards = add_metadata_to_data(cards, project)
+
+    return Response({"labels": LabelSerializer(labels, many=True).data, "data": cards})
 
 
 @api_view(["GET"])
@@ -432,8 +435,11 @@ def data_unlabeled_table(request, project_pk):
     )
     data = []
     for d in unlabeled_data:
-        temp = {"Text": escape(d.text), "ID": d.id}
+        temp = {"data": escape(d.text), "id": d.id}
         data.append(temp)
+
+    # also return any metadata
+    data = add_metadata_to_data(data, project)
 
     return Response({"data": data})
 
@@ -460,8 +466,11 @@ def data_admin_table(request, project_pk):
             reason = "IRR"
         else:
             reason = "Skipped"
-        temp = {"Text": d.data.text, "ID": d.data.id, "Reason": reason}
+        temp = {"data": d.data.text, "id": d.data.id, "reason": reason}
         data.append(temp)
+
+    # also return any metadata
+    data = add_metadata_to_data(data, project)
 
     return Response({"data": data})
 
@@ -505,8 +514,11 @@ def recycle_bin_table(request, project_pk):
 
     data = []
     for d in data_objs:
-        temp = {"Text": d.data.text, "ID": d.data.id}
+        temp = {"data": d.data.text, "id": d.data.id}
         data.append(temp)
+
+    # also return any metadata
+    data = add_metadata_to_data(data, project)
 
     return Response({"data": data})
 
@@ -696,6 +708,10 @@ def get_label_history(request, project_pk):
             "timestamp": new_timestamp,
             "edit": "no",
         }
+
         results.append(temp_dict)
+
+    # also return any metadata
+    results = add_metadata_to_data(results, project)
 
     return Response({"data": results})
