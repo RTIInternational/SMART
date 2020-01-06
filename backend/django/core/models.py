@@ -240,16 +240,6 @@ class AdminProgress(models.Model):
     timestamp = models.DateTimeField(default=timezone.now)
 
 
-class ProjectMetaData(models.Model):
-    project = models.OneToOneField(Project, on_delete=models.CASCADE, primary_key=True)
-
-    has_title = models.BooleanField(default=False)
-    has_created_date = models.BooleanField(default=False)
-    has_username = models.BooleanField(default=False)
-    has_url = models.BooleanField(default=False)
-    has_user_url = models.BooleanField(default=False)
-
-
 class MetaData(models.Model):
     data = models.OneToOneField(Data, on_delete=models.CASCADE, primary_key=True)
     title = models.TextField(null=True, blank=True)

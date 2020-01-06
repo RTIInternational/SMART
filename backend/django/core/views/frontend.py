@@ -14,7 +14,6 @@ from formtools.wizard.views import SessionWizardView
 from core.forms import (
     AdvancedWizardForm,
     CodeBookWizardForm,
-    DataFormatWizardForm,
     DataWizardForm,
     LabelDescriptionFormSet,
     LabelFormSet,
@@ -22,7 +21,7 @@ from core.forms import (
     ProjectUpdateOverviewForm,
     ProjectWizardForm,
 )
-from core.models import Data, Label, Project, ProjectMetaData, TrainingSet
+from core.models import Data, Label, Project, TrainingSet
 from core.templatetags import project_extras
 from core.utils.util import save_codebook_file, upload_data
 from core.utils.utils_annotate import batch_unassign
@@ -125,7 +124,6 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         ("permissions", PermissionsFormSet),
         ("advanced", AdvancedWizardForm),
         ("codebook", CodeBookWizardForm),
-        ("dataformat", DataFormatWizardForm),
         ("data", DataWizardForm),
     ]
     template_list = {
@@ -134,7 +132,6 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         "permissions": "projects/create/create_wizard_permissions.html",
         "advanced": "projects/create/create_wizard_advanced.html",
         "codebook": "projects/create/create_wizard_codebook.html",
-        "dataformat": "projects/create/create_wizard_dataformat.html",
         "data": "projects/create/create_wizard_data.html",
     }
 
@@ -149,7 +146,6 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
                 if "name" in label.keys():
                     temp.append(label["name"])
             kwargs["labels"] = temp
-            kwargs["dataformat"] = self.get_cleaned_data_for_step("dataformat")
         return kwargs
 
     def get_form_kwargs_special(self, step=None):
@@ -218,7 +214,6 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         advanced = form_dict["advanced"]
         data = form_dict["data"]
         codebook_data = form_dict["codebook"]
-        dataformat = form_dict["dataformat"]
 
         with transaction.atomic():
             # Project
@@ -255,18 +250,6 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             proj_obj.num_users_irr = advanced_data["num_users_irr"]
             proj_obj.classifier = advanced_data["classifier"]
             proj_obj.save()
-
-            # Project metadata options
-            cleaned_dataformat = dataformat.cleaned_data
-            if cleaned_dataformat["data_type_choice"] == "Media":
-                ProjectMetaData.objects.create(
-                    project=proj_obj,
-                    has_title=cleaned_dataformat["has_title"],
-                    has_url=cleaned_dataformat["has_url"],
-                    has_created_date=cleaned_dataformat["has_created_date"],
-                    has_username=cleaned_dataformat["has_username"],
-                    has_user_url=cleaned_dataformat["has_user_url"],
-                )
 
             # Training Set
             TrainingSet.objects.create(project=proj_obj, set_number=0)
@@ -379,26 +362,6 @@ class ProjectUpdateData(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
                 "name", flat=True
             )
         )
-
-        if ProjectMetaData.objects.filter(project=form_kwargs["instance"]).exists():
-            proj_md = ProjectMetaData.objects.get(project=form_kwargs["instance"])
-            form_kwargs["dataformat"] = {
-                "data_type_choice": "Media",
-                "has_title": proj_md.has_title,
-                "has_created_date": proj_md.has_created_date,
-                "has_user_url": proj_md.has_user_url,
-                "has_username": proj_md.has_username,
-                "has_url": proj_md.has_url,
-            }
-        else:
-            form_kwargs["dataformat"] = {
-                "data_type_choice": "Text",
-                "has_title": False,
-                "has_created_date": False,
-                "has_user_url": False,
-                "has_username": False,
-                "has_url": False,
-            }
 
         del form_kwargs["instance"]
 

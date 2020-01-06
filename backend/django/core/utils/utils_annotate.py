@@ -9,7 +9,6 @@ from core.models import (
     DataQueue,
     IRRLog,
     MetaData,
-    ProjectMetaData,
     Queue,
 )
 from core.serializers import MetaDataSerializer
@@ -31,9 +30,6 @@ def add_metadata_to_data(data, project):
     a data point with an "id" field
     project: the project this data is from
     """
-    if not ProjectMetaData.objects.filter(project=project).exists():
-        return data
-
     for i in range(len(data)):
         if MetaData.objects.filter(data__pk=data[i]["id"]).exists():
             metadata = MetaDataSerializer(
