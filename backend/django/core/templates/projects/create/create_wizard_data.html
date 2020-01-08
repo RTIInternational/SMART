@@ -79,11 +79,6 @@
                             <img style='height: 100%; width: 100%; object-fit: contain' src="{% static 'smart_label_example_text.png' %}" alt="Sample annotation page with the text highlighted">
                         </div>
                     </div>
-
-
-
-
-
                     <div id="title-panel" class="panel panel-default">
                         <div class="panel-heading">
                             <h5 class="panel-title">
@@ -125,14 +120,13 @@
                         <div class="panel-heading">
                             <h5 class="panel-title">
                                 <a data-toggle="collapse" href="#date-panel-body" class="accordion-toggle">
-                                    CreatedDate or Date or PostedDate
+                                    CreatedDate
                                 </a>
                             </h5>
                         </div>
                         <div id="date-panel-body" class="panel-collapse collapse">
                             <div class="panel-body">
-                                <p>The (optional) (must be called either <code>CreatedDate</code>,
-                                    <code>Date</code>, or <code>PostedDate</code>) column
+                                <p>The (optional) <code>CreatedDate</code> column
                                     should contain valid dates with or
                                     without times for the text content. The parser allows for
                                     different variations, though it might have trouble if your
@@ -151,15 +145,13 @@
                         <div class="panel-heading">
                             <h5 class="panel-title">
                                 <a data-toggle="collapse" href="#user-panel-body" class="accordion-toggle">
-                                    User or Username or Author
+                                    Username
                                 </a>
                             </h5>
                         </div>
                         <div id="user-panel-body" class="panel-collapse collapse">
                             <div class="panel-body">
-                                <p>This (optional) column (must be called either <code>User</code>,
-                                    <code>Username</code>, or <code>Author</code>)
-                                    should contain values that represent the writer of the text content.
+                                <p>This (optional) column <code>Username</code> should contain values that represent the writer of the text content.
                                     For article labeling, this might be the author's name, while for
                                     social media this could be a username or handle.
                                 </p>
@@ -172,15 +164,13 @@
                         <div class="panel-heading">
                             <h5 class="panel-title">
                                 <a data-toggle="collapse" href="#userurl-panel-body" class="accordion-toggle">
-                                    UserURL or AuthorURL
+                                    UserURL
                                 </a>
                             </h5>
                         </div>
                         <div id="userurl-panel-body" class="panel-collapse collapse">
                             <div class="panel-body">
-                                <p>This (optional) column (must be called either <code>UserURL</code>
-                                    or <code>AuthorURL</code>)
-                                    should contain valid URL's related to the authors of the text content.
+                                <p>This (optional) column <code>UserURL</code> should contain valid URL's related to the authors of the text content.
                                     For example, if you were labeling posts from Reddit, these URL's might
                                     be links to the author's profile pages.
                                 </p>

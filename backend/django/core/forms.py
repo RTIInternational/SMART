@@ -75,7 +75,7 @@ def clean_data_helper(data, supplied_labels):
 
     data.rename(
         columns={
-            col: col.lower()
+            col: col.lower().replace(" ", "")
             for col in data.columns
             if col not in ["Text", "ID", "Label"]
         },
@@ -84,16 +84,7 @@ def clean_data_helper(data, supplied_labels):
 
     # resolve all of the possible equivalent names
     data.rename(
-        columns={
-            "user": "username",
-            "author": "username",
-            "createddate": "created_date",
-            "date": "created_date",
-            "posteddate": "created_date",
-            "userurl": "user_url",
-            "authorurl": "user_url",
-        },
-        inplace=True,
+        columns={"createddate": "created_date", "userurl": "user_url"}, inplace=True
     )
 
     ALLOWED_HEADER = [
