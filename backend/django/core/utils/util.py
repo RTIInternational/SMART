@@ -85,6 +85,7 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
     5. Check and Trigger model
     """
     new_df = add_data(project, form_data)
+
     if queue:
         fill_queue(
             queue=queue,
@@ -98,7 +99,6 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
     # we need to check_and_trigger model.  However since training model requires
     # tf_idf to be created we must create a chord which garuntees that tfidf
     # creation task is completed before check and trigger model task
-
     if len(new_df) > 0:
         save_data_file(new_df, project.pk)
         if project.classifier is not None:

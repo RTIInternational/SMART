@@ -246,5 +246,5 @@ class MetaData(models.Model):
 
     created_date = models.DateTimeField(null=True)
     username = models.TextField(blank=True, null=True)
-    url = models.URLField(null=True)
+    url = models.URLField(null=True, max_length=500)
     user_url = models.URLField(null=True)
