@@ -31,12 +31,11 @@ def add_metadata_to_data(data, project):
     project: the project this data is from
     """
     for i in range(len(data)):
-        if MetaData.objects.filter(data__pk=data[i]["id"]).exists():
-            metadata = MetaDataSerializer(
-                MetaData.objects.get(data__pk=data[i]["id"])
+        data[i].update(
+            MetaDataSerializer(
+                MetaData.objects.filter(data__pk=data[i]["id"]).first()
             ).data
-            for key, val in metadata.items():
-                data[i][key] = val
+        )
     return data
 
 

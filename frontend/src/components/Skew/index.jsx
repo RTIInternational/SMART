@@ -33,8 +33,40 @@ class Skew extends React.Component {
         this.props.getLabelCounts();
     }
 
+    renderTable(){
+        const { unlabeled_data, skewLabel, labels } = this.props;
+        if (unlabeled_data.length == 0) {
+            return <b>Loading unlabeled data. This may take up to a minute for large datasets..</b>;
+        } else {
+            return (<ReactTable
+                data={unlabeled_data}
+                columns={COLUMNS}
+                filterable={true}
+                showPageSizeOptions={false}
+                pageSize={(unlabeled_data.length < 50) ? unlabeled_data.length : 50}
+                SubComponent={row => {
+                    return (
+                        <div className="sub-row">
+                            <DataViewer data={unlabeled_data[row.row._index]} />
+                            <LabelForm
+                                data={row.row.id}
+                                labelFunction={skewLabel}
+                                passButton={false}
+                                discardButton={false}
+                                skipFunction={() => {}}
+                                discardFunction={() => {}}
+                                labels={labels}
+                            />
+                        </div>
+                    );
+                }}
+            />);
+        }
+    }
+
     render() {
-        const { unlabeled_data, labels, skewLabel, label_counts } = this.props;
+        const { unlabeled_data, label_counts } = this.props;
+
         return (
             <div>
                 <div className="row">
@@ -86,29 +118,7 @@ class Skew extends React.Component {
                     </div>
                 </div>
                 <CodebookLabelMenuContainer />
-                <ReactTable
-                    data={unlabeled_data}
-                    columns={COLUMNS}
-                    filterable={true}
-                    showPageSizeOptions={false}
-                    pageSize={(unlabeled_data.length < 50) ? unlabeled_data.length : 50}
-                    SubComponent={row => {
-                        return (
-                            <div className="sub-row">
-                                <DataViewer data={unlabeled_data[row.row._index]} />
-                                <LabelForm
-                                    data={row.row.id}
-                                    labelFunction={skewLabel}
-                                    passButton={false}
-                                    discardButton={false}
-                                    skipFunction={() => {}}
-                                    discardFunction={() => {}}
-                                    labels={labels}
-                                />
-                            </div>
-                        );
-                    }}
-                />
+                {this.renderTable()}
             </div>
         );
     }
