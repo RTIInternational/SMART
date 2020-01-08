@@ -4,6 +4,7 @@ import os
 import tempfile
 import zipfile
 
+import numpy as np
 from django.conf import settings
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
@@ -26,12 +27,18 @@ def download_data(request, project_pk):
     """
     project = Project.objects.get(pk=project_pk)
     data, labels = get_labeled_data(project)
+    data.rename(
+        columns={
+            col: col.replace("_", " ").title().replace(" ", "") for col in data.columns
+        },
+        inplace=True,
+    )
+    data.replace({np.nan: None, "nan": None}, inplace=True)
+    cols = data.columns.values.tolist()
     data = data.to_dict("records")
 
     buffer = io.StringIO()
-    wr = csv.DictWriter(
-        buffer, fieldnames=["ID", "Text", "Label"], quoting=csv.QUOTE_ALL
-    )
+    wr = csv.DictWriter(buffer, fieldnames=cols, quoting=csv.QUOTE_ALL)
     wr.writeheader()
     wr.writerows(data)
     buffer.seek(0)
@@ -85,6 +92,14 @@ def download_model(request, project_pk):
     )
 
     data, label_data = get_labeled_data(project)
+    data.rename(
+        columns={
+            col: col.replace("_", " ").title().replace(" ", "") for col in data.columns
+        },
+        inplace=True,
+    )
+    data.replace({np.nan: None, "nan": None}, inplace=True)
+
     # open the tempfile and write the label data to it
     temp_labeleddata_file = tempfile.NamedTemporaryFile(
         mode="w", suffix=".csv", delete=False, dir=settings.DATA_DIR
