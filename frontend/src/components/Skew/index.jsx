@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import ReactTable from 'react-table';
-import { Panel } from 'react-bootstrap';
+import { Panel, FormControl } from 'react-bootstrap';
 import NVD3Chart from 'react-nvd3';
 import d3 from 'd3';
 import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
@@ -17,6 +17,19 @@ const COLUMNS = [
     {
         Header: "Unlabeled Data",
         accessor: "data",
+        Filter: ({ onChange }) => {
+            return (
+                <FormControl
+                    componentClass="input"
+                    placeholder="Filter Text"
+                    onKeyPress={event => {
+                        if (event.keyCode === 13 || event.which === 13) {
+                            onChange(event.target.value);
+                        }
+                    }}
+                />
+            );
+        },
         filterMethod: (filter, row) => {
             if (String(row["data"]).toLowerCase().includes(filter.value.toLowerCase())) {
                 return true;
