@@ -69,7 +69,7 @@ def fill_queue(queue, orderby, irr_queue=None, irr_percent=10, batch_size=30):
     }
     if orderby not in ORDERBY_VALUE.keys():
         raise ValueError(
-            "orderby parameter must be one of the following: " + " ".join(ORDERBY_VALUE)
+            f"orderby parameter must be one of the following: {' '.join(ORDERBY_VALUE)}"
         )
 
     recycled_data = RecycleBin.objects.filter(data__project=queue.project).values_list(
