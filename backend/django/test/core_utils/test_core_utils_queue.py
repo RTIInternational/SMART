@@ -90,7 +90,7 @@ def test_pop_empty_queue(db, test_project, test_redis):
     datum = pop_queue(queue)
 
     assert datum is None
-    assert not test_redis.exists("queue:" + str(queue.pk))
+    assert not test_redis.exists(f"queue:{queue.pk}")
     assert queue.data.count() == 0
 
 
@@ -102,8 +102,8 @@ def test_pop_nonempty_queue(db, test_project_data, test_redis):
     datum = pop_queue(queue)
 
     assert isinstance(datum, Data)
-    assert test_redis.llen("queue:" + str(queue.pk)) == (queue_len - 1)
-    assert test_redis.scard("set:" + str(queue.pk)) == (queue_len)
+    assert test_redis.llen(f"queue:{queue.pk}") == (queue_len - 1)
+    assert test_redis.scard(f"set:{queue.pk}") == (queue_len)
     assert queue.data.count() == queue_len
 
 
@@ -117,12 +117,12 @@ def test_pop_only_affects_one_queue(db, test_project_data, test_redis):
     datum = pop_queue(queue)
 
     assert isinstance(datum, Data)
-    assert test_redis.llen("queue:" + str(queue.pk)) == (queue_len - 1)
-    assert test_redis.scard("set:" + str(queue.pk)) == (queue_len)
+    assert test_redis.llen(f"queue:{queue.pk}") == (queue_len - 1)
+    assert test_redis.scard(f"set:{queue.pk}") == (queue_len)
     assert queue.data.count() == queue_len
 
-    assert test_redis.llen("queue:" + str(queue2.pk)) == queue_len
-    assert test_redis.scard("set:" + str(queue2.pk)) == (queue_len)
+    assert test_redis.llen(f"queue:{queue2.pk}") == queue_len
+    assert test_redis.scard(f"set:{queue2.pk}") == (queue_len)
     assert queue2.data.count() == queue_len
 
 

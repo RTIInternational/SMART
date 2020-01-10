@@ -17,19 +17,6 @@ const COLUMNS = [
     {
         Header: "Unlabeled Data",
         accessor: "data",
-        Filter: ({ onChange }) => {
-            return (
-                <FormControl
-                    componentClass="input"
-                    placeholder="Filter Text"
-                    onKeyPress={event => {
-                        if (event.keyCode === 13 || event.which === 13) {
-                            onChange(event.target.value);
-                        }
-                    }}
-                />
-            );
-        },
         filterMethod: (filter, row) => {
             if (String(row["data"]).toLowerCase().includes(filter.value.toLowerCase())) {
                 return true;

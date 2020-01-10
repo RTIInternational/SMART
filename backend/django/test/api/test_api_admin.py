@@ -445,7 +445,7 @@ def test_model_metrics(
     # at the beginning, shouldn't have any
     for metric in ["accuracy", "f1", "precision", "recall"]:
         response = admin_client.get(
-            f"/api/model_metrics/{project.pk}/?metric=" + metric
+            f"/api/model_metrics/{project.pk}/?metric={metric}"
         ).json()
         if len(response) == 1:
             assert response[0]["key"] == "Accuracy"
@@ -466,7 +466,7 @@ def test_model_metrics(
     # for metric in ['accuracy', 'f1', 'precision', 'recall']:
     for metric in ["accuracy", "f1", "precision", "recall"]:
         response = admin_client.get(
-            f"/api/model_metrics/{project.pk}/?metric=" + metric
+            f"/api/model_metrics/{project.pk}/?metric={metric}"
         ).json()
         if len(response) == 1:
             assert response[0]["key"] == "Accuracy"
@@ -497,7 +497,7 @@ def test_model_metrics(
 
     for metric in ["accuracy", "f1", "precision", "recall"]:
         response = admin_client.get(
-            f"/api/model_metrics/{project.pk}/?metric=" + metric
+            f"/api/model_metrics/{project.pk}/?metric={metric}"
         ).json()
         if len(response) == 1:
             assert response[0]["key"] == "Accuracy"
