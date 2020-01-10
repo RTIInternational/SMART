@@ -34,14 +34,14 @@ def assert_redis_matches_db(test_redis):
         data_count = q.data.count()
 
         if data_count > 0:
-            assert test_redis.exists("queue:" + str(q.pk))
-            assert test_redis.llen("queue:" + str(q.pk)) == data_count
-            assert test_redis.exists("set:" + str(q.pk))
-            assert test_redis.scard("set:" + str(q.pk)) == data_count
+            assert test_redis.exists(f"queue:{q.pk}")
+            assert test_redis.llen(f"queue:{q.pk}") == data_count
+            assert test_redis.exists(f"set:{q.pk}")
+            assert test_redis.scard(f"set:{q.pk}") == data_count
         else:
             # Empty lists don't exist in redis
-            assert not test_redis.exists("queue:" + str(q.pk))
-            assert not test_redis.exists("set:" + str(q.pk))
+            assert not test_redis.exists(f"queue:{q.pk}")
+            assert not test_redis.exists(f"set:{q.pk}")
 
 
 def read_test_data_api(file=SEED_FILE_PATH):

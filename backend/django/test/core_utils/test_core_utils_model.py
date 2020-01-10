@@ -48,8 +48,7 @@ def test_save_tfidf_matrix(test_project_data, test_tfidf_matrix, tmpdir, setting
 
     assert os.path.isfile(file)
     assert file == os.path.join(
-        settings.TF_IDF_PATH,
-        "project_" + str(test_project_data.pk) + "_tfidf_matrix.pkl",
+        settings.TF_IDF_PATH, f"project_{test_project_data.pk}_tfidf_matrix.pkl"
     )
 
 
@@ -190,11 +189,7 @@ def test_train_and_save_model(test_project_labeled_and_tfidf, tmpdir, settings):
     assert os.path.isfile(model.pickle_path)
     assert model.pickle_path == os.path.join(
         str(model_path_temp),
-        "project_"
-        + str(project.pk)
-        + "_training_"
-        + str(project.get_current_training_set().set_number)
-        + ".pkl",
+        f"project_{project.pk}_training_{project.get_current_training_set().set_number}.pkl",
     )
 
 
@@ -293,11 +288,7 @@ def test_check_and_trigger_batched_success(
     assert os.path.isfile(model.pickle_path)
     assert model.pickle_path == os.path.join(
         str(model_path_temp),
-        "project_"
-        + str(project.pk)
-        + "_training_"
-        + str(initial_training_set.set_number)
-        + ".pkl",
+        f"project_{project.pk}_training_{initial_training_set.set_number}.pkl",
     )
 
     # Assert predictions created
@@ -389,11 +380,7 @@ def test_check_and_trigger_queue_changes_success(
     assert os.path.isfile(model.pickle_path)
     assert model.pickle_path == os.path.join(
         str(model_path_temp),
-        "project_"
-        + str(project.pk)
-        + "_training_"
-        + str(initial_training_set.set_number)
-        + ".pkl",
+        f"project_{project.pk}_training_{initial_training_set.set_number}.pkl",
     )
 
     # Assert predictions created
@@ -478,11 +465,7 @@ def test_svm_classifier(
     assert os.path.isfile(model.pickle_path)
     assert model.pickle_path == os.path.join(
         str(model_path_temp),
-        "project_"
-        + str(project.pk)
-        + "_training_"
-        + str(initial_training_set.set_number)
-        + ".pkl",
+        f"project_{project.pk}_training_{initial_training_set.set_number}.pkl",
     )
 
     # Assert predictions created
@@ -536,11 +519,7 @@ def test_randomforest_classifier(
     assert os.path.isfile(model.pickle_path)
     assert model.pickle_path == os.path.join(
         str(model_path_temp),
-        "project_"
-        + str(project.pk)
-        + "_training_"
-        + str(initial_training_set.set_number)
-        + ".pkl",
+        f"project_{project.pk}_training_{initial_training_set.set_number}.pkl",
     )
 
     # Assert predictions created
@@ -594,11 +573,7 @@ def test_g_naivebayes_classifier(
     assert os.path.isfile(model.pickle_path)
     assert model.pickle_path == os.path.join(
         str(model_path_temp),
-        "project_"
-        + str(project.pk)
-        + "_training_"
-        + str(initial_training_set.set_number)
-        + ".pkl",
+        f"project_{project.pk}_training_{initial_training_set.set_number}.pkl",
     )
 
     # Assert predictions created

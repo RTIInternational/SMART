@@ -47,8 +47,8 @@ def test_assign_datum_project_queue_pops_queues(
     datum = assign_datum(test_profile, test_queue.project)
 
     # Make sure the datum was removed from queues but not set
-    assert test_redis.llen("queue:" + str(test_queue.pk)) == test_queue.length - 1
-    assert test_redis.scard("set:" + str(test_queue.pk)) == test_queue.length
+    assert test_redis.llen(f"queue:{test_queue.pk}") == test_queue.length - 1
+    assert test_redis.scard(f"set:{test_queue.pk}") == test_queue.length
 
     # but not from the db queue
     assert test_queue.data.count() == test_queue.length
@@ -91,24 +91,19 @@ def test_assign_datum_profile_queue_pops_queues(
 
     # Make sure the datum was removed from the correct queues but not sets
     assert (
-        test_redis.llen("queue:" + str(test_profile_queue.pk))
+        test_redis.llen(f"queue:{test_profile_queue.pk}")
         == test_profile_queue.length - 1
     )
-    assert (
-        test_redis.scard("set:" + str(test_profile_queue.pk))
-        == test_profile_queue.length
-    )
+    assert test_redis.scard(f"set:{test_profile_queue.pk}") == test_profile_queue.length
 
     # ...but not the other queues
     assert test_profile_queue.data.count() == test_profile_queue.length
     assert datum in test_profile_queue.data.all()
     assert (
-        test_redis.llen("queue:" + str(test_profile_queue2.pk))
-        == test_profile_queue2.length
+        test_redis.llen(f"queue:{test_profile_queue2.pk}") == test_profile_queue2.length
     )
     assert (
-        test_redis.scard("set:" + str(test_profile_queue2.pk))
-        == test_profile_queue2.length
+        test_redis.scard(f"set:{test_profile_queue2.pk}") == test_profile_queue2.length
     )
     assert test_profile_queue2.data.count() == test_profile_queue2.length
 
@@ -233,19 +228,19 @@ def test_get_assignments_multiple_existing_assignments(
 def test_unassign(db, test_profile, test_project_data, test_queue, test_redis):
     fill_queue(test_queue, orderby="random")
 
-    assert test_redis.llen("queue:" + str(test_queue.pk)) == test_queue.length
-    assert test_redis.scard("set:" + str(test_queue.pk)) == test_queue.length
+    assert test_redis.llen(f"queue:{test_queue.pk}") == test_queue.length
+    assert test_redis.scard(f"set:{test_queue.pk}") == test_queue.length
 
     datum = get_assignments(test_profile, test_project_data, 1)[0]
 
-    assert test_redis.llen("queue:" + str(test_queue.pk)) == (test_queue.length - 1)
-    assert test_redis.scard("set:" + str(test_queue.pk)) == test_queue.length
+    assert test_redis.llen(f"queue:{test_queue.pk}") == (test_queue.length - 1)
+    assert test_redis.scard(f"set:{test_queue.pk}") == test_queue.length
     assert AssignedData.objects.filter(data=datum, profile=test_profile).exists()
 
     unassign_datum(datum, test_profile)
 
-    assert test_redis.llen("queue:" + str(test_queue.pk)) == test_queue.length
-    assert test_redis.scard("set:" + str(test_queue.pk)) == test_queue.length
+    assert test_redis.llen(f"queue:{test_queue.pk}") == test_queue.length
+    assert test_redis.scard(f"set:{test_queue.pk}") == test_queue.length
     assert not AssignedData.objects.filter(data=datum, profile=test_profile).exists()
 
     # The unassigned datum should be the next to be assigned
@@ -259,25 +254,25 @@ def test_unassign_after_fillqueue(
 ):
     fill_queue(test_queue, "random")
 
-    assert test_redis.llen("queue:" + str(test_queue.pk)) == test_queue.length
-    assert test_redis.scard("set:" + str(test_queue.pk)) == test_queue.length
+    assert test_redis.llen(f"queue:{test_queue.pk}") == test_queue.length
+    assert test_redis.scard(f"set:{test_queue.pk}") == test_queue.length
 
     data = get_assignments(test_profile, test_project_data, 10)
 
-    assert test_redis.llen("queue:" + str(test_queue.pk)) == (test_queue.length - 10)
-    assert test_redis.scard("set:" + str(test_queue.pk)) == test_queue.length
+    assert test_redis.llen(f"queue:{test_queue.pk}") == (test_queue.length - 10)
+    assert test_redis.scard(f"set:{test_queue.pk}") == test_queue.length
 
     test_label = test_labels[0]
     for i in range(5):
         label_data(test_label, data[i], test_profile, 3)
 
-    assert test_redis.llen("queue:" + str(test_queue.pk)) == (test_queue.length - 10)
-    assert test_redis.scard("set:" + str(test_queue.pk)) == (test_queue.length - 5)
+    assert test_redis.llen(f"queue:{test_queue.pk}") == (test_queue.length - 10)
+    assert test_redis.scard(f"set:{test_queue.pk}") == (test_queue.length - 5)
 
     fill_queue(test_queue, "random")
 
-    assert test_redis.llen("queue:" + str(test_queue.pk)) == test_queue.length - 5
-    assert test_redis.scard("set:" + str(test_queue.pk)) == test_queue.length
+    assert test_redis.llen(f"queue:{test_queue.pk}") == test_queue.length - 5
+    assert test_redis.scard(f"set:{test_queue.pk}") == test_queue.length
 
 
 def test_skip_data(db, test_profile, test_queue, test_admin_queue, test_redis):

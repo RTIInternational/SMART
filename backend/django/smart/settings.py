@@ -146,7 +146,7 @@ class Dev(Configuration):
     STATIC_URL = "/dist/"
 
     REST_FRAMEWORK = {
-        "PAGE_SIZE": 10,
+        "PAGE_SIZE": 20,
         "DEFAULT_AUTHENTICATION_CLASSES": (
             "rest_framework.authentication.BasicAuthentication",
             "rest_framework.authentication.SessionAuthentication",
@@ -154,6 +154,7 @@ class Dev(Configuration):
         "DEFAULT_PERMISSION_CLASSES": (
             "rest_framework.permissions" ".IsAuthenticated",
         ),
+        "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     }
 
     # SMART app config

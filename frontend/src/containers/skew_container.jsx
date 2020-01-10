@@ -12,14 +12,15 @@ const mapStateToProps = (state) => {
     return {
         unlabeled_data: state.skew.unlabeled_data,
         label_counts: state.skew.label_counts,
-        labels: state.card.labels
+        labels: state.card.labels,
+        skew_pages: state.skew.skew_pages
     };
 };
 
 const mapDispatchToProps = (dispatch) => {
     return {
-        getUnlabeled: () => {
-            dispatch(getUnlabeled(PROJECT_ID));
+        getUnlabeled: (queryObj) => {
+            dispatch(getUnlabeled(queryObj, PROJECT_ID));
         },
         skewLabel: (dataID, labelID, labelReason) => {
             dispatch(skewLabel(dataID, labelID, labelReason, PROJECT_ID));

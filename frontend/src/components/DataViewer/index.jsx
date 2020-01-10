@@ -17,7 +17,7 @@ class DataViewer extends React.Component {
         let title = this.props.data.title;
         let text = this.props.data.data;
 
-        if (title == null || title == "nan" ||
+        if (title == null || title == "nan" || title == "" ||
             (title.replace(/(\r\n|\n|\r)/gm, " ").replace("  ", " ") ==
                 text.replace(/(\r\n|\n|\r)/gm, " ").replace("  ", " "))) {
             return null;
@@ -28,7 +28,7 @@ class DataViewer extends React.Component {
 
     renderURL() {
         let url = this.props.data.url;
-        if (url == null || url == "nan") {
+        if (url == null || url == "nan" || url == "") {
             return <p></p>;
         } else {
             return <a href={url} target="_blank">{url}</a>;
@@ -42,15 +42,18 @@ class DataViewer extends React.Component {
         let userURLRen = <p></p>;
         let userURLName = <p></p>;
 
-        if (userurl != null && userurl != "nan") {
+        let usernameExists = (username != null && username != "nan" && username != "");
+        let userUrlExists = (userurl != null && userurl != "nan" && userurl != "");
+
+        if (userUrlExists) {
             userURLRen = <a href={userurl} target="_blank">{userurl}</a>;
         }
 
-        if (username != null && username != "nan") {
+        if (usernameExists) {
             userURLName = <p>{username}</p>;
         }
 
-        if ((userurl == null || userurl == "nan") && (username == null || username == "nan")) {
+        if ((!userUrlExists) && (!usernameExists)) {
             return null;
         }
 
@@ -66,7 +69,7 @@ class DataViewer extends React.Component {
     renderDate() {
         let date = this.props.data.created_date;
 
-        if (date == null || date == "nan") {
+        if (date == null || date == "nan" || date == "") {
             return <p></p>;
         } else {
             return <p id="data_date_p">{moment(date).format("LLLL")}</p>;

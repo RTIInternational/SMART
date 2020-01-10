@@ -1,9 +1,9 @@
 import copy
 from io import StringIO
 
-import dateparser
 import numpy as np
 import pandas as pd
+from dateparser.date import DateDataParser
 from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
@@ -75,7 +75,7 @@ def clean_data_helper(data, supplied_labels):
 
     data.rename(
         columns={
-            col: col.lower()
+            col: col.lower().replace(" ", "")
             for col in data.columns
             if col not in ["Text", "ID", "Label"]
         },
@@ -84,16 +84,7 @@ def clean_data_helper(data, supplied_labels):
 
     # resolve all of the possible equivalent names
     data.rename(
-        columns={
-            "user": "username",
-            "author": "username",
-            "createddate": "created_date",
-            "date": "created_date",
-            "posteddate": "created_date",
-            "userurl": "user_url",
-            "authorurl": "user_url",
-        },
-        inplace=True,
+        columns={"createddate": "created_date", "userurl": "user_url"}, inplace=True
     )
 
     ALLOWED_HEADER = [
@@ -124,6 +115,7 @@ def clean_data_helper(data, supplied_labels):
         elif col != "Label" and data[col].isnull().sum() == len(data):
             raise ValidationError("Column {0} is completely empty.".format(col))
 
+    data["Text"] = data["Text"].astype(str)
     # check the data types of the columns (use pandas library)
     if "created_date" in data.columns:
         # check that the dates are strings
@@ -134,7 +126,14 @@ def clean_data_helper(data, supplied_labels):
             )
         # check that the dates can be parsed.
         missing_dates = data["created_date"].isnull().sum()
-        data["created_date"] = data["created_date"].dropna().apply(dateparser.parse)
+        dp = DateDataParser()
+
+        data["created_date"] = (
+            data["created_date"]
+            .dropna()
+            .apply(lambda x: dp.get_date_data(x)["date_obj"])
+        )
+
         data["created_date"].replace({pd.NaT: None}, inplace=True)
         if data["created_date"].isnull().sum() == len(data):
             raise ValidationError(
@@ -146,20 +145,20 @@ def clean_data_helper(data, supplied_labels):
                 "column could not be interpreted."
             )
 
-    val = URLValidator()
-    if "user_url" in data.columns:
+    def try_url(url):
+        val = URLValidator()
         try:
-            data["user_url"].dropna().apply(val)
+            val(url)
         except ValidationError as e:
             raise ValidationError(
-                "ERROR: There is an invalid URL in the UserURL/AuthorURL column."
+                f"ERROR: There is an invalid URL {url} in the UserURL/AuthorURL column."
             )
 
+    if "user_url" in data.columns:
+        data["user_url"].dropna().apply(try_url)
+
     if "url" in data.columns:
-        try:
-            data["url"].dropna().apply(val)
-        except ValidationError as e:
-            raise ValidationError("ERROR: There is an invalid URL in the URL column.")
+        data["url"].dropna().apply(try_url)
 
     if len(data) < 1:
         raise ValidationError("File should contain some data.")

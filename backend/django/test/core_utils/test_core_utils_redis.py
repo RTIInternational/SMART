@@ -17,20 +17,20 @@ from core.utils.utils_redis import (
 def test_redis_serialize_queue(test_queue):
     queue_key = redis_serialize_queue(test_queue)
 
-    assert queue_key == "queue:" + str(test_queue.pk)
+    assert queue_key == f"queue:{test_queue.pk}"
 
 
 def test_redis_serialzie_set(test_queue):
     set_key = redis_serialize_set(test_queue)
 
-    assert set_key == "set:" + str(test_queue.pk)
+    assert set_key == f"set:{test_queue.pk}"
 
 
 def test_redis_serialize_data(test_project_data):
     datum = test_project_data.data_set.first()
     data_key = redis_serialize_data(datum)
 
-    assert data_key == "data:" + str(datum.pk)
+    assert data_key == f"data:{datum.pk}"
 
 
 def test_redis_parse_queue(test_queue, test_redis):
@@ -136,5 +136,5 @@ def test_init_redis_ignores_assigned_data(db, test_profile, test_queue, test_red
     init_redis()
 
     # Make sure the assigned datum didn't get into the redis queue
-    assert test_redis.llen("queue:" + str(test_queue.pk)) == test_queue.length - 1
-    assert test_redis.scard("set:" + str(test_queue.pk)) == test_queue.length - 1
+    assert test_redis.llen(f"queue:{test_queue.pk}") == test_queue.length - 1
+    assert test_redis.scard(f"set:{test_queue.pk}") == test_queue.length - 1

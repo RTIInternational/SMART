@@ -44,11 +44,7 @@ def test_model_task(
     assert os.path.isfile(model.pickle_path)
     assert model.pickle_path == os.path.join(
         str(model_path_temp),
-        "project_"
-        + str(project.pk)
-        + "_training_"
-        + str(initial_training_set.set_number)
-        + ".pkl",
+        f"project_{project.pk}_training_{initial_training_set.set_number}.pkl",
     )
 
     # Assert predictions created
@@ -96,7 +92,7 @@ def test_tfidf_creation_task(test_project_data, tmpdir, settings):
 
     assert os.path.isfile(file)
     assert file == os.path.join(
-        str(data_temp), "project_" + str(test_project_data.pk) + "_tfidf_matrix.pkl"
+        str(data_temp), f"project_{test_project_data.pk}_tfidf_matrix.pkl"
     )
 
 

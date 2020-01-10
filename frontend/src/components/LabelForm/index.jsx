@@ -234,7 +234,7 @@ class LabelForm extends React.Component {
                         (Optional) Reason for Label:
                         <FormControl
                             componentClass="textarea"
-                            placeholder="Type reason here"
+                            placeholder={(this.state.label_reason === "") ? "Type reason here" : this.state.label_reason}
                             onChange={this.handleReasonChange}
                         />
                     </p>

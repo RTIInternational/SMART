@@ -29,7 +29,7 @@ export const restoreData = (dataID, projectID) => {
                     return dispatch(setMessage(response.error));
                 } else {
                     dispatch(getDiscarded(projectID));
-                    dispatch(getUnlabeled(projectID));
+                    dispatch(getUnlabeled({ page: 1, filtered: [], sorted: [] }, projectID));
                 }
             });
     };
