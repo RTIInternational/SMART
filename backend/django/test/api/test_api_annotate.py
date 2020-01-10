@@ -482,18 +482,13 @@ def test_unlabeled_table(
     client_profile, admin_profile = sign_in_and_fill_queue(
         project, test_queue, client, admin_client
     )
-    response = client.get("/api/data_unlabeled_table/" + str(project.pk) + "/")
-    assert (
-        "detail" in response.json()
-        and "Invalid permission. Must be an admin" in response.json()["detail"]
-    )
 
     response = admin_client.get(
-        "/api/data_unlabeled_table/" + str(project.pk) + "/"
+        "/api/data_unlabeled_table/?project=" + str(project.pk)
     ).json()
-    assert "data" in response
+    assert "results" in response
     assert (
-        len(response["data"])
+        response["count"]
         == Data.objects.filter(project=project).count()
         - DataQueue.objects.filter(data__project=project).count()
     )
@@ -505,17 +500,17 @@ def test_unlabeled_table(
         {"labelID": test_labels[0].pk, "labeling_time": 1},
     )
     response = admin_client.get(
-        "/api/data_unlabeled_table/" + str(project.pk) + "/"
+        "/api/data_unlabeled_table/?project=" + str(project.pk)
     ).json()
-    data_ids = [d["id"] for d in response["data"]]
+    data_ids = [d["pk"] for d in response["results"]]
     assert data[0].pk not in data_ids
 
     # skip something. Check it is not in the table.
     response = client.post("/api/skip_data/" + str(data[1].pk) + "/")
     response = admin_client.get(
-        "/api/data_unlabeled_table/" + str(project.pk) + "/"
+        "/api/data_unlabeled_table/?project=" + str(project.pk)
     ).json()
-    data_ids = [d["id"] for d in response["data"]]
+    data_ids = [d["pk"] for d in response["results"]]
     assert data[1].pk not in data_ids
 
 

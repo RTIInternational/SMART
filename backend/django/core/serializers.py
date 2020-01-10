@@ -56,16 +56,26 @@ class LabelSerializer(serializers.ModelSerializer):
         fields = ("pk", "name", "project", "description")
 
 
-class DataSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Data
-        fields = ("pk", "text", "project", "irr_ind", "hash", "upload_id_hash")
-
-
 class MetaDataSerializer(serializers.ModelSerializer):
     class Meta:
         model = MetaData
         fields = ("title", "created_date", "username", "url", "user_url")
+
+
+class DataSerializer(serializers.ModelSerializer):
+    metadata = MetaDataSerializer()
+
+    class Meta:
+        model = Data
+        fields = (
+            "pk",
+            "text",
+            "project",
+            "irr_ind",
+            "hash",
+            "upload_id_hash",
+            "metadata",
+        )
 
 
 class DataLabelSerializer(serializers.HyperlinkedModelSerializer):

@@ -1,8 +1,10 @@
 import math
 import random
 
+import django_filters
 from django.db import transaction
 from django.utils import timezone
+from rest_framework import filters, generics
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
@@ -20,7 +22,7 @@ from core.models import (
     RecycleBin,
 )
 from core.permissions import IsAdminOrCreator, IsCoder
-from core.serializers import LabelSerializer
+from core.serializers import DataSerializer, LabelSerializer
 from core.templatetags import project_extras
 from core.utils.utils_annotate import (
     add_metadata_to_data,
@@ -31,6 +33,34 @@ from core.utils.utils_annotate import (
     unassign_datum,
 )
 from core.utils.utils_model import check_and_trigger_model
+
+
+class DataFilter(django_filters.rest_framework.FilterSet):
+    class Meta:
+        model = Data
+        fields = {"text": ["icontains"], "project": ["exact"]}
+
+
+class DataUnlabeledAPIView(generics.ListAPIView):
+
+    all_data = Data.objects.all().order_by("text")
+    stuff_in_queue = DataQueue.objects.all().values_list("data__pk", flat=True)
+    recycle_ids = RecycleBin.objects.all().values_list("data__pk", flat=True)
+    queryset = (
+        all_data.filter(datalabel__isnull=True)
+        .exclude(pk__in=stuff_in_queue)
+        .exclude(pk__in=recycle_ids)
+    )
+
+    serializer_class = DataSerializer
+    filter_backends = (
+        django_filters.rest_framework.DjangoFilterBackend,
+        filters.OrderingFilter,
+    )
+    filterset_class = DataFilter
+
+    def get_object(self, pk):
+        return Data.objects.get(pk=pk)
 
 
 @api_view(["GET"])
@@ -406,41 +436,6 @@ def leave_coding_page(request, project_pk):
             prog = AdminProgress.objects.get(project=project, profile=profile)
             prog.delete()
     return Response({})
-
-
-@api_view(["GET"])
-@permission_classes((IsAdminOrCreator,))
-def data_unlabeled_table(request, project_pk):
-    """This returns the unlebeled data not in a queue for the skew table.
-
-    Args:
-        request: The POST request
-        project_pk: Primary key of the project
-    Returns:
-        data: a list of data information
-    """
-    project = Project.objects.get(pk=project_pk)
-
-    stuff_in_queue = DataQueue.objects.filter(queue__project=project)
-    queued_ids = [queued.data.id for queued in stuff_in_queue]
-
-    recycle_ids = RecycleBin.objects.filter(data__project=project).values_list(
-        "data__pk", flat=True
-    )
-    unlabeled_data = (
-        project.data_set.filter(datalabel__isnull=True)
-        .exclude(id__in=queued_ids)
-        .exclude(id__in=recycle_ids)
-    )
-    data = []
-    for d in unlabeled_data:
-        temp = {"data": d.text, "id": d.id}
-        data.append(temp)
-
-    # also return any metadata
-    data = add_metadata_to_data(data, project)
-
-    return Response({"data": data})
 
 
 @api_view(["GET"])

@@ -2,10 +2,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import ReactTable from 'react-table';
 import {
-    Button,
-    ButtonToolbar,
-    Tooltip,
-    OverlayTrigger,
     Alert
 } from 'react-bootstrap';
 import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
