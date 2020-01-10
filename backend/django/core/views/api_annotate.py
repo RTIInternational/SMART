@@ -3,7 +3,6 @@ import random
 
 from django.db import transaction
 from django.utils import timezone
-from django.utils.html import escape
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
@@ -435,7 +434,7 @@ def data_unlabeled_table(request, project_pk):
     )
     data = []
     for d in unlabeled_data:
-        temp = {"data": escape(d.text), "id": d.id}
+        temp = {"data": d.text, "id": d.id}
         data.append(temp)
 
     # also return any metadata

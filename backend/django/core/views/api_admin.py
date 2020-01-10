@@ -1,7 +1,6 @@
 from django.contrib.postgres.fields import ArrayField
 from django.db import connection
 from django.db.models import FloatField
-from django.utils.html import escape
 from postgres_stats.aggregates import Percentile
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -161,7 +160,7 @@ def data_coded_table(request, project_pk):
     data = []
     for d in data_objs:
         temp = {
-            "Text": escape(d.data.text),
+            "Text": d.data.text,
             "Label": d.label.name,
             "Coder": d.profile.__str__(),
         }
@@ -231,7 +230,7 @@ def data_predicted_table(request, project_pk):
 
     data = []
     for d in data_objs:
-        temp = {"Text": escape(d[0]), "Label": d[1], "Probability": d[2]}
+        temp = {"Text": d[0], "Label": d[1], "Probability": d[2]}
         data.append(temp)
 
     return Response({"data": data})

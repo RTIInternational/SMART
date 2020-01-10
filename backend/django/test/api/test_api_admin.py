@@ -1,7 +1,6 @@
 from test.util import assert_collections_equal, sign_in_and_fill_queue
 
 import pandas as pd
-from django.utils.html import escape
 
 from core.management.commands.seed import (
     SEED_PASSWORD,
@@ -544,7 +543,7 @@ def test_coded_table(
     data_text = []
     label_names = []
     for i in range(3):
-        data_text.append(escape(data[i].text))
+        data_text.append(data[i].text)
         label_names.append(test_labels[i].name)
         response = client.post(
             "/api/annotate_data/" + str(data[i].pk) + "/",
@@ -590,7 +589,7 @@ def test_predicted_table(
     data_text = []
     label_names = []
     for i in range(15):
-        data_text.append(escape(data[i].text))
+        data_text.append(data[i].text)
         label_names.append(test_labels[i % 3].name)
         response = client.post(
             "/api/annotate_data/" + str(data[i].pk) + "/",
@@ -604,7 +603,7 @@ def test_predicted_table(
     # check that the unlabeled items are in the table
     data = get_assignments(client_profile, project, 15)
     for i in range(15):
-        data_text.append(escape(data[i].text))
+        data_text.append(data[i].text)
         label_names.append(test_labels[i % 3].name)
         response = client.post(
             "/api/annotate_data/" + str(data[i].pk) + "/",
