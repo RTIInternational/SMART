@@ -136,7 +136,7 @@ def test_save_data_file_no_labels_csv(test_project, tmpdir, settings):
     saved_data = pd.read_csv(fname)
 
     assert fname == os.path.join(
-        str(temp_data_file_path), "project_" + str(test_project.pk) + "_data_0.csv"
+        str(temp_data_file_path), f"project_{test_project.pk}_data_0.csv"
     )
     assert os.path.isfile(fname)
     assert saved_data.equals(data)
@@ -157,7 +157,7 @@ def test_save_data_file_some_labels_csv(test_project, tmpdir, settings):
     saved_data = pd.read_csv(fname)
 
     assert fname == os.path.join(
-        str(temp_data_file_path), "project_" + str(test_project.pk) + "_data_0.csv"
+        str(temp_data_file_path), f"project_{test_project.pk}_data_0.csv"
     )
     assert os.path.isfile(fname)
     assert saved_data.equals(data)
@@ -177,15 +177,15 @@ def test_save_data_file_multiple_files(test_project, tmpdir, settings):
     fname3 = save_data_file(data, test_project.pk)
 
     assert fname1 == os.path.join(
-        str(temp_data_file_path), "project_" + str(test_project.pk) + "_data_0.csv"
+        str(temp_data_file_path), f"project_{test_project.pk}_data_0.csv"
     )
     assert os.path.isfile(fname1)
     assert fname2 == os.path.join(
-        str(temp_data_file_path), "project_" + str(test_project.pk) + "_data_1.csv"
+        str(temp_data_file_path), f"project_{test_project.pk}_data_1.csv"
     )
     assert os.path.isfile(fname2)
     assert fname3 == os.path.join(
-        str(temp_data_file_path), "project_" + str(test_project.pk) + "_data_2.csv"
+        str(temp_data_file_path), f"project_{test_project.pk}_data_2.csv"
     )
     assert os.path.isfile(fname3)
 
@@ -201,8 +201,7 @@ def test_save_codebook(test_project, tmpdir, settings):
     fname = save_codebook_file(test_file, test_project.pk)
     date = timezone.now().strftime("%m_%d_%y__%H_%M_%S")
     f_path = os.path.join(
-        str(temp_data_file_path),
-        "project_" + str(test_project.pk) + "_codebook" + date + ".pdf",
+        str(temp_data_file_path), f"project_{test_project.pk}_codebook{date}.pdf"
     )
     assert fname == f_path.replace("/data/code_books/", "")
     assert os.path.isfile(f_path)
@@ -233,10 +232,10 @@ def test_heatmap_data(
         normal_queue, "random", irr_queue, project.percentage_irr, project.batch_size
     )
 
-    combo1 = str(test_profile.pk) + "_" + str(test_profile2.pk)
+    combo1 = f"{test_profile.pk}_{test_profile2.pk}"
 
-    same1 = str(test_profile.pk) + "_" + str(test_profile.pk)
-    same2 = str(test_profile2.pk) + "_" + str(test_profile2.pk)
+    same1 = f"{test_profile.pk}_{test_profile.pk}"
+    same2 = f"{test_profile2.pk}_{test_profile2.pk}"
 
     # don't label anything. The heatmap shoud have all zeros for user pair
     heatmap = irr_heatmap_data(project)

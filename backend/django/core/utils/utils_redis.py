@@ -10,7 +10,7 @@ def redis_serialize_queue(queue):
 
     The format is 'queue:<pk>'
     """
-    return "queue:" + str(queue.pk)
+    return f"queue:{queue.pk}"
 
 
 def redis_serialize_set(queue):
@@ -18,7 +18,7 @@ def redis_serialize_set(queue):
 
     The format is 'set:<pk>'
     """
-    return "set:" + str(queue.pk)
+    return f"set:{queue.pk}"
 
 
 def redis_serialize_data(datum):
@@ -26,7 +26,7 @@ def redis_serialize_data(datum):
 
     The format is 'data:<pk>'
     """
-    return "data:" + str(datum.pk)
+    return f"data:{datum.pk}"
 
 
 def redis_parse_queue(queue_key):

@@ -634,21 +634,15 @@ def get_label_history(request, project_pk):
         data_list.append(d.data.id)
         if d.timestamp:
             if d.timestamp.minute < 10:
-                minute = "0" + str(d.timestamp.minute)
+                minute = f"0{d.timestamp.minute}"
             else:
                 minute = str(d.timestamp.minute)
             if d.timestamp.second < 10:
-                second = "0" + str(d.timestamp.second)
+                second = f"0{d.timestamp.second}"
             else:
                 second = str(d.timestamp.second)
             new_timestamp = (
-                str(d.timestamp.date())
-                + ", "
-                + str(d.timestamp.hour)
-                + ":"
-                + minute
-                + "."
-                + second
+                f"{d.timestamp.date()}, {d.timestamp.hour}:{minute}.{second}"
             )
         else:
             new_timestamp = "None"
@@ -675,21 +669,15 @@ def get_label_history(request, project_pk):
 
         if d.timestamp:
             if d.timestamp.minute < 10:
-                minute = "0" + str(d.timestamp.minute)
+                minute = f"0{d.timestamp.minute}"
             else:
                 minute = str(d.timestamp.minute)
             if d.timestamp.second < 10:
-                second = "0" + str(d.timestamp.second)
+                second = f"0{d.timestamp.second}"
             else:
                 second = str(d.timestamp.second)
             new_timestamp = (
-                str(d.timestamp.date())
-                + ", "
-                + str(d.timestamp.hour)
-                + ":"
-                + minute
-                + "."
-                + second
+                f"{d.timestamp.date()}, {d.timestamp.hour}:{minute}.{second}"
             )
         else:
             new_timestamp = "None"

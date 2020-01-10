@@ -259,7 +259,7 @@ def get_irr_metrics(request, project_pk):
         else:
             kappa, perc_agreement = cohens_kappa(project)
         kappa = round(kappa, 3)
-        perc_agreement = str(round(perc_agreement, 5) * 100) + "%"
+        perc_agreement = f"{round(perc_agreement, 5) * 100}%"
     except ValueError:
         kappa = "No irr data processed"
         perc_agreement = "No irr data processed"

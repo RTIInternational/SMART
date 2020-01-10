@@ -62,13 +62,13 @@ def download_model(request, project_pk):
     project = Project.objects.get(pk=project_pk)
 
     # https://stackoverflow.com/questions/12881294/django-create-a-zip-of-multiple-files-and-make-it-downloadable
-    zip_subdir = "model_project" + str(project_pk)
+    zip_subdir = f"model_project{project_pk}"
 
     tfidf_path = os.path.join(
-        settings.TF_IDF_PATH, "project_" + str(project_pk) + "_tfidf_matrix.pkl"
+        settings.TF_IDF_PATH, f"project_{project_pk}_tfidf_matrix.pkl"
     )
     tfidf_vectorizer_path = os.path.join(
-        settings.TF_IDF_PATH, "project_" + str(project_pk) + "_vectorizer.pkl"
+        settings.TF_IDF_PATH, f"project_{project_pk}_vectorizer.pkl"
     )
     readme_path = os.path.join(settings.BASE_DIR, "core", "data", "README.pdf")
     dockerfile_path = os.path.join(settings.BASE_DIR, "core", "data", "Dockerfile")
@@ -84,11 +84,7 @@ def download_model(request, project_pk):
     current_training_set = project.get_current_training_set()
     model_path = os.path.join(
         settings.MODEL_PICKLE_PATH,
-        "project_"
-        + str(project_pk)
-        + "_training_"
-        + str(current_training_set.set_number - 1)
-        + ".pkl",
+        f"project_{project_pk}_training_{current_training_set.set_number - 1}.pkl",
     )
 
     data, label_data = get_labeled_data(project)
@@ -134,9 +130,9 @@ def download_model(request, project_pk):
     ]:
         fdir, fname = os.path.split(path)
         if path == temp_label_file.name:
-            fname = "project_" + str(project_pk) + "_labels.csv"
+            fname = f"project_{project_pk}_labels.csv"
         elif path == temp_labeleddata_file.name:
-            fname = "project_" + str(project_pk) + "_labeled_data.csv"
+            fname = f"project_{project_pk}_labeled_data.csv"
         # write the file to the zip folder
         zip_path = os.path.join(zip_subdir, fname)
         zip_file.write(path, zip_path)

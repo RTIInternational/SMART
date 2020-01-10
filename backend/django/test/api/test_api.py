@@ -85,19 +85,19 @@ def test_queue_refills_after_empty(
     )
 
     # get the card deck
-    response = client.get("/api/get_card_deck/" + str(project.pk) + "/").json()
+    response = client.get(f"/api/get_card_deck/{project.pk}/").json()
     assert len(response["data"]) > 0
     # label all of the cards
     i = 0
     for card in response["data"]:
         response = client.post(
-            "/api/annotate_data/" + str(card["id"]) + "/",
+            f"/api/annotate_data/{card['id']}/",
             {"labelID": labels[i % 3].pk, "labeling_time": 3},
         )
         i += 1
 
     # get the card deck again
-    response = client.get("/api/get_card_deck/" + str(project.pk) + "/").json()
+    response = client.get(f"/api/get_card_deck/{project.pk}/").json()
 
     # should have cards
     assert len(response["data"]) > 0
@@ -136,14 +136,14 @@ def test_download_model(
     )
 
     # check admin priviledges
-    response = client.get("/api/download_model/" + str(project.pk) + "/").json()
+    response = client.get(f"/api/download_model/{project.pk}/").json()
     assert (
         "detail" in response
         and "Invalid permission. Must be an admin" in response["detail"]
     )
 
     # check that the response is the correct type
-    response = admin_client.get("/api/download_model/" + str(project.pk) + "/")
+    response = admin_client.get(f"/api/download_model/{project.pk}/")
     assert "detail" not in response
     assert response.get("Content-Type") == "application/x-zip-compressed"
 
@@ -180,13 +180,13 @@ def test_download_labeled_data(
         profile=client_profile, project=project, permission="CODER"
     )
     # check admin priviledges
-    response = client.get("/api/download_data/" + str(project.pk) + "/").json()
+    response = client.get(f"/api/download_data/{project.pk}/").json()
     assert (
         "detail" in response
         and "Invalid permission. Must be an admin" in response["detail"]
     )
 
     # check that the response is the correct type
-    response = admin_client.get("/api/download_data/" + str(project.pk) + "/")
+    response = admin_client.get(f"/api/download_data/{project.pk}/")
     assert "detail" not in response
     assert response.get("Content-Type") == "text/csv"

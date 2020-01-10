@@ -359,7 +359,7 @@ def perc_agreement_table_data(project):
                 {
                     "First Coder": pair[0],
                     "Second Coder": pair[1],
-                    "Percent Agreement": str(100 * round(p_agree / p_total, 3)) + "%",
+                    "Percent Agreement": f"{round(100*(p_agree / p_total), 1)}%",
                 }
             )
         else:
@@ -393,13 +393,11 @@ def irr_heatmap_data(project):
     user_label_counts = {}
     for user1 in user_list:
         for user2 in user_list:
-            user_label_counts[str(user1) + "_" + str(user2)] = {}
+            user_label_counts[f"{user1}_{user2}"] = {}
             for label1 in label_list:
-                user_label_counts[str(user1) + "_" + str(user2)][str(label1)] = {}
+                user_label_counts[f"{user1}_{user2}"][str(label1)] = {}
                 for label2 in label_list:
-                    user_label_counts[str(user1) + "_" + str(user2)][str(label1)][
-                        str(label2)
-                    ] = 0
+                    user_label_counts[f"{user1}_{user2}"][str(label1)][str(label2)] = 0
 
     for data_id in irr_data:
         # iterate over the data and count up labels
@@ -407,7 +405,7 @@ def irr_heatmap_data(project):
         small_user_list = data_log_list.values_list("profile__user", flat=True)
         for user1 in small_user_list:
             for user2 in small_user_list:
-                user_combo = str(user1) + "_" + str(user2)
+                user_combo = f"{user1}_{user2}"
                 label1 = data_log_list.get(profile__pk=user1).label
                 label2 = data_log_list.get(profile__pk=user2).label
                 user_label_counts[user_combo][str(label1).replace("None", "Skip")][
@@ -448,12 +446,11 @@ def save_data_file(df, project_pk):
         [
             f
             for f in os.listdir(settings.PROJECT_FILE_PATH)
-            if f.startswith("project_" + str(project_pk))
+            if f.startswith(f"project_{project_pk}")
         ]
     )
     fpath = os.path.join(
-        settings.PROJECT_FILE_PATH,
-        "project_" + str(project_pk) + "_data_" + str(num_proj_files) + ".csv",
+        settings.PROJECT_FILE_PATH, f"project_{project_pk}_data_{num_proj_files}.csv"
     )
 
     df = df[["ID", "Text", "Label"]]
@@ -467,8 +464,7 @@ def save_codebook_file(data, project_pk):
     overwrite any project that is already there/"""
     date = timezone.now().strftime("%m_%d_%y__%H_%M_%S")
     fpath = os.path.join(
-        settings.CODEBOOK_FILE_PATH,
-        "project_" + str(project_pk) + "_codebook" + date + ".pdf",
+        settings.CODEBOOK_FILE_PATH, f"project_{project_pk}_codebook{date}.pdf"
     )
     with open(fpath, "wb") as outputFile:
         outputFile.write(data.read())

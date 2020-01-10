@@ -58,7 +58,7 @@ export const adminLabel = (dataID, labelID, labelReason, projectID) => {
                 if ('error' in response) {
                     return dispatch(setMessage(response.error));
                 } else {
-                    dispatch(getUnlabeled(projectID));
+                    dispatch(getUnlabeled({ page: 1, filtered: [], sorted: [] }, projectID));
                     dispatch(getHistory(projectID));
                     dispatch(getLabelCounts(projectID));
                     dispatch(getAdmin(projectID));
@@ -89,7 +89,7 @@ export const discardData = (dataID, projectID) => {
                     dispatch(getAdmin(projectID));
                     dispatch(getAdminCounts(projectID));
                     dispatch(getDiscarded(projectID));
-                    dispatch(getUnlabeled(projectID));
+                    dispatch(getUnlabeled({ page: 1, filtered: [], sorted: [] }, projectID));
                 }
             });
     };

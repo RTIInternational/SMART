@@ -267,9 +267,7 @@ def train_and_save_model(project):
     elif project.classifier == "gnb":
         clf = GaussianNB()
     else:
-        raise ValueError(
-            "There was no valid classifier for project: " + str(project.pk)
-        )
+        raise ValueError(f"There was no valid classifier for project: {project.pk}")
     tf_idf = load_tfidf_matrix(project.pk)
 
     current_training_set = project.get_current_training_set()
@@ -302,11 +300,7 @@ def train_and_save_model(project):
 
     fpath = os.path.join(
         settings.MODEL_PICKLE_PATH,
-        "project_"
-        + str(project.pk)
-        + "_training_"
-        + str(current_training_set.set_number)
-        + ".pkl",
+        f"project_{project.pk}_training_{current_training_set.set_number}.pkl",
     )
 
     joblib.dump(clf, fpath)
@@ -422,9 +416,7 @@ def save_tfidf_matrix(matrix, project_pk):
     Returns:
         file: The filepath to the saved matrix
     """
-    fpath = os.path.join(
-        settings.TF_IDF_PATH, "project_" + str(project_pk) + "_tfidf_matrix.pkl"
-    )
+    fpath = os.path.join(settings.TF_IDF_PATH, f"project_{project_pk}_tfidf_matrix.pkl")
     with open(fpath, "wb") as tfidf_file:
         pickle.dump(matrix, tfidf_file)
 
@@ -441,9 +433,7 @@ def save_tfidf_vectorizer(vectorizer, project_pk):
     Returns:
         file: The filepath to the saved matrix
     """
-    fpath = os.path.join(
-        settings.TF_IDF_PATH, "project_" + str(project_pk) + "_vectorizer.pkl"
-    )
+    fpath = os.path.join(settings.TF_IDF_PATH, f"project_{project_pk}_vectorizer.pkl")
     with open(fpath, "wb") as tfidf_file:
         pickle.dump(vectorizer, tfidf_file)
     return fpath
@@ -457,14 +447,10 @@ def load_tfidf_matrix(project_pk):
     Returns:
         matrix or None
     """
-    fpath = os.path.join(
-        settings.TF_IDF_PATH, "project_" + str(project_pk) + "_tfidf_matrix.pkl"
-    )
+    fpath = os.path.join(settings.TF_IDF_PATH, f"project_{project_pk}_tfidf_matrix.pkl")
 
     if os.path.isfile(fpath):
         with open(fpath, "rb") as file:
             return pickle.load(file)
     else:
-        raise ValueError(
-            "There was no tfidf matrix found for project: " + str(project_pk)
-        )
+        raise ValueError(f"There was no tfidf matrix found for project: {project_pk}")
