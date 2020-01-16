@@ -13,9 +13,10 @@ class AdminTable extends React.Component {
     getSubComponent(row) {
         const { labels, adminLabel, discardData, admin_data } = this.props;
 
+        let datum = admin_data[row.row._index];
         return (
             <div className="sub-row">
-                <DataViewer data={admin_data[row.row._index]} />
+                <DataViewer data={datum} />
                 <LabelForm
                     data={row.row.id}
                     labelFunction={adminLabel}
@@ -24,6 +25,11 @@ class AdminTable extends React.Component {
                     skipFunction={() => {}}
                     discardFunction={discardData}
                     labels={labels}
+                    previousLabel={{
+                        pk: datum.old_label_id,
+                        name: datum.old_label,
+                        reason: datum.label_reason
+                    }}
                 />
             </div>
         );

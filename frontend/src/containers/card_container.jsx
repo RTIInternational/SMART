@@ -34,8 +34,17 @@ const mapDispatchToProps = (dispatch) => {
                 )
             );
         },
-        passCard: (dataID, num_cards_left) => {
-            dispatch(passCard(dataID, num_cards_left, ADMIN, PROJECT_ID));
+        passCard: (dataID, labelID, labelReason, num_cards_left) => {
+            dispatch(
+                passCard(
+                    dataID,
+                    labelID,
+                    labelReason,
+                    num_cards_left,
+                    PROJECT_ID,
+                    ADMIN
+                )
+            );
         }
     };
 };

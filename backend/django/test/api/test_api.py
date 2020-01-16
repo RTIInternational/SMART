@@ -110,7 +110,6 @@ def test_download_model(
     test_project_with_trained_model,
     test_queue_labeled,
     test_irr_queue_labeled,
-    test_admin_queue_labeled,
 ):
     """This tests the download model api call."""
     project = test_project_with_trained_model

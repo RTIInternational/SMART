@@ -176,7 +176,9 @@ def test_entropy_with_zero():
     np.testing.assert_almost_equal(e, 0.26529499557412151)
 
 
-def test_train_and_save_model(test_project_labeled_and_tfidf, tmpdir, settings):
+def test_train_and_save_model(
+    test_project_labeled_and_tfidf, test_admin_queue_labeled, tmpdir, settings
+):
     project = test_project_labeled_and_tfidf
 
     model_path_temp = tmpdir.listdir()[0].mkdir("model_pickles")
@@ -218,7 +220,12 @@ def test_predict_data(test_project_with_trained_model, tmpdir):
 
 
 def test_check_and_trigger_model_first_labeled(
-    setup_celery, test_project_data, test_labels, test_queue, test_profile
+    setup_celery,
+    test_project_data,
+    test_labels,
+    test_queue,
+    test_profile,
+    test_admin_queue,
 ):
     initial_training_set = test_project_data.get_current_training_set()
 
@@ -239,7 +246,12 @@ def test_check_and_trigger_model_first_labeled(
 
 
 def test_check_and_trigger_lt_batch_labeled(
-    setup_celery, test_project_data, test_labels, test_queue, test_profile
+    setup_celery,
+    test_project_data,
+    test_labels,
+    test_queue,
+    test_profile,
+    test_admin_queue,
 ):
     initial_training_set = test_project_data.get_current_training_set()
 
@@ -267,6 +279,7 @@ def test_check_and_trigger_batched_success(
     test_project_labeled_and_tfidf,
     test_queue_labeled,
     test_irr_queue_labeled,
+    test_admin_queue_labeled,
     test_redis,
     tmpdir,
     settings,
@@ -328,7 +341,12 @@ def test_check_and_trigger_batched_success(
 
 
 def test_check_and_trigger_batched_onlyone_label(
-    setup_celery, test_project_data, test_labels, test_queue, test_profile
+    setup_celery,
+    test_project_data,
+    test_labels,
+    test_queue,
+    test_profile,
+    test_admin_queue,
 ):
     initial_training_set = test_project_data.get_current_training_set()
 
@@ -352,6 +370,7 @@ def test_check_and_trigger_batched_onlyone_label(
 def test_check_and_trigger_queue_changes_success(
     setup_celery,
     test_project_labeled_and_tfidf,
+    test_admin_queue_labeled,
     test_queue_labeled,
     test_irr_queue_labeled,
     test_redis,

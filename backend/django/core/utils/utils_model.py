@@ -21,10 +21,12 @@ from core.models import (
     Data,
     DataLabel,
     DataPrediction,
+    DataQueue,
     DataUncertainty,
     IRRLog,
     Label,
     Model,
+    Queue,
     RecycleBin,
 )
 from core.utils.utils_queue import fill_queue, handle_empty_queue
@@ -218,9 +220,19 @@ def check_and_trigger_model(datum, profile=None):
     project = datum.project
     current_training_set = project.get_current_training_set()
     batch_size = project.batch_size
-    labeled_data = DataLabel.objects.filter(
-        data__project=project, training_set=current_training_set, data__irr_ind=False
+
+    admin_queue = Queue.objects.get(project=project, type="admin")
+    admin_data = DataQueue.objects.filter(queue=admin_queue).values_list(
+        "data", flat=True
     )
+
+    labeled_data = DataLabel.objects.filter(
+        data__project=project,
+        training_set=current_training_set,
+        data__irr_ind=False,
+        was_skipped=False,
+    ).exclude(data__in=admin_data)
+
     labeled_data_count = labeled_data.count()
     labels_count = labeled_data.distinct("label").count()
 
@@ -276,7 +288,14 @@ def train_and_save_model(project):
     # Order both X and Y by upload_id_hash to ensure the tf-idf vector corresponds to the correct
     # label
 
-    labeled_data = DataLabel.objects.filter(data__project=project)
+    admin_queue = Queue.objects.get(project=project, type="admin")
+    admin_data = DataQueue.objects.filter(queue=admin_queue).values_list(
+        "data", flat=True
+    )
+    labeled_data = DataLabel.objects.filter(
+        data__project=project, data__irr_ind=False, was_skipped=False
+    ).exclude(data__in=admin_data)
+
     unique_ids = list(
         labeled_data.values_list("data__upload_id", flat=True).order_by(
             "data__upload_id_hash"
