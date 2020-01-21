@@ -494,6 +494,8 @@ def get_labeled_data(project):
             temp["Text"] = d.data.text
             temp["Label"] = label.name
             temp["Reason"] = d.label_reason
+            if project.use_explicit_ind:
+                temp["explicit"] = d.data.explicit_ind
             # add in the metadata fields
             metadata = MetaData.objects.filter(data__pk=d.data.pk).first()
             if metadata:
