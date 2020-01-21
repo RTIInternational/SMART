@@ -153,6 +153,59 @@ def test_skip_data(
     assert DataLabel.objects.filter(data=data[0]).count() == 0
 
 
+def test_skip_explicit_data(
+    seeded_database,
+    client,
+    test_project_data,
+    test_queue,
+    test_irr_queue,
+    test_labels,
+    test_admin_queue,
+):
+    """This tests that the skip data api works."""
+    project = test_project_data
+    fill_queue(
+        test_queue, "random", test_irr_queue, project.percentage_irr, project.batch_size
+    )
+
+    # call skip data without the user having permission. Check that
+    # the data is not in admin and the response has an error.
+    client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
+    client_profile = Profile.objects.get(user__username=SEED_USERNAME)
+
+    ProjectPermissions.objects.create(
+        profile=client_profile, project=project, permission="CODER"
+    )
+
+    # get the card deck
+    data = get_assignments(client_profile, project, 30)
+
+    # make sure we get some irr data
+    assert not all(not datum.irr_ind for datum in data)
+    assert not all(datum.irr_ind for datum in data)
+
+    # for data object skip it marked as explicit
+    for datum in data:
+        card_was_irr = datum.irr_ind
+        response = client.post(f"/api/skip_data/{datum.pk}/", {"is_explicit": True})
+        datum_upated = Data.objects.get(pk=datum.pk)
+        assert datum_upated.explicit_ind
+        if card_was_irr:
+            # it should no longer be irr
+            assert not datum_upated.irr_ind
+            assert IRRLog.objects.filter(data=datum_upated).count() == 0
+            assert DataLabel.objects.filter(data=datum_upated).count() == 0
+
+        assert (
+            DataQueue.objects.filter(queue=test_irr_queue, data=datum_upated).count()
+            == 0
+        )
+        assert (
+            DataQueue.objects.filter(queue=test_admin_queue, data=datum_upated).count()
+            == 1
+        )
+
+
 def test_modify_label(
     seeded_database,
     client,

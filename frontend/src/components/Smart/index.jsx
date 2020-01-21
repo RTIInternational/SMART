@@ -17,6 +17,7 @@ class Smart extends React.Component {
     componentWillMount() {
         this.props.getAdminTabsAvailable();
         this.props.getAdminCounts();
+        this.props.getHasExplicit();
     }
 
     renderAdminTabSkew() {
@@ -127,7 +128,7 @@ class Smart extends React.Component {
                     <div className="cardContent">
                         <CodebookLabelMenuContainer />
                         <SmartProgressBarContainer />
-                        <CardContainer />
+                        <CardContainer/>
                     </div>
                 </Tab>
                 <Tab eventKey={2} title="History" className="full card">
@@ -146,7 +147,8 @@ class Smart extends React.Component {
 Smart.propTypes = {
     adminTabsAvailable: PropTypes.bool,
     admin_counts: PropTypes.arrayOf(PropTypes.object),
-    getAdminCounts: PropTypes.func.isRequired
+    getAdminCounts: PropTypes.func.isRequired,
+    getHasExplicit: PropTypes.func.isRequired
 };
 
 export default Smart;

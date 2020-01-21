@@ -35,6 +35,9 @@ annotate_patterns = [
     url(r"^leave_coding_page/(?P<project_pk>\d+)/$", api_annotate.leave_coding_page),
     url(r"^data_unlabeled_table/", api_annotate.DataUnlabeledAPIView.as_view()),
     url(r"^get_card_deck/(?P<project_pk>\d+)/$", api_annotate.get_card_deck),
+    url(
+        r"^has_explicit_button/(?P<project_pk>\d+)/$", api_annotate.has_explicit_button
+    ),
     url(r"^recycle_bin_table/(?P<project_pk>\d+)/$", api_annotate.recycle_bin_table),
     url(r"^get_label_history/(?P<project_pk>\d+)/$", api_annotate.get_label_history),
     url(r"^label_skew_label/(?P<data_pk>\d+)/$", api_annotate.label_skew_label),

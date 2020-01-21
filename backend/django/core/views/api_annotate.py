@@ -65,6 +65,22 @@ class DataUnlabeledAPIView(generics.ListAPIView):
 
 @api_view(["GET"])
 @permission_classes((IsCoder,))
+def has_explicit_button(request, project_pk):
+    """Get the true/false of if items in this project
+    get marked as explicit
+    Args:
+        request: The request to the endpoint
+        project_pk: Primary key of project
+    Returns:
+        use_explicit_ind: whether or not items can be
+        marked as explicit in this project
+    """
+    project = Project.objects.get(pk=project_pk)
+    return Response({"explicit_ind": project.use_explicit_ind})
+
+
+@api_view(["GET"])
+@permission_classes((IsCoder,))
 def get_card_deck(request, project_pk):
     """Grab data using get_assignments and send it to the frontend react app.
 
@@ -150,6 +166,16 @@ def skip_data(request, data_pk):
     profile = request.user.profile
     project = data.project
     response = {}
+
+    is_explicit = request.data.get("is_explicit", False)
+
+    with transaction.atomic():
+        if is_explicit:
+            # if this marked the data as explicit, remove it from IRR
+            Data.objects.filter(pk=data_pk).update(irr_ind=False, explicit_ind=True)
+            data = Data.objects.get(pk=data_pk)
+            IRRLog.objects.filter(data=data).delete()
+            DataLabel.objects.filter(data=data).delete()
 
     # if the data is IRR or processed IRR, dont add to admin queue yet
     num_history = IRRLog.objects.filter(data=data).count()
@@ -257,6 +283,8 @@ def discard_data(request, data_pk):
         DataQueue.objects.get(data=data, queue=queue).delete()
         IRRLog.objects.filter(data=data).delete()
         Data.objects.filter(pk=data_pk).update(irr_ind=False)
+        data = Data.objects.get(pk=data_pk)
+
         RecycleBin.objects.create(data=data, timestamp=timezone.now())
 
         # remove any IRR log data
@@ -352,9 +380,19 @@ def modify_label_to_skip(request, data_pk):
     project = data.project
     old_label = Label.objects.get(pk=request.data["oldLabelID"])
     queue = Queue.objects.get(project=project, type="admin")
+    is_explicit = request.data.get("is_explicit", False)
 
     with transaction.atomic():
         DataLabel.objects.filter(data=data, label=old_label).delete()
+
+        if is_explicit:
+            # if this marked the data as explicit, remove it from IRR
+            Data.objects.filter(pk=data_pk).update(irr_ind=False, explicit_ind=True)
+            data = Data.objects.get(pk=data_pk)
+
+            IRRLog.objects.filter(data=data).delete()
+            DataLabel.objects.filter(data=data).delete()
+
         if data.irr_ind:
             # if it was irr, add it to the log
             if len(IRRLog.objects.filter(data=data, profile=profile)) == 0:
@@ -456,7 +494,9 @@ def data_admin_table(request, project_pk):
 
     data = []
     for d in data_objs:
-        if d.data.irr_ind:
+        if d.data.explicit_ind:
+            reason = "Explicit"
+        elif d.data.irr_ind:
             reason = "IRR"
         else:
             reason = "Skipped"
@@ -573,6 +613,7 @@ def label_admin_label(request, data_pk):
     project = datum.project
     label = Label.objects.get(pk=request.data["labelID"])
     label_reason = request.data.get("labelReason", "")
+    is_explicit = request.data.get("is_explicit", False)
 
     profile = request.user.profile
     response = {}
@@ -580,6 +621,11 @@ def label_admin_label(request, data_pk):
     current_training_set = project.get_current_training_set()
 
     with transaction.atomic():
+
+        # update to match whatever the explicit rating is
+        Data.objects.filter(pk=datum.pk).update(explicit_ind=is_explicit)
+        datum = Data.objects.get(pk=data_pk)
+
         queue = project.queue_set.get(type="admin")
         DataLabel.objects.create(
             data=datum,
@@ -596,7 +642,7 @@ def label_admin_label(request, data_pk):
         # make sure the data is no longer irr
         if datum.irr_ind:
             Data.objects.filter(pk=datum.pk).update(irr_ind=False)
-
+            datum = Data.objects.get(pk=data_pk)
     # NOTE: this checks if the model needs to be triggered, but not if the
     # queues need to be refilled. This is because for something to be in the
     # admin queue, annotate or skip would have already checked for an empty queue
@@ -654,6 +700,7 @@ def get_label_history(request, project_pk):
             "labelID": d.label.id,
             "timestamp": new_timestamp,
             "edit": "yes",
+            "is_explicit": d.data.explicit_ind,
         }
         results.append(temp_dict)
 
@@ -689,6 +736,7 @@ def get_label_history(request, project_pk):
             "labelID": d.label.id,
             "timestamp": new_timestamp,
             "edit": "no",
+            "is_explicit": d.data.explicit_ind,
         }
 
         results.append(temp_dict)

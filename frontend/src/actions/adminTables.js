@@ -37,10 +37,11 @@ export const getAdmin = (projectID) => {
     };
 };
 
-export const adminLabel = (dataID, labelID, labelReason, projectID) => {
+export const adminLabel = (dataID, labelID, labelReason, is_explicit, projectID) => {
     let payload = {
         labelID: labelID,
-        labelReason: labelReason
+        labelReason: labelReason,
+        is_explicit: is_explicit
     };
     let apiURL = `/api/label_admin_label/${dataID}/`;
     return dispatch => {

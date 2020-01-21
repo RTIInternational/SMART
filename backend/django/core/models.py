@@ -40,6 +40,8 @@ class Project(models.Model):
     num_users_irr = models.IntegerField(default=2, validators=[MinValueValidator(2)])
     codebook_file = models.TextField(default="")
     batch_size = models.IntegerField(default=30)
+
+    use_explicit_ind = models.BooleanField(default=False)
     """ Advanced options """
     # the current options are 'random',
     # 'least confident', 'entropy', and 'margin sampling'
@@ -123,6 +125,7 @@ class Data(models.Model):
     irr_ind = models.BooleanField(default=False)
     upload_id = models.CharField(max_length=128)
     upload_id_hash = models.CharField(max_length=128)
+    explicit_ind = models.BooleanField(default=False)
 
     def __str__(self):
         return self.text

@@ -114,11 +114,12 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
 def create_data_from_csv(df, project):
     """Insert data objects into database using cursor.copy_from by creating an in-memory
     tsv representation of the data."""
-    columns = ["Text", "project", "hash", "ID", "id_hash", "irr_ind"]
+    columns = ["Text", "project", "hash", "ID", "id_hash", "irr_ind", "explicit_ind"]
     stream = StringIO()
 
     df["project"] = project.pk
     df["irr_ind"] = False
+    df["explicit_ind"] = False
 
     # Replace tabs since thats our delimiter, remove carriage returns since copy_from doesnt like them
     # escape all backslashes because it seems to fix "end-of-copy marker corrupt"
@@ -145,6 +146,7 @@ def create_data_from_csv(df, project):
                 "upload_id",
                 "upload_id_hash",
                 "irr_ind",
+                "explicit_ind",
             ],
         )
 

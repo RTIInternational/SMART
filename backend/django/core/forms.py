@@ -332,8 +332,10 @@ class AdvancedWizardForm(forms.ModelForm):
             "num_users_irr",
             "batch_size",
             "classifier",
+            "use_explicit_ind",
         ]
 
+    use_explicit_ind = forms.BooleanField(initial=False, required=False)
     use_active_learning = forms.BooleanField(initial=True, required=False)
     active_l_choices = copy.deepcopy(Project.ACTIVE_L_CHOICES)
     # remove random from the options

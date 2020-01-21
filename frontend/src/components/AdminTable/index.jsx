@@ -11,7 +11,7 @@ class AdminTable extends React.Component {
     }
 
     getSubComponent(row) {
-        const { labels, adminLabel, discardData, admin_data } = this.props;
+        const { labels, adminLabel, discardData, admin_data, hasExplicit } = this.props;
 
         return (
             <div className="sub-row">
@@ -24,6 +24,7 @@ class AdminTable extends React.Component {
                     skipFunction={() => {}}
                     discardFunction={discardData}
                     labels={labels}
+                    hasExplicit={hasExplicit}
                 />
             </div>
         );
@@ -84,7 +85,8 @@ AdminTable.propTypes = {
     admin_data: PropTypes.arrayOf(PropTypes.object),
     labels: PropTypes.arrayOf(PropTypes.object),
     adminLabel: PropTypes.func.isRequired,
-    discardData: PropTypes.func.isRequired
+    discardData: PropTypes.func.isRequired,
+    hasExplicit: PropTypes.boolean
 };
 
 export default AdminTable;

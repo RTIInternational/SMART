@@ -249,6 +249,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             proj_obj.percentage_irr = advanced_data["percentage_irr"]
             proj_obj.num_users_irr = advanced_data["num_users_irr"]
             proj_obj.classifier = advanced_data["classifier"]
+            proj_obj.use_explicit_ind = advanced_data["use_explicit_ind"]
             proj_obj.save()
 
             # Training Set

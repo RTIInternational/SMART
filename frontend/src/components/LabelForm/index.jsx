@@ -4,6 +4,7 @@ import {
     Button,
     ButtonToolbar,
     Clearfix,
+    Checkbox,
     Tooltip,
     OverlayTrigger,
     Alert,
@@ -23,6 +24,7 @@ class LabelForm extends React.Component {
             pk: null
         };
         let labelReason = "";
+        let is_explicit = false;
 
         if (this.props.previousLabel != null) {
             selected_label = {
@@ -30,25 +32,54 @@ class LabelForm extends React.Component {
                 pk: this.props.previousLabel.pk
             };
             labelReason = this.props.previousLabel.reason;
+            is_explicit = this.props.previousLabel.is_explicit;
         }
+
 
         this.state = {
             label_reason: labelReason,
             selected_label: selected_label,
-            error_message: null
+            error_message: null,
+            is_explicit: is_explicit
         };
 
         this.handleReasonChange = this.handleReasonChange.bind(this);
         this.handleLabelSelect = this.handleLabelSelect.bind(this);
         this.handleSubmitLabel = this.handleSubmitLabel.bind(this);
+        this.handleChangeExplict = this.handleChangeExplict.bind(this);
 
         this.warningRender = this.warningRender.bind(this);
         this.passRender = this.passRender.bind(this);
         this.discardRender = this.discardRender.bind(this);
         this.labelButtonRender = this.labelButtonRender.bind(this);
+        this.explicitRender = this.explicitRender.bind(this);
 
         this.skipData = this.skipData.bind(this);
         this.annotateData = this.annotateData.bind(this);
+    }
+
+    handleChangeExplict(){
+        this.setState({ is_explicit: !this.state.is_explicit });
+    }
+
+    explicitRender() {
+        if (this.props.hasExplicit) {
+            return (
+                <OverlayTrigger
+                    placement="top"
+                    overlay={
+                        <Tooltip id="explicit_tooltip">
+                            This marks this data as explicit, and must be sent
+                            to an administrator for review.
+                        </Tooltip>
+                    }
+                >
+                    <Checkbox onClick={this.handleChangeExplict} defaultChecked={this.state.is_explicit}> <b>Explicit</b> </Checkbox>
+                </OverlayTrigger>
+            );
+        } else {
+            return null;
+        }
     }
 
     handleReasonChange(event) {
@@ -95,11 +126,11 @@ class LabelForm extends React.Component {
         /* This function handles the logic for calling skip functions*/
 
         if (this.props.optionalInt != null) {
-            this.props.skipFunction(this.props.data, this.props.optionalInt);
+            this.props.skipFunction(this.props.data, this.props.optionalInt, this.state.is_explicit);
         } else if (this.props.previousLabel != null) {
-            this.props.skipFunction(this.props.data, this.props.previousLabel.pk);
+            this.props.skipFunction(this.props.data, this.props.previousLabel.pk, this.state.is_explicit);
         } else {
-            this.props.skipFunction(this.props.data);
+            this.props.skipFunction(this.props.data, this.state.is_explicit);
         }
     }
 
@@ -118,6 +149,13 @@ class LabelForm extends React.Component {
                 this.props.previousLabel.pk,
                 this.state.selected_label.pk,
                 this.state.label_reason
+            );
+        } else if (this.props.hasExplicit && !this.props.passButton){
+            this.props.labelFunction(
+                this.props.data,
+                this.state.selected_label.pk,
+                this.state.label_reason,
+                this.state.is_explicit
             );
         } else {
             this.props.labelFunction(
@@ -240,10 +278,10 @@ class LabelForm extends React.Component {
                     </p>
                     {this.warningRender()}
                     <ButtonToolbar bsClass="btn-toolbar pull-right">
-
+                        {this.explicitRender()}
                         {this.passRender()}
                         {this.discardRender()}
-                        <Button type="submit" bsStyle="success">
+                        <Button type="submit" bsStyle="success" disabled={this.state.is_explicit && this.props.passButton}>
                             Submit
                         </Button>
                     </ButtonToolbar>
@@ -263,7 +301,8 @@ LabelForm.propTypes = {
     skipFunction: PropTypes.func.isRequired,
     discardFunction: PropTypes.func.isRequired,
     labels: PropTypes.arrayOf(PropTypes.object),
-    optionalInt: PropTypes.integer
+    optionalInt: PropTypes.integer,
+    hasExplicit: PropTypes.boolean
 };
 
 export default LabelForm;
