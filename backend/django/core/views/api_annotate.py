@@ -523,13 +523,19 @@ def data_admin_counts(request, project_pk):
     project = Project.objects.get(pk=project_pk)
     queue = Queue.objects.filter(project=project, type="admin")
     data_objs = DataQueue.objects.filter(queue=queue)
-    irr_count = data_objs.filter(data__irr_ind=True).count()
-    skip_count = data_objs.filter(data__irr_ind=False).count()
+    skip_count = data_objs.filter(data__irr_ind=False, data__explicit_ind=False).count()
+
+    count_dict = {"data": {"SKIP": skip_count}}
+
     # only give both counts if both counts are relevent
-    if project.percentage_irr == 0:
-        return Response({"data": {"SKIP": skip_count}})
-    else:
-        return Response({"data": {"IRR": irr_count, "SKIP": skip_count}})
+    if project.percentage_irr > 0:
+        count_dict["data"]["IRR"] = data_objs.filter(data__irr_ind=True).count()
+    if project.use_explicit_ind:
+        count_dict["data"]["Explicit"] = data_objs.filter(
+            data__irr_ind=False, data__explicit_ind=True
+        ).count()
+
+    return Response(count_dict)
 
 
 @api_view(["GET"])

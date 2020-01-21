@@ -50,30 +50,16 @@ class Smart extends React.Component {
         const { adminTabsAvailable, admin_counts } = this.props;
 
         if (adminTabsAvailable) {
-            if (Object.keys(admin_counts).length > 1) {
-                badges = (
-                    <div>
-                        IRR
-                        <Badge className="tab-badge">
-                            {admin_counts["IRR"]}
+            badges = (
+                <div>
+                    Admin |
+                    {Object.keys(admin_counts).map(opt => (
+                        <Badge key={opt} className="tab-badge">
+                            {opt}: {admin_counts[opt]}
                         </Badge>
-                        | Skipped
-                        <Badge className="tab-badge">
-                            {admin_counts["SKIP"]}
-                        </Badge>
-                    </div>
-                );
-            } else {
-                badges = (
-                    <div>
-                        Skipped
-                        <Badge className="tab-badge">
-                            {admin_counts["SKIP"]}
-                        </Badge>
-                    </div>
-                );
-            }
-
+                    ))}
+                </div>
+            );
             adminTabAdminTable = (
                 <Tab eventKey={4}
                     title={badges}
