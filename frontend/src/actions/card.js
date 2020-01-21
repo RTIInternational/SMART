@@ -57,13 +57,15 @@ export const annotateCard = (
     labelID,
     labelReason,
     num_cards_left,
+    is_explicit,
     projectID,
     is_admin
 ) => {
     let payload = {
         labelID: labelID,
         labeling_time: moment().diff(card['start_time'], 'seconds'), // now - start_time rounded to whole seconds
-        labelReason: labelReason
+        labelReason: labelReason,
+        is_explicit: is_explicit
     };
     let apiURL = `/api/annotate_data/${card.pk}/`;
     return dispatch => {

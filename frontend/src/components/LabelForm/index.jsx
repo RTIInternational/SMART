@@ -173,21 +173,24 @@ class LabelForm extends React.Component {
                 this.state.label_reason,
                 this.props.optionalInt
             );
-        } else if (this.props.previousLabel != null) {
-            this.props.labelFunction(
-                this.props.data,
-                this.props.previousLabel.pk,
-                this.state.selected_label.pk,
-                this.state.label_reason
-            );
-        } else if (this.props.hasExplicit && !this.props.passButton){
+        } else if (!this.props.passButton) {
+            // If this is the admin table which does not have skipping
             this.props.labelFunction(
                 this.props.data,
                 this.state.selected_label.pk,
                 this.state.label_reason,
                 this.state.is_explicit
             );
+        } else if (this.props.previousLabel != null) {
+            // If this is the history table
+            this.props.labelFunction(
+                this.props.data,
+                this.props.previousLabel.pk,
+                this.state.selected_label.pk,
+                this.state.label_reason
+            );
         } else {
+            // this is the skew table
             this.props.labelFunction(
                 this.props.data,
                 this.state.selected_label.pk,
