@@ -33,7 +33,7 @@ class Card extends React.Component {
                             discardFunction={() => {}}
                             labels={labels}
                             optionalInt={cards.length}
-                            hasExplicit = {this.props.hasExplicit}
+                            hasExplicit = {hasExplicit}
                         />
                     </div>
                 </div>

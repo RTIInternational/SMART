@@ -60,7 +60,7 @@ class History extends React.Component {
 
     render() {
 
-        const { history_data, hasExplicit } = this.props;
+        const { history_data } = this.props;
         const COLUMNS = [
             {
                 Header: "edit",

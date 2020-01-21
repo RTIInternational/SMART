@@ -494,7 +494,7 @@ def data_admin_table(request, project_pk):
 
     data = []
     for d in data_objs:
-        if d.data.explicit_ind:
+        if project.use_explicit_ind and d.data.explicit_ind:
             reason = "Explicit"
         elif d.data.irr_ind:
             reason = "IRR"
