@@ -542,7 +542,7 @@ def data_admin_table(request, project_pk):
             temp["label"] = None
             temp["label_reason"] = None
             temp["labelID"] = None
-            temp["is_explicit"] = dl.data.explicit_ind
+            temp["is_explicit"] = False
         data.append(temp)
 
     # also return any metadata
