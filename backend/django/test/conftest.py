@@ -236,7 +236,9 @@ def test_project_unlabeled_and_tfidf(
 
 
 @pytest.fixture
-def test_project_with_trained_model(test_project_labeled_and_tfidf, tmpdir):
+def test_project_with_trained_model(
+    test_project_labeled_and_tfidf, tmpdir, test_admin_queue
+):
     """A project which has labeled data, a tfidf matrix saved, and a model with pickle
     file."""
     temp_pickle_path = tmpdir.listdir()[0].mkdir("model_pickles")

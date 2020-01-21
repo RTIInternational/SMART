@@ -71,10 +71,19 @@ export const changeLabel = (
     };
 };
 
-export const changeToSkip = (dataID, oldLabelID, is_explicit, projectID) => {
+export const changeToSkip = (
+    dataID,
+    oldLabelID,
+    labelID,
+    labelReason,
+    is_explicit,
+    projectID
+) => {
     let payload = {
         dataID: dataID,
         oldLabelID: oldLabelID,
+        labelID: labelID,
+        labelReason: labelReason,
         is_explicit: is_explicit
     };
     let apiURL = `/api/modify_label_to_skip/${dataID}/`;

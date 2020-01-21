@@ -32,8 +32,17 @@ const mapDispatchToProps = (dispatch) => {
                 )
             );
         },
-        changeToSkip: (dataID, oldLabelID, is_explicit) => {
-            dispatch(changeToSkip(dataID, oldLabelID, is_explicit, PROJECT_ID));
+        changeToSkip: (dataID, oldLabelID, labelID, labelReason, is_explicit) => {
+            dispatch(
+                changeToSkip(
+                    dataID,
+                    oldLabelID,
+                    labelID,
+                    labelReason,
+                    is_explicit,
+                    PROJECT_ID
+                )
+            );
         }
     };
 };

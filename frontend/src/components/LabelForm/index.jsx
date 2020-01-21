@@ -54,7 +54,7 @@ class LabelForm extends React.Component {
         this.labelButtonRender = this.labelButtonRender.bind(this);
         this.explicitRender = this.explicitRender.bind(this);
 
-        this.skipData = this.skipData.bind(this);
+        this.handleSendToAdmin = this.handleSendToAdmin.bind(this);
         this.annotateData = this.annotateData.bind(this);
     }
 
@@ -122,16 +122,46 @@ class LabelForm extends React.Component {
         }
     }
 
-    skipData() {
+    handleSendToAdmin() {
         /* This function handles the logic for calling skip functions*/
-
-        if (this.props.optionalInt != null) {
-            this.props.skipFunction(this.props.data, this.props.optionalInt, this.state.is_explicit);
-        } else if (this.props.previousLabel != null) {
-            this.props.skipFunction(this.props.data, this.props.previousLabel.pk, this.state.is_explicit);
+        /* This function is for when the form is submitted*/
+        if (this.state.selected_label.pk == null) {
+            this.setState({
+                error_message: "To help your Administrator out, please choose a best guess for the label."
+            });
+            event.preventDefault();
+        } else if (this.state.label_reason.length == 0 && !this.state.is_explicit) {
+            this.setState({
+                error_message: "Please provide a reason for sending to the Administrator."
+            });
+            event.preventDefault();
         } else {
-            this.props.skipFunction(this.props.data, this.state.is_explicit);
+            if (this.props.optionalInt != null) {
+                this.props.skipFunction(
+                    this.props.data,
+                    this.state.selected_label.pk,
+                    this.state.label_reason,
+                    this.props.optionalInt,
+                    this.state.is_explicit
+                );
+            } else if (this.props.previousLabel != null) {
+                this.props.skipFunction(
+                    this.props.data,
+                    this.props.previousLabel.pk,
+                    this.state.selected_label.pk,
+                    this.state.label_reason,
+                    this.state.is_explicit
+                );
+            } else {
+                this.props.skipFunction(
+                    this.props.data,
+                    this.state.selected_label.pk,
+                    this.state.label_reason,
+                    this.state.is_explicit
+                );
+            }
         }
+
     }
 
     annotateData() {
@@ -181,11 +211,11 @@ class LabelForm extends React.Component {
                 >
                     <Button
                         onClick={() => {
-                            this.skipData();
+                            this.handleSendToAdmin();
                         }}
                         bsStyle="danger"
                     >
-                        Skip
+                        Send to Admin
                     </Button>
                 </OverlayTrigger>
             );
@@ -282,7 +312,7 @@ class LabelForm extends React.Component {
                         {this.passRender()}
                         {this.discardRender()}
                         <Button type="submit" bsStyle="success" disabled={this.state.is_explicit && this.props.passButton}>
-                            Submit
+                            Submit Label
                         </Button>
                     </ButtonToolbar>
                     <Clearfix />

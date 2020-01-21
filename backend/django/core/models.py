@@ -167,6 +167,7 @@ class DataLabel(models.Model):
     training_set = models.ForeignKey("TrainingSet")
     time_to_label = models.IntegerField(null=True)
     timestamp = models.DateTimeField(null=True, default=None)
+    was_skipped = models.BooleanField(default=False)
 
 
 class LabelChangeLog(models.Model):

@@ -167,6 +167,9 @@ def skip_data(request, data_pk):
     project = data.project
     response = {}
 
+    label = Label.objects.get(pk=request.data["labelID"])
+    labeling_time = request.data["labeling_time"]
+    label_reason = request.data.get("labelReason", "")
     is_explicit = request.data.get("is_explicit", False)
 
     with transaction.atomic():
@@ -176,6 +179,19 @@ def skip_data(request, data_pk):
             data = Data.objects.get(pk=data_pk)
             IRRLog.objects.filter(data=data).delete()
             DataLabel.objects.filter(data=data).delete()
+
+        # make a DataLabel object which has was_skipped=True
+        current_training_set = data.project.get_current_training_set()
+        DataLabel.objects.create(
+            data=data,
+            label=label,
+            label_reason=label_reason,
+            profile=profile,
+            training_set=current_training_set,
+            time_to_label=labeling_time,
+            timestamp=timezone.now(),
+            was_skipped=True,
+        )
 
     # if the data is IRR or processed IRR, dont add to admin queue yet
     num_history = IRRLog.objects.filter(data=data).count()
@@ -282,6 +298,7 @@ def discard_data(request, data_pk):
         queue = Queue.objects.get(project=project, type="admin")
         DataQueue.objects.get(data=data, queue=queue).delete()
         IRRLog.objects.filter(data=data).delete()
+        DataLabel.objects.filter(data=data).delete()
         Data.objects.filter(pk=data_pk).update(irr_ind=False)
         data = Data.objects.get(pk=data_pk)
 
@@ -382,8 +399,17 @@ def modify_label_to_skip(request, data_pk):
     queue = Queue.objects.get(project=project, type="admin")
     is_explicit = request.data.get("is_explicit", False)
 
+    new_label = Label.objects.get(pk=request.data["labelID"])
+    new_label_reason = request.data.get("labelReason", "")
+
     with transaction.atomic():
-        DataLabel.objects.filter(data=data, label=old_label).delete()
+        DataLabel.objects.filter(data=data, label=old_label, profile=profile).update(
+            label=new_label,
+            time_to_label=0,
+            label_reason=new_label_reason,
+            was_skipped=True,
+            timestamp=timezone.now(),
+        )
 
         if is_explicit:
             # if this marked the data as explicit, remove it from IRR
@@ -391,7 +417,8 @@ def modify_label_to_skip(request, data_pk):
             data = Data.objects.get(pk=data_pk)
 
             IRRLog.objects.filter(data=data).delete()
-            DataLabel.objects.filter(data=data).delete()
+            # delete any old datalabels from other people
+            DataLabel.objects.filter(data=data, was_skipped=False).delete()
 
         if data.irr_ind:
             # if it was irr, add it to the log
@@ -500,7 +527,22 @@ def data_admin_table(request, project_pk):
             reason = "IRR"
         else:
             reason = "Skipped"
+
         temp = {"data": d.data.text, "id": d.data.id, "reason": reason}
+
+        if not d.data.irr_ind and DataLabel.objects.filter(
+            data=d.data, was_skipped=True
+        ):
+            dl = DataLabel.objects.get(data=d.data, was_skipped=True)
+            temp["label"] = dl.label.name
+            temp["label_reason"] = dl.label_reason
+            temp["labelID"] = dl.label.id
+            temp["is_explicit"] = dl.data.explicit_ind
+        else:
+            temp["label"] = None
+            temp["label_reason"] = None
+            temp["labelID"] = None
+            temp["is_explicit"] = dl.data.explicit_ind
         data.append(temp)
 
     # also return any metadata
@@ -584,6 +626,10 @@ def label_skew_label(request, data_pk):
     profile = request.user.profile
     response = {}
 
+    # here to prevent race condition where data
+    # was unlabeled when the page was loaded but has since been passed out
+    DataLabel.objects.filter(data=datum).delete()
+
     current_training_set = project.get_current_training_set()
     if project_extras.proj_permission_level(datum.project, profile) >= 2:
         with transaction.atomic():
@@ -625,6 +671,9 @@ def label_admin_label(request, data_pk):
     response = {}
 
     current_training_set = project.get_current_training_set()
+
+    # delete any existing labels
+    DataLabel.objects.filter(data=datum).delete()
 
     with transaction.atomic():
 
@@ -673,7 +722,7 @@ def get_label_history(request, project_pk):
 
     labels = Label.objects.all().filter(project=project)
     data = DataLabel.objects.filter(
-        profile=profile, data__project=project_pk, label__in=labels
+        profile=profile, data__project=project_pk, label__in=labels, was_skipped=False
     )
 
     data_list = []

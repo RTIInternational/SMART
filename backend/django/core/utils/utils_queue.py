@@ -241,6 +241,7 @@ def pop_first_nonempty_queue(project, profile=None, type="normal"):
         profile_queues = project.queue_set.filter(profile=profile, type=type)
     else:
         profile_queues = Queue.objects.none()
+
     profile_queues = profile_queues.annotate(priority=Value(1, IntegerField()))
 
     project_queues = project.queue_set.filter(profile=None, type=type).annotate(
@@ -257,9 +258,9 @@ def pop_first_nonempty_queue(project, profile=None, type="normal"):
             queue = redis_parse_queue(queue_id.encode())
 
             # first get the assigned data that was already labeled, or data already assigned
-            labeled_irr_data = DataLabel.objects.filter(profile=profile).values_list(
-                "data", flat=True
-            )
+            labeled_irr_data = DataLabel.objects.filter(
+                profile=profile, was_skipped=False
+            ).values_list("data", flat=True)
             assigned_data = AssignedData.objects.filter(
                 profile=profile, queue=queue
             ).values_list("data", flat=True)
@@ -380,7 +381,7 @@ def handle_empty_queue(profile, project):
     irr_labeled_count = (
         IRRLog.objects.filter(profile=profile, data__project=project).count()
         + DataLabel.objects.filter(
-            profile=profile, data__dataqueue__queue=irr_queue
+            profile=profile, data__dataqueue__queue=irr_queue, was_skipped=False
         ).count()
     )
 

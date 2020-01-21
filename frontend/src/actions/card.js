@@ -97,11 +97,22 @@ export const annotateCard = (
 };
 
 //skip a card and put it in the admin table
-export const passCard = (card, num_cards_left, is_explicit, is_admin, projectID) => {
+export const passCard = (
+    card,
+    labelID,
+    labelReason,
+    num_cards_left,
+    is_explicit,
+    projectID,
+    is_admin
+) => {
+    let apiURL = `/api/skip_data/${card.pk}/`;
     let payload = {
+        labelID: labelID,
+        labeling_time: moment().diff(card['start_time'], 'seconds'), // now - start_time rounded to whole seconds
+        labelReason: labelReason,
         is_explicit: is_explicit
     };
-    let apiURL = `/api/skip_data/${card.pk}/`;
     return dispatch => {
         return fetch(apiURL, postConfig(payload))
             .then(response => {
