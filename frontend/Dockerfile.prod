@@ -1,9 +1,20 @@
-FROM node:latest
-RUN apt-get update && apt-get install -y nginx
+FROM node:8 as build-stage
+
 WORKDIR /code
 RUN yarn install
-RUN yarn global add webpack
+RUN yarn add webpack webpack-dev-server --dev
 ADD . /code
 ENV NODE_ENV production
-RUN webpack
-EXPOSE 8080
+RUN yarn build
+
+
+FROM nginx:1.17.2
+
+RUN apt-get -y update  && \
+    apt-get install -y \
+    apache2-utils
+
+COPY --from=build-stage /code/dist /var/www/dist
+COPY --from=build-stage /code/webpack-stats.json /var/www/webpack-stats.json
+RUN rm /etc/nginx/conf.d/default.conf
+COPY ./smart.conf /etc/nginx/conf.d/smart.conf
