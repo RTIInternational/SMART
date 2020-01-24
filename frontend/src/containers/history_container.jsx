@@ -11,7 +11,8 @@ const HistoryContainer = (props) => <History {...props} />;
 const mapStateToProps = (state) => {
     return {
         history_data: state.history.history_data,
-        labels: state.card.labels
+        labels: state.card.labels,
+        hasExplicit: state.smart.hasExplicit
     };
 };
 
@@ -31,8 +32,17 @@ const mapDispatchToProps = (dispatch) => {
                 )
             );
         },
-        changeToSkip: (dataID, oldLabelID) => {
-            dispatch(changeToSkip(dataID, oldLabelID, PROJECT_ID));
+        changeToSkip: (dataID, oldLabelID, labelID, labelReason, is_explicit) => {
+            dispatch(
+                changeToSkip(
+                    dataID,
+                    oldLabelID,
+                    labelID,
+                    labelReason,
+                    is_explicit,
+                    PROJECT_ID
+                )
+            );
         }
     };
 };

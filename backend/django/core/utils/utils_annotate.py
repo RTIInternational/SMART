@@ -47,7 +47,9 @@ def assign_datum(profile, project, type="normal"):
         if datum is None:
             return None
         else:
-            num_labeled = DataLabel.objects.filter(data=datum, profile=profile).count()
+            num_labeled = DataLabel.objects.filter(
+                data=datum, profile=profile, was_skipped=False
+            ).count()
             if num_labeled == 0:
                 AssignedData.objects.create(data=datum, profile=profile, queue=queue)
                 return datum
@@ -92,7 +94,6 @@ def get_assignments(profile, project, num_assignments):
         data = []
         more_irr = True
         for i in range(num_assignments):
-
             # first try to get any IRR data
             if more_irr:
                 assigned_datum = assign_datum(profile, project, type="irr")
@@ -103,6 +104,7 @@ def get_assignments(profile, project, num_assignments):
             else:
                 # get normal data
                 assigned_datum = assign_datum(profile, project)
+
             if assigned_datum is None:
                 break
             data.append(assigned_datum)
@@ -206,7 +208,7 @@ def process_irr_label(data, label):
     if it has, then it will attempt to resolve the labels and record the irr history
     """
     # get the number of labels for that data in the project
-    labeled = DataLabel.objects.filter(data=data)
+    labeled = DataLabel.objects.filter(data=data, was_skipped=False)
     skipped = IRRLog.objects.filter(label__isnull=True, data=data)
     project = data.project
     current_training_set = project.get_current_training_set()

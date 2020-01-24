@@ -31,16 +31,24 @@ export const getAdmin = (projectID) => {
             .then(response => {
                 // If error was in the response then set that message
                 if ('error' in response) console.log(response);
-                dispatch(set_admin_data(response.data));
+                let all_data = [];
+                for (let i = 0; i < response.data.length; i++) {
+                    const row = response.data[i];
+                    row["old_label"] = response.data[i].label;
+                    row["old_label_id"] = response.data[i].labelID;
+                    all_data.push(row);
+                }
+                dispatch(set_admin_data(all_data));
             })
             .catch(err => console.log('Error: ', err));
     };
 };
 
-export const adminLabel = (dataID, labelID, labelReason, projectID) => {
+export const adminLabel = (dataID, labelID, labelReason, is_explicit, projectID) => {
     let payload = {
         labelID: labelID,
-        labelReason: labelReason
+        labelReason: labelReason,
+        is_explicit: is_explicit
     };
     let apiURL = `/api/label_admin_label/${dataID}/`;
     return dispatch => {

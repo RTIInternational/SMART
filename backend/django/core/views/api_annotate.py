@@ -65,6 +65,22 @@ class DataUnlabeledAPIView(generics.ListAPIView):
 
 @api_view(["GET"])
 @permission_classes((IsCoder,))
+def has_explicit_button(request, project_pk):
+    """Get the true/false of if items in this project
+    get marked as explicit
+    Args:
+        request: The request to the endpoint
+        project_pk: Primary key of project
+    Returns:
+        use_explicit_ind: whether or not items can be
+        marked as explicit in this project
+    """
+    project = Project.objects.get(pk=project_pk)
+    return Response({"explicit_ind": project.use_explicit_ind})
+
+
+@api_view(["GET"])
+@permission_classes((IsCoder,))
 def get_card_deck(request, project_pk):
     """Grab data using get_assignments and send it to the frontend react app.
 
@@ -150,6 +166,32 @@ def skip_data(request, data_pk):
     profile = request.user.profile
     project = data.project
     response = {}
+
+    label = Label.objects.get(pk=request.data["labelID"])
+    labeling_time = request.data["labeling_time"]
+    label_reason = request.data.get("labelReason", "")
+    is_explicit = request.data.get("is_explicit", False)
+
+    with transaction.atomic():
+        if is_explicit:
+            # if this marked the data as explicit, remove it from IRR
+            Data.objects.filter(pk=data_pk).update(irr_ind=False, explicit_ind=True)
+            data = Data.objects.get(pk=data_pk)
+            IRRLog.objects.filter(data=data).delete()
+            DataLabel.objects.filter(data=data).delete()
+
+        # make a DataLabel object which has was_skipped=True
+        current_training_set = data.project.get_current_training_set()
+        DataLabel.objects.create(
+            data=data,
+            label=label,
+            label_reason=label_reason,
+            profile=profile,
+            training_set=current_training_set,
+            time_to_label=labeling_time,
+            timestamp=timezone.now(),
+            was_skipped=True,
+        )
 
     # if the data is IRR or processed IRR, dont add to admin queue yet
     num_history = IRRLog.objects.filter(data=data).count()
@@ -256,7 +298,10 @@ def discard_data(request, data_pk):
         queue = Queue.objects.get(project=project, type="admin")
         DataQueue.objects.get(data=data, queue=queue).delete()
         IRRLog.objects.filter(data=data).delete()
+        DataLabel.objects.filter(data=data).delete()
         Data.objects.filter(pk=data_pk).update(irr_ind=False)
+        data = Data.objects.get(pk=data_pk)
+
         RecycleBin.objects.create(data=data, timestamp=timezone.now())
 
         # remove any IRR log data
@@ -352,9 +397,29 @@ def modify_label_to_skip(request, data_pk):
     project = data.project
     old_label = Label.objects.get(pk=request.data["oldLabelID"])
     queue = Queue.objects.get(project=project, type="admin")
+    is_explicit = request.data.get("is_explicit", False)
+
+    new_label = Label.objects.get(pk=request.data["labelID"])
+    new_label_reason = request.data.get("labelReason", "")
 
     with transaction.atomic():
-        DataLabel.objects.filter(data=data, label=old_label).delete()
+        DataLabel.objects.filter(data=data, label=old_label, profile=profile).update(
+            label=new_label,
+            time_to_label=0,
+            label_reason=new_label_reason,
+            was_skipped=True,
+            timestamp=timezone.now(),
+        )
+
+        if is_explicit:
+            # if this marked the data as explicit, remove it from IRR
+            Data.objects.filter(pk=data_pk).update(irr_ind=False, explicit_ind=True)
+            data = Data.objects.get(pk=data_pk)
+
+            IRRLog.objects.filter(data=data).delete()
+            # delete any old datalabels from other people
+            DataLabel.objects.filter(data=data, was_skipped=False).delete()
+
         if data.irr_ind:
             # if it was irr, add it to the log
             if len(IRRLog.objects.filter(data=data, profile=profile)) == 0:
@@ -456,11 +521,28 @@ def data_admin_table(request, project_pk):
 
     data = []
     for d in data_objs:
-        if d.data.irr_ind:
+        if project.use_explicit_ind and d.data.explicit_ind:
+            reason = "Explicit"
+        elif d.data.irr_ind:
             reason = "IRR"
         else:
             reason = "Skipped"
+
         temp = {"data": d.data.text, "id": d.data.id, "reason": reason}
+
+        if not d.data.irr_ind and DataLabel.objects.filter(
+            data=d.data, was_skipped=True
+        ):
+            dl = DataLabel.objects.get(data=d.data, was_skipped=True)
+            temp["label"] = dl.label.name
+            temp["label_reason"] = dl.label_reason
+            temp["labelID"] = dl.label.id
+            temp["is_explicit"] = dl.data.explicit_ind
+        else:
+            temp["label"] = None
+            temp["label_reason"] = None
+            temp["labelID"] = None
+            temp["is_explicit"] = False
         data.append(temp)
 
     # also return any metadata
@@ -483,13 +565,19 @@ def data_admin_counts(request, project_pk):
     project = Project.objects.get(pk=project_pk)
     queue = Queue.objects.filter(project=project, type="admin")
     data_objs = DataQueue.objects.filter(queue=queue)
-    irr_count = data_objs.filter(data__irr_ind=True).count()
-    skip_count = data_objs.filter(data__irr_ind=False).count()
+    skip_count = data_objs.filter(data__irr_ind=False, data__explicit_ind=False).count()
+
+    count_dict = {"data": {"SKIP": skip_count}}
+
     # only give both counts if both counts are relevent
-    if project.percentage_irr == 0:
-        return Response({"data": {"SKIP": skip_count}})
-    else:
-        return Response({"data": {"IRR": irr_count, "SKIP": skip_count}})
+    if project.percentage_irr > 0:
+        count_dict["data"]["IRR"] = data_objs.filter(data__irr_ind=True).count()
+    if project.use_explicit_ind:
+        count_dict["data"]["Explicit"] = data_objs.filter(
+            data__irr_ind=False, data__explicit_ind=True
+        ).count()
+
+    return Response(count_dict)
 
 
 @api_view(["GET"])
@@ -538,6 +626,10 @@ def label_skew_label(request, data_pk):
     profile = request.user.profile
     response = {}
 
+    # here to prevent race condition where data
+    # was unlabeled when the page was loaded but has since been passed out
+    DataLabel.objects.filter(data=datum).delete()
+
     current_training_set = project.get_current_training_set()
     if project_extras.proj_permission_level(datum.project, profile) >= 2:
         with transaction.atomic():
@@ -573,13 +665,22 @@ def label_admin_label(request, data_pk):
     project = datum.project
     label = Label.objects.get(pk=request.data["labelID"])
     label_reason = request.data.get("labelReason", "")
+    is_explicit = request.data.get("is_explicit", False)
 
     profile = request.user.profile
     response = {}
 
     current_training_set = project.get_current_training_set()
 
+    # delete any existing labels
+    DataLabel.objects.filter(data=datum).delete()
+
     with transaction.atomic():
+
+        # update to match whatever the explicit rating is
+        Data.objects.filter(pk=datum.pk).update(explicit_ind=is_explicit)
+        datum = Data.objects.get(pk=data_pk)
+
         queue = project.queue_set.get(type="admin")
         DataLabel.objects.create(
             data=datum,
@@ -596,7 +697,7 @@ def label_admin_label(request, data_pk):
         # make sure the data is no longer irr
         if datum.irr_ind:
             Data.objects.filter(pk=datum.pk).update(irr_ind=False)
-
+            datum = Data.objects.get(pk=data_pk)
     # NOTE: this checks if the model needs to be triggered, but not if the
     # queues need to be refilled. This is because for something to be in the
     # admin queue, annotate or skip would have already checked for an empty queue
@@ -621,7 +722,7 @@ def get_label_history(request, project_pk):
 
     labels = Label.objects.all().filter(project=project)
     data = DataLabel.objects.filter(
-        profile=profile, data__project=project_pk, label__in=labels
+        profile=profile, data__project=project_pk, label__in=labels, was_skipped=False
     )
 
     data_list = []
@@ -654,6 +755,7 @@ def get_label_history(request, project_pk):
             "labelID": d.label.id,
             "timestamp": new_timestamp,
             "edit": "yes",
+            "is_explicit": d.data.explicit_ind,
         }
         results.append(temp_dict)
 
@@ -689,6 +791,7 @@ def get_label_history(request, project_pk):
             "labelID": d.label.id,
             "timestamp": new_timestamp,
             "edit": "no",
+            "is_explicit": d.data.explicit_ind,
         }
 
         results.append(temp_dict)

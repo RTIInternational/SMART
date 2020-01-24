@@ -15,12 +15,14 @@ from core import tasks
 from core.models import (
     Data,
     DataLabel,
+    DataQueue,
     IRRLog,
     Label,
     MetaData,
     Profile,
     Project,
     ProjectPermissions,
+    Queue,
     TrainingSet,
 )
 from core.serializers import MetaDataSerializer
@@ -114,11 +116,12 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
 def create_data_from_csv(df, project):
     """Insert data objects into database using cursor.copy_from by creating an in-memory
     tsv representation of the data."""
-    columns = ["Text", "project", "hash", "ID", "id_hash", "irr_ind"]
+    columns = ["Text", "project", "hash", "ID", "id_hash", "irr_ind", "explicit_ind"]
     stream = StringIO()
 
     df["project"] = project.pk
     df["irr_ind"] = False
+    df["explicit_ind"] = False
 
     # Replace tabs since thats our delimiter, remove carriage returns since copy_from doesnt like them
     # escape all backslashes because it seems to fix "end-of-copy marker corrupt"
@@ -145,6 +148,7 @@ def create_data_from_csv(df, project):
                 "upload_id",
                 "upload_id_hash",
                 "irr_ind",
+                "explicit_ind",
             ],
         )
 
@@ -159,6 +163,7 @@ def create_labels_from_csv(df, project):
         "training_set_id",
         "time_to_label",
         "timestamp",
+        "was_skipped",
     ]
     stream = StringIO()
 
@@ -174,6 +179,7 @@ def create_labels_from_csv(df, project):
     df["training_set_id"] = project.get_current_training_set().pk
     df["label_id"] = df["Label"].apply(lambda x: labels[x])
     df["profile_id"] = project.creator.pk
+    df["was_skipped"] = False
 
     df.to_csv(stream, sep="\t", header=False, index=False, columns=columns)
     stream.seek(0)
@@ -480,18 +486,27 @@ def get_labeled_data(project):
         data: a list of the labeled data
     """
     project_labels = Label.objects.filter(project=project)
-    # get the data labels
+    admin_queue = Queue.objects.get(project=project, type="admin")
+    admin_data = DataQueue.objects.filter(queue=admin_queue).values_list(
+        "data", flat=True
+    )
+
     data = []
     labels = []
     for label in project_labels:
         labels.append({"Name": label.name, "Label_ID": label.pk})
-        labeled_data = DataLabel.objects.filter(label=label)
+        labeled_data = DataLabel.objects.filter(label=label).exclude(
+            data__in=admin_data
+        )
+
         for d in labeled_data:
             temp = {}
             temp["ID"] = d.data.upload_id
             temp["Text"] = d.data.text
             temp["Label"] = label.name
             temp["Reason"] = d.label_reason
+            if project.use_explicit_ind:
+                temp["explicit"] = d.data.explicit_ind
             # add in the metadata fields
             metadata = MetaData.objects.filter(data__pk=d.data.pk).first()
             if metadata:

@@ -5,28 +5,58 @@
 
 {% block content %}
 <div class="row">
-  <div class="col-md-8 col-md-offset-2">
-    <div class="card">
-      <div class="cardface">
-        {{ form.media.css }}
-        <form action="." method="post" enctype="multipart/form-data">
-          {% csrf_token %}
-          <h1>Overview</h1>
-          <div class="form-group">
-            <label class="control-label" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
-            <input class="form-control" id="{{ form.name.id_for_label }}" maxlength="30" name="{{ form.name.html_name }}" type="text" placeholder="{{ form.name.label }}" value="{{ form.name.value|default_if_none:'' }}"/>
-            <div class="error-messages">{{ form.name.errors }}</div>
-          </div>
-          <div class="form-group">
-            <label class="control-label" for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
-            <textarea class="form-control" id="{{ form.description.id_for_label }}" name="{{ form.description.html_name }}">{{ form.description.value|default_if_none:'' }}</textarea>
-            <div class="error-messages">{{ form.description.errors }}</div>
-          </div>
-          <button class="btn btn-primary" type="submit">Submit</button>
-        </form>
-      </div>
+    <div class="col-md-8 col-md-offset-2">
+        <div class="card">
+            <div class="cardface">
+                {{ form.media.css }}
+                <form action="." method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <h1>Overview</h1>
+                    <div class="form-group">
+                        <label class="control-label" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+                        <input class="form-control" id="{{ form.name.id_for_label }}" maxlength="30" name="{{ form.name.html_name }}" type="text" placeholder="{{ form.name.label }}" value="{{ form.name.value|default_if_none:'' }}" />
+                        <div class="error-messages">{{ form.name.errors }}</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="control-label" for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+                        <textarea class="form-control" id="{{ form.description.id_for_label }}" name="{{ form.description.html_name }}">{{ form.description.value|default_if_none:'' }}</textarea>
+                        <div class="error-messages">{{ form.description.errors }}</div>
+                    </div>
+                    <div class="form-group">
+                        <div class="panel panel-default" id="ex_tab">
+                            <div class="panel-heading">
+                                <h5 class="panel-title">
+                                    <a data-toggle="collapse" href="#ex-panel" class="accordion-toggle">
+                                        Flag for Explicit
+                                    </a>
+                                </h5>
+                            </div>
+                            <div id="ex-panel" class="panel-collapse collapse in">
+                                <div class="panel-body">
+                                    <div>
+                                        <p>{{ form.use_explicit_ind }} Check this box to enable an <code>Explicit</code> checkbox in
+                                            the labeling process which coders can use to flag possibly innapropriate material to
+                                            be reviewed by an administrator.</p>
+
+                                        <h5>Notes on this feature:</h5>
+                                        <ul class="list-group">
+                                            <li class="list-group-item">Once data has been flagged as <code>Explicit</code> it will not be
+                                                passed out to other coders for Inter-rater Reliability purposes. </li>
+                                            <li class="list-group-item">Data marked as <code>Explicit</code>is <b>not</b> automatically removed from
+                                                the training data, though the admin can remove explicit data
+                                                by discarding the data in the admin labeling table.</li>
+                                            <li class="list-group-item"> The explicit flag will be shown when downloading undiscarded labeled
+                                                data which has been marked as explicit.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" type="submit">Submit</button>
+                </form>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 {% endblock %}
-

@@ -15,6 +15,7 @@ describe('<Smart />', () => {
                 getAdminTabsAvailable = {fn}
                 admin_counts = {data}
                 getAdminCounts = {fn}
+                getHasExplicit = {fn}
               />
             );
         });

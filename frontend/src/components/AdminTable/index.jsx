@@ -11,11 +11,12 @@ class AdminTable extends React.Component {
     }
 
     getSubComponent(row) {
-        const { labels, adminLabel, discardData, admin_data } = this.props;
+        const { labels, adminLabel, discardData, admin_data, hasExplicit } = this.props;
 
+        let datum = admin_data[row.row._index];
         return (
             <div className="sub-row">
-                <DataViewer data={admin_data[row.row._index]} />
+                <DataViewer data={datum} />
                 <LabelForm
                     data={row.row.id}
                     labelFunction={adminLabel}
@@ -24,6 +25,13 @@ class AdminTable extends React.Component {
                     skipFunction={() => {}}
                     discardFunction={discardData}
                     labels={labels}
+                    hasExplicit={hasExplicit}
+                    previousLabel={{
+                        pk: datum.old_label_id,
+                        name: datum.old_label,
+                        reason: datum.label_reason,
+                        is_explicit: datum.is_explicit
+                    }}
                 />
             </div>
         );
@@ -84,7 +92,8 @@ AdminTable.propTypes = {
     admin_data: PropTypes.arrayOf(PropTypes.object),
     labels: PropTypes.arrayOf(PropTypes.object),
     adminLabel: PropTypes.func.isRequired,
-    discardData: PropTypes.func.isRequired
+    discardData: PropTypes.func.isRequired,
+    hasExplicit: PropTypes.boolean
 };
 
 export default AdminTable;
