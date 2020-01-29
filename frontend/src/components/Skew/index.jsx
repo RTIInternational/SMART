@@ -74,6 +74,7 @@ class Skew extends React.Component {
                             skipFunction={() => {}}
                             discardFunction={() => {}}
                             labels={labels}
+                            labelingTab="skew"
                         />
                     </div>
                 );

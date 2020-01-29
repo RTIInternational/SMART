@@ -32,6 +32,7 @@ class AdminTable extends React.Component {
                         reason: datum.label_reason,
                         is_explicit: datum.is_explicit
                     }}
+                    labelingTab="admin"
                 />
             </div>
         );

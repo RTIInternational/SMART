@@ -40,6 +40,7 @@ class History extends React.Component {
                         discardFunction={() => {}}
                         labels={labels}
                         hasExplicit={hasExplicit}
+                        labelingTab="history"
                     />
                 </div>
             );
