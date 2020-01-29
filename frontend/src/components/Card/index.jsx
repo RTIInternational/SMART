@@ -34,6 +34,7 @@ class Card extends React.Component {
                             labels={labels}
                             optionalInt={cards.length}
                             hasExplicit = {hasExplicit}
+                            labelingTab="annotate"
                         />
                     </div>
                 </div>
