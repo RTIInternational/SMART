@@ -136,7 +136,8 @@ class LabelForm extends React.Component {
             });
             event.preventDefault();
         } else {
-            if (this.props.optionalInt != null) {
+
+            if (this.props.labelingTab == "annotate") {
                 this.props.skipFunction(
                     this.props.data,
                     this.state.selected_label.pk,
@@ -144,17 +145,10 @@ class LabelForm extends React.Component {
                     this.props.optionalInt,
                     this.state.is_explicit
                 );
-            } else if (this.props.previousLabel != null) {
+            } else if (this.props.labelingTab == "history") {
                 this.props.skipFunction(
                     this.props.data,
                     this.props.previousLabel.pk,
-                    this.state.selected_label.pk,
-                    this.state.label_reason,
-                    this.state.is_explicit
-                );
-            } else {
-                this.props.skipFunction(
-                    this.props.data,
                     this.state.selected_label.pk,
                     this.state.label_reason,
                     this.state.is_explicit
@@ -166,14 +160,14 @@ class LabelForm extends React.Component {
 
     annotateData() {
         /* This function handles the logic for calling annotate functions*/
-        if (this.props.optionalInt != null) {
+        if (this.props.labelingTab == "annotate") {
             this.props.labelFunction(
                 this.props.data,
                 this.state.selected_label.pk,
                 this.state.label_reason,
                 this.props.optionalInt
             );
-        } else if (!this.props.passButton) {
+        } else if (this.props.labelingTab == "admin") {
             // If this is the admin table which does not have skipping
             this.props.labelFunction(
                 this.props.data,
@@ -181,7 +175,7 @@ class LabelForm extends React.Component {
                 this.state.label_reason,
                 this.state.is_explicit
             );
-        } else if (this.props.previousLabel != null) {
+        } else if (this.props.labelingTab == "history") {
             // If this is the history table
             this.props.labelFunction(
                 this.props.data,
@@ -189,7 +183,7 @@ class LabelForm extends React.Component {
                 this.state.selected_label.pk,
                 this.state.label_reason
             );
-        } else {
+        } else if (this.props.labelingTab == "skew") {
             // this is the skew table
             this.props.labelFunction(
                 this.props.data,
@@ -335,7 +329,8 @@ LabelForm.propTypes = {
     discardFunction: PropTypes.func.isRequired,
     labels: PropTypes.arrayOf(PropTypes.object),
     optionalInt: PropTypes.integer,
-    hasExplicit: PropTypes.boolean
+    hasExplicit: PropTypes.boolean,
+    labelingTab: PropTypes.string
 };
 
 export default LabelForm;
