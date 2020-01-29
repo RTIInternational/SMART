@@ -235,6 +235,7 @@ class TrainingSet(models.Model):
 
 class RecycleBin(models.Model):
     data = models.ForeignKey("Data")
+    exclude_reason = models.TextField(null=True, default="")
     timestamp = models.DateTimeField(default=timezone.now)
 
 

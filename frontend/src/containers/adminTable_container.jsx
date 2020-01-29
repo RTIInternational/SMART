@@ -25,8 +25,8 @@ const mapDispatchToProps = (dispatch) => {
         getAdmin: () => {
             dispatch(getAdmin(PROJECT_ID));
         },
-        discardData: (dataID) => {
-            dispatch(discardData(dataID, PROJECT_ID));
+        discardData: (dataID, discardReason) => {
+            dispatch(discardData(dataID, discardReason, PROJECT_ID));
         }
     };
 };

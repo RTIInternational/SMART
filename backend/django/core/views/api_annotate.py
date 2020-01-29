@@ -291,6 +291,7 @@ def discard_data(request, data_pk):
     profile = request.user.profile
     project = data.project
     response = {}
+    exclude_reason = request.data.get("discardReason", "")
 
     # Make sure coder is an admin
     if project_extras.proj_permission_level(data.project, profile) > 1:
@@ -302,7 +303,9 @@ def discard_data(request, data_pk):
         Data.objects.filter(pk=data_pk).update(irr_ind=False)
         data = Data.objects.get(pk=data_pk)
 
-        RecycleBin.objects.create(data=data, timestamp=timezone.now())
+        RecycleBin.objects.create(
+            data=data, timestamp=timezone.now(), exclude_reason=exclude_reason
+        )
 
         # remove any IRR log data
         irr_records = IRRLog.objects.filter(data=data)
@@ -596,7 +599,12 @@ def recycle_bin_table(request, project_pk):
 
     data = []
     for d in data_objs:
-        temp = {"data": d.data.text, "id": d.data.id}
+        temp = {
+            "data": d.data.text,
+            "id": d.data.id,
+            "reason": d.exclude_reason,
+            "explicit": d.data.explicit_ind,
+        }
         data.append(temp)
 
     # also return any metadata

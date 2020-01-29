@@ -52,7 +52,17 @@ export const getDiscarded = (projectID) => {
             .then(response => {
             // If error was in the response then set that message
                 if ('error' in response) console.log(response);
-                dispatch(set_discarded_data(response.data));
+                let all_data = [];
+                for (let i = 0; i < response.data.length; i++) {
+                    const row = response.data[i];
+                    if (row.explicit) {
+                        row.explicit = "Yes";
+                    } else {
+                        row.explicit = "No";
+                    }
+                    all_data.push(row);
+                }
+                dispatch(set_discarded_data(all_data));
             })
             .catch(err => console.log("Error: ", err));
     };

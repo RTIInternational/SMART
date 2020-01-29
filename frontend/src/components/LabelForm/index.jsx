@@ -242,7 +242,7 @@ class LabelForm extends React.Component {
                 >
                     <Button
                         onClick={() => {
-                            this.props.discardFunction(this.props.data);
+                            this.props.discardFunction(this.props.data, this.state.label_reason);
                         }}
                         bsStyle="danger"
                     >
@@ -296,13 +296,17 @@ class LabelForm extends React.Component {
     }
 
     render() {
-        const { labels } = this.props;
+        const { labels, discardButton } = this.props;
+        let reason_message = "(Optional) Reason for Label:";
+        if (discardButton){
+            reason_message = "(Optional) Reason for Label or for Discarding:";
+        }
         return (
             <form onSubmit={this.handleSubmitLabel}>
                 <FormGroup>
                     {this.labelButtonRender(labels)}
                     <p>
-                        (Optional) Reason for Label:
+                        {reason_message}
                         <FormControl
                             componentClass="textarea"
                             placeholder={(this.state.label_reason === "") ? "Type reason here" : this.state.label_reason}
