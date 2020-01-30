@@ -258,17 +258,20 @@ def pop_first_nonempty_queue(project, profile=None, type="normal"):
             queue = redis_parse_queue(queue_id.encode())
 
             # first get the assigned data that was already labeled, or data already assigned
-            labeled_irr_data = DataLabel.objects.filter(
-                profile=profile, was_skipped=False
-            ).values_list("data", flat=True)
+            labeled_irr_data = DataLabel.objects.filter(profile=profile).values_list(
+                "data", flat=True
+            )
+
             assigned_data = AssignedData.objects.filter(
                 profile=profile, queue=queue
             ).values_list("data", flat=True)
+
             skipped_data = IRRLog.objects.filter(
                 profile=profile, label__isnull=True
             ).values_list("data", flat=True)
+
             assigned_unlabeled = (
-                DataQueue.objects.filter(queue=queue)
+                DataQueue.objects.filter(queue=queue, data__recyclebin__isnull=True)
                 .exclude(data__in=labeled_irr_data)
                 .exclude(data__in=assigned_data)
                 .exclude(data__in=skipped_data)
@@ -373,15 +376,26 @@ def handle_empty_queue(profile, project):
     queue = Queue.objects.get(project=project, type="normal")
     irr_queue = Queue.objects.get(project=project, type="irr")
 
-    queue_count = DataQueue.objects.filter(queue=queue).count()
-    irr_count = DataQueue.objects.filter(queue=irr_queue).count()
+    queue_count = DataQueue.objects.filter(
+        queue=queue, data__recyclebin__isnull=True
+    ).count()
+    irr_count = DataQueue.objects.filter(
+        queue=irr_queue, data__recyclebin__isnull=True
+    ).count()
     assigned_toOthers_count = (
-        AssignedData.objects.filter(queue=queue).exclude(profile=profile).count()
+        AssignedData.objects.filter(queue=queue, data__recyclebin__isnull=True)
+        .exclude(profile=profile)
+        .count()
     )
     irr_labeled_count = (
-        IRRLog.objects.filter(profile=profile, data__project=project).count()
+        IRRLog.objects.filter(
+            profile=profile, data__project=project, data__recyclebin__isnull=True
+        ).count()
         + DataLabel.objects.filter(
-            profile=profile, data__dataqueue__queue=irr_queue, was_skipped=False
+            profile=profile,
+            data__dataqueue__queue=irr_queue,
+            was_skipped=False,
+            data__recyclebin__isnull=True,
         ).count()
     )
 

@@ -25,13 +25,14 @@ class LabelForm extends React.Component {
         };
         let labelReason = "";
         let is_explicit = false;
-
         if (this.props.previousLabel != null) {
             selected_label = {
                 name: this.props.previousLabel.name,
                 pk: this.props.previousLabel.pk
             };
-            labelReason = this.props.previousLabel.reason;
+            if (this.props.previousLabel.reason != null) {
+                labelReason = this.props.previousLabel.reason;
+            }
             is_explicit = this.props.previousLabel.is_explicit;
         }
 

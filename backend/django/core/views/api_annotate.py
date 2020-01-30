@@ -48,6 +48,7 @@ class DataUnlabeledAPIView(generics.ListAPIView):
     recycle_ids = RecycleBin.objects.all().values_list("data__pk", flat=True)
     queryset = (
         all_data.filter(datalabel__isnull=True)
+        .filter(recyclebin__isnull=True)
         .exclude(pk__in=stuff_in_queue)
         .exclude(pk__in=recycle_ids)
     )
@@ -139,7 +140,9 @@ def label_distribution_inverted(request, project_pk):
     for u in users:
         temp_values = []
         for l in labels:
-            label_count = DataLabel.objects.filter(profile=u, label=l).count()
+            label_count = DataLabel.objects.filter(
+                profile=u, label=l, data__recyclebin__isnull=True
+            ).count()
             all_counts.append(label_count)
             temp_values.append({"x": l.name, "y": label_count})
         dataset.append({"key": u.__str__(), "values": temp_values})
@@ -304,18 +307,10 @@ def discard_data(request, data_pk):
         # remove it from the admin queue
         queue = Queue.objects.get(project=project, type="admin")
         DataQueue.objects.get(data=data, queue=queue).delete()
-        IRRLog.objects.filter(data=data).delete()
-        DataLabel.objects.filter(data=data).delete()
-        Data.objects.filter(pk=data_pk).update(irr_ind=False)
-        data = Data.objects.get(pk=data_pk)
 
         RecycleBin.objects.create(
             data=data, timestamp=timezone.now(), exclude_reason=exclude_reason
         )
-
-        # remove any IRR log data
-        irr_records = IRRLog.objects.filter(data=data)
-        irr_records.delete()
 
     else:
         response["error"] = "Invalid credentials. Must be an admin."
@@ -339,7 +334,10 @@ def restore_data(request, data_pk):
 
     # Make sure coder is an admin
     if project_extras.proj_permission_level(data.project, profile) > 1:
-        # remove it from the recycle bin
+        # remove it from the recycle bin and add it back to the admin queue
+        queue = Queue.objects.get(project=data.project, type="admin")
+        DataQueue.objects.create(data=data, queue=queue)
+
         RecycleBin.objects.get(data=data).delete()
     else:
         response["error"] = "Invalid credentials. Must be an admin."
@@ -530,7 +528,7 @@ def data_admin_table(request, project_pk):
     project = Project.objects.get(pk=project_pk)
     queue = Queue.objects.filter(project=project, type="admin")
 
-    data_objs = DataQueue.objects.filter(queue=queue)
+    data_objs = DataQueue.objects.filter(queue=queue, data__recyclebin__isnull=True)
 
     data = []
     for d in data_objs:
@@ -577,8 +575,8 @@ def data_admin_counts(request, project_pk):
     """
     project = Project.objects.get(pk=project_pk)
     queue = Queue.objects.filter(project=project, type="admin")
-    data_objs = DataQueue.objects.filter(queue=queue)
-    skip_count = data_objs.filter(data__irr_ind=False, data__explicit_ind=False).count()
+    data_objs = DataQueue.objects.filter(queue=queue, data__recyclebin__isnull=True)
+    skip_count = data_objs.filter(data__irr_ind=False).count()
 
     count_dict = {"data": {"SKIP": skip_count}}
 
@@ -741,7 +739,7 @@ def get_label_history(request, project_pk):
     labels = Label.objects.all().filter(project=project)
     data = DataLabel.objects.filter(
         profile=profile, data__project=project_pk, label__in=labels, was_skipped=False
-    )
+    ).exclude(data__recyclebin__isnull=False)
 
     data_list = []
     results = []
@@ -779,7 +777,7 @@ def get_label_history(request, project_pk):
 
     data_irr = IRRLog.objects.filter(
         profile=profile, data__project=project_pk, label__isnull=False
-    )
+    ).exclude(data__recyclebin__isnull=False)
 
     for d in data_irr:
         # if the data was labeled by that person (they were the admin), don't add

@@ -293,7 +293,9 @@ def add_data(project, df):
 def perc_agreement_table_data(project):
     """Takes in the irrlog and finds the pairwise percent agreement."""
     irr_data = set(
-        IRRLog.objects.filter(data__project=project).values_list("data", flat=True)
+        IRRLog.objects.filter(
+            data__project=project, data__recyclebin__isnull=True
+        ).values_list("data", flat=True)
     )
 
     user_list = [
@@ -316,7 +318,9 @@ def perc_agreement_table_data(project):
     data_choices = []
 
     for d in irr_data:
-        d_log = IRRLog.objects.filter(data=d, data__project=project)
+        d_log = IRRLog.objects.filter(
+            data=d, data__project=project, data__recyclebin__isnull=True
+        )
 
         # get the percent agreement between the users  = (num agree)/size_data
         if d_log.count() < 2:
@@ -394,7 +398,11 @@ def irr_heatmap_data(project):
     )
     label_list.append("Skip")
 
-    irr_data = set(IRRLog.objects.values_list("data", flat=True))
+    irr_data = set(
+        IRRLog.objects.filter(data__recyclebin__isnull=True).values_list(
+            "data", flat=True
+        )
+    )
 
     # Initialize the dictionary of dictionaries to use for the heatmap later
     user_label_counts = {}
@@ -497,7 +505,10 @@ def get_labeled_data(project):
     for label in project_labels:
         labels.append({"Name": label.name, "Label_ID": label.pk})
         labeled_data = DataLabel.objects.filter(
-            label=label, data__irr_ind=False, was_skipped=False
+            label=label,
+            data__irr_ind=False,
+            was_skipped=False,
+            data__recyclebin__isnull=True,
         ).exclude(data__in=admin_data)
 
         for d in labeled_data:
@@ -568,11 +579,11 @@ def get_irr_data(project):
     """
 
     in_progress_irr_data = DataLabel.objects.filter(
-        data__project=project, data__irr_ind=True
+        data__project=project, data__irr_ind=True, data__recyclebin__isnull=True
     )
-    irr_data = IRRLog.objects.filter(data__project=project).exclude(
-        data__in=in_progress_irr_data.values_list("data", flat=True)
-    )
+    irr_data = IRRLog.objects.filter(
+        data__project=project, data__recyclebin__isnull=True
+    ).exclude(data__in=in_progress_irr_data.values_list("data", flat=True))
 
     data = []
 

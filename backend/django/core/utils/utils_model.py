@@ -39,10 +39,13 @@ def cohens_kappa(project):
     https://onlinecourses.science.psu.edu/stat509/node/162/
     https://en.wikipedia.org/wiki/Cohen%27s_kappa
     """
-    irr_data = set(IRRLog.objects.values_list("data", flat=True))
+    irr_data = set(
+        IRRLog.objects.filter(data__recyclebin__isnull=True).values_list(
+            "data", flat=True
+        )
+    )
 
     agree = 0
-
     # initialize the dictionary
     rater1_rater2_dict = {}
     label_list = list(
@@ -57,7 +60,9 @@ def cohens_kappa(project):
     num_data = 0
     labels_seen = set()
     for d in irr_data:
-        d_log_query = IRRLog.objects.filter(data=d, data__project=project)
+        d_log_query = IRRLog.objects.filter(
+            data=d, data__project=project, data__recyclebin__isnull=True
+        )
         d_log_list = list(d_log_query)
 
         labels = list(set(d_log_query.values_list("label", flat=True)))
@@ -102,7 +107,11 @@ def fleiss_kappa(project):
     https://gist.github.com/skylander86/65c442356377367e27e79ef1fed4adee
     Equations from: https://en.wikipedia.org/wiki/Fleiss%27_kappa
     """
-    irr_data = set(IRRLog.objects.values_list("data", flat=True))
+    irr_data = set(
+        IRRLog.objects.filter(data__recyclebin__isnull=True).values_list(
+            "data", flat=True
+        )
+    )
 
     label_list = list(
         Label.objects.filter(project=project).values_list("name", flat=True)
@@ -115,7 +124,9 @@ def fleiss_kappa(project):
     data_label_dict = []
     num_data = 0
     for d in irr_data:
-        d_data_log = IRRLog.objects.filter(data=d, data__project=project)
+        d_data_log = IRRLog.objects.filter(
+            data=d, data__project=project, data__recyclebin__isnull=True
+        )
 
         if d_data_log.count() < n:
             # don't use this datum, it isn't processed yet
@@ -231,6 +242,7 @@ def check_and_trigger_model(datum, profile=None):
         training_set=current_training_set,
         data__irr_ind=False,
         was_skipped=False,
+        data__recyclebin__isnull=True,
     ).exclude(data__in=admin_data)
 
     labeled_data_count = labeled_data.count()
@@ -293,7 +305,10 @@ def train_and_save_model(project):
         "data", flat=True
     )
     labeled_data = DataLabel.objects.filter(
-        data__project=project, data__irr_ind=False, was_skipped=False
+        data__project=project,
+        data__irr_ind=False,
+        was_skipped=False,
+        data__recyclebin__isnull=True,
     ).exclude(data__in=admin_data)
 
     unique_ids = list(
@@ -357,7 +372,7 @@ def predict_data(project, model):
         "pk", flat=True
     )
     unlabeled_data = (
-        project.data_set.filter(datalabel__isnull=True)
+        project.data_set.filter(datalabel__isnull=True, recyclebin__isnull=True)
         .exclude(pk__in=recycle_data)
         .order_by("upload_id_hash")
     )
