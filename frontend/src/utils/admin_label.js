@@ -1,5 +1,42 @@
 /* global PROJECT_PK:false */
 
+
+/*
+ *  Make ajax call to `finalized_labels` route.  This will fetch data to
+ *  populate both the value and the bar chart with the total number of
+ *  finalized labels
+ */
+$.ajax({
+    method: "GET",
+    url: '/api/finalized_labels/' + PROJECT_PK + '/',
+    success: function (response) {
+
+        nv.addGraph(function() {
+            let chart = nv.models.discreteBarChart()
+                .color(["#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854", "#ffd92f", "#e5c494", "#b3b3b3"])
+                .duration(300)
+                .margin({ bottom: 70, left: 70 })
+                .x(function(d) {
+                    return d.label;
+                })
+                .y(function(d) {
+                    return d.count;
+                });
+
+            chart.noData("Insufficient labeled data -- please code more documents or resolve items in the admin annotation tab.");
+
+            d3.select('#finalized_labels svg')
+                .datum([response])
+                .call(chart);
+            nv.utils.windowResize(chart.update);
+            return chart;
+        });
+    },
+    error: function (error) {
+        console.log(error);
+    }
+});
+
 /*
  *  Make ajax call to `label_distribution` route.  This will fetch data to
  *  populate the discrete multi bar chart and show the label distribution
@@ -52,7 +89,7 @@ $.ajax({
         nv.addGraph(function() {
             let chart = nv.models.boxPlotChart()
                 .x(function(d) {
-                    return d.label; 
+                    return d.label;
                 })
                 .staggerLabels(true)
                 .maxBoxWidth(75) // prevent boxes from being incredibly wide

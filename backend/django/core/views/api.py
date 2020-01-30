@@ -11,7 +11,7 @@ from rest_framework.decorators import api_view, permission_classes
 
 from core.models import Project
 from core.permissions import IsAdminOrCreator
-from core.utils.util import get_labeled_data
+from core.utils.util import get_excluded_data, get_irr_data, get_labeled_data
 
 
 @api_view(["GET"])
@@ -139,6 +139,75 @@ def download_model(request, project_pk):
     zip_file.close()
 
     response = HttpResponse(s.getvalue(), content_type="application/x-zip-compressed")
+    response["Content-Disposition"] = "attachment;"
+
+    return response
+
+
+@api_view(["GET"])
+@permission_classes((IsAdminOrCreator,))
+def download_excluded_data(request, project_pk):
+    """This function gets the excluded data and makes it available for download.
+
+    Args:
+        request: The POST request
+        project_pk: Primary key of the project
+    Returns:
+        an HttpResponse containing the requested data
+    """
+    project = Project.objects.get(pk=project_pk)
+    data = get_excluded_data(project)
+    data.rename(
+        columns={
+            col: col.replace("_", " ").title().replace(" ", "") for col in data.columns
+        },
+        inplace=True,
+    )
+    data.replace({np.nan: None, "nan": None}, inplace=True)
+    cols = data.columns.values.tolist()
+    data = data.to_dict("records")
+
+    buffer = io.StringIO()
+    wr = csv.DictWriter(buffer, fieldnames=cols, quoting=csv.QUOTE_ALL)
+    wr.writeheader()
+    wr.writerows(data)
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type="text/csv")
+    response["Content-Disposition"] = "attachment;"
+
+    return response
+
+
+@api_view(["GET"])
+@permission_classes((IsAdminOrCreator,))
+def download_irr_data(request, project_pk):
+    """This function gets the past IRR labels and skips, along with ones still being
+    processed and makes it available for download.
+
+    Args:
+        request: The POST request
+        project_pk: Primary key of the project
+    Returns:
+        an HttpResponse containing the requested data
+    """
+    project = Project.objects.get(pk=project_pk)
+    data = get_irr_data(project)
+    data.rename(
+        columns={
+            col: col.replace("_", " ").title().replace(" ", "") for col in data.columns
+        },
+        inplace=True,
+    )
+    data.replace({np.nan: None, "nan": None}, inplace=True)
+    cols = data.columns.values.tolist()
+    data = data.to_dict("records")
+
+    buffer = io.StringIO()
+    wr = csv.DictWriter(buffer, fieldnames=cols, quoting=csv.QUOTE_ALL)
+    wr.writeheader()
+    wr.writerows(data)
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type="text/csv")
     response["Content-Disposition"] = "attachment;"
 
     return response

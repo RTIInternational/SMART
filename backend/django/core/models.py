@@ -85,7 +85,18 @@ class Project(models.Model):
         return self.projectpermissions_set.all().filter(permission="CODER").count()
 
     def labeled_data_count(self):
-        return self.data_set.all().filter(datalabel__isnull=False).count()
+        return (
+            self.data_set.all().filter(datalabel__isnull=False, irr_ind=False).count()
+        )
+
+    def excluded_data_count(self):
+        return self.data_set.all().filter(recyclebin__isnull=False).count()
+
+    def irr_data_count(self):
+        return (
+            self.data_set.all().filter(irrlog__isnull=False).count()
+            + self.data_set.all().filter(datalabel__isnull=False, irr_ind=True).count()
+        )
 
     def has_model(self):
         if self.model_set.count() > 0:
@@ -154,6 +165,7 @@ class IRRLog(models.Model):
     label = models.ForeignKey("Label", null=True)
     label_reason = models.TextField(null=True, default="")
     timestamp = models.DateTimeField(null=True, default=None)
+    time_to_label = models.IntegerField(null=True)
 
 
 class DataLabel(models.Model):

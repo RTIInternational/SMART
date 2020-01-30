@@ -47,9 +47,7 @@ def assign_datum(profile, project, type="normal"):
         if datum is None:
             return None
         else:
-            num_labeled = DataLabel.objects.filter(
-                data=datum, profile=profile, was_skipped=False
-            ).count()
+            num_labeled = DataLabel.objects.filter(data=datum, profile=profile).count()
             if num_labeled == 0:
                 AssignedData.objects.create(data=datum, profile=profile, queue=queue)
                 return datum
@@ -194,6 +192,7 @@ def label_data(label, datum, profile, time, label_reason=""):
                     label=label,
                     label_reason=label_reason,
                     timestamp=timezone.now(),
+                    time_to_label=time,
                 )
                 DataLabel.objects.get(data=datum, profile=profile).delete()
             else:

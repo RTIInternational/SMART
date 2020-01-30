@@ -910,6 +910,7 @@ def test_recycle_bin_table(
         )
 
     admin_data = DataQueue.objects.filter(data__project=project, queue=test_admin_queue)
+
     # discard all data
     for datum in admin_data:
         admin_client.post(f"/api/discard_data/{datum.data.pk}/")

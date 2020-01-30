@@ -206,7 +206,12 @@ def skip_data(request, data_pk):
 
         # log the data and check IRR but don't put in admin queue yet
         IRRLog.objects.create(
-            data=data, profile=profile, label=None, timestamp=timezone.now()
+            data=data,
+            profile=profile,
+            timestamp=timezone.now(),
+            label=None,
+            label_reason=label_reason,
+            time_to_label=labeling_time,
         )
         # if the IRR history has more than the needed number of labels , it is
         # already processed so don't do anything else
@@ -260,6 +265,7 @@ def annotate_data(request, data_pk):
             label=label,
             timestamp=timezone.now(),
             label_reason=label_reason,
+            time_to_label=labeling_time,
         )
         assignment = AssignedData.objects.get(data=data, profile=profile)
         assignment.delete()
@@ -427,7 +433,11 @@ def modify_label_to_skip(request, data_pk):
             # if it was irr, add it to the log
             if len(IRRLog.objects.filter(data=data, profile=profile)) == 0:
                 IRRLog.objects.create(
-                    data=data, profile=profile, label=None, timestamp=timezone.now()
+                    data=data,
+                    profile=profile,
+                    label=None,
+                    label_reason=new_label_reason,
+                    timestamp=timezone.now(),
                 )
         else:
             # if it's not irr, add it to the admin queue immediately

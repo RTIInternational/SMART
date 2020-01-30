@@ -410,9 +410,9 @@ def test_label_timing(
     assert len(response["data"]) == 1
 
     quarts = response["data"][0]["values"]
-    assert quarts["Q1"] == 1 and quarts["Q2"] == 1 and quarts["Q3"] == 3
-    assert quarts["whisker_low"] == 0 and quarts["whisker_high"] == 10
-    assert response["yDomain"] == 20
+    assert quarts["Q1"] == 1 and quarts["Q2"] == 1 and quarts["Q3"] == 2
+    assert quarts["whisker_low"] == 0 and quarts["whisker_high"] == 8
+    assert response["yDomain"] == 18
 
     # have a client label with t=100. Check quartiles.
     data = get_assignments(client_profile, project, 1)
@@ -422,9 +422,9 @@ def test_label_timing(
     )
     response = admin_client.get(f"/api/label_timing/{project.pk}/").json()
     quarts = response["data"][0]["values"]
-    assert quarts["Q1"] == 1 and quarts["Q2"] == 1 and quarts["Q3"] == 10
-    assert quarts["whisker_low"] == 0 and quarts["whisker_high"] == 100
-    assert response["yDomain"] == 110
+    assert quarts["Q1"] == 1 and quarts["Q2"] == 1 and quarts["Q3"] == 6
+    assert quarts["whisker_low"] == 0 and quarts["whisker_high"] == 73
+    assert response["yDomain"] == 83
 
 
 def test_model_metrics(

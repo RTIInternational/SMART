@@ -23,6 +23,7 @@ from core.models import (
     Project,
     ProjectPermissions,
     Queue,
+    RecycleBin,
     TrainingSet,
 )
 from core.serializers import MetaDataSerializer
@@ -495,9 +496,9 @@ def get_labeled_data(project):
     labels = []
     for label in project_labels:
         labels.append({"Name": label.name, "Label_ID": label.pk})
-        labeled_data = DataLabel.objects.filter(label=label).exclude(
-            data__in=admin_data
-        )
+        labeled_data = DataLabel.objects.filter(
+            label=label, data__irr_ind=False, was_skipped=False
+        ).exclude(data__in=admin_data)
 
         for d in labeled_data:
             temp = {}
@@ -516,3 +517,109 @@ def get_labeled_data(project):
     label_frame = pd.DataFrame(labels)
 
     return labeled_data_frame, label_frame
+
+
+def get_excluded_data(project):
+    """Given a project, get the list of all excluded data.
+
+    Args:
+        project: Project object
+    Returns:
+        data: a list of the labeled data
+    """
+    excluded_data = RecycleBin.objects.filter(data__project=project)
+
+    data = []
+
+    for d in excluded_data:
+        temp = {}
+        temp["ID"] = d.data.upload_id
+        temp["Text"] = d.data.text
+        temp["Exclude_reason"] = d.exclude_reason
+        if project.use_explicit_ind:
+            temp["explicit"] = d.data.explicit_ind
+            # add in the metadata fields
+        metadata = MetaData.objects.filter(data__pk=d.data.pk).first()
+        if metadata:
+            temp.update(MetaDataSerializer(metadata).data)
+
+        data_labels = DataLabel.objects.filter(data=d.data)
+        for i in range(data_labels.count()):
+            temp[f"label_{i}"] = data_labels[i].label.name
+            temp[f"label_{i}_reason"] = data_labels[i].label_reason
+
+        data.append(temp)
+
+    excluded_data_frame = pd.DataFrame(data)
+
+    return excluded_data_frame
+
+
+def get_irr_data(project):
+    """Given a project, get the list of all IRR data.
+
+    This should include all data that is in the IRRLog, and
+    in-progress data from DataLabel where irr_ind=True
+
+    Args:
+        project: Project object
+    Returns:
+        data: a list of the labeled data
+    """
+
+    in_progress_irr_data = DataLabel.objects.filter(
+        data__project=project, data__irr_ind=True
+    )
+    irr_data = IRRLog.objects.filter(data__project=project).exclude(
+        data__in=in_progress_irr_data.values_list("data", flat=True)
+    )
+
+    data = []
+
+    for d in irr_data:
+        temp = {}
+        temp["ID"] = d.data.upload_id
+        temp["Profile"] = d.profile_id
+        temp["Text"] = d.data.text
+
+        if d.label is not None:
+            temp["Label"] = d.label.name
+            temp["Skipped"] = False
+        else:
+            temp["Skipped"] = True
+
+        temp["Label_Reason"] = d.label_reason
+        if project.use_explicit_ind:
+            temp["explicit"] = d.data.explicit_ind
+            # add in the metadata fields
+        metadata = MetaData.objects.filter(data__pk=d.data.pk).first()
+        if metadata:
+            temp.update(MetaDataSerializer(metadata).data)
+
+        data.append(temp)
+
+    for d in in_progress_irr_data:
+        temp = {}
+        temp["ID"] = d.data.upload_id
+        temp["Profile"] = d.profile_id
+        temp["Text"] = d.data.text
+        temp["Label"] = d.label.name
+
+        if d.was_skipped:
+            temp["Skipped"] = True
+        else:
+            temp["Skipped"] = False
+
+        temp["Label_Reason"] = d.label_reason
+        if project.use_explicit_ind:
+            temp["explicit"] = d.data.explicit_ind
+            # add in the metadata fields
+        metadata = MetaData.objects.filter(data__pk=d.data.pk).first()
+        if metadata:
+            temp.update(MetaDataSerializer(metadata).data)
+
+        data.append(temp)
+
+    irr_data_frame = pd.DataFrame(data)
+
+    return irr_data_frame

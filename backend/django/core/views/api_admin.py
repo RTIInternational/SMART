@@ -1,3 +1,4 @@
+import numpy as np
 from django.contrib.postgres.fields import ArrayField
 from django.db import connection
 from django.db.models import FloatField
@@ -9,16 +10,52 @@ from core.models import (
     Data,
     DataLabel,
     DataPrediction,
+    DataQueue,
     IRRLog,
     Label,
     Model,
     Project,
     ProjectPermissions,
+    Queue,
     TrainingSet,
 )
 from core.permissions import IsAdminOrCreator
 from core.utils.util import irr_heatmap_data, perc_agreement_table_data
 from core.utils.utils_model import cohens_kappa, fleiss_kappa
+
+
+@api_view(["GET"])
+@permission_classes((IsAdminOrCreator,))
+def total_label_counts(request, project_pk):
+    """This function finds and returns the number of finalized labels.
+
+    Args:
+        request: The POST request
+        project_pk: Primary key of the project
+    Returns:
+        a dictionary of the amount of labels per person per type
+    """
+    project = Project.objects.get(pk=project_pk)
+    admin_queue = Queue.objects.get(project=project, type="admin")
+    admin_data = DataQueue.objects.filter(queue=admin_queue).values_list(
+        "data", flat=True
+    )
+    finalized_labels = DataLabel.objects.filter(
+        data__project=project_pk, data__irr_ind=False
+    ).exclude(data__in=admin_data)
+
+    response_dict = {
+        "key": "Number of Labels",
+        "values": [{"label": "TOTAL", "count": finalized_labels.count()}],
+    }
+
+    project_labels = Label.objects.filter(project=project)
+    for l in project_labels:
+        response_dict["values"].append(
+            {"label": l.name, "count": finalized_labels.filter(label=l).count()}
+        )
+
+    return Response(response_dict)
 
 
 @api_view(["GET"])
@@ -45,8 +82,10 @@ def label_distribution(request, project_pk):
         temp_values = []
         for u in users:
             label_count = DataLabel.objects.filter(profile=u, label=l).count()
-            all_counts.append(label_count)
-            temp_values.append({"x": u.__str__(), "y": label_count})
+            irr_label_count = IRRLog.objects.filter(profile=u, label=l).count()
+            both_count = label_count + irr_label_count
+            all_counts.append(both_count)
+            temp_values.append({"x": u.__str__(), "y": both_count})
         dataset.append({"key": l.name, "values": temp_values})
 
     if not any(count > 0 for count in all_counts):
@@ -76,16 +115,34 @@ def label_timing(request, project_pk):
     dataset = []
     yDomain = 0
     for u in users:
-        result = DataLabel.objects.filter(
-            data__project=project_pk, profile=u
-        ).aggregate(
-            quartiles=Percentile(
-                "time_to_label",
-                [0.05, 0.25, 0.5, 0.75, 0.95],
-                continuous=False,
-                output_field=ArrayField(FloatField()),
-            )
+        label_times = list(
+            DataLabel.objects.filter(
+                data__project=project_pk, profile=u, time_to_label__isnull=False
+            ).values_list("time_to_label", flat=True)
         )
+        irr_times = list(
+            IRRLog.objects.filter(
+                data__project=project_pk,
+                profile=u,
+                data__datalabel__isnull=True,
+                time_to_label__isnull=False,
+            ).values_list("time_to_label", flat=True)
+        )
+
+        all_times = label_times + irr_times
+
+        if len(all_times) > 0:
+            result = {
+                "quartiles": [
+                    np.percentile(all_times, 5).round(0),
+                    np.percentile(all_times, 25).round(0),
+                    np.percentile(all_times, 50).round(0),
+                    np.percentile(all_times, 75).round(0),
+                    np.percentile(all_times, 95).round(0),
+                ]
+            }
+        else:
+            result = {"quartiles": None}
 
         if result["quartiles"]:
             if result["quartiles"][4] > yDomain:
