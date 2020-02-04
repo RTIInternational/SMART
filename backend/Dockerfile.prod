@@ -4,6 +4,7 @@ ENV DJANGO_SETTINGS_MODULE=smart.settings
 ENV DJANGO_CONFIGURATION=Prod
 RUN apt-get update && apt-get install -y netcat-traditional
 WORKDIR /code
+RUN pip install --upgrade pip
 ADD ./requirements.txt /code/requirements.txt
 RUN pip install -r requirements.txt
 RUN pip install gunicorn gevent
