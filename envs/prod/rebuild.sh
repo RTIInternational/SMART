@@ -3,7 +3,7 @@
 # the production settings.  Do NOT run this in actual produciton
 # or all of your data will be deleted!!!
 docker-compose down
-docker volume rm vol_smart_pgdata_prod vol_smart_data_prod
+docker volume rm vol_smart_pgdata_prod vol_smart_data_prod vol_smart_static_prod
 docker volume create vol_smart_pgdata_prod
 docker volume create vol_smart_data_prod
 docker volume create vol_smart_static_prod
