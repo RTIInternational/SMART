@@ -2,43 +2,55 @@ version: '2.1'
 
 services:
   postgres:
-    extends:
-      file: ../docker-common.yml
-      service: postgres
+    image: postgres:9.6.2
+    environment:
+      - POSTGRES_PASSWORD=my-secret-password
+      - POSTGRES_USER=smart
+      - POSTGRES_DB=smart
+    volumes:
+      - smart_pgdata:/var/lib/postgresql/data
+    ports:
+      - "${EXTERNAL_POSTGRES_PORT:-5432}:5432"
 
   redis:
-    extends:
-      file: ../docker-common.yml
-      service: redis
+    image: redis:3.0
+    ports:
+      - "${EXTERNAL_REDIS_PORT:-6379}:6379"
 
   smart_backend:
-    extends:
-      file: ../docker-common.yml
-      service: smart_backend
     build: ../../backend/
     image: rti/smart-backend:R_0_0_1
+    container_name: smart_backend
+    volumes:
+      - ../../backend/django:/code
+      - ../../frontend:/code/frontend
+      - smart_data:/data/
     depends_on:
       - postgres
       - redis
+    ports:
+      - "${EXTERNAL_BACKEND_PORT:-8000}:8000"
+    command: ./runserver.sh
 
   smart_frontend:
-    extends:
-      file: ../docker-common.yml
-      service: smart_frontend
     build: ../../frontend/
     image: rti/smart-frontend:R_0_0_1
+    container_name: smart_frontend
+    volumes:
+      - ../../frontend/:/code
+      - /code/node_modules
     command: node_modules/.bin/webpack --watch
 
   celery_worker:
-    extends:
-      file: ../docker-common.yml
-      service: celery_worker
-    build: ../../backend/
     image: rti/smart-backend:R_0_0_1
+    volumes:
+      - ../../backend/django:/code
+      - smart_data:/data/
     depends_on:
       - postgres
       - redis
       - smart_backend
+    command: ./runcelery.sh
 
 volumes:
   smart_pgdata:

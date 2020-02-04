@@ -210,4 +210,18 @@ class Dev(Configuration):
 
 class Prod(Dev):
     DEBUG = False
-    ALLOWED_HOSTS = []
+    ALLOWED_HOSTS = ["localhost"]
+
+    STATIC_URL = "/static/"
+    STATIC_ROOT = "/data/static_files/"
+
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": "smart-prod",
+            "USER": "smart",
+            "PASSWORD": "my-secret-password",
+            "HOST": "postgres",
+            "PORT": "5432",
+        }
+    }
