@@ -1,4 +1,6 @@
+import csv
 import hashlib
+import io
 import os
 from io import StringIO
 from itertools import combinations
@@ -9,6 +11,7 @@ from celery import chord
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import connection, transaction
+from django.http import HttpResponse
 from django.utils import timezone
 
 from core import tasks
@@ -555,7 +558,7 @@ def get_excluded_data(project):
             temp.update(MetaDataSerializer(metadata).data)
 
         data_labels = DataLabel.objects.filter(data=d.data)
-        for i in range(data_labels.count()):
+        for i, label in enumerate(data_labels):
             temp[f"label_{i}"] = data_labels[i].label.name
             temp[f"label_{i}_reason"] = data_labels[i].label_reason
 
@@ -634,3 +637,31 @@ def get_irr_data(project):
     irr_data_frame = pd.DataFrame(data)
 
     return irr_data_frame
+
+
+def get_data_as_csv(data):
+    """This is a helper function for setting up data downloads.
+
+    Args:
+        data: a pandsas dataframe with data that needs to be
+        downloaded
+    """
+    data.rename(
+        columns={
+            col: col.replace("_", " ").title().replace(" ", "") for col in data.columns
+        },
+        inplace=True,
+    )
+    data.replace({np.nan: None, "nan": None}, inplace=True)
+    cols = data.columns.values.tolist()
+    data = data.to_dict("records")
+
+    buffer = io.StringIO()
+    wr = csv.DictWriter(buffer, fieldnames=cols, quoting=csv.QUOTE_ALL)
+    wr.writeheader()
+    wr.writerows(data)
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type="text/csv")
+    response["Content-Disposition"] = "attachment;"
+
+    return response

@@ -11,7 +11,12 @@ from rest_framework.decorators import api_view, permission_classes
 
 from core.models import Project
 from core.permissions import IsAdminOrCreator
-from core.utils.util import get_excluded_data, get_irr_data, get_labeled_data
+from core.utils.util import (
+    get_data_as_csv,
+    get_excluded_data,
+    get_irr_data,
+    get_labeled_data,
+)
 
 
 @api_view(["GET"])
@@ -27,25 +32,7 @@ def download_data(request, project_pk):
     """
     project = Project.objects.get(pk=project_pk)
     data, labels = get_labeled_data(project)
-    data.rename(
-        columns={
-            col: col.replace("_", " ").title().replace(" ", "") for col in data.columns
-        },
-        inplace=True,
-    )
-    data.replace({np.nan: None, "nan": None}, inplace=True)
-    cols = data.columns.values.tolist()
-    data = data.to_dict("records")
-
-    buffer = io.StringIO()
-    wr = csv.DictWriter(buffer, fieldnames=cols, quoting=csv.QUOTE_ALL)
-    wr.writeheader()
-    wr.writerows(data)
-    buffer.seek(0)
-    response = HttpResponse(buffer, content_type="text/csv")
-    response["Content-Disposition"] = "attachment;"
-
-    return response
+    return get_data_as_csv(data)
 
 
 @api_view(["GET"])
@@ -157,25 +144,7 @@ def download_excluded_data(request, project_pk):
     """
     project = Project.objects.get(pk=project_pk)
     data = get_excluded_data(project)
-    data.rename(
-        columns={
-            col: col.replace("_", " ").title().replace(" ", "") for col in data.columns
-        },
-        inplace=True,
-    )
-    data.replace({np.nan: None, "nan": None}, inplace=True)
-    cols = data.columns.values.tolist()
-    data = data.to_dict("records")
-
-    buffer = io.StringIO()
-    wr = csv.DictWriter(buffer, fieldnames=cols, quoting=csv.QUOTE_ALL)
-    wr.writeheader()
-    wr.writerows(data)
-    buffer.seek(0)
-    response = HttpResponse(buffer, content_type="text/csv")
-    response["Content-Disposition"] = "attachment;"
-
-    return response
+    return get_data_as_csv(data)
 
 
 @api_view(["GET"])
@@ -192,22 +161,4 @@ def download_irr_data(request, project_pk):
     """
     project = Project.objects.get(pk=project_pk)
     data = get_irr_data(project)
-    data.rename(
-        columns={
-            col: col.replace("_", " ").title().replace(" ", "") for col in data.columns
-        },
-        inplace=True,
-    )
-    data.replace({np.nan: None, "nan": None}, inplace=True)
-    cols = data.columns.values.tolist()
-    data = data.to_dict("records")
-
-    buffer = io.StringIO()
-    wr = csv.DictWriter(buffer, fieldnames=cols, quoting=csv.QUOTE_ALL)
-    wr.writeheader()
-    wr.writerows(data)
-    buffer.seek(0)
-    response = HttpResponse(buffer, content_type="text/csv")
-    response["Content-Disposition"] = "attachment;"
-
-    return response
+    return get_data_as_csv(data)
