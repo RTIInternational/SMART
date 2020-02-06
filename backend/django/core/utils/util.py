@@ -296,9 +296,9 @@ def add_data(project, df):
 def perc_agreement_table_data(project):
     """Takes in the irrlog and finds the pairwise percent agreement."""
     irr_data = set(
-        IRRLog.objects.filter(
-            data__project=project, data__recyclebin__isnull=True
-        ).values_list("data", flat=True)
+        IRRLog.objects.unexcluded()
+        .filter(data__project=project)
+        .values_list("data", flat=True)
     )
 
     user_list = [
@@ -321,9 +321,7 @@ def perc_agreement_table_data(project):
     data_choices = []
 
     for d in irr_data:
-        d_log = IRRLog.objects.filter(
-            data=d, data__project=project, data__recyclebin__isnull=True
-        )
+        d_log = IRRLog.objects.unexcluded().filter(data=d, data__project=project)
 
         # get the percent agreement between the users  = (num agree)/size_data
         if d_log.count() < 2:
@@ -401,11 +399,7 @@ def irr_heatmap_data(project):
     )
     label_list.append("Skip")
 
-    irr_data = set(
-        IRRLog.objects.filter(data__recyclebin__isnull=True).values_list(
-            "data", flat=True
-        )
-    )
+    irr_data = set(IRRLog.objects.unexcluded().values_list("data", flat=True))
 
     # Initialize the dictionary of dictionaries to use for the heatmap later
     user_label_counts = {}
@@ -498,21 +492,12 @@ def get_labeled_data(project):
         data: a list of the labeled data
     """
     project_labels = Label.objects.filter(project=project)
-    admin_queue = Queue.objects.get(project=project, type="admin")
-    admin_data = DataQueue.objects.filter(queue=admin_queue).values_list(
-        "data", flat=True
-    )
 
     data = []
     labels = []
     for label in project_labels:
         labels.append({"Name": label.name, "Label_ID": label.pk})
-        labeled_data = DataLabel.objects.filter(
-            label=label,
-            data__irr_ind=False,
-            was_skipped=False,
-            data__recyclebin__isnull=True,
-        ).exclude(data__in=admin_data)
+        labeled_data = DataLabel.objects.finalized().filter(label=label)
 
         for d in labeled_data:
             temp = {}
@@ -581,12 +566,12 @@ def get_irr_data(project):
         data: a list of the labeled data
     """
 
-    in_progress_irr_data = DataLabel.objects.filter(
-        data__project=project, data__irr_ind=True, data__recyclebin__isnull=True
+    in_progress_irr_data = DataLabel.objects.irr().filter(data__project=project)
+    irr_data = (
+        IRRLog.objects.unexcluded()
+        .filter(data__project=project)
+        .exclude(data__in=in_progress_irr_data.values_list("data", flat=True))
     )
-    irr_data = IRRLog.objects.filter(
-        data__project=project, data__recyclebin__isnull=True
-    ).exclude(data__in=in_progress_irr_data.values_list("data", flat=True))
 
     data = []
 

@@ -72,9 +72,6 @@ def fill_queue(queue, orderby, irr_queue=None, irr_percent=10, batch_size=30):
             f"orderby parameter must be one of the following: {' '.join(ORDERBY_VALUE)}"
         )
 
-    recycled_data = RecycleBin.objects.filter(data__project=queue.project).values_list(
-        "data__pk", flat=True
-    )
     data_filters = {
         "project": queue.project,
         "labelers": None,
@@ -82,7 +79,7 @@ def fill_queue(queue, orderby, irr_queue=None, irr_percent=10, batch_size=30):
         "irr_ind": False,
     }
 
-    eligible_data = Data.objects.filter(**data_filters).exclude(pk__in=recycled_data)
+    eligible_data = Data.objects.filter(**data_filters).filter(recyclebin__isnull=True)
 
     cte_sql, cte_params = eligible_data.query.sql_with_params()
 
@@ -111,7 +108,7 @@ def fill_queue(queue, orderby, irr_queue=None, irr_percent=10, batch_size=30):
 
         data_ids = []
         with transaction.atomic():
-            irr_data = DataQueue.objects.filter(queue=irr_queue.pk)
+            irr_data = DataQueue.objects.filter(queue=irr_queue)
             for d in irr_data:
                 data_ids.append(d.data.pk)
             Data.objects.filter(pk__in=data_ids).update(irr_ind=True)
@@ -266,12 +263,15 @@ def pop_first_nonempty_queue(project, profile=None, type="normal"):
                 profile=profile, queue=queue
             ).values_list("data", flat=True)
 
-            skipped_data = IRRLog.objects.filter(
-                profile=profile, label__isnull=True
-            ).values_list("data", flat=True)
+            skipped_data = (
+                IRRLog.objects.skipped()
+                .filter(profile=profile)
+                .values_list("data", flat=True)
+            )
 
             assigned_unlabeled = (
-                DataQueue.objects.filter(queue=queue, data__recyclebin__isnull=True)
+                DataQueue.objects.filter(queue=queue)
+                .filter(data__recyclebin__isnull=True)
                 .exclude(data__in=labeled_irr_data)
                 .exclude(data__in=assigned_data)
                 .exclude(data__in=skipped_data)
@@ -376,27 +376,18 @@ def handle_empty_queue(profile, project):
     queue = Queue.objects.get(project=project, type="normal")
     irr_queue = Queue.objects.get(project=project, type="irr")
 
-    queue_count = DataQueue.objects.filter(
-        queue=queue, data__recyclebin__isnull=True
-    ).count()
-    irr_count = DataQueue.objects.filter(
-        queue=irr_queue, data__recyclebin__isnull=True
-    ).count()
+    queue_count = DataQueue.objects.filter(queue=queue).count()
+    irr_count = DataQueue.objects.filter(queue=irr_queue).count()
     assigned_toOthers_count = (
-        AssignedData.objects.filter(queue=queue, data__recyclebin__isnull=True)
-        .exclude(profile=profile)
-        .count()
+        AssignedData.objects.filter(queue=queue).exclude(profile=profile).count()
     )
     irr_labeled_count = (
-        IRRLog.objects.filter(
-            profile=profile, data__project=project, data__recyclebin__isnull=True
-        ).count()
-        + DataLabel.objects.filter(
-            profile=profile,
-            data__dataqueue__queue=irr_queue,
-            was_skipped=False,
-            data__recyclebin__isnull=True,
-        ).count()
+        IRRLog.objects.unexcluded()
+        .filter(profile=profile, data__project=project)
+        .count()
+        + DataLabel.objects.finalized_or_irr()
+        .filter(profile=profile, data__dataqueue__queue=irr_queue)
+        .count()
     )
 
     if queue_count - assigned_toOthers_count == 0 and irr_count == irr_labeled_count:

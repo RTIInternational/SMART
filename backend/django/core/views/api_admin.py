@@ -37,12 +37,7 @@ def total_label_counts(request, project_pk):
     """
     project = Project.objects.get(pk=project_pk)
     admin_queue = Queue.objects.get(project=project, type="admin")
-    admin_data = DataQueue.objects.filter(queue=admin_queue).values_list(
-        "data", flat=True
-    )
-    finalized_labels = DataLabel.objects.filter(
-        data__project=project_pk, data__irr_ind=False, data__recyclebin__isnull=True
-    ).exclude(data__in=admin_data)
+    finalized_labels = DataLabel.objects.finalized().filter(data__project=project_pk)
 
     response_dict = {
         "key": "Number of Labels",
@@ -81,12 +76,12 @@ def label_distribution(request, project_pk):
     for l in labels:
         temp_values = []
         for u in users:
-            label_count = DataLabel.objects.filter(
-                profile=u, label=l, data__recyclebin__isnull=True
-            ).count()
-            irr_label_count = IRRLog.objects.filter(
-                profile=u, label=l, data__recyclebin__isnull=True
-            ).count()
+            label_count = (
+                DataLabel.objects.unexcluded().filter(profile=u, label=l).count()
+            )
+            irr_label_count = (
+                IRRLog.objects.unexcluded().filter(profile=u, label=l).count()
+            )
             both_count = label_count + irr_label_count
             all_counts.append(both_count)
             temp_values.append({"x": u.__str__(), "y": both_count})
@@ -120,21 +115,19 @@ def label_timing(request, project_pk):
     yDomain = 0
     for u in users:
         label_times = list(
-            DataLabel.objects.filter(
-                data__project=project_pk,
-                profile=u,
-                time_to_label__isnull=False,
-                data__recyclebin__isnull=True,
-            ).values_list("time_to_label", flat=True)
+            DataLabel.objects.unexcluded()
+            .filter(data__project=project_pk, profile=u, time_to_label__isnull=False)
+            .values_list("time_to_label", flat=True)
         )
         irr_times = list(
-            IRRLog.objects.filter(
+            IRRLog.objects.unexcluded()
+            .filter(
                 data__project=project_pk,
                 profile=u,
                 data__datalabel__isnull=True,
-                data__recyclebin__isnull=True,
                 time_to_label__isnull=False,
-            ).values_list("time_to_label", flat=True)
+            )
+            .values_list("time_to_label", flat=True)
         )
 
         all_times = label_times + irr_times
@@ -220,9 +213,7 @@ def data_coded_table(request, project_pk):
     """
     project = Project.objects.get(pk=project_pk)
 
-    data_objs = DataLabel.objects.filter(
-        data__project=project, data__irr_ind=False, data__recyclebin__isnull=True
-    )
+    data_objs = DataLabel.objects.finalized().filter(data__project=project)
 
     data = []
     for d in data_objs:
@@ -340,9 +331,9 @@ def perc_agree_table(request, project_pk):
     IRR page as a table."""
     project = Project.objects.get(pk=project_pk)
     irr_data = set(
-        IRRLog.objects.filter(
-            data__project=project, data__recyclebin__isnull=True
-        ).values_list("data", flat=True)
+        IRRLog.objects.unexcluded()
+        .filter(data__project=project)
+        .values_list("data", flat=True)
     )
 
     if len(irr_data) == 0:

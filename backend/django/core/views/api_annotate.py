@@ -140,9 +140,9 @@ def label_distribution_inverted(request, project_pk):
     for u in users:
         temp_values = []
         for l in labels:
-            label_count = DataLabel.objects.filter(
-                profile=u, label=l, data__recyclebin__isnull=True
-            ).count()
+            label_count = (
+                DataLabel.objects.unexcluded().filter(profile=u, label=l).count()
+            )
             all_counts.append(label_count)
             temp_values.append({"x": l.name, "y": label_count})
         dataset.append({"key": u.__str__(), "values": temp_values})
@@ -737,9 +737,9 @@ def get_label_history(request, project_pk):
     project = Project.objects.get(pk=project_pk)
 
     labels = Label.objects.all().filter(project=project)
-    data = DataLabel.objects.filter(
-        profile=profile, data__project=project_pk, label__in=labels, was_skipped=False
-    ).exclude(data__recyclebin__isnull=False)
+    data = DataLabel.objects.finalized_or_irr().filter(
+        profile=profile, data__project=project_pk, label__in=labels
+    )
 
     data_list = []
     results = []
@@ -775,9 +775,9 @@ def get_label_history(request, project_pk):
         }
         results.append(temp_dict)
 
-    data_irr = IRRLog.objects.filter(
+    data_irr = IRRLog.objects.unexcluded().filter(
         profile=profile, data__project=project_pk, label__isnull=False
-    ).exclude(data__recyclebin__isnull=False)
+    )
 
     for d in data_irr:
         # if the data was labeled by that person (they were the admin), don't add
