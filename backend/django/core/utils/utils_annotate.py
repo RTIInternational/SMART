@@ -64,6 +64,7 @@ def move_skipped_to_admin_queue(datum, profile, project):
 
     Change the assigned queue to the admin one for this project
     """
+    new_queue = Queue.objects.get(project=project, type="admin")
     with transaction.atomic():
         # remove the data from the assignment table
         assignment = AssignedData.objects.get(data=datum, profile=profile)
@@ -71,11 +72,11 @@ def move_skipped_to_admin_queue(datum, profile, project):
         assignment.delete()
 
         # change the queue to the admin one
-        new_queue = Queue.objects.get(project=queue.project, type="admin")
         DataQueue.objects.filter(data=datum, queue=queue).update(queue=new_queue)
 
     # remove the data from redis
     settings.REDIS.srem(redis_serialize_set(queue), redis_serialize_data(datum))
+    settings.REDIS.sadd(redis_serialize_set(new_queue), redis_serialize_data(datum))
 
 
 def get_assignments(profile, project, num_assignments):
