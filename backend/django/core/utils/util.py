@@ -544,8 +544,8 @@ def get_excluded_data(project):
 
         data_labels = DataLabel.objects.filter(data=d.data)
         for i, label in enumerate(data_labels):
-            temp[f"label_{i}"] = data_labels[i].label.name
-            temp[f"label_{i}_reason"] = data_labels[i].label_reason
+            temp[f"label_{i}"] = label.label.name
+            temp[f"label_{i}_reason"] = label.label_reason
 
         data.append(temp)
 
