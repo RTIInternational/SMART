@@ -114,7 +114,7 @@ def fleiss_kappa(project):
     data_label_dict = []
     num_data = 0
     for d in irr_data:
-        d_data_log = IRRLog.objects.filter(data=d, data__project=project)
+        d_data_log = IRRLog.objects.unexcluded().filter(data=d, data__project=project)
 
         if d_data_log.count() < n:
             # don't use this datum, it isn't processed yet
