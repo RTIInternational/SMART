@@ -210,7 +210,7 @@ class Dev(Configuration):
 
 class Prod(Dev):
     DEBUG = False
-    ALLOWED_HOSTS = ["localhost"]
+    ALLOWED_HOSTS = []  # Add your domain name here
 
     STATIC_URL = "/static/"
     STATIC_ROOT = "/data/static_files/"
