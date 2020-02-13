@@ -43,7 +43,6 @@ services:
     image: rti/smart-frontend-prod:R_0_0_1
     container_name: smart_frontend_prod
     volumes:
-      - ../../frontend/smart.conf:/etc/nginx/conf.d/smart.conf
       - smart_static:/var/www/
       - smart_data:/data/
     restart: always
