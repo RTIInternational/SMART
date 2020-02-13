@@ -271,7 +271,6 @@ def pop_first_nonempty_queue(project, profile=None, type="normal"):
 
             assigned_unlabeled = (
                 DataQueue.objects.filter(queue=queue)
-                .filter(data__recyclebin__isnull=True)
                 .exclude(data__in=labeled_irr_data)
                 .exclude(data__in=assigned_data)
                 .exclude(data__in=skipped_data)

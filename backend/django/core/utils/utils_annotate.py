@@ -86,7 +86,7 @@ def get_assignments(profile, project, num_assignments):
     If not, try to get a num_assigments of new assignments and return them.
     """
     existing_assignments = AssignedData.objects.filter(
-        profile=profile, queue__project=project, data__recyclebin__isnull=True
+        profile=profile, queue__project=project
     )
 
     if len(existing_assignments) > 0:

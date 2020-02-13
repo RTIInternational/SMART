@@ -544,7 +544,7 @@ def data_admin_table(request, project_pk):
     project = Project.objects.get(pk=project_pk)
     queue = Queue.objects.filter(project=project, type="admin")
 
-    data_objs = DataQueue.objects.filter(queue=queue, data__recyclebin__isnull=True)
+    data_objs = DataQueue.objects.filter(queue=queue)
 
     data = []
     for d in data_objs:
@@ -591,7 +591,7 @@ def data_admin_counts(request, project_pk):
     """
     project = Project.objects.get(pk=project_pk)
     queue = Queue.objects.filter(project=project, type="admin")
-    data_objs = DataQueue.objects.filter(queue=queue, data__recyclebin__isnull=True)
+    data_objs = DataQueue.objects.filter(queue=queue)
     skip_count = data_objs.filter(data__irr_ind=False).count()
 
     count_dict = {"data": {"SKIP": skip_count}}
