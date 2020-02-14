@@ -77,10 +77,10 @@ export const adminLabel = (dataID, labelID, labelReason, is_explicit, projectID)
 };
 
 //mark data as uncodable and put it in the recycle bin
-export const discardData = (dataID, projectID) => {
+export const discardData = (dataID, discardReason, projectID) => {
     let apiURL = `/api/discard_data/${dataID}/`;
     return dispatch => {
-        return fetch(apiURL, postConfig())
+        return fetch(apiURL, postConfig({ discardReason: discardReason }))
             .then(response => {
                 if (response.ok) {
                     return response.json();

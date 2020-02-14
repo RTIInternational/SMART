@@ -2,6 +2,7 @@ import math
 import random
 
 import django_filters
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import filters, generics
@@ -33,6 +34,11 @@ from core.utils.utils_annotate import (
     unassign_datum,
 )
 from core.utils.utils_model import check_and_trigger_model
+from core.utils.utils_redis import (
+    redis_serialize_data,
+    redis_serialize_queue,
+    redis_serialize_set,
+)
 
 
 class DataFilter(django_filters.rest_framework.FilterSet):
@@ -48,6 +54,7 @@ class DataUnlabeledAPIView(generics.ListAPIView):
     recycle_ids = RecycleBin.objects.all().values_list("data__pk", flat=True)
     queryset = (
         all_data.filter(datalabel__isnull=True)
+        .filter(recyclebin__isnull=True)
         .exclude(pk__in=stuff_in_queue)
         .exclude(pk__in=recycle_ids)
     )
@@ -100,6 +107,7 @@ def get_card_deck(request, project_pk):
     coder_size = math.ceil(batch_size / num_coders)
 
     data = get_assignments(profile, project, coder_size)
+
     # shuffle so the irr is not all at the front
     random.shuffle(data)
     labels = Label.objects.all().filter(project=project)
@@ -139,7 +147,9 @@ def label_distribution_inverted(request, project_pk):
     for u in users:
         temp_values = []
         for l in labels:
-            label_count = DataLabel.objects.filter(profile=u, label=l).count()
+            label_count = (
+                DataLabel.objects.unexcluded().filter(profile=u, label=l).count()
+            )
             all_counts.append(label_count)
             temp_values.append({"x": l.name, "y": label_count})
         dataset.append({"key": u.__str__(), "values": temp_values})
@@ -206,7 +216,12 @@ def skip_data(request, data_pk):
 
         # log the data and check IRR but don't put in admin queue yet
         IRRLog.objects.create(
-            data=data, profile=profile, label=None, timestamp=timezone.now()
+            data=data,
+            profile=profile,
+            timestamp=timezone.now(),
+            label=None,
+            label_reason=label_reason,
+            time_to_label=labeling_time,
         )
         # if the IRR history has more than the needed number of labels , it is
         # already processed so don't do anything else
@@ -260,6 +275,7 @@ def annotate_data(request, data_pk):
             label=label,
             timestamp=timezone.now(),
             label_reason=label_reason,
+            time_to_label=labeling_time,
         )
         assignment = AssignedData.objects.get(data=data, profile=profile)
         assignment.delete()
@@ -291,22 +307,20 @@ def discard_data(request, data_pk):
     profile = request.user.profile
     project = data.project
     response = {}
+    exclude_reason = request.data.get("discardReason", "")
 
     # Make sure coder is an admin
     if project_extras.proj_permission_level(data.project, profile) > 1:
         # remove it from the admin queue
         queue = Queue.objects.get(project=project, type="admin")
         DataQueue.objects.get(data=data, queue=queue).delete()
-        IRRLog.objects.filter(data=data).delete()
-        DataLabel.objects.filter(data=data).delete()
-        Data.objects.filter(pk=data_pk).update(irr_ind=False)
-        data = Data.objects.get(pk=data_pk)
 
-        RecycleBin.objects.create(data=data, timestamp=timezone.now())
+        # update redis
+        settings.REDIS.srem(redis_serialize_set(queue), redis_serialize_data(data))
 
-        # remove any IRR log data
-        irr_records = IRRLog.objects.filter(data=data)
-        irr_records.delete()
+        RecycleBin.objects.create(
+            data=data, timestamp=timezone.now(), exclude_reason=exclude_reason
+        )
 
     else:
         response["error"] = "Invalid credentials. Must be an admin."
@@ -330,7 +344,13 @@ def restore_data(request, data_pk):
 
     # Make sure coder is an admin
     if project_extras.proj_permission_level(data.project, profile) > 1:
-        # remove it from the recycle bin
+        # remove it from the recycle bin and add it back to the admin queue
+        queue = Queue.objects.get(project=data.project, type="admin")
+        DataQueue.objects.create(data=data, queue=queue)
+
+        # update redis
+        settings.REDIS.sadd(redis_serialize_set(queue), redis_serialize_data(data))
+
         RecycleBin.objects.get(data=data).delete()
     else:
         response["error"] = "Invalid credentials. Must be an admin."
@@ -424,11 +444,18 @@ def modify_label_to_skip(request, data_pk):
             # if it was irr, add it to the log
             if len(IRRLog.objects.filter(data=data, profile=profile)) == 0:
                 IRRLog.objects.create(
-                    data=data, profile=profile, label=None, timestamp=timezone.now()
+                    data=data,
+                    profile=profile,
+                    label=None,
+                    label_reason=new_label_reason,
+                    timestamp=timezone.now(),
                 )
         else:
             # if it's not irr, add it to the admin queue immediately
             DataQueue.objects.create(data=data, queue=queue)
+
+            # update redis
+            settings.REDIS.sadd(redis_serialize_set(queue), redis_serialize_data(data))
         LabelChangeLog.objects.create(
             project=project,
             data=data,
@@ -565,7 +592,7 @@ def data_admin_counts(request, project_pk):
     project = Project.objects.get(pk=project_pk)
     queue = Queue.objects.filter(project=project, type="admin")
     data_objs = DataQueue.objects.filter(queue=queue)
-    skip_count = data_objs.filter(data__irr_ind=False, data__explicit_ind=False).count()
+    skip_count = data_objs.filter(data__irr_ind=False).count()
 
     count_dict = {"data": {"SKIP": skip_count}}
 
@@ -596,7 +623,12 @@ def recycle_bin_table(request, project_pk):
 
     data = []
     for d in data_objs:
-        temp = {"data": d.data.text, "id": d.data.id}
+        temp = {
+            "data": d.data.text,
+            "id": d.data.id,
+            "reason": d.exclude_reason,
+            "explicit": d.data.explicit_ind,
+        }
         data.append(temp)
 
     # also return any metadata
@@ -694,6 +726,9 @@ def label_admin_label(request, data_pk):
 
         DataQueue.objects.filter(data=datum, queue=queue).delete()
 
+        # update redis
+        settings.REDIS.srem(redis_serialize_set(queue), redis_serialize_data(datum))
+
         # make sure the data is no longer irr
         if datum.irr_ind:
             Data.objects.filter(pk=datum.pk).update(irr_ind=False)
@@ -721,8 +756,8 @@ def get_label_history(request, project_pk):
     project = Project.objects.get(pk=project_pk)
 
     labels = Label.objects.all().filter(project=project)
-    data = DataLabel.objects.filter(
-        profile=profile, data__project=project_pk, label__in=labels, was_skipped=False
+    data = DataLabel.objects.finalized_or_irr().filter(
+        profile=profile, data__project=project_pk, label__in=labels
     )
 
     data_list = []
@@ -759,7 +794,7 @@ def get_label_history(request, project_pk):
         }
         results.append(temp_dict)
 
-    data_irr = IRRLog.objects.filter(
+    data_irr = IRRLog.objects.unexcluded().filter(
         profile=profile, data__project=project_pk, label__isnull=False
     )
 

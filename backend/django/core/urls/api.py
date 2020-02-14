@@ -47,6 +47,7 @@ annotate_patterns = [
 ]
 
 adminpage_patterns = [
+    url(r"^finalized_labels/(?P<project_pk>\d+)/$", api_admin.total_label_counts),
     url(r"^label_distribution/(?P<project_pk>\d+)/$", api_admin.label_distribution),
     url(r"^label_timing/(?P<project_pk>\d+)/$", api_admin.label_timing),
     url(r"^model_metrics/(?P<project_pk>\d+)/$", api_admin.model_metrics),
@@ -62,6 +63,8 @@ urlpatterns = [
     url(r"^progressbarupload/", include("progressbarupload.urls")),
     url(r"^download_data/(?P<project_pk>\d+)/$", api.download_data),
     url(r"^download_model/(?P<project_pk>\d+)/$", api.download_model),
+    url(r"^download_excluded_data/(?P<project_pk>\d+)/$", api.download_excluded_data),
+    url(r"^download_irr_data/(?P<project_pk>\d+)/$", api.download_irr_data),
     url(r"^", include(annotate_patterns)),
     url(r"^", include(adminpage_patterns)),
 ]

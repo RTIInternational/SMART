@@ -5,25 +5,6 @@ import { Button, ButtonToolbar, Tooltip, OverlayTrigger } from "react-bootstrap"
 import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
 import DataViewer from "../DataViewer";
 
-const COLUMNS = [
-    {
-        Header: "id",
-        accessor: "id",
-        show: false
-    },
-    {
-        Header: "Discarded Data",
-        accessor: "data",
-        filterMethod: (filter, row) => {
-            if (String(row["data"]).toLowerCase().includes(filter.value.toLowerCase())) {
-                return true;
-            } else {
-                return false;
-            }
-        }
-    }
-];
-
 
 class RecycleBin extends React.Component {
 
@@ -56,7 +37,38 @@ class RecycleBin extends React.Component {
     }
 
     render() {
-        const { discarded_data } = this.props;
+        const { discarded_data, hasExplicit } = this.props;
+
+        const COLUMNS = [
+            {
+                Header: "id",
+                accessor: "id",
+                show: false
+            },
+            {
+                Header: "Discarded Data",
+                accessor: "data",
+                filterMethod: (filter, row) => {
+                    if (String(row["data"]).toLowerCase().includes(filter.value.toLowerCase())) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+            },
+            {
+                Header: "Reason for Excluding",
+                accessor: "reason",
+                show: true,
+                width: 200
+            },
+            {
+                Header: "Explicit",
+                accessor: "explicit",
+                show: hasExplicit,
+                width: 100
+            }
+        ];
 
         return (
             <div>
@@ -82,6 +94,7 @@ RecycleBin.propTypes = {
     getDiscarded: PropTypes.func.isRequired,
     discarded_data: PropTypes.arrayOf(PropTypes.object),
     restoreData: PropTypes.func.isRequired,
+    hasExplicit: PropTypes.boolean
 };
 
 export default RecycleBin;

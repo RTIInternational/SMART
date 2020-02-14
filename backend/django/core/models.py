@@ -85,7 +85,18 @@ class Project(models.Model):
         return self.projectpermissions_set.all().filter(permission="CODER").count()
 
     def labeled_data_count(self):
-        return self.data_set.all().filter(datalabel__isnull=False).count()
+        return (
+            self.data_set.all().filter(datalabel__isnull=False, irr_ind=False).count()
+        )
+
+    def excluded_data_count(self):
+        return self.data_set.all().filter(recyclebin__isnull=False).count()
+
+    def irr_data_count(self):
+        return (
+            self.data_set.all().filter(irrlog__isnull=False).count()
+            + self.data_set.all().filter(datalabel__isnull=False, irr_ind=True).count()
+        )
 
     def has_model(self):
         if self.model_set.count() > 0:
@@ -145,6 +156,16 @@ class Label(models.Model):
         return self.name
 
 
+class IRRLogManager(models.Manager):
+    def unexcluded(self):
+        """Return the IRRLog objects which are not in the recyclebin."""
+        return self.filter(data__recyclebin__isnull=True)
+
+    def skipped(self):
+        """Return the IRRLog objects for skipped data."""
+        return self.filter(label__isnull=True, data__recyclebin__isnull=True)
+
+
 class IRRLog(models.Model):
     class Meta:
         unique_together = ("data", "profile")
@@ -154,6 +175,34 @@ class IRRLog(models.Model):
     label = models.ForeignKey("Label", null=True)
     label_reason = models.TextField(null=True, default="")
     timestamp = models.DateTimeField(null=True, default=None)
+    time_to_label = models.IntegerField(null=True)
+    objects = IRRLogManager()
+
+
+class DataLabelManager(models.Manager):
+    def finalized(self):
+        """Return the dataLabel objects which are not skipped, involved in IRR, or in
+        the recyclebin."""
+        return self.filter(
+            data__irr_ind=False, was_skipped=False, data__recyclebin__isnull=True
+        ).exclude(data__dataqueue__queue__type="admin")
+
+    def finalized_or_irr(self):
+        """Return the dataLabel objects which are not skipped or in the recyclebin but
+        could be IRR."""
+        return self.filter(was_skipped=False, data__recyclebin__isnull=True).exclude(
+            data__dataqueue__queue__type="admin"
+        )
+
+    def irr(self):
+        """Return the dataLabel objects which are not in the recyclebin and are IRR."""
+        return self.filter(
+            data__irr_ind=True, was_skipped=False, data__recyclebin__isnull=True
+        ).exclude(data__dataqueue__queue__type="admin")
+
+    def unexcluded(self):
+        """return the DataLabel objects not in the recycleBin."""
+        return self.filter(data__recyclebin__isnull=True)
 
 
 class DataLabel(models.Model):
@@ -168,6 +217,7 @@ class DataLabel(models.Model):
     time_to_label = models.IntegerField(null=True)
     timestamp = models.DateTimeField(null=True, default=None)
     was_skipped = models.BooleanField(default=False)
+    objects = DataLabelManager()
 
 
 class LabelChangeLog(models.Model):
@@ -235,6 +285,7 @@ class TrainingSet(models.Model):
 
 class RecycleBin(models.Model):
     data = models.ForeignKey("Data")
+    exclude_reason = models.TextField(null=True, default="")
     timestamp = models.DateTimeField(default=timezone.now)
 
 

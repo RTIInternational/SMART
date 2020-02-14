@@ -760,23 +760,20 @@ def test_discard_data(
         and "Invalid permission. Must be an admin" in response["detail"]
     )
 
-    # get irr data and discard it. Check that the data is not in IRRLog, AssignedData DataQueue, in RecycleBin
+    # get irr data and discard it.
     irr_data = admin_data.filter(data__irr_ind=True)
     for datum in irr_data:
         assert IRRLog.objects.filter(data=datum.data).count() > 0
         admin_client.post(f"/api/discard_data/{datum.data.pk}/")
-        assert IRRLog.objects.filter(data=datum.data).count() == 0
         assert DataQueue.objects.filter(data=datum.data).count() == 0
-        assert AssignedData.objects.filter(data=datum.data).count() == 0
         assert RecycleBin.objects.filter(data=datum.data).count() == 1
-        assert not RecycleBin.objects.get(data=datum.data).data.irr_ind
+        assert datum.data.irr_ind == True
 
-    # get normal data and discard it. Check that the data is not in IRRLog, AssignedData DataQueue, in RecycleBin
+    # get normal data and discard it.
     non_irr_data = admin_data.filter(data__irr_ind=False)
     for datum in non_irr_data:
         admin_client.post(f"/api/discard_data/{datum.data.pk}/")
         assert DataQueue.objects.filter(data=datum.data).count() == 0
-        assert AssignedData.objects.filter(data=datum.data).count() == 0
         assert RecycleBin.objects.filter(data=datum.data).count() == 1
 
 
@@ -841,7 +838,10 @@ def test_restore_data(
     for datum in admin_data:
         admin_client.post(f"/api/restore_data/{datum.data.pk}/")
         assert RecycleBin.objects.filter(data=datum.data).count() == 0
-        assert not Data.objects.get(pk=datum.data.pk).irr_ind
+        assert (
+            DataQueue.objects.filter(data=datum.data, queue=test_admin_queue).count()
+            == 1
+        )
 
 
 def test_recycle_bin_table(
@@ -910,6 +910,7 @@ def test_recycle_bin_table(
         )
 
     admin_data = DataQueue.objects.filter(data__project=project, queue=test_admin_queue)
+
     # discard all data
     for datum in admin_data:
         admin_client.post(f"/api/discard_data/{datum.data.pk}/")

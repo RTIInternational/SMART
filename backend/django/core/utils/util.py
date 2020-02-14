@@ -1,4 +1,6 @@
+import csv
 import hashlib
+import io
 import os
 from io import StringIO
 from itertools import combinations
@@ -9,6 +11,7 @@ from celery import chord
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import connection, transaction
+from django.http import HttpResponse
 from django.utils import timezone
 
 from core import tasks
@@ -23,6 +26,7 @@ from core.models import (
     Project,
     ProjectPermissions,
     Queue,
+    RecycleBin,
     TrainingSet,
 )
 from core.serializers import MetaDataSerializer
@@ -292,7 +296,9 @@ def add_data(project, df):
 def perc_agreement_table_data(project):
     """Takes in the irrlog and finds the pairwise percent agreement."""
     irr_data = set(
-        IRRLog.objects.filter(data__project=project).values_list("data", flat=True)
+        IRRLog.objects.unexcluded()
+        .filter(data__project=project)
+        .values_list("data", flat=True)
     )
 
     user_list = [
@@ -315,7 +321,7 @@ def perc_agreement_table_data(project):
     data_choices = []
 
     for d in irr_data:
-        d_log = IRRLog.objects.filter(data=d, data__project=project)
+        d_log = IRRLog.objects.unexcluded().filter(data=d, data__project=project)
 
         # get the percent agreement between the users  = (num agree)/size_data
         if d_log.count() < 2:
@@ -393,7 +399,7 @@ def irr_heatmap_data(project):
     )
     label_list.append("Skip")
 
-    irr_data = set(IRRLog.objects.values_list("data", flat=True))
+    irr_data = set(IRRLog.objects.unexcluded().values_list("data", flat=True))
 
     # Initialize the dictionary of dictionaries to use for the heatmap later
     user_label_counts = {}
@@ -486,18 +492,12 @@ def get_labeled_data(project):
         data: a list of the labeled data
     """
     project_labels = Label.objects.filter(project=project)
-    admin_queue = Queue.objects.get(project=project, type="admin")
-    admin_data = DataQueue.objects.filter(queue=admin_queue).values_list(
-        "data", flat=True
-    )
 
     data = []
     labels = []
     for label in project_labels:
         labels.append({"Name": label.name, "Label_ID": label.pk})
-        labeled_data = DataLabel.objects.filter(label=label).exclude(
-            data__in=admin_data
-        )
+        labeled_data = DataLabel.objects.finalized().filter(label=label)
 
         for d in labeled_data:
             temp = {}
@@ -516,3 +516,137 @@ def get_labeled_data(project):
     label_frame = pd.DataFrame(labels)
 
     return labeled_data_frame, label_frame
+
+
+def get_excluded_data(project):
+    """Given a project, get the list of all excluded data.
+
+    Args:
+        project: Project object
+    Returns:
+        data: a list of the labeled data
+    """
+    excluded_data = RecycleBin.objects.filter(data__project=project)
+
+    data = []
+
+    for d in excluded_data:
+        temp = {}
+        temp["ID"] = d.data.upload_id
+        temp["Text"] = d.data.text
+        temp["Exclude_reason"] = d.exclude_reason
+        if project.use_explicit_ind:
+            temp["explicit"] = d.data.explicit_ind
+            # add in the metadata fields
+        metadata = MetaData.objects.filter(data__pk=d.data.pk).first()
+        if metadata:
+            temp.update(MetaDataSerializer(metadata).data)
+
+        data_labels = DataLabel.objects.filter(data=d.data)
+        for i, label in enumerate(data_labels):
+            temp[f"label_{i}"] = label.label.name
+            temp[f"label_{i}_reason"] = label.label_reason
+
+        data.append(temp)
+
+    excluded_data_frame = pd.DataFrame(data)
+
+    return excluded_data_frame
+
+
+def get_irr_data(project):
+    """Given a project, get the list of all IRR data.
+
+    This should include all data that is in the IRRLog, and
+    in-progress data from DataLabel where irr_ind=True
+
+    Args:
+        project: Project object
+    Returns:
+        data: a list of the labeled data
+    """
+
+    in_progress_irr_data = DataLabel.objects.irr().filter(data__project=project)
+    irr_data = (
+        IRRLog.objects.unexcluded()
+        .filter(data__project=project)
+        .exclude(data__in=in_progress_irr_data.values_list("data", flat=True))
+    )
+
+    data = []
+
+    for d in irr_data:
+        temp = {}
+        temp["ID"] = d.data.upload_id
+        temp["Profile"] = d.profile_id
+        temp["Text"] = d.data.text
+
+        if d.label is not None:
+            temp["Label"] = d.label.name
+            temp["Skipped"] = False
+        else:
+            temp["Skipped"] = True
+
+        temp["Label_Reason"] = d.label_reason
+        if project.use_explicit_ind:
+            temp["explicit"] = d.data.explicit_ind
+            # add in the metadata fields
+        metadata = MetaData.objects.filter(data__pk=d.data.pk).first()
+        if metadata:
+            temp.update(MetaDataSerializer(metadata).data)
+
+        data.append(temp)
+
+    for d in in_progress_irr_data:
+        temp = {}
+        temp["ID"] = d.data.upload_id
+        temp["Profile"] = d.profile_id
+        temp["Text"] = d.data.text
+        temp["Label"] = d.label.name
+
+        if d.was_skipped:
+            temp["Skipped"] = True
+        else:
+            temp["Skipped"] = False
+
+        temp["Label_Reason"] = d.label_reason
+        if project.use_explicit_ind:
+            temp["explicit"] = d.data.explicit_ind
+            # add in the metadata fields
+        metadata = MetaData.objects.filter(data__pk=d.data.pk).first()
+        if metadata:
+            temp.update(MetaDataSerializer(metadata).data)
+
+        data.append(temp)
+
+    irr_data_frame = pd.DataFrame(data)
+
+    return irr_data_frame
+
+
+def get_data_as_csv(data):
+    """This is a helper function for setting up data downloads.
+
+    Args:
+        data: a pandsas dataframe with data that needs to be
+        downloaded
+    """
+    data.rename(
+        columns={
+            col: col.replace("_", " ").title().replace(" ", "") for col in data.columns
+        },
+        inplace=True,
+    )
+    data.replace({np.nan: None, "nan": None}, inplace=True)
+    cols = data.columns.values.tolist()
+    data = data.to_dict("records")
+
+    buffer = io.StringIO()
+    wr = csv.DictWriter(buffer, fieldnames=cols, quoting=csv.QUOTE_ALL)
+    wr.writeheader()
+    wr.writerows(data)
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type="text/csv")
+    response["Content-Disposition"] = "attachment;"
+
+    return response
