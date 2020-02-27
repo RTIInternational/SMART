@@ -25,7 +25,11 @@ This project uses `docker` containers organized by `docker-compose` to ease depe
 
 #### Initial Startup
 
-First, install docker and docker-compose. Then navigate to `envs/dev` and run `docker-compose build` to build all the images.
+First, install docker and docker-compose. Then navigate to `envs/dev` and to build all the images run:
+
+```bash
+docker-compose build
+```
 
 Next, crate the docker volumes where persistent data will be stored.
 
