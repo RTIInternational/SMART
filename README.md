@@ -27,9 +27,18 @@ This project uses `docker` containers organized by `docker-compose` to ease depe
 
 First, install docker and docker-compose. Then navigate to `envs/dev` and run `docker-compose build` to build all the images.
 
-Next, crate the docker volumes where persistent data will be stored.  `docker volume create --name=vol_smart_pgdata` and `docker volume create --name=vol_smart_data`.
+Next, crate the docker volumes where persistent data will be stored.
 
-Then, migrate the database to ensure the schema is prepared for the application. `docker-compose run --rm smart_backend ./migrate.sh`.
+```bash
+docker volume create --name=vol_smart_pgdata
+docker volume create --name=vol_smart_data
+```
+
+Then, migrate the database to ensure the schema is prepared for the application. 
+
+```bash
+docker-compose run --rm smart_backend ./migrate.sh
+```
 
 ### Workflow During Development
 
