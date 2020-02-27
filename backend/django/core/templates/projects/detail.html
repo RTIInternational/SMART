@@ -25,7 +25,7 @@
           <div id="description-panel" class="panel-collapse collapse in">
             <div class="panel-body">
               {% if project.description %}
-              <p>{{ project.description }}</p>
+              <p>{{ project.description | linebreaks }}</p>
               {% else %}
               <h5><strong>No Description Available</strong></h5>
               {% endif %}
