@@ -104,7 +104,7 @@ def create_data_from_csv(df, project):
     df['project'] = project.pk
     df['irr_ind'] = False
 
-    # Replace tabs since thats our delimiter, escape all backslashes because it seems to 
+    # Replace tabs since thats our delimiter, escape all backslashes because it seems to
     # fix "end-of-copy marker corrupt"
     df['Text'] = df['Text'].apply(
         lambda x: x.replace('\t', ' ').replace('\\', '\\\\')
@@ -115,8 +115,9 @@ def create_data_from_csv(df, project):
     stream.seek(0)
 
     with connection.cursor() as c:
-        # We must use copy_expert with raw SQL in order to avoid removing newlines - which limits cards considerably
-        sql = """COPY {} (text, project_id, hash, upload_id, upload_id_hash, irr_ind) 
+        # We must use copy_expert with raw SQL in order to avoid removing newlines - which
+        # limits cards considerably
+        sql = """COPY {} (text, project_id, hash, upload_id, upload_id_hash, irr_ind)
                  FROM stdin WITH (FORMAT 'csv', DELIMITER E'\\t')
               """.format(Data._meta.db_table)
         c.copy_expert(
