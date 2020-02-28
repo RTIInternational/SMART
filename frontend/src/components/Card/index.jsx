@@ -1,5 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import Linkify from 'linkifyjs/react';
+
 import { Button, ButtonToolbar, Clearfix, Well, Tooltip, OverlayTrigger } from "react-bootstrap";
 
 const ADMIN = window.ADMIN;
@@ -23,7 +25,8 @@ class Card extends React.Component {
                         <h2>Card {cards[0].id + 1}</h2>
                         <p>{ cards[0].text['text'].split(/\r?\n/).map(
                             (item, key) => { 
-                                return <span key={key}>{item}<br/></span>;
+                                // Add links for any urls/domains on this line
+                                return <Linkify tagName="span" key={key}>{item}<br/></Linkify>;
                             }) 
                         }</p>
                         <ButtonToolbar bsClass="btn-toolbar pull-right">
