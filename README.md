@@ -31,7 +31,7 @@ First, install docker and docker-compose. Then navigate to `envs/dev` and to bui
 docker-compose build
 ```
 
-Next, crate the docker volumes where persistent data will be stored.
+Next, create the docker volumes where persistent data will be stored.
 
 ```bash
 docker volume create --name=vol_smart_pgdata
