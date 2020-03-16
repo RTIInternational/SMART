@@ -165,6 +165,8 @@ class Dev(Configuration):
     MODEL_PICKLE_PATH = os.path.join(DATA_DIR, "model_pickles")
     PROJECT_FILE_PATH = os.path.join(DATA_DIR, "data_files")
     CODEBOOK_FILE_PATH = os.path.join(DATA_DIR, "code_books")
+    MEDIA_URL = "/media/"
+    MEDIA_ROOT = CODEBOOK_FILE_PATH
 
     AUTH_USER_MODEL = "auth.User"
 
@@ -193,7 +195,6 @@ class Dev(Configuration):
         os.path.join(BASE_DIR, "frontend", "dist"),
         os.path.join(BASE_DIR, "core/data"),
         os.path.join(BASE_DIR, "smart/static"),
-        "/data/code_books/",
     ]
 
     WEBPACK_LOADER = {

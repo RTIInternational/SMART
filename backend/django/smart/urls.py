@@ -17,6 +17,7 @@ from django.conf import settings
 from django.conf.urls import include, url
 from django.contrib import admin
 from django.http import HttpResponseRedirect
+from django.views.static import serve
 from rest_framework_swagger.views import get_swagger_view
 
 urlpatterns = [
@@ -35,3 +36,6 @@ if settings.DEBUG:
     swagger_docs_view = get_swagger_view(title="SMART")
 
     urlpatterns.append(url(r"^docs/", swagger_docs_view))
+    urlpatterns += [
+        url(r"^media/(?P<path>.*)$", serve, {"document_root": settings.MEDIA_ROOT}),
+    ]

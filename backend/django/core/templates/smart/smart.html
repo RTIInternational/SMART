@@ -12,7 +12,7 @@ window.PROJECT_ID = {{ pk }};
 {% if project.codebook_file == '' %}
   window.CODEBOOK_URL = ""
 {% else %}
-  window.CODEBOOK_URL = "{% static project.codebook_file %}"
+  window.CODEBOOK_URL = "/media/{{ project.codebook_file }}"
 {% endif %}
 window.ADMIN = {{admin}};
 window.onbeforeunload = function (e) {
