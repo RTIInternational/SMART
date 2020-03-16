@@ -13,4 +13,4 @@ done
 python manage.py init_redis
 
 # start server
-python ./manage.py runserver 0.0.0.0:8000
+gunicorn -w 4 -b 0.0.0.0:8000 --timeout 86400 --worker-class gevent smart.wsgi
