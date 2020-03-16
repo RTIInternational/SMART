@@ -87,6 +87,16 @@ Frontend tests use [mocha](https://mochajs.org/api/mocha.js.html) and [eslint](h
 docker-compose run --rm smart_frontend ./run_tests.sh
 ```
 
+## Production
+
+We have less than ideal production settings in the `./envs/prod` folder. These settings were designed around our specific use-case of hosting the application on an intranet server.  As such there are several shortcuts that we have taken, these include:
+
+* No HTTPS
+* Sub-optimal logging
+* Unrealistic timeouts
+
+We do not recommend using these settings on any publically available server.
+
 
 ### Contributing
 
