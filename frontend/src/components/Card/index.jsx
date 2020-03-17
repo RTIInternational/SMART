@@ -1,7 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {
-    Alert,
     Well
 } from "react-bootstrap";
 
@@ -9,69 +8,19 @@ import DataViewer from "../DataViewer";
 import LabelForm from '../LabelForm';
 
 class Card extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            label_reason: "",
-            selected_label: { name: null, pk: null },
-            error_message: null
-        };
-
-        this.handleReasonChange = this.handleReasonChange.bind(this);
-        this.handleLabelSelect = this.handleLabelSelect.bind(this);
-        this.handleSubmitLabel = this.handleSubmitLabel.bind(this);
-        this.warningRender = this.warningRender.bind(this);
-    }
-
-    handleReasonChange(event) {
-        this.setState({
-            label_reason: event.target.value
-        });
-    }
-
-    handleLabelSelect(option) {
-        this.setState({
-            selected_label: { name: option.name, pk: option.pk }
-        });
-    }
-
-    handleSubmitLabel(event) {
-        if (this.state.selected_label.name == null) {
-            this.setState({
-                error_message: "Error: You must choose a label!"
-            });
-            event.preventDefault();
-        } else {
-            this.props.annotateCard(
-                this.props.cards[0],
-                this.state.selected_label.pk,
-                this.state.label_reason,
-                this.props.cards.length
-            );
-            this.setState({
-                label_reason: "",
-                selected_label: { name: null, pk: null },
-                error_message: null
-            });
-            event.preventDefault();
-        }
-    }
-
-    warningRender() {
-        if (this.state.error_message == null) {
-            return <div></div>;
-        } else {
-            return <Alert bsStyle="danger">{this.state.error_message}</Alert>;
-        }
-    }
 
     componentWillMount() {
-        this.props.fetchCards();
+        //Don't fetch cards unless you don't have any
+        //NOTE: otherwise it appends the same cards
+        //to the current list again.
+        if (this.props.cards.length == 0) {
+            this.props.fetchCards();
+        }
     }
 
     render() {
         let card;
-        const { message, cards, passCard, labels, annotateCard } = this.props;
+        const { message, cards, passCard, labels, annotateCard, hasExplicit } = this.props;
 
         if (!(cards === undefined) && cards.length > 0) {
             //just get the labels from the cards
@@ -89,6 +38,8 @@ class Card extends React.Component {
                             discardFunction={() => {}}
                             labels={labels}
                             optionalInt={cards.length}
+                            hasExplicit = {hasExplicit}
+                            labelingTab="annotate"
                         />
                     </div>
                 </div>
@@ -108,7 +59,8 @@ Card.propTypes = {
     fetchCards: PropTypes.func.isRequired,
     annotateCard: PropTypes.func.isRequired,
     passCard: PropTypes.func.isRequired,
-    labels: PropTypes.arrayOf(PropTypes.object)
+    labels: PropTypes.arrayOf(PropTypes.object),
+    hasExplicit: PropTypes.boolean
 };
 
 export default Card;

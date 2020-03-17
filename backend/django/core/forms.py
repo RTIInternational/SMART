@@ -210,12 +210,13 @@ def cleanCodebookDataHelper(data):
 class ProjectUpdateForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ["name", "description"]
+        fields = ["name", "description", "use_explicit_ind"]
 
     name = forms.CharField()
     description = forms.CharField(required=False)
     data = forms.FileField(required=False)
     cb_data = forms.FileField(required=False)
+    use_explicit_ind = forms.BooleanField(required=False)
 
     def __init__(self, *args, **kwargs):
         self.project_labels = kwargs.pop("labels", None)
@@ -234,10 +235,11 @@ class ProjectUpdateForm(forms.ModelForm):
 class ProjectUpdateOverviewForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ["name", "description"]
+        fields = ["name", "description", "use_explicit_ind"]
 
     name = forms.CharField()
     description = forms.CharField(required=False)
+    use_explicit_ind = forms.BooleanField(required=False)
 
 
 class LabelForm(forms.ModelForm):
@@ -332,8 +334,10 @@ class AdvancedWizardForm(forms.ModelForm):
             "num_users_irr",
             "batch_size",
             "classifier",
+            "use_explicit_ind",
         ]
 
+    use_explicit_ind = forms.BooleanField(initial=False, required=False)
     use_active_learning = forms.BooleanField(initial=True, required=False)
     active_l_choices = copy.deepcopy(Project.ACTIVE_L_CHOICES)
     # remove random from the options

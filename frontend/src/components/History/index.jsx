@@ -8,59 +8,18 @@ import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_conta
 import DataViewer from '../DataViewer';
 import LabelForm from '../LabelForm';
 
-const COLUMNS = [
-    {
-        Header: "edit",
-        accessor: "edit",
-        show: false
-    },
-    {
-        Header: "id",
-        accessor: "id",
-        show: false
-    },
-    {
-        Header: "Data",
-        accessor: "data",
-        filterMethod: (filter, row) => {
-            if (String(row["data"]).toLowerCase().includes(filter.value.toLowerCase())) {
-                return true;
-            } else {
-                return false;
-            }
-        }
-    },
-    {
-        Header: "Old Label",
-        accessor: "old_label",
-        width: 100
-    },
-    {
-        Header: "Reason for Label",
-        accessor: "label_reason",
-        width: 200
-    },
-    {
-        Header: "Old Label ID",
-        accessor: "old_label_id",
-        show: false
-    },
-    {
-        Header: "Date/Time",
-        accessor: "timestamp",
-        id: "timestamp",
-        width: 150
-    }
-];
+
 
 class History extends React.Component {
+
+
     componentWillMount() {
         this.props.getHistory();
     }
 
     getSubComponent(row) {
         let subComponent;
-        const { labels, changeToSkip, changeLabel } = this.props;
+        const { labels, changeToSkip, changeLabel, hasExplicit } = this.props;
 
         if (row.row.edit === "yes") {
             subComponent = (
@@ -71,7 +30,8 @@ class History extends React.Component {
                         previousLabel={{
                             pk: row.row.old_label_id,
                             name: row.row.old_label,
-                            reason: row.row.label_reason
+                            reason: row.row.label_reason,
+                            is_explicit: row.row.is_explicit
                         }}
                         labelFunction={changeLabel}
                         passButton={true}
@@ -79,6 +39,8 @@ class History extends React.Component {
                         skipFunction={changeToSkip}
                         discardFunction={() => {}}
                         labels={labels}
+                        hasExplicit={hasExplicit}
+                        labelingTab="history"
                     />
                 </div>
             );
@@ -98,7 +60,58 @@ class History extends React.Component {
     }
 
     render() {
+
         const { history_data } = this.props;
+        const COLUMNS = [
+            {
+                Header: "edit",
+                accessor: "edit",
+                show: false
+            },
+            {
+                Header: "id",
+                accessor: "id",
+                show: false
+            },
+            {
+                Header: "Data",
+                accessor: "data",
+                filterMethod: (filter, row) => {
+                    if (String(row["data"]).toLowerCase().includes(filter.value.toLowerCase())) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+            },
+            {
+                Header: "Old Label",
+                accessor: "old_label",
+                width: 100
+            },
+            {
+                Header: "Reason for Label",
+                accessor: "label_reason",
+                width: 200
+            },
+            {
+                Header: "Old Label ID",
+                accessor: "old_label_id",
+                show: false
+            },
+            {
+                Header: "Date/Time",
+                accessor: "timestamp",
+                id: "timestamp",
+                width: 150
+            },
+            {
+                Header: "Explicit",
+                accessor: "is_explicit",
+                show: false
+            }
+        ];
+
 
         let page_sizes = [1];
         let counter = 1;
@@ -153,7 +166,8 @@ History.propTypes = {
     getHistory: PropTypes.func.isRequired,
     history_data: PropTypes.arrayOf(PropTypes.object),
     changeLabel: PropTypes.func.isRequired,
-    changeToSkip: PropTypes.func.isRequired
+    changeToSkip: PropTypes.func.isRequired,
+    hasExplicit: PropTypes.boolean
 };
 
 export default History;

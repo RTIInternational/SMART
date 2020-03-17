@@ -4,6 +4,7 @@ import {
     Button,
     ButtonToolbar,
     Clearfix,
+    Checkbox,
     Tooltip,
     OverlayTrigger,
     Alert,
@@ -23,32 +24,63 @@ class LabelForm extends React.Component {
             pk: null
         };
         let labelReason = "";
-
+        let is_explicit = false;
         if (this.props.previousLabel != null) {
             selected_label = {
                 name: this.props.previousLabel.name,
                 pk: this.props.previousLabel.pk
             };
-            labelReason = this.props.previousLabel.reason;
+            if (this.props.previousLabel.reason != null) {
+                labelReason = this.props.previousLabel.reason;
+            }
+            is_explicit = this.props.previousLabel.is_explicit;
         }
+
 
         this.state = {
             label_reason: labelReason,
             selected_label: selected_label,
-            error_message: null
+            error_message: null,
+            is_explicit: is_explicit
         };
 
         this.handleReasonChange = this.handleReasonChange.bind(this);
         this.handleLabelSelect = this.handleLabelSelect.bind(this);
         this.handleSubmitLabel = this.handleSubmitLabel.bind(this);
+        this.handleChangeExplict = this.handleChangeExplict.bind(this);
 
         this.warningRender = this.warningRender.bind(this);
         this.passRender = this.passRender.bind(this);
         this.discardRender = this.discardRender.bind(this);
         this.labelButtonRender = this.labelButtonRender.bind(this);
+        this.explicitRender = this.explicitRender.bind(this);
 
-        this.skipData = this.skipData.bind(this);
+        this.handleSendToAdmin = this.handleSendToAdmin.bind(this);
         this.annotateData = this.annotateData.bind(this);
+    }
+
+    handleChangeExplict(){
+        this.setState({ is_explicit: !this.state.is_explicit });
+    }
+
+    explicitRender() {
+        if (this.props.hasExplicit) {
+            return (
+                <OverlayTrigger
+                    placement="top"
+                    overlay={
+                        <Tooltip id="explicit_tooltip">
+                            This marks this data as explicit, and must be sent
+                            to an administrator for review.
+                        </Tooltip>
+                    }
+                >
+                    <Checkbox onClick={this.handleChangeExplict} defaultChecked={this.state.is_explicit}> <b>Explicit</b> </Checkbox>
+                </OverlayTrigger>
+            );
+        } else {
+            return null;
+        }
     }
 
     handleReasonChange(event) {
@@ -91,35 +123,69 @@ class LabelForm extends React.Component {
         }
     }
 
-    skipData() {
+    handleSendToAdmin() {
         /* This function handles the logic for calling skip functions*/
-
-        if (this.props.optionalInt != null) {
-            this.props.skipFunction(this.props.data, this.props.optionalInt);
-        } else if (this.props.previousLabel != null) {
-            this.props.skipFunction(this.props.data, this.props.previousLabel.pk);
+        /* This function is for when the form is submitted*/
+        if (this.state.selected_label.pk == null) {
+            this.setState({
+                error_message: "To help your Administrator out, please choose a best guess for the label."
+            });
+            event.preventDefault();
+        } else if (this.state.label_reason.length == 0 && !this.state.is_explicit) {
+            this.setState({
+                error_message: "Please provide a reason for sending to the Administrator."
+            });
+            event.preventDefault();
         } else {
-            this.props.skipFunction(this.props.data);
+
+            if (this.props.labelingTab == "annotate") {
+                this.props.skipFunction(
+                    this.props.data,
+                    this.state.selected_label.pk,
+                    this.state.label_reason,
+                    this.props.optionalInt,
+                    this.state.is_explicit
+                );
+            } else if (this.props.labelingTab == "history") {
+                this.props.skipFunction(
+                    this.props.data,
+                    this.props.previousLabel.pk,
+                    this.state.selected_label.pk,
+                    this.state.label_reason,
+                    this.state.is_explicit
+                );
+            }
         }
+
     }
 
     annotateData() {
         /* This function handles the logic for calling annotate functions*/
-        if (this.props.optionalInt != null) {
+        if (this.props.labelingTab == "annotate") {
             this.props.labelFunction(
                 this.props.data,
                 this.state.selected_label.pk,
                 this.state.label_reason,
                 this.props.optionalInt
             );
-        } else if (this.props.previousLabel != null) {
+        } else if (this.props.labelingTab == "admin") {
+            // If this is the admin table which does not have skipping
+            this.props.labelFunction(
+                this.props.data,
+                this.state.selected_label.pk,
+                this.state.label_reason,
+                this.state.is_explicit
+            );
+        } else if (this.props.labelingTab == "history") {
+            // If this is the history table
             this.props.labelFunction(
                 this.props.data,
                 this.props.previousLabel.pk,
                 this.state.selected_label.pk,
                 this.state.label_reason
             );
-        } else {
+        } else if (this.props.labelingTab == "skew") {
+            // this is the skew table
             this.props.labelFunction(
                 this.props.data,
                 this.state.selected_label.pk,
@@ -143,11 +209,11 @@ class LabelForm extends React.Component {
                 >
                     <Button
                         onClick={() => {
-                            this.skipData();
+                            this.handleSendToAdmin();
                         }}
                         bsStyle="danger"
                     >
-                        Skip
+                        Send to Admin
                     </Button>
                 </OverlayTrigger>
             );
@@ -171,7 +237,7 @@ class LabelForm extends React.Component {
                 >
                     <Button
                         onClick={() => {
-                            this.props.discardFunction(this.props.data);
+                            this.props.discardFunction(this.props.data, this.state.label_reason);
                         }}
                         bsStyle="danger"
                     >
@@ -225,13 +291,17 @@ class LabelForm extends React.Component {
     }
 
     render() {
-        const { labels } = this.props;
+        const { labels, discardButton } = this.props;
+        let reason_message = "(Optional) Reason for Label:";
+        if (discardButton){
+            reason_message = "(Optional) Reason for Label or for Discarding:";
+        }
         return (
             <form onSubmit={this.handleSubmitLabel}>
                 <FormGroup>
                     {this.labelButtonRender(labels)}
                     <p>
-                        (Optional) Reason for Label:
+                        {reason_message}
                         <FormControl
                             componentClass="textarea"
                             placeholder={(this.state.label_reason === "") ? "Type reason here" : this.state.label_reason}
@@ -240,11 +310,11 @@ class LabelForm extends React.Component {
                     </p>
                     {this.warningRender()}
                     <ButtonToolbar bsClass="btn-toolbar pull-right">
-
+                        {this.explicitRender()}
                         {this.passRender()}
                         {this.discardRender()}
-                        <Button type="submit" bsStyle="success">
-                            Submit
+                        <Button type="submit" bsStyle="success" disabled={this.state.is_explicit && this.props.passButton}>
+                            Submit Label
                         </Button>
                     </ButtonToolbar>
                     <Clearfix />
@@ -263,7 +333,9 @@ LabelForm.propTypes = {
     skipFunction: PropTypes.func.isRequired,
     discardFunction: PropTypes.func.isRequired,
     labels: PropTypes.arrayOf(PropTypes.object),
-    optionalInt: PropTypes.integer
+    optionalInt: PropTypes.integer,
+    hasExplicit: PropTypes.boolean,
+    labelingTab: PropTypes.string
 };
 
 export default LabelForm;

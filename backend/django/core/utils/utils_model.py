@@ -21,10 +21,12 @@ from core.models import (
     Data,
     DataLabel,
     DataPrediction,
+    DataQueue,
     DataUncertainty,
     IRRLog,
     Label,
     Model,
+    Queue,
     RecycleBin,
 )
 from core.utils.utils_queue import fill_queue, handle_empty_queue
@@ -37,10 +39,9 @@ def cohens_kappa(project):
     https://onlinecourses.science.psu.edu/stat509/node/162/
     https://en.wikipedia.org/wiki/Cohen%27s_kappa
     """
-    irr_data = set(IRRLog.objects.values_list("data", flat=True))
+    irr_data = set(IRRLog.objects.unexcluded().values_list("data", flat=True))
 
     agree = 0
-
     # initialize the dictionary
     rater1_rater2_dict = {}
     label_list = list(
@@ -55,7 +56,7 @@ def cohens_kappa(project):
     num_data = 0
     labels_seen = set()
     for d in irr_data:
-        d_log_query = IRRLog.objects.filter(data=d, data__project=project)
+        d_log_query = IRRLog.objects.unexcluded().filter(data=d, data__project=project)
         d_log_list = list(d_log_query)
 
         labels = list(set(d_log_query.values_list("label", flat=True)))
@@ -100,7 +101,7 @@ def fleiss_kappa(project):
     https://gist.github.com/skylander86/65c442356377367e27e79ef1fed4adee
     Equations from: https://en.wikipedia.org/wiki/Fleiss%27_kappa
     """
-    irr_data = set(IRRLog.objects.values_list("data", flat=True))
+    irr_data = set(IRRLog.objects.unexcluded().values_list("data", flat=True))
 
     label_list = list(
         Label.objects.filter(project=project).values_list("name", flat=True)
@@ -113,7 +114,7 @@ def fleiss_kappa(project):
     data_label_dict = []
     num_data = 0
     for d in irr_data:
-        d_data_log = IRRLog.objects.filter(data=d, data__project=project)
+        d_data_log = IRRLog.objects.unexcluded().filter(data=d, data__project=project)
 
         if d_data_log.count() < n:
             # don't use this datum, it isn't processed yet
@@ -218,9 +219,13 @@ def check_and_trigger_model(datum, profile=None):
     project = datum.project
     current_training_set = project.get_current_training_set()
     batch_size = project.batch_size
-    labeled_data = DataLabel.objects.filter(
-        data__project=project, training_set=current_training_set, data__irr_ind=False
+
+    admin_queue = Queue.objects.get(project=project, type="admin")
+
+    labeled_data = DataLabel.objects.finalized().filter(
+        data__project=project, training_set=current_training_set
     )
+
     labeled_data_count = labeled_data.count()
     labels_count = labeled_data.distinct("label").count()
 
@@ -275,8 +280,11 @@ def train_and_save_model(project):
     # In order to train need X (tf-idf vector) and Y (label) for every labeled datum
     # Order both X and Y by upload_id_hash to ensure the tf-idf vector corresponds to the correct
     # label
+    admin_data = DataQueue.objects.filter(queue__type="admin").values_list(
+        "data", flat=True
+    )
+    labeled_data = DataLabel.objects.finalized().filter(data__project=project)
 
-    labeled_data = DataLabel.objects.filter(data__project=project)
     unique_ids = list(
         labeled_data.values_list("data__upload_id", flat=True).order_by(
             "data__upload_id_hash"
@@ -334,14 +342,9 @@ def predict_data(project, model):
 
     # In order to predict need X (tf-idf vector) for every unlabeled datum. Order
     # X by upload_id_hash to ensure the tf-idf vector corresponds to the correct datum
-    recycle_data = RecycleBin.objects.filter(data__project=project).values_list(
-        "pk", flat=True
-    )
-    unlabeled_data = (
-        project.data_set.filter(datalabel__isnull=True)
-        .exclude(pk__in=recycle_data)
-        .order_by("upload_id_hash")
-    )
+    unlabeled_data = project.data_set.filter(
+        datalabel__isnull=True, recyclebin__isnull=True
+    ).order_by("upload_id_hash")
     unique_ids = list(
         unlabeled_data.values_list("upload_id", flat=True).order_by("upload_id_hash")
     )

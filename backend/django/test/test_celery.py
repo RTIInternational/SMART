@@ -23,6 +23,7 @@ def test_celery():
 def test_model_task(
     test_project_labeled_and_tfidf,
     test_queue_labeled,
+    test_admin_queue,
     test_irr_queue_labeled,
     test_redis,
     tmpdir,

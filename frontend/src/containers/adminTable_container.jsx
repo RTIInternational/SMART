@@ -12,20 +12,21 @@ const mapStateToProps = (state) => {
     return {
         admin_data: state.adminTables.admin_data,
         labels: state.card.labels,
-        admin_counts: state.adminTables.admin_counts
+        admin_counts: state.adminTables.admin_counts,
+        hasExplicit: state.smart.hasExplicit
     };
 };
 
 const mapDispatchToProps = (dispatch) => {
     return {
-        adminLabel: (dataID, labelID, labelReason) => {
-            dispatch(adminLabel(dataID, labelID, labelReason, PROJECT_ID));
+        adminLabel: (dataID, labelID, labelReason, is_explicit) => {
+            dispatch(adminLabel(dataID, labelID, labelReason, is_explicit, PROJECT_ID));
         },
         getAdmin: () => {
             dispatch(getAdmin(PROJECT_ID));
         },
-        discardData: (dataID) => {
-            dispatch(discardData(dataID, PROJECT_ID));
+        discardData: (dataID, discardReason) => {
+            dispatch(discardData(dataID, discardReason, PROJECT_ID));
         }
     };
 };

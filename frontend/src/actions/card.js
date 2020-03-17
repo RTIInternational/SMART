@@ -63,7 +63,7 @@ export const annotateCard = (
     let payload = {
         labelID: labelID,
         labeling_time: moment().diff(card['start_time'], 'seconds'), // now - start_time rounded to whole seconds
-        labelReason: labelReason
+        labelReason: labelReason,
     };
     let apiURL = `/api/annotate_data/${card.pk}/`;
     return dispatch => {
@@ -97,10 +97,24 @@ export const annotateCard = (
 };
 
 //skip a card and put it in the admin table
-export const passCard = (card, num_cards_left, is_admin, projectID) => {
+export const passCard = (
+    card,
+    labelID,
+    labelReason,
+    num_cards_left,
+    is_explicit,
+    projectID,
+    is_admin
+) => {
     let apiURL = `/api/skip_data/${card.pk}/`;
+    let payload = {
+        labelID: labelID,
+        labeling_time: moment().diff(card['start_time'], 'seconds'), // now - start_time rounded to whole seconds
+        labelReason: labelReason,
+        is_explicit: is_explicit
+    };
     return dispatch => {
-        return fetch(apiURL, postConfig())
+        return fetch(apiURL, postConfig(payload))
             .then(response => {
                 if (response.ok) {
                     return response.json();

@@ -11,6 +11,7 @@ const RecycleBinContainer = (props) => <RecycleBin {...props} />;
 const mapStateToProps = (state) => {
     return {
         discarded_data: state.recycleBin.discarded_data,
+        hasExplicit: state.smart.hasExplicit
     };
 };
 
