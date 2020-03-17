@@ -9,8 +9,16 @@ while [ $n -ne 0 ]; do
     n=$?
 done
 
+# wait for frontend images to build
+while ping -c1 smart_frontend &>/dev/null; do
+    sleep 1;
+done
+
 # init redis
 python manage.py init_redis
+
+# collect static files
+python manage.py collectstatic -c --no-input
 
 # start server
 gunicorn -w 4 -b 0.0.0.0:8000 --timeout 86400 --worker-class gevent smart.wsgi
