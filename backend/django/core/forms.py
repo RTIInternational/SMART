@@ -149,7 +149,7 @@ def clean_data_helper(data, supplied_labels):
         val = URLValidator()
         try:
             val(url)
-        except ValidationError as e:
+        except ValidationError:
             raise ValidationError(
                 f"ERROR: There is an invalid URL {url} in the UserURL/AuthorURL column."
             )

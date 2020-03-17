@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import ReactTable from 'react-table';
-import { Panel, FormControl } from 'react-bootstrap';
+import { Panel } from 'react-bootstrap';
 import NVD3Chart from 'react-nvd3';
 import d3 from 'd3';
 import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
@@ -49,7 +49,7 @@ class Skew extends React.Component {
             showPageSizeOptions={false}
             filterable={true}
             manual
-            onFetchData={(state, instance) => {
+            onFetchData={(state) => {
 
                 // fetch your data
                 let tableQuery = {

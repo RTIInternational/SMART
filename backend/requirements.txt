@@ -24,7 +24,7 @@ django-webpack-loader==0.5.0
 djangorestframework==3.6.3
 djangorestframework-jwt==1.11.0
 docformatter==1.2
-flake8==3.0.4
+flake8==3.7.7
 idna==2.5
 isort[requirements]==4.3.20
 itypes==1.1.0
