@@ -18,14 +18,12 @@ from core import tasks
 from core.models import (
     Data,
     DataLabel,
-    DataQueue,
     IRRLog,
     Label,
     MetaData,
     Profile,
     Project,
     ProjectPermissions,
-    Queue,
     RecycleBin,
     TrainingSet,
 )

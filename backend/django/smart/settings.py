@@ -165,6 +165,8 @@ class Dev(Configuration):
     MODEL_PICKLE_PATH = os.path.join(DATA_DIR, "model_pickles")
     PROJECT_FILE_PATH = os.path.join(DATA_DIR, "data_files")
     CODEBOOK_FILE_PATH = os.path.join(DATA_DIR, "code_books")
+    MEDIA_URL = "/media/"
+    MEDIA_ROOT = CODEBOOK_FILE_PATH
 
     AUTH_USER_MODEL = "auth.User"
 
@@ -193,7 +195,6 @@ class Dev(Configuration):
         os.path.join(BASE_DIR, "frontend", "dist"),
         os.path.join(BASE_DIR, "core/data"),
         os.path.join(BASE_DIR, "smart/static"),
-        "/data/code_books/",
     ]
 
     WEBPACK_LOADER = {
@@ -203,11 +204,66 @@ class Dev(Configuration):
             "STATS_FILE": os.path.join(BASE_DIR, "frontend", "webpack-stats.json"),
             "POLL_INTERVAL": 0.1,
             "TIMEOUT": None,
-            "IGNORE": [".+\.hot-update.js", ".+\.map"],
+            "IGNORE": [r".+\.hot-update.js", r".+\.map"],
         }
+    }
+
+    # This uses the default logging configuration found here:
+    # https://github.com/django/django/blob/master/django/utils/log.py
+    # The only change is that the "require_debug_true" filter was removed
+    # for the console handler
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": True,
+        "filters": {
+            "require_debug_false": {"()": "django.utils.log.RequireDebugFalse"},
+            "require_debug_true": {"()": "django.utils.log.RequireDebugTrue"},
+        },
+        "formatters": {
+            "django.server": {
+                "()": "django.utils.log.ServerFormatter",
+                "format": "[{server_time}] {message}",
+                "style": "{",
+            }
+        },
+        "handlers": {
+            "console": {"level": "INFO", "class": "logging.StreamHandler"},
+            "django.server": {
+                "level": "INFO",
+                "class": "logging.StreamHandler",
+                "formatter": "django.server",
+            },
+            "mail_admins": {
+                "level": "ERROR",
+                "filters": ["require_debug_false"],
+                "class": "django.utils.log.AdminEmailHandler",
+            },
+        },
+        "loggers": {
+            "django": {"handlers": ["console", "mail_admins"], "level": "INFO"},
+            "django.server": {
+                "handlers": ["django.server"],
+                "level": "INFO",
+                "propagate": False,
+            },
+        },
     }
 
 
 class Prod(Dev):
     DEBUG = False
-    ALLOWED_HOSTS = []
+    ALLOWED_HOSTS = []  # Add your domain name here
+
+    STATIC_URL = "/static/"
+    STATIC_ROOT = "/data/static_files/"
+
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": "smart-prod",
+            "USER": "smart",
+            "PASSWORD": "my-secret-password",
+            "HOST": "postgres",
+            "PORT": "5432",
+        }
+    }

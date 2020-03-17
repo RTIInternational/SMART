@@ -57,12 +57,20 @@ class CodebookLabelMenu extends React.Component {
                         <Modal.Title>Codebook</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
-                        <embed
+                        <object
                             type="application/pdf"
-                            src={CODEBOOK_URL}
+                            data={CODEBOOK_URL}
                             id="pdf_document"
                             width="100%"
-                            height="100%" />
+                            height="100%">
+                            <embed
+                                type="application/pdf"
+                                src={CODEBOOK_URL}
+                                id="pdf_document"
+                                width="100%"
+                                height="100%" />
+                            It appears your browser does not support viewing PDFs.  Please <a href={CODEBOOK_URL}>click the link to download the codebook</a> instead.
+                        </object>
                     </Modal.Body>
                 </Modal>
             );

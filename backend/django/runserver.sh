@@ -9,4 +9,8 @@ while [ $n -ne 0 ]; do
     n=$?
 done
 
+# init redis
+python manage.py init_redis
+
+# start server
 python ./manage.py runserver 0.0.0.0:8000

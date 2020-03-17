@@ -2,6 +2,7 @@
   "private": true,
   "scripts": {
     "build": "npm install && webpack",
+    "postbuild": "rm -rf /var/www/dist/ && cp -r /code/dist /var/www/dist/ && cp /code/webpack-stats.json /var/www/webpack-stats.json",
     "compile": "webpack -p",
     "compile:dev": "webpack -d",
     "dev": "npm run manage.py runserver",

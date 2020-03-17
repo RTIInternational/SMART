@@ -1,9 +1,7 @@
-FROM node:latest
-RUN apt-get update && apt-get install -y nginx
+FROM node:8
+
 WORKDIR /code
 RUN yarn install
-RUN yarn global add webpack
+RUN yarn add webpack webpack-dev-server --dev
 ADD . /code
 ENV NODE_ENV production
-RUN webpack
-EXPOSE 8080

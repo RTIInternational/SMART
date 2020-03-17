@@ -21,13 +21,10 @@ from core.models import (
     Data,
     DataLabel,
     DataPrediction,
-    DataQueue,
     DataUncertainty,
     IRRLog,
     Label,
     Model,
-    Queue,
-    RecycleBin,
 )
 from core.utils.utils_queue import fill_queue, handle_empty_queue
 
@@ -220,8 +217,6 @@ def check_and_trigger_model(datum, profile=None):
     current_training_set = project.get_current_training_set()
     batch_size = project.batch_size
 
-    admin_queue = Queue.objects.get(project=project, type="admin")
-
     labeled_data = DataLabel.objects.finalized().filter(
         data__project=project, training_set=current_training_set
     )
@@ -280,9 +275,6 @@ def train_and_save_model(project):
     # In order to train need X (tf-idf vector) and Y (label) for every labeled datum
     # Order both X and Y by upload_id_hash to ensure the tf-idf vector corresponds to the correct
     # label
-    admin_data = DataQueue.objects.filter(queue__type="admin").values_list(
-        "data", flat=True
-    )
     labeled_data = DataLabel.objects.finalized().filter(data__project=project)
 
     unique_ids = list(

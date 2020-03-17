@@ -49,7 +49,7 @@ class Skew extends React.Component {
             showPageSizeOptions={false}
             filterable={true}
             manual
-            onFetchData={(state, instance) => {
+            onFetchData={(state) => {
 
                 // fetch your data
                 let tableQuery = {

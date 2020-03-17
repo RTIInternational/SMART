@@ -194,7 +194,7 @@ def test_skip_explicit_data(
     # for data object skip it marked as explicit
     for datum in data:
         card_was_irr = datum.irr_ind
-        response = client.post(
+        client.post(
             f"/api/skip_data/{datum.pk}/",
             {"is_explicit": True, "labelID": test_labels[0].pk, "labeling_time": 0},
         )
@@ -767,7 +767,7 @@ def test_discard_data(
         admin_client.post(f"/api/discard_data/{datum.data.pk}/")
         assert DataQueue.objects.filter(data=datum.data).count() == 0
         assert RecycleBin.objects.filter(data=datum.data).count() == 1
-        assert datum.data.irr_ind == True
+        assert datum.data.irr_ind is True
 
     # get normal data and discard it.
     non_irr_data = admin_data.filter(data__irr_ind=False)

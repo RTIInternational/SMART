@@ -2,44 +2,87 @@ version: '2.1'
 
 services:
   postgres:
-    extends:
-      file: ../docker-common.yml
-      service: postgres
+    image: postgres:9.6.2
+    environment:
+      - POSTGRES_PASSWORD=my-secret-password
+      - POSTGRES_USER=smart
+      - POSTGRES_DB=smart-prod
+    volumes:
+      - smart_pgdata:/var/lib/postgresql/data
+    restart: always
+    expose:
+      - "5432"
 
   redis:
-    extends:
-      file: ../docker-common.yml
-      service: redis
+    image: redis:3.0
+    restart: always
+    expose:
+      - "6379"
 
   smart_backend:
-    extends:
-      file: ../docker-common.yml
-      service: smart_backend
-    build: 
+    build:
       context: ../../backend/
       dockerfile: Dockerfile.prod
     image: rti/smart-backend-prod:R_0_0_1
+    container_name: smart_backend_prod
+    volumes:
+      - smart_data:/data/
+      - smart_static:/code/frontend/
     restart: always
     depends_on:
       - postgres
       - redis
+      - smart_frontend
+    links:
+      - smart_frontend
+    expose:
+      - "8000"
+    command: ./runserver_prod.sh
 
   smart_frontend:
-    extends:
-      file: ../docker-common.yml
-      service: smart_frontend
-    build: 
-      context: ../../frontend/
+    build:
+      context: ../../frontend
       dockerfile: Dockerfile.prod
     image: rti/smart-frontend-prod:R_0_0_1
+    container_name: smart_frontend_prod
+    volumes:
+      - smart_static:/var/www/
+    command: yarn build
+
+  smart_nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    image: rti/smart-nginx-prod:R_0_0_1
+    container_name: smart_nginx_prod
+    volumes:
+      - smart_data:/data/
+    restart: always
     ports:
-      - "${EXTERNAL_FRONTEND_PORT:-8080}:8080"
-    command: nginx -c /code/nginx.conf -g "daemon off;"
+      - "${EXTERNAL_FRONTEND_PORT:-80}:80"
+    depends_on:
+      - smart_backend
+      - smart_frontend
+    command: nginx -g "daemon off;"
+
+  celery_worker:
+    image: rti/smart-backend-prod:R_0_0_1
+    volumes:
+      - smart_data:/data/
+    restart: always
+    depends_on:
+      - postgres
+      - redis
+      - smart_backend
+    command: ./runcelery.sh
 
 volumes:
   smart_pgdata:
     external:
-      name: vol_smart_pgdata
+      name: vol_smart_pgdata_prod
   smart_data:
     external:
-      name: vol_smart_data
+      name: vol_smart_data_prod
+  smart_static:
+    external:
+      name: vol_smart_static_prod
