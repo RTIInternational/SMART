@@ -9,7 +9,7 @@ while [ $n -ne 0 ]; do
     n=$?
 done
 
-# wait for frontend images to build
+# wait for frontend container to build dist files
 while ping -c1 smart_frontend &>/dev/null; do
     sleep 1;
 done
