@@ -1,8 +1,5 @@
 import numpy as np
-from django.contrib.postgres.fields import ArrayField
 from django.db import connection
-from django.db.models import FloatField
-from postgres_stats.aggregates import Percentile
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
@@ -10,13 +7,11 @@ from core.models import (
     Data,
     DataLabel,
     DataPrediction,
-    DataQueue,
     IRRLog,
     Label,
     Model,
     Project,
     ProjectPermissions,
-    Queue,
     TrainingSet,
 )
 from core.permissions import IsAdminOrCreator
@@ -36,7 +31,6 @@ def total_label_counts(request, project_pk):
         a dictionary of the amount of labels per person per type
     """
     project = Project.objects.get(pk=project_pk)
-    admin_queue = Queue.objects.get(project=project, type="admin")
     finalized_labels = DataLabel.objects.finalized().filter(data__project=project_pk)
 
     response_dict = {

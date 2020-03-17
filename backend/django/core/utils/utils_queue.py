@@ -13,7 +13,6 @@ from core.models import (
     IRRLog,
     Model,
     Queue,
-    RecycleBin,
 )
 from core.utils.utils_redis import (
     redis_parse_data,

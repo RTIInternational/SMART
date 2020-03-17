@@ -34,11 +34,7 @@ from core.utils.utils_annotate import (
     unassign_datum,
 )
 from core.utils.utils_model import check_and_trigger_model
-from core.utils.utils_redis import (
-    redis_serialize_data,
-    redis_serialize_queue,
-    redis_serialize_set,
-)
+from core.utils.utils_redis import redis_serialize_data, redis_serialize_set
 
 
 class DataFilter(django_filters.rest_framework.FilterSet):
