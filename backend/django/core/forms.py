@@ -165,7 +165,7 @@ def clean_data_helper(data, supplied_labels):
 
     labels_in_data = data["Label"].dropna(inplace=False).unique()
     if len(labels_in_data) > 0 and not all(
-        [l in set(supplied_labels) for l in list(set(labels_in_data))]
+        [l in set(supplied_labels) for l in set(labels_in_data)]
     ):
         raise ValidationError(
             "Labels in file do not match labels created in step 2.  File supplied {0} "
