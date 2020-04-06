@@ -164,14 +164,13 @@ def clean_data_helper(data, supplied_labels):
         raise ValidationError("File should contain some data.")
 
     labels_in_data = data["Label"].dropna(inplace=False).unique()
-    if len(labels_in_data) > 0 and not all(
-        [l in set(supplied_labels) for l in set(labels_in_data)]
-    ):
+    set_in_data = set(labels_in_data)
+    set_supplied = set(supplied_labels)
+    if len(set_in_data) > 0 and not set_supplied >= set_in_data:
         raise ValidationError(
-            "Labels in file do not match labels created in step 2.  File supplied {0} "
-            "but step 2 was given {1}".format(
-                ", ".join(labels_in_data), ", ".join(supplied_labels)
-            )
+            "Labels in file are not a superset of the labels provided in the Label Creation Step 2. "
+            "The following labels were found in the file but were not provided in Step 2: "
+            f"{', '.join(set_in_data - set_supplied)}."
         )
 
     num_unlabeled_data = len(data[pd.isnull(data["Label"])])
