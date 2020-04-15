@@ -89,6 +89,49 @@ def get_assignments(profile, project, num_assignments):
         profile=profile, queue__project=project
     )
 
+    # TEMP PATCH
+    # remove any assignedData objects which have been labeled by this profile
+    for ad in existing_assignments:
+        if (
+            DataLabel.objects.filter(data=ad.data, profile=ad.profile).exists()
+            or IRRLog.objects.filter(data=ad.data, profile=ad.profile).exists()
+        ):
+            print(
+                f"Data {ad.pk} in AssignedData for profile {profile.pk}even though "
+                "there is a DataLabel object with this profile"
+            )
+            AssignedData.objects.filter(pk=ad.pk).delete()
+
+    existing_assignments = AssignedData.objects.filter(
+        profile=profile, queue__project=project
+    )
+
+    # also make sure any labeled data has been removed from the redis queue if it's there
+    # Neither of these conditions should ever be true, but due to a bug they are
+    labeled_pks = list(
+        DataLabel.objects.filter(profile=profile, data__irr_ind=False).values_list(
+            "data__pk", flat=True
+        )
+    )
+
+    normal_queue = Queue.objects.get(type="normal", project=project)
+    q = redis_serialize_queue(normal_queue)
+
+    queue_list = [str(d) for d in settings.REDIS.lrange(q, 0, -1)]
+
+    for pk in labeled_pks:
+        lookfor = f"b'data:{pk}'"
+        if lookfor in queue_list:
+            print(
+                f"Data {pk} in normal redis queue even though "
+                "there is a DataLabel object."
+            )
+            settings.REDIS.srem(
+                redis_serialize_set(normal_queue),
+                redis_serialize_data(Data.objects.get(pk=pk)),
+            )
+    # END TEMP
+
     if len(existing_assignments) > 0:
         return [
             assignment.data for assignment in existing_assignments[:num_assignments]
