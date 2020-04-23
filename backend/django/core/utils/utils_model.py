@@ -119,7 +119,10 @@ def fleiss_kappa(project):
                 l_label = "skip"
             else:
                 l_label = str(l)
-            label_count_dict[l_label] = len(d_data_log.filter(label__name=l))
+
+            labels_filtered = list(filter(lambda x: x.label.name == l_label,
+                                          d_data_log))
+            label_count_dict[l_label] = len(labels_filtered)
 
         data_label_dict.append(label_count_dict)
 
