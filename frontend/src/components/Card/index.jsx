@@ -21,7 +21,11 @@ class Card extends React.Component {
                 <div className="full" key={cards[0].id}>
                     <div className="cardface">
                         <h2>Card {cards[0].id + 1}</h2>
-                        <p>{ cards[0].text['text'] }</p>
+                        <p>{ cards[0].text['text'].split(/\r?\n/).map(
+                            (item, key) => { 
+                                return <span key={key}>{item}<br/></span>;
+                            }) 
+                        }</p>
                         <ButtonToolbar bsClass="btn-toolbar pull-right">
                             {labels.map( (opt) => (
                                 <Button onClick={() => annotateCard(cards[0], opt['pk'], cards.length, ADMIN)}
