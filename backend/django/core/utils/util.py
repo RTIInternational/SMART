@@ -104,18 +104,27 @@ def create_data_from_csv(df, project):
     df['project'] = project.pk
     df['irr_ind'] = False
 
-    # Replace tabs since thats our delimiter, remove carriage returns since copy_from doesnt like them
-    # escape all backslashes because it seems to fix "end-of-copy marker corrupt"
+    # Replace tabs since thats our delimiter, escape all backslashes because it seems to
+    # fix "end-of-copy marker corrupt"
     df['Text'] = df['Text'].apply(
-        lambda x: x.replace('\t', ' ').replace('\r', ' ').replace('\n', ' ').replace('\\', '\\\\')
+        lambda x: x.replace('\t', ' ').replace('\\', '\\\\')
     )
 
     df.to_csv(stream, sep='\t', header=False, index=False, columns=columns)
+    stream_length = stream.tell()
     stream.seek(0)
 
     with connection.cursor() as c:
-        c.copy_from(stream, Data._meta.db_table, sep='\t', null='',
-                    columns=['text', 'project_id', 'hash', 'upload_id', 'upload_id_hash', 'irr_ind'])
+        # We must use copy_expert with raw SQL in order to avoid removing newlines - which
+        # limits cards considerably
+        sql = """COPY {} (text, project_id, hash, upload_id, upload_id_hash, irr_ind)
+                 FROM stdin WITH (FORMAT 'csv', DELIMITER E'\\t')
+              """.format(Data._meta.db_table)
+        c.copy_expert(
+            sql,
+            stream,
+            stream_length,
+        )
 
 
 def create_labels_from_csv(df, project):

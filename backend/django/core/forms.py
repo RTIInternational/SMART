@@ -41,12 +41,12 @@ def clean_data_helper(data, supplied_labels):
             ).dropna(axis=0, how="all")
         elif data.content_type == 'text/csv':
             data = pd.read_csv(
-                StringIO(data.read().decode('utf8', 'ignore')),
+                StringIO(data.read().decode('utf8', 'ignore'), newline=None),
                 dtype=str,
             ).dropna(axis=0, how="all")
         elif data.content_type.startswith('application/vnd') and data.name.endswith('.csv'):
             data = pd.read_csv(
-                StringIO(data.read().decode('utf8', 'ignore')),
+                StringIO(data.read().decode('utf8', 'ignore'), newline=None),
                 dtype=str,
             ).dropna(axis=0, how="all")
         elif data.content_type.startswith('application/vnd') and data.name.endswith('.xlsx'):
