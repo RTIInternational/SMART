@@ -18,7 +18,7 @@ django-postgres-stats==1.0.0
 django-formtools==2.1
 django-rest-swagger==2.1.2
 django-webpack-loader==0.5.0
-djangorestframework==3.6.3
+djangorestframework==3.11.2
 djangorestframework-jwt==1.11.0
 flake8==3.0.4
 idna==2.5
