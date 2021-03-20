@@ -23,7 +23,7 @@ djangorestframework-jwt==1.11.0
 flake8==3.0.4
 idna==2.5
 itypes==1.1.0
-Jinja2==2.9.6
+Jinja2==2.11.3
 kombu==4.0.2
 MarkupSafe==1.0
 numpy==1.13.3
