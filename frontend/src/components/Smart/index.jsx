@@ -14,7 +14,7 @@ const ADMIN = window.ADMIN;
 
 class Smart extends React.Component {
 
-    componentWillMount() {
+    componentDidMount() {
         this.props.getAdminTabsAvailable();
         this.props.getAdminCounts();
     }

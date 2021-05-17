@@ -97,7 +97,7 @@ The following sample code can be used to read in the zipped files and get predic
 ```
 import pandas as pd
 import pickle
-from sklearn.externals import joblib
+import joblib
 
 # read in the TFIDF matrix and the labeled data
 labeled_frame = pd.read_csv(<<project_#_labeled_data.csv>>)

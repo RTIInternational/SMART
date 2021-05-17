@@ -60,7 +60,7 @@ adminpage_patterns = [
 
 urlpatterns = [
     url(r"^", include(api_router.urls)),
-    url(r"^progressbarupload/", include("progressbarupload.urls")),
+    # url(r"^progressbarupload/", include("progressbarupload.urls")),
     url(r"^download_data/(?P<project_pk>\d+)/$", api.download_data),
     url(r"^download_model/(?P<project_pk>\d+)/$", api.download_model),
     url(r"^", include(annotate_patterns)),

@@ -28,7 +28,7 @@ const COLUMNS = [
 
 class Skew extends React.Component {
 
-    componentWillMount() {
+    componentDidMount() {
         this.props.getUnlabeled();
         this.props.getLabelCounts();
     }

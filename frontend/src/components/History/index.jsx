@@ -47,7 +47,7 @@ const COLUMNS = [
 
 class History extends React.Component {
 
-    componentWillMount() {
+    componentDidMount() {
         this.props.getHistory();
     }
 

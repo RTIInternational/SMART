@@ -7,7 +7,7 @@ import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_conta
 
 class AdminTable extends React.Component {
 
-    componentWillMount() {
+    componentDidMount() {
         this.props.getAdmin();
     }
 

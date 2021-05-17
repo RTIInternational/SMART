@@ -4,7 +4,7 @@ from django.utils import timezone
 from django.urls import reverse
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.contrib.postgres.fields import JSONField
+from django.db.models import JSONField
 from django.core.validators import MaxValueValidator, MinValueValidator
 
 
