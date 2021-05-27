@@ -441,7 +441,7 @@ def data_admin_table(request, project_pk):
         data: a list of data information
     """
     project = Project.objects.get(pk=project_pk)
-    queue = Queue.objects.filter(project=project, type="admin")
+    queue = Queue.objects.get(project=project, type="admin")
 
     data_objs = DataQueue.objects.filter(queue=queue)
 
@@ -469,7 +469,7 @@ def data_admin_counts(request, project_pk):
         data: a list of data information
     """
     project = Project.objects.get(pk=project_pk)
-    queue = Queue.objects.filter(project=project, type="admin")
+    queue = Queue.objects.get(project=project, type="admin")
     data_objs = DataQueue.objects.filter(queue=queue)
     irr_count = data_objs.filter(data__irr_ind=True).count()
     skip_count = data_objs.filter(data__irr_ind=False).count()

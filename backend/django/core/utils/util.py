@@ -320,7 +320,7 @@ def perc_agreement_table_data(project):
                 {
                     "First Coder": pair[0],
                     "Second Coder": pair[1],
-                    "Percent Agreement": str(100 * round(p_agree / p_total, 3)) + "%",
+                    "Percent Agreement": str(round(100 * (p_agree / p_total), 1)) + "%",
                 }
             )
         else:
