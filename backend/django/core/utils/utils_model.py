@@ -128,12 +128,12 @@ def fleiss_kappa(project):
                 agree += 1
 
         label_count_dict = {}
-        for l in label_list:
-            if l is None:
+        for label in label_list:
+            if label is None:
                 l_label = "skip"
             else:
-                l_label = str(l)
-            label_count_dict[l_label] = len(d_data_log.filter(label__name=l))
+                l_label = str(label)
+            label_count_dict[l_label] = len(d_data_log.filter(label__name=label))
 
         data_label_dict.append(label_count_dict)
 

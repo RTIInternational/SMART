@@ -13,10 +13,14 @@ var BundleTracker = require("webpack-bundle-tracker");
 var config = {
     context: path.join(__dirname, "src"),
     devtool: "source-map",
+    mode: "development",
     entry: {
         smart: "./smart.jsx",
         globals: "./globals.js",
         admins: "./admins.js"
+    },
+    devServer: {
+        writeToDisk: true
     },
     module: {
         rules: [
@@ -38,7 +42,10 @@ var config = {
                 test: /datatables\.net.*/,
                 use: {
                     loader: "imports-loader",
-                    options: "define=>false"
+                    options: {
+                        additionalCode:
+                            "var define = false; /* Disable AMD for misbehaving libraries */"
+                    }
                 }
             },
             {
@@ -54,8 +61,7 @@ var config = {
                     {
                         loader: "resolve-url-loader",
                         options: {
-                            sourceMap: true,
-                            keepQuery: true
+                            sourceMap: true
                         }
                     },
                     {
@@ -119,9 +125,12 @@ var config = {
         filename: "[name].[chunkhash].js"
     },
     plugins: [
-        new BundleTracker({ filename: "./webpack-stats.json" }),
+        new BundleTracker({
+            path: path.resolve(__dirname),
+            filename: "webpack-stats.json"
+        }),
         new StyleLintPlugin({
-            context: "./src/styles/"
+            context: "/code/src/styles"
         }),
         new MiniCssExtractPlugin({ filename: "[name].[contenthash].css" }),
         new webpack.ProvidePlugin({

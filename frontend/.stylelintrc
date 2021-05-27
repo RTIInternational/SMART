@@ -6,7 +6,7 @@
         "color-no-invalid-hex": true,
         "comment-empty-line-before": [
             "always", {
-                "ignore": ["stylelint-command", "after-comment"]
+                "ignore": ["after-comment", "stylelint-commands"]
             }
         ],
         "declaration-bang-space-before": "always",
