@@ -3,6 +3,7 @@ import { connect } from 'react-redux';
 
 import CodebookLabelMenu from '../components/CodebookLabelMenu';
 
+console.log("CodebookLabelMenu::", CodebookLabelMenu);
 
 const CodebookLabelMenuContainer = (props) => <CodebookLabelMenu {...props} />;
 

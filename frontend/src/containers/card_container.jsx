@@ -4,6 +4,8 @@ import { connect } from 'react-redux';
 import { fetchCards, annotateCard, passCard } from '../actions/card';
 import Card from '../components/Card';
 
+console.log("Card::", Card.type);
+
 const PROJECT_ID = window.PROJECT_ID;
 
 const CardContainer = (props) => <Card {...props} />;

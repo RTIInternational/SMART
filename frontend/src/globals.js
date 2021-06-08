@@ -1,6 +1,8 @@
 /* eslint-disable no-undef */
 import 'bootstrap';
+import $ from 'jquery';
 import './utils/jquery.formset.js';
+
 import 'd3';
 import 'nvd3';
 

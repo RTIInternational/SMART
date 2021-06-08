@@ -15,6 +15,8 @@ const store = createStore(reducers, composeEnhancers(
     applyMiddleware(thunkMiddleware)
 ));
 
+console.log("SmartContainer::", SmartContainer);
+
 ReactDOM.render(
     <Provider store={store}>
         <SmartContainer />
