@@ -3,15 +3,14 @@ import PropTypes from "prop-types";
 import {
     Button,
     ButtonToolbar,
-    Clearfix,
-    Well,
+    Card,
     Tooltip,
     OverlayTrigger
 } from "react-bootstrap";
 
 const ADMIN = window.ADMIN;
 
-class Card extends React.Component {
+class DataCard extends React.Component {
     componentDidMount() {
         this.props.fetchCards();
     }
@@ -24,10 +23,10 @@ class Card extends React.Component {
             //just get the labels from the cards
             card = (
                 <div className="full" key={cards[0].id}>
-                    <div className="cardface">
+                    <div className="cardface clearfix">
                         <h2>Card {cards[0].id + 1}</h2>
                         <p>{cards[0].text["text"]}</p>
-                        <ButtonToolbar bsClass="btn-toolbar pull-right">
+                        <ButtonToolbar className="btn-toolbar pull-right">
                             {labels.map(opt => (
                                 <Button
                                     onClick={() =>
@@ -38,7 +37,7 @@ class Card extends React.Component {
                                             ADMIN
                                         )
                                     }
-                                    bsStyle="primary"
+                                    variant="primary"
                                     key={`deck-button-${opt["name"]}`}
                                 >
                                     {opt["name"]}
@@ -57,13 +56,12 @@ class Card extends React.Component {
                                     onClick={() => {
                                         passCard(cards[0], cards.length, ADMIN);
                                     }}
-                                    bsStyle="info"
+                                    variant="info"
                                 >
                                     Skip
                                 </Button>
                             </OverlayTrigger>
                         </ButtonToolbar>
-                        <Clearfix />
                     </div>
                 </div>
             );
@@ -71,14 +69,14 @@ class Card extends React.Component {
             let blankDeckMessage = message
                 ? message
                 : "No more data to label at this time. Please check back later";
-            card = <Well bsSize="large">{blankDeckMessage}</Well>;
+            card = <Card body>{blankDeckMessage}</Card>;
         }
 
         return card;
     }
 }
 
-Card.propTypes = {
+DataCard.propTypes = {
     cards: PropTypes.arrayOf(PropTypes.object),
     message: PropTypes.string,
     fetchCards: PropTypes.func.isRequired,
@@ -87,4 +85,4 @@ Card.propTypes = {
     labels: PropTypes.arrayOf(PropTypes.object)
 };
 
-export default Card;
+export default DataCard;

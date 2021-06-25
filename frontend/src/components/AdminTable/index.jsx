@@ -36,7 +36,7 @@ class AdminTable extends React.Component {
                     <div>
                         <p id="admin_text">{row.row.data}</p>
                         <div id="admin_buttons">
-                            <ButtonToolbar bsClass="btn-toolbar pull-right">
+                            <ButtonToolbar variant="btn-toolbar pull-right">
                                 {labels.map(label => {
                                     return (
                                         <Button
@@ -48,7 +48,7 @@ class AdminTable extends React.Component {
                                             onClick={() =>
                                                 adminLabel(row.row.id, label.pk)
                                             }
-                                            bsStyle="primary"
+                                            variant="primary"
                                         >
                                             {label.name}
                                         </Button>
@@ -67,7 +67,7 @@ class AdminTable extends React.Component {
                                     <Button
                                         key={"discard_" + row.row.id.toString()}
                                         onClick={() => discardData(row.row.id)}
-                                        bsStyle="danger"
+                                        variant="danger"
                                     >
                                         Discard
                                     </Button>

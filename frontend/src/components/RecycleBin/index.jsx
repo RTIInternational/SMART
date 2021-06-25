@@ -37,7 +37,7 @@ class RecycleBin extends React.Component {
             <div className="sub-row">
                 <p id="disc_text">{row.row.data}</p>
                 <div id="disc_buttons">
-                    <ButtonToolbar bsClass="btn-toolbar pull-right">
+                    <ButtonToolbar variant="btn-toolbar pull-right">
                         <OverlayTrigger
                             placement = "top"
                             overlay={
@@ -46,7 +46,7 @@ class RecycleBin extends React.Component {
                                 </Tooltip>
                             }>
                             <Button onClick = {() => restoreData(row.row.id)}
-                                bsStyle="danger">Restore</Button>
+                                variant="danger">Restore</Button>
                         </OverlayTrigger>
                     </ButtonToolbar>
                 </div>
