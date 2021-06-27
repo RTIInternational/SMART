@@ -1,3 +1,9 @@
+import $ from 'jquery';
+import dt from 'datatables.net-bs';
+import 'bootstrap';
+dt(window, $);
+
+
 /* eslint-disable no-unused-vars */
 const PROJECT_PK = window.PROJECT_PK;
 const PROJECT_CLASSIFIER = window.PROJECT_CLASSIFIER;
