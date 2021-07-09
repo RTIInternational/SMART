@@ -14,8 +14,8 @@ SEED_PASSWORD = 'password'
 SEED_PASSWORD2 = 'password2'
 SEED_EMAIL = 'dummy@smart.org'
 SEED_PROJECT = 'seed-data'
-SEED_FILE_PATH = './core/data/SemEval-2016-Task6/test-feminism.csv'
-SEED_LABELS = ['AGAINST', 'FAVOR', 'NONE']
+SEED_FILE_PATH = './core/data/SemEval-2016-Task6/test-aww.csv'
+SEED_LABELS = ['about cats', 'not about cats', 'unclear']
 
 
 def seed_database(noprofile=False, nodata=False):

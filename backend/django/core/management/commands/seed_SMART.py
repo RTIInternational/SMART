@@ -100,7 +100,7 @@ class Command(BaseCommand):
                 name='Root Only Project',
                 description="This is a project for only the root user. The root user is the creator.  This project's data file has labels.",
                 data_file='./core/data/test_files/test_some_labels.csv',
-                label_list=['FAVOR', 'AGAINST', 'NONE'],
+                label_list=['about cats', 'not about cats', 'unclear'],
                 perm_list=[],
                 classifier='logistic regression')
             multi_user_project = seed_project(
@@ -108,7 +108,7 @@ class Command(BaseCommand):
                 name='Three User Project',
                 description="This is a project that is coded by three different users.  No labels were in the data file to begin with.",
                 data_file='./core/data/test_files/test_no_labels.csv',
-                label_list=['Good', 'Bad'],
+                label_list=['about cats', 'not about cats', 'unclear'],
                 perm_list=[user1, test_user],
                 classifier='logistic regression')
             seed_project(
