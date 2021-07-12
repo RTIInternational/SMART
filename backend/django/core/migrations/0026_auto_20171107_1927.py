@@ -8,19 +8,19 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0025_datalabel_label_time'),
+        ("core", "0025_datalabel_label_time"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='model',
-            name='cv_accuracy',
+            model_name="model",
+            name="cv_accuracy",
             field=models.FloatField(default=0.05),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='model',
-            name='cv_std',
+            model_name="model",
+            name="cv_std",
             field=models.FloatField(default=0.05),
             preserve_default=False,
         ),

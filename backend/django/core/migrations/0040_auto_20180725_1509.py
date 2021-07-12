@@ -8,13 +8,11 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0039_data_upload_id'),
+        ("core", "0039_data_upload_id"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='data',
-            name='upload_id',
-            field=models.CharField(max_length=100),
+            model_name="data", name="upload_id", field=models.CharField(max_length=100),
         ),
     ]

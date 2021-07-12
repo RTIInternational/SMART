@@ -1,6 +1,7 @@
-from django.conf.urls import re_path, include
+from django.conf.urls import include, re_path
 from rest_framework import routers
-from core.views import api, api_viewsets, api_annotate, api_admin
+
+from core.views import api, api_admin, api_annotate, api_viewsets
 
 app_name = "core"
 

@@ -8,13 +8,13 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0032_auto_20180627_1556'),
+        ("core", "0032_auto_20180627_1556"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='project',
-            old_name='active_l_method',
-            new_name='learning_method',
+            model_name="project",
+            old_name="active_l_method",
+            new_name="learning_method",
         ),
     ]

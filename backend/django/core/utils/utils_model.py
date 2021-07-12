@@ -1,33 +1,33 @@
-from django.conf import settings
-
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.naive_bayes import GaussianNB
-from sklearn.model_selection import cross_val_predict
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support
-import joblib
-from scipy import sparse
-import statsmodels.stats.inter_rater as raters
-import os
 import math
-import numpy as np
-import pandas as pd
+import os
 import pickle
 
+import joblib
+import numpy as np
+import pandas as pd
+import statsmodels.stats.inter_rater as raters
+from django.conf import settings
+from scipy import sparse
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+from sklearn.model_selection import cross_val_predict
+from sklearn.naive_bayes import GaussianNB
+from sklearn.svm import SVC
+
+from core import tasks
 from core.models import (
     Data,
-    Label,
     DataLabel,
-    Model,
     DataPrediction,
     DataUncertainty,
-    RecycleBin,
     IRRLog,
+    Label,
+    Model,
+    RecycleBin,
 )
-from core import tasks
-from core.utils.utils_queue import handle_empty_queue, fill_queue
+from core.utils.utils_queue import fill_queue, handle_empty_queue
 
 
 def cohens_kappa(project):
@@ -93,9 +93,8 @@ def cohens_kappa(project):
 
 
 def fleiss_kappa(project):
-    """
-    Takes in the irr log data and calculates fleiss's kappa
-    Code modified from:
+    """Takes in the irr log data and calculates fleiss's kappa Code modified from:
+
     https://gist.github.com/skylander86/65c442356377367e27e79ef1fed4adee
     Equations from: https://en.wikipedia.org/wiki/Fleiss%27_kappa
     """
@@ -147,7 +146,8 @@ def fleiss_kappa(project):
 
 
 def least_confident(probs):
-    """Least Confident
+    """Least Confident.
+
         x = 1 - p
         p is probability of highest probability class
 
@@ -164,7 +164,8 @@ def least_confident(probs):
 
 
 def margin_sampling(probs):
-    """Margin Sampling
+    """Margin Sampling.
+
         x = p1 - p2
         p1 is probabiiity of highest probability class
         p2 is probability of lowest probability class
@@ -203,9 +204,9 @@ def entropy(probs):
 
 
 def check_and_trigger_model(datum, profile=None):
-    """Given a recently assigned datum check if the project it belong to needs
-       its model ran.  It the model needs to be run, start the model run and
-       create a new project current_training_set
+    """Given a recently assigned datum check if the project it belong to needs its model
+    ran.  It the model needs to be run, start the model run and create a new project
+    current_training_set.
 
     Args:
         datum: Data object (may or may not be labeled)
@@ -246,7 +247,7 @@ def check_and_trigger_model(datum, profile=None):
 
 
 def train_and_save_model(project):
-    """Given a project create a model, train it, and save the model pickle
+    """Given a project create a model, train it, and save the model pickle.
 
     Args:
         project: The project to start training
@@ -320,7 +321,8 @@ def train_and_save_model(project):
 
 
 def predict_data(project, model):
-    """Given a project and its model, predict any unlabeled data and create
+    """Given a project and its model, predict any unlabeled data and create.
+
         Prediction objects for each.  There will be #label * #unlabeled_data
         predictions.  This is because we are saving the probability of each label
         for every data.
@@ -381,7 +383,7 @@ def predict_data(project, model):
 
 def create_tfidf_matrix(project_pk, max_df=0.995, min_df=0.005):
     """Create a TF-IDF matrix. Make sure to order the data by upload_id_hash so that we
-        can sync the data up again when training the model
+    can sync the data up again when training the model.
 
     Args:
         project_pk: The pk of the project
@@ -410,7 +412,7 @@ def create_tfidf_matrix(project_pk, max_df=0.995, min_df=0.005):
 
 def save_tfidf_matrix(matrix, project_pk):
     """Save tf-idf matrix to persistent volume storage defined in settings as
-        TF_IDF_PATH
+    TF_IDF_PATH.
 
     Args:
         matrix: CSR-format tf-idf matrix
@@ -429,7 +431,7 @@ def save_tfidf_matrix(matrix, project_pk):
 
 def save_tfidf_vectorizer(vectorizer, project_pk):
     """Save tf-idf matrix to persistent volume storage defined in settings as
-        TF_IDF_PATH
+    TF_IDF_PATH.
 
     Args:
         matrix: CSR-format tf-idf matrix
@@ -446,7 +448,7 @@ def save_tfidf_vectorizer(vectorizer, project_pk):
 
 
 def load_tfidf_matrix(project_pk):
-    """Load tf-idf matrix from persistent volume, otherwise None
+    """Load tf-idf matrix from persistent volume, otherwise None.
 
     Args:
         project_pk: The project pk the data comes from

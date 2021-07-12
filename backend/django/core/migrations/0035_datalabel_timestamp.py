@@ -8,13 +8,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0034_merge_20180628_1801'),
+        ("core", "0034_merge_20180628_1801"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='datalabel',
-            name='timestamp',
+            model_name="datalabel",
+            name="timestamp",
             field=models.DateTimeField(default=None, null=True),
         ),
     ]

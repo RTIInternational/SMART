@@ -1,28 +1,28 @@
-from django.db import connection, transaction
-from django.contrib.auth import get_user_model
+import hashlib
+import os
+from io import StringIO
+from itertools import combinations
+
+import numpy as np
+import pandas as pd
+from celery import chord
 from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.db import connection, transaction
 from django.utils import timezone
 
-import os
-import numpy as np
-import hashlib
-import pandas as pd
-from itertools import combinations
-from io import StringIO
-from celery import chord
-
+from core import tasks
 from core.models import (
-    Project,
     Data,
-    Profile,
-    Label,
     DataLabel,
-    TrainingSet,
     IRRLog,
+    Label,
+    Profile,
+    Project,
     ProjectPermissions,
+    TrainingSet,
 )
 from core.utils.utils_queue import fill_queue
-from core import tasks
 
 # https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
 # Disable warning for false positive warning that should only trigger on chained assignment
@@ -30,7 +30,7 @@ pd.options.mode.chained_assignment = None  # default='warn'
 
 
 def md5_hash(obj):
-    """Return MD5 hash hexdigest of obj; returns None if obj is None"""
+    """Return MD5 hash hexdigest of obj; returns None if obj is None."""
     if obj is not None:
         if isinstance(obj, int):
             obj = str(obj)
@@ -40,10 +40,10 @@ def md5_hash(obj):
 
 
 def create_profile(username, password, email):
-    """
-    Create a user with the given attributes.
-    Create a user in Django's authentication model and
-    link it to our own project user model.
+    """Create a user with the given attributes.
+
+    Create a user in Django's authentication model and link it to our own project user
+    model.
     """
     user = get_user_model().objects.create(
         username=username, password=password, email=email
@@ -53,9 +53,7 @@ def create_profile(username, password, email):
 
 
 def create_project(name, creator, percentage_irr=10, num_users_irr=2, classifier=None):
-    """
-    Create a project with the given name and creator.
-    """
+    """Create a project with the given name and creator."""
     if classifier:
         proj = Project.objects.create(
             name=name,
@@ -112,10 +110,8 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
 
 
 def create_data_from_csv(df, project):
-    """
-    Insert data objects into database using cursor.copy_from by creating an in-memory
-    tsv representation of the data
-    """
+    """Insert data objects into database using cursor.copy_from by creating an in-memory
+    tsv representation of the data."""
     columns = ["Text", "project", "hash", "ID", "id_hash", "irr_ind"]
     stream = StringIO()
 
@@ -152,10 +148,8 @@ def create_data_from_csv(df, project):
 
 
 def create_labels_from_csv(df, project):
-    """
-    Insert DataLabel objects into database using cursor.copy_from by creating an in-memory
-    tsv representation of the datalabel objects
-    """
+    """Insert DataLabel objects into database using cursor.copy_from by creating an in-
+    memory tsv representation of the datalabel objects."""
     columns = [
         "label_id",
         "data_id",
@@ -189,10 +183,11 @@ def create_labels_from_csv(df, project):
 
 
 def add_data(project, df):
-    """
-    Add data to an existing project.  df should be two column dataframe with
-    columns Text and Label.  Label can be empty and should have at least one
-    null value.  Any row that has Label should be added to DataLabel
+    """Add data to an existing project.
+
+    df should be two column dataframe with columns Text and Label.  Label can be empty
+    and should have at least one null value.  Any row that has Label should be added to
+    DataLabel
     """
     # Create hash of text and drop duplicates
     df["hash"] = df["Text"].apply(md5_hash)
@@ -243,9 +238,7 @@ def add_data(project, df):
 
 
 def perc_agreement_table_data(project):
-    """
-    Takes in the irrlog and finds the pairwise percent agreement
-    """
+    """Takes in the irrlog and finds the pairwise percent agreement."""
     irr_data = set(
         IRRLog.objects.filter(data__project=project).values_list("data", flat=True)
     )
@@ -335,10 +328,7 @@ def perc_agreement_table_data(project):
 
 
 def irr_heatmap_data(project):
-    """
-    Takes in the irrlog and formats the data to be usable in the irr heatmap
-
-    """
+    """Takes in the irrlog and formats the data to be usable in the irr heatmap."""
     # get the list of users and labels for this project
     user_list = list(
         ProjectPermissions.objects.filter(project=project).values_list(
@@ -396,9 +386,9 @@ def irr_heatmap_data(project):
 
 
 def save_data_file(df, project_pk):
-    """Given the df used to create and save objects save just the data to a file.
-        Make sure to count the number of files in directory assocaited with the
-        project and save as next incremented file name
+    """Given the df used to create and save objects save just the data to a file. Make
+    sure to count the number of files in directory assocaited with the project and save
+    as next incremented file name.
 
     Args:
         df: dataframe used to create and save data objects, contains `Text` column
@@ -426,10 +416,8 @@ def save_data_file(df, project_pk):
 
 
 def save_codebook_file(data, project_pk):
-    """Given the django data file, save it as the codebook for that project
-    make sure to overwrite any project that is already there/
-
-    """
+    """Given the django data file, save it as the codebook for that project make sure to
+    overwrite any project that is already there/"""
     date = timezone.now().strftime("%m_%d_%y__%H_%M_%S")
     fpath = os.path.join(
         settings.CODEBOOK_FILE_PATH,
@@ -441,7 +429,7 @@ def save_codebook_file(data, project_pk):
 
 
 def get_labeled_data(project):
-    """Given a project, get the list of labeled data
+    """Given a project, get the list of labeled data.
 
     Args:
         project: Project object
