@@ -235,12 +235,15 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.AlterUniqueTogether(
-            name="dataqueue", unique_together=set([("queue", "data")]),
+            name="dataqueue",
+            unique_together=set([("queue", "data")]),
         ),
         migrations.AlterUniqueTogether(
-            name="dataprediction", unique_together=set([("data", "model")]),
+            name="dataprediction",
+            unique_together=set([("data", "model")]),
         ),
         migrations.AlterUniqueTogether(
-            name="datalabel", unique_together=set([("data", "user")]),
+            name="datalabel",
+            unique_together=set([("data", "user")]),
         ),
     ]

@@ -13,7 +13,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(model_name="model", name="cv_std",),
+        migrations.RemoveField(
+            model_name="model",
+            name="cv_std",
+        ),
         migrations.AddField(
             model_name="model",
             name="cv_metrics",

@@ -28,7 +28,10 @@ class Migration(migrations.Migration):
                 ("set_number", models.IntegerField()),
             ],
         ),
-        migrations.RemoveField(model_name="project", name="current_training_set",),
+        migrations.RemoveField(
+            model_name="project",
+            name="current_training_set",
+        ),
         migrations.AlterField(
             model_name="datalabel",
             name="training_set",

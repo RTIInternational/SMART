@@ -26,6 +26,7 @@ class Migration(migrations.Migration):
             preserve_default=False,
         ),
         migrations.AlterUniqueTogether(
-            name="projectpermissions", unique_together=set([("user", "project")]),
+            name="projectpermissions",
+            unique_together=set([("user", "project")]),
         ),
     ]

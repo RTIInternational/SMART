@@ -13,6 +13,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterUniqueTogether(
-            name="data", unique_together=set([("hash", "upload_id_hash", "project")]),
+            name="data",
+            unique_together=set([("hash", "upload_id_hash", "project")]),
         ),
     ]

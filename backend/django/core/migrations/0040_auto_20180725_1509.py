@@ -13,6 +13,8 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterField(
-            model_name="data", name="upload_id", field=models.CharField(max_length=100),
+            model_name="data",
+            name="upload_id",
+            field=models.CharField(max_length=100),
         ),
     ]

@@ -13,9 +13,13 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name="data", name="irr_ind", field=models.BooleanField(default=False),
+            model_name="data",
+            name="irr_ind",
+            field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name="queue", name="irr", field=models.BooleanField(default=False),
+            model_name="queue",
+            name="irr",
+            field=models.BooleanField(default=False),
         ),
     ]

@@ -43,6 +43,7 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.AlterUniqueTogether(
-            name="labelchangelog", unique_together=set([("data", "profile")]),
+            name="labelchangelog",
+            unique_together=set([("data", "profile")]),
         ),
     ]

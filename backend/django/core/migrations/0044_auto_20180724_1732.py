@@ -12,8 +12,14 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(model_name="queue", name="admin",),
-        migrations.RemoveField(model_name="queue", name="irr",),
+        migrations.RemoveField(
+            model_name="queue",
+            name="admin",
+        ),
+        migrations.RemoveField(
+            model_name="queue",
+            name="irr",
+        ),
         migrations.AddField(
             model_name="queue",
             name="type",

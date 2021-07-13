@@ -13,6 +13,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterUniqueTogether(
-            name="datalabel", unique_together=set([("data", "profile")]),
+            name="datalabel",
+            unique_together=set([("data", "profile")]),
         ),
     ]

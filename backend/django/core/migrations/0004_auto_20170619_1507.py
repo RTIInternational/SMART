@@ -46,6 +46,7 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.AlterUniqueTogether(
-            name="assigneddata", unique_together=set([("user", "data", "queue")]),
+            name="assigneddata",
+            unique_together=set([("user", "data", "queue")]),
         ),
     ]

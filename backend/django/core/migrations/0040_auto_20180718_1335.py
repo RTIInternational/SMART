@@ -46,6 +46,7 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.AlterUniqueTogether(
-            name="irrlog", unique_together=set([("data", "profile")]),
+            name="irrlog",
+            unique_together=set([("data", "profile")]),
         ),
     ]

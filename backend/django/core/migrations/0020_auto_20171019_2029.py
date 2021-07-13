@@ -43,6 +43,7 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.AlterUniqueTogether(
-            name="datauncertainty", unique_together=set([("data", "model")]),
+            name="datauncertainty",
+            unique_together=set([("data", "model")]),
         ),
     ]

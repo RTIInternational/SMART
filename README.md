@@ -108,3 +108,12 @@ If you would like to contribute to SMART feel free to submit issues and pull req
 * For new features include unit tests to ensure the feature is working correctly and the new feature is maintainable going forward.
 * For bug fixes include unit tests to ensure that previously untested code is now covered.
 * Make sure your branch passes all the existing backend and frontend tests.
+* It is recommended that you enable pre-commit hooks. These are format checks that run whenever you commit to the project.
+   * In order to run the pre-commit hooks you will need to have [pre-commit](https://pre-commit.com/) installed in your local environment.  
+   * Once your environment is active you will need to install the pre-commit hooks with `pre-commit install`
+   * This project uses the following formatters:
+       * [black](https://github.com/python/black): The uncompromising Python code formatter
+       * [flake8](https://github.com/PyCQA/flake8): Your tool for style guide enforcement
+       * [docformatter](https://github.com/myint/docformatter): Formats docstrings to follow [PEP 257](https://www.python.org/dev/peps/pep-0257/)
+       * [isort](https://github.com/timothycrosley/isort): A python utility to sort imports
+       * [eslint](https://github.com/eslint/eslint): A fully pluggable tool for identifying and reporting on patterns in JavaScript

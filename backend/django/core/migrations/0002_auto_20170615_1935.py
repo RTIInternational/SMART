@@ -13,6 +13,8 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterField(
-            model_name="model", name="pickle_path", field=models.TextField(),
+            model_name="model",
+            name="pickle_path",
+            field=models.TextField(),
         ),
     ]

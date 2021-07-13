@@ -12,7 +12,7 @@ def send_test_task():
 def send_model_task(project_pk):
     """Trains, Saves, Predicts, Fills Queue."""
     from core.models import Project, TrainingSet
-    from core.utils.utils_model import train_and_save_model, predict_data
+    from core.utils.utils_model import predict_data, train_and_save_model
     from core.utils.utils_queue import fill_queue, find_queue_length
 
     project = Project.objects.get(pk=project_pk)
@@ -62,8 +62,8 @@ def send_tfidf_creation_task(project_pk):
 
 @shared_task
 def send_check_and_trigger_model_task(project_pk):
-    from core.utils.utils_model import check_and_trigger_model
     from core.models import Data
+    from core.utils.utils_model import check_and_trigger_model
 
     datum = Data.objects.filter(project=project_pk).first()
     check_and_trigger_model(datum)

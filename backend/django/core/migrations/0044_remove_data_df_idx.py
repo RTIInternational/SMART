@@ -12,5 +12,8 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(model_name="data", name="df_idx",),
+        migrations.RemoveField(
+            model_name="data",
+            name="df_idx",
+        ),
     ]

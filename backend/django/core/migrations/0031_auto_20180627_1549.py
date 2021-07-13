@@ -12,7 +12,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(model_name="project", name="use_active_learning",),
+        migrations.RemoveField(
+            model_name="project",
+            name="use_active_learning",
+        ),
         migrations.AlterField(
             model_name="project",
             name="active_l_method",

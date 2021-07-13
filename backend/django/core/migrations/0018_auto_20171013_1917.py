@@ -13,7 +13,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(model_name="dataprediction", name="predicted_class",),
+        migrations.RemoveField(
+            model_name="dataprediction",
+            name="predicted_class",
+        ),
         migrations.AddField(
             model_name="datalabel",
             name="training_set",

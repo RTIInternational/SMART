@@ -85,13 +85,16 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.AlterUniqueTogether(
-            name="assigneddata", unique_together=set([("profile", "queue", "data")]),
+            name="assigneddata",
+            unique_together=set([("profile", "queue", "data")]),
         ),
         migrations.AlterUniqueTogether(
-            name="datalabel", unique_together=set([("data", "profile")]),
+            name="datalabel",
+            unique_together=set([("data", "profile")]),
         ),
         migrations.AlterUniqueTogether(
-            name="projectpermissions", unique_together=set([("profile", "project")]),
+            name="projectpermissions",
+            unique_together=set([("profile", "project")]),
         ),
         migrations.AlterField(
             model_name="project",
@@ -100,11 +103,31 @@ class Migration(migrations.Migration):
                 on_delete=django.db.models.deletion.CASCADE, to="core.Profile"
             ),
         ),
-        migrations.RemoveField(model_name="assigneddata", name="user",),
-        migrations.RemoveField(model_name="datalabel", name="user",),
-        migrations.RemoveField(model_name="projectpermissions", name="user",),
-        migrations.RemoveField(model_name="user", name="auth_user",),
-        migrations.RemoveField(model_name="user", name="labeled_data",),
-        migrations.RemoveField(model_name="queue", name="user",),
-        migrations.DeleteModel(name="User",),
+        migrations.RemoveField(
+            model_name="assigneddata",
+            name="user",
+        ),
+        migrations.RemoveField(
+            model_name="datalabel",
+            name="user",
+        ),
+        migrations.RemoveField(
+            model_name="projectpermissions",
+            name="user",
+        ),
+        migrations.RemoveField(
+            model_name="user",
+            name="auth_user",
+        ),
+        migrations.RemoveField(
+            model_name="user",
+            name="labeled_data",
+        ),
+        migrations.RemoveField(
+            model_name="queue",
+            name="user",
+        ),
+        migrations.DeleteModel(
+            name="User",
+        ),
     ]

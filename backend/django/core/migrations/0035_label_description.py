@@ -13,6 +13,8 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name="label", name="description", field=models.TextField(default=""),
+            model_name="label",
+            name="description",
+            field=models.TextField(default=""),
         ),
     ]

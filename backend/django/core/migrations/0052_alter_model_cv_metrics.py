@@ -11,6 +11,8 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterField(
-            model_name="model", name="cv_metrics", field=models.JSONField(),
+            model_name="model",
+            name="cv_metrics",
+            field=models.JSONField(),
         ),
     ]

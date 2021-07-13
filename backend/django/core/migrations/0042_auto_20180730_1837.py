@@ -19,6 +19,7 @@ class Migration(migrations.Migration):
             preserve_default=False,
         ),
         migrations.AlterUniqueTogether(
-            name="data", unique_together=set([("hash", "df_idx_hash")]),
+            name="data",
+            unique_together=set([("hash", "df_idx_hash")]),
         ),
     ]

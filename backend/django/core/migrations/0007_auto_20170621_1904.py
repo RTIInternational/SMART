@@ -13,6 +13,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterUniqueTogether(
-            name="assigneddata", unique_together=set([("user", "queue")]),
+            name="assigneddata",
+            unique_together=set([("user", "queue")]),
         ),
     ]
