@@ -34,9 +34,9 @@ from core.utils.utils_redis import get_ordered_data
 def test_create_tfidf_matrix(test_tfidf_matrix):
     # UPDATE: is now saved as a dictionary of lists
     assert isinstance(test_tfidf_matrix, dict)
-    assert len(test_tfidf_matrix) == 285
+    assert len(test_tfidf_matrix) == 982
     for key in test_tfidf_matrix:
-        assert len(test_tfidf_matrix[key]) == 307
+        assert len(test_tfidf_matrix[key]) == 162
         assert np.all([type(val) == float for val in test_tfidf_matrix[key]])
 
 
