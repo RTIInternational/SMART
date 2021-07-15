@@ -1,4 +1,5 @@
 from django.conf.urls import re_path
+
 from core.views import frontend
 
 app_name = "core"

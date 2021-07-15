@@ -8,18 +8,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0041_auto_20180725_1510'),
+        ("core", "0041_auto_20180725_1510"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='data',
-            name='df_idx_hash',
+            model_name="data",
+            name="df_idx_hash",
             field=models.CharField(default=1, max_length=128),
             preserve_default=False,
         ),
         migrations.AlterUniqueTogether(
-            name='data',
-            unique_together=set([('hash', 'df_idx_hash')]),
+            name="data",
+            unique_together=set([("hash", "df_idx_hash")]),
         ),
     ]

@@ -9,18 +9,20 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0026_auto_20171107_1927'),
+        ("core", "0026_auto_20171107_1927"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='model',
-            name='cv_std',
+            model_name="model",
+            name="cv_std",
         ),
         migrations.AddField(
-            model_name='model',
-            name='cv_metrics',
-            field=django.contrib.postgres.fields.jsonb.JSONField(default={'test': 'pass'}),
+            model_name="model",
+            name="cv_metrics",
+            field=django.contrib.postgres.fields.jsonb.JSONField(
+                default={"test": "pass"}
+            ),
             preserve_default=False,
         ),
     ]

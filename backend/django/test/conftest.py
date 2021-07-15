@@ -1,20 +1,20 @@
-from django.conf import settings
+from test.util import read_test_data_backend
 
 import pytest
+from django.conf import settings
 
-from smart.celery import app as celery_app
-from core.management.commands.seed import seed_database, SEED_LABELS
-from core.models import Label, Data, TrainingSet
-from core.utils.util import create_project, create_profile, add_data
+from core.management.commands.seed import SEED_LABELS, seed_database
+from core.models import Data, Label, TrainingSet
+from core.utils.util import add_data, create_profile, create_project
 from core.utils.utils_model import (
     create_tfidf_matrix,
-    save_tfidf_matrix,
-    train_and_save_model,
     predict_data,
+    save_tfidf_matrix,
     save_tfidf_vectorizer,
+    train_and_save_model,
 )
 from core.utils.utils_queue import add_queue
-from test.util import read_test_data_backend
+from smart.celery import app as celery_app
 
 TEST_QUEUE_LEN = 30
 MAX_DATA_LEN = 2000000
@@ -56,17 +56,13 @@ def test_redis(request):
 
 @pytest.fixture
 def test_project(db, test_profile):
-    """
-    This fixture only creates the test project without any data.
-    """
+    """This fixture only creates the test project without any data."""
     return create_project("test_project", test_profile)
 
 
 @pytest.fixture
 def test_project_labeled(test_project):
-    """
-    A project that has labeled data
-    """
+    """A project that has labeled data."""
     for label in SEED_LABELS:
         Label.objects.create(name=label, project=test_project)
 
@@ -79,9 +75,7 @@ def test_project_labeled(test_project):
 
 @pytest.fixture
 def test_project_data(db, test_project):
-    """
-    Creates the test project and adds test data to it.
-    """
+    """Creates the test project and adds test data to it."""
     test_data = read_test_data_backend(file="./core/data/test_files/test_no_labels.csv")
     add_data(test_project, test_data)
     return test_project
@@ -89,96 +83,74 @@ def test_project_data(db, test_project):
 
 @pytest.fixture
 def test_profile(db):
-    """
-    Creates a test profile with associated auth_user.
-    """
+    """Creates a test profile with associated auth_user."""
     return create_profile("test_profile", "password", "test_profile@rti.org")
 
 
 @pytest.fixture
 def test_profile2(db):
-    """
-    Additional profile for tests requiring multiple users.
-    """
+    """Additional profile for tests requiring multiple users."""
     return create_profile("test_profile2", "password", "test_profile2@rti.org")
 
 
 @pytest.fixture
 def test_profile3(db):
-    """
-    Additional profile for tests requiring multiple users.
-    """
+    """Additional profile for tests requiring multiple users."""
     return create_profile("test_profile3", "password", "test_profile3@rti.org")
 
 
 @pytest.fixture
 def test_queue(db, test_project_data):
-    """
-    A queue containing data from the test project, with length set to
-    the global len.
-    """
+    """A queue containing data from the test project, with length set to the global
+    len."""
     return add_queue(test_project_data, TEST_QUEUE_LEN)
 
 
 @pytest.fixture
 def test_queue_labeled(db, test_project_labeled):
-    """
-    A queue containing data from the test project, with length set to
-    the global len.
-    """
+    """A queue containing data from the test project, with length set to the global
+    len."""
     return add_queue(test_project_labeled, TEST_QUEUE_LEN, type="normal")
 
 
 @pytest.fixture
 def test_admin_queue(db, test_project_data):
-    """
-    A queue containing data from the test project, with length set to
-    the global len.
-    """
+    """A queue containing data from the test project, with length set to the global
+    len."""
     return add_queue(test_project_data, TEST_QUEUE_LEN, type="admin")
 
 
 @pytest.fixture
 def test_irr_queue(db, test_project_data):
-    """
-    A queue containing data from the test project, with length set to
-    the global len.
-    """
+    """A queue containing data from the test project, with length set to the global
+    len."""
     return add_queue(test_project_data, MAX_DATA_LEN, type="irr")
 
 
 @pytest.fixture
 def test_irr_queue_labeled(db, test_project_labeled):
-    """
-    A queue containing data from the test project, with length set to
-    the global len.
-    """
+    """A queue containing data from the test project, with length set to the global
+    len."""
     return add_queue(test_project_labeled, MAX_DATA_LEN, type="irr")
 
 
 @pytest.fixture
 def test_admin_queue_labeled(db, test_project_labeled):
-    """
-    A queue containing data from the test project, with length set to
-    the global len.
-    """
+    """A queue containing data from the test project, with length set to the global
+    len."""
     return add_queue(test_project_labeled, TEST_QUEUE_LEN, type="admin")
 
 
 @pytest.fixture
 def test_profile_queue(db, test_profile, test_project_data):
-    """
-    A queue with test data, associated with the first test profile.
-    """
+    """A queue with test data, associated with the first test profile."""
     return add_queue(test_project_data, TEST_QUEUE_LEN, profile=test_profile)
 
 
 @pytest.fixture
 def test_all_queues(db, test_project_data):
-    """
-    A queue containing data from the test project, with length set to
-    the global len.
-    """
+    """A queue containing data from the test project, with length set to the global
+    len."""
     normal_q = add_queue(test_project_data, TEST_QUEUE_LEN)
     admin_q = add_queue(test_project_data, TEST_QUEUE_LEN, type="admin")
     irr_q = add_queue(test_project_data, MAX_DATA_LEN, type="irr")
@@ -187,8 +159,8 @@ def test_all_queues(db, test_project_data):
 
 @pytest.fixture
 def test_profile_queue2(db, test_profile2, test_project_data):
-    """
-    A queue with test data, associated with an additional test profile.
+    """A queue with test data, associated with an additional test profile.
+
     Useful for tests requiring multiple profiles/queues on the same project.
     """
     return add_queue(test_project_data, TEST_QUEUE_LEN, profile=test_profile2)
@@ -196,36 +168,28 @@ def test_profile_queue2(db, test_profile2, test_project_data):
 
 @pytest.fixture
 def test_tfidf_matrix(test_project_data):
-    """
-    A CSR-format tf-idf matrix created from the data of test_project_data
-    """
+    """A CSR-format tf-idf matrix created from the data of test_project_data."""
     Data.objects.filter(project=test_project_data)
     return create_tfidf_matrix(test_project_data.pk)[0]
 
 
 @pytest.fixture
 def test_tfidf_matrix_labeled(test_project_labeled):
-    """
-    A CSR-format tf-idf matrix created from the data of test_project_data
-    """
+    """A CSR-format tf-idf matrix created from the data of test_project_data."""
     Data.objects.filter(project=test_project_labeled)
     return create_tfidf_matrix(test_project_labeled.pk)[0]
 
 
 @pytest.fixture
 def test_tfidf_vectorizer_labeled(test_project_labeled):
-    """
-    A CSR-format tf-idf matrix created from the data of test_project_data
-    """
+    """A CSR-format tf-idf matrix created from the data of test_project_data."""
     Data.objects.filter(project=test_project_labeled)
     return create_tfidf_matrix(test_project_labeled.pk)[1]
 
 
 @pytest.fixture
 def test_labels(test_project_data):
-    """
-    A list of labels that correspond to SEED_LABELS
-    """
+    """A list of labels that correspond to SEED_LABELS."""
     labels = []
 
     for label in SEED_LABELS:
@@ -235,9 +199,7 @@ def test_labels(test_project_data):
 
 @pytest.fixture
 def test_project_labels(test_project):
-    """
-    A list of labels that correspond to SEED_LABELS
-    """
+    """A list of labels that correspond to SEED_LABELS."""
     labels = []
 
     for label in SEED_LABELS:
@@ -275,10 +237,8 @@ def test_project_unlabeled_and_tfidf(
 
 @pytest.fixture
 def test_project_with_trained_model(test_project_labeled_and_tfidf, tmpdir):
-    """
-    A project which has labeled data, a tfidf matrix saved, and
-    a model with pickle file
-    """
+    """A project which has labeled data, a tfidf matrix saved, and a model with pickle
+    file."""
     temp_pickle_path = tmpdir.listdir()[0].mkdir("model_pickles")
     settings.MODEL_PICKLE_PATH = str(temp_pickle_path)
 
@@ -304,9 +264,7 @@ def test_project_predicted_data(test_project_with_trained_model, tmpdir):
 
 @pytest.fixture
 def test_project_svm_data_tfidf(db, test_profile, tmpdir, settings):
-    """
-    This fixture only creates the test project without any data.
-    """
+    """This fixture only creates the test project without any data."""
     proj = create_project("test_project", test_profile, classifier="svm")
     test_data = read_test_data_backend(file="./core/data/test_files/test_no_labels.csv")
     add_data(proj, test_data)
@@ -332,17 +290,13 @@ def test_svm_queue_list(db, test_project_svm_data_tfidf):
 
 @pytest.fixture
 def test_project_no_irr(db, test_profile):
-    """
-    This fixture only creates the test project without any data and 0% irr.
-    """
+    """This fixture only creates the test project without any data and 0% irr."""
     return create_project("test_project_no_irr", test_profile, 0, 2)
 
 
 @pytest.fixture
 def test_project_no_irr_data(db, test_project_no_irr):
-    """
-    Creates the test project with no irr and adds test data to it.
-    """
+    """Creates the test project with no irr and adds test data to it."""
     test_data = read_test_data_backend(file="./core/data/test_files/test_no_labels.csv")
     add_data(test_project_no_irr, test_data)
     return test_project_no_irr
@@ -350,10 +304,8 @@ def test_project_no_irr_data(db, test_project_no_irr):
 
 @pytest.fixture
 def test_no_irr_all_queues(db, test_project_no_irr_data):
-    """
-    A queue containing data from the test project, with length set to
-    the global len.
-    """
+    """A queue containing data from the test project, with length set to the global
+    len."""
     normal_q = add_queue(test_project_no_irr_data, TEST_QUEUE_LEN)
     admin_q = add_queue(test_project_no_irr_data, TEST_QUEUE_LEN, type="admin")
     irr_q = add_queue(test_project_no_irr_data, MAX_DATA_LEN, type="irr")
@@ -372,9 +324,7 @@ def test_svm_labels(test_project_svm_data_tfidf):
 
 @pytest.fixture
 def test_labels_no_irr(test_project_no_irr_data):
-    """
-    A list of labels that correspond to SEED_LABELS
-    """
+    """A list of labels that correspond to SEED_LABELS."""
     labels = []
     for label in SEED_LABELS:
         labels.append(
@@ -385,9 +335,7 @@ def test_labels_no_irr(test_project_no_irr_data):
 
 @pytest.fixture
 def test_project_randomforest_data_tfidf(db, test_profile, tmpdir, settings):
-    """
-    This fixture only creates the test project without any data.
-    """
+    """This fixture only creates the test project without any data."""
     proj = create_project("test_project", test_profile, classifier="random forest")
     test_data = read_test_data_backend(file="./core/data/test_files/test_no_labels.csv")
     add_data(proj, test_data)
@@ -417,17 +365,13 @@ def test_randomforest_queue_list(db, test_project_randomforest_data_tfidf):
 
 @pytest.fixture
 def test_project_all_irr_3_coders(db, test_profile):
-    """
-    This fixture only creates the test project without any data.
-    """
+    """This fixture only creates the test project without any data."""
     return create_project("test_project", test_profile, 100, 3)
 
 
 @pytest.fixture
 def test_project_all_irr_3_coders_data(db, test_project_all_irr_3_coders):
-    """
-    Creates the test project with 100% irr and adds test data to it.
-    """
+    """Creates the test project with 100% irr and adds test data to it."""
     test_data = read_test_data_backend(file="./core/data/test_files/test_no_labels.csv")
     add_data(test_project_all_irr_3_coders, test_data)
     return test_project_all_irr_3_coders
@@ -435,10 +379,8 @@ def test_project_all_irr_3_coders_data(db, test_project_all_irr_3_coders):
 
 @pytest.fixture
 def test_all_irr_3_coders_all_queues(db, test_project_all_irr_3_coders_data):
-    """
-    A queue containing data from the test project, with length set to
-    the global len.
-    """
+    """A queue containing data from the test project, with length set to the global
+    len."""
     normal_q = add_queue(test_project_all_irr_3_coders_data, TEST_QUEUE_LEN)
     admin_q = add_queue(
         test_project_all_irr_3_coders_data, TEST_QUEUE_LEN, type="admin"
@@ -449,9 +391,7 @@ def test_all_irr_3_coders_all_queues(db, test_project_all_irr_3_coders_data):
 
 @pytest.fixture
 def test_labels_all_irr_3_coders(test_project_all_irr_3_coders_data):
-    """
-    A list of labels that correspond to SEED_LABELS
-    """
+    """A list of labels that correspond to SEED_LABELS."""
     labels = []
     for label in SEED_LABELS:
         labels.append(
@@ -462,17 +402,13 @@ def test_labels_all_irr_3_coders(test_project_all_irr_3_coders_data):
 
 @pytest.fixture
 def test_project_half_irr(db, test_profile):
-    """
-    This fixture only creates the test project without any data.
-    """
+    """This fixture only creates the test project without any data."""
     return create_project("test_project", test_profile, 50, 2)
 
 
 @pytest.fixture
 def test_project_half_irr_data(db, test_project_half_irr):
-    """
-    Creates the test project with 50% irr and adds test data to it.
-    """
+    """Creates the test project with 50% irr and adds test data to it."""
     test_data = read_test_data_backend(file="./core/data/test_files/test_no_labels.csv")
     add_data(test_project_half_irr, test_data)
     return test_project_half_irr
@@ -500,9 +436,7 @@ def test_randomforest_labels(test_project_randomforest_data_tfidf):
 
 @pytest.fixture
 def test_labels_half_irr(test_project_half_irr_data):
-    """
-    A list of labels that correspond to SEED_LABELS
-    """
+    """A list of labels that correspond to SEED_LABELS."""
     labels = []
     for label in SEED_LABELS:
         labels.append(
@@ -513,9 +447,7 @@ def test_labels_half_irr(test_project_half_irr_data):
 
 @pytest.fixture
 def test_project_gnb_data_tfidf(db, test_profile, tmpdir, settings):
-    """
-    This fixture only creates the test project without any data.
-    """
+    """This fixture only creates the test project without any data."""
     proj = create_project("test_project", test_profile, classifier="gnb")
     test_data = read_test_data_backend(file="./core/data/test_files/test_no_labels.csv")
     add_data(proj, test_data)
@@ -540,9 +472,7 @@ def test_gnb_queue_list(db, test_project_gnb_data_tfidf):
 
 @pytest.fixture
 def test_project_all_irr_data(db, test_profile):
-    """
-    Creates the test project with 100% irr and adds test data to it.
-    """
+    """Creates the test project with 100% irr and adds test data to it."""
     project = create_project("test_project", test_profile, 100, 2)
     test_data = read_test_data_backend(file="./core/data/test_files/test_no_labels.csv")
     add_data(project, test_data)
@@ -551,10 +481,8 @@ def test_project_all_irr_data(db, test_profile):
 
 @pytest.fixture
 def test_all_irr_all_queues(db, test_project_all_irr_data):
-    """
-    A queue containing data from the test project, with length set to
-    the global len.
-    """
+    """A queue containing data from the test project, with length set to the global
+    len."""
 
     normal_q = add_queue(test_project_all_irr_data, TEST_QUEUE_LEN)
     admin_q = add_queue(test_project_all_irr_data, TEST_QUEUE_LEN, type="admin")
@@ -574,9 +502,7 @@ def test_gnb_labels(test_project_gnb_data_tfidf):
 
 @pytest.fixture
 def test_labels_all_irr(test_project_all_irr_data):
-    """
-    A list of labels that correspond to SEED_LABELS
-    """
+    """A list of labels that correspond to SEED_LABELS."""
     labels = []
     for label in SEED_LABELS:
         labels.append(

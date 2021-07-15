@@ -1,33 +1,32 @@
-from django.db.models import FloatField
-from django.db import connection
 from django.contrib.postgres.fields import ArrayField
+from django.db import connection
+from django.db.models import FloatField
 from django.utils.html import escape
+from postgres_stats.aggregates import Percentile
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
-from postgres_stats.aggregates import Percentile
-
 from core.models import (
-    Project,
-    Model,
     Data,
-    Label,
     DataLabel,
     DataPrediction,
-    TrainingSet,
     IRRLog,
+    Label,
+    Model,
+    Project,
     ProjectPermissions,
+    TrainingSet,
 )
-from core.utils.util import perc_agreement_table_data, irr_heatmap_data
-from core.utils.utils_model import fleiss_kappa, cohens_kappa
 from core.permissions import IsAdminOrCreator
+from core.utils.util import irr_heatmap_data, perc_agreement_table_data
+from core.utils.utils_model import cohens_kappa, fleiss_kappa
 
 
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))
 def label_distribution(request, project_pk):
-    """This function finds and returns the number of each label per user.
-    This is used by a graph on the front end admin page.
+    """This function finds and returns the number of each label per user. This is used
+    by a graph on the front end admin page.
 
     Args:
         request: The POST request
@@ -60,8 +59,8 @@ def label_distribution(request, project_pk):
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))
 def label_timing(request, project_pk):
-    """This function finds and returns the requested label time metrics. This is
-    used by the graphs on the admin page to show how long each labeler is taking.
+    """This function finds and returns the requested label time metrics. This is used by
+    the graphs on the admin page to show how long each labeler is taking.
 
     Args:
         request: The POST request
@@ -110,7 +109,9 @@ def label_timing(request, project_pk):
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))
 def model_metrics(request, project_pk):
-    """This function finds and returns the requested metrics. This is
+    """This function finds and returns the requested metrics.
+
+    This is
     used by the graphs on the front end admin page.
     Args:
         request: The POST request
@@ -145,7 +146,7 @@ def model_metrics(request, project_pk):
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))
 def data_coded_table(request, project_pk):
-    """This returns the labeled data
+    """This returns the labeled data.
 
     Args:
         request: The POST request
@@ -172,7 +173,7 @@ def data_coded_table(request, project_pk):
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))
 def data_predicted_table(request, project_pk):
-    """This returns the predictions for the unlabeled data
+    """This returns the predictions for the unlabeled data.
 
     Args:
         request: The POST request
@@ -239,8 +240,8 @@ def data_predicted_table(request, project_pk):
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))
 def get_irr_metrics(request, project_pk):
-    """This function takes the current coded IRR and calculates several
-    reliability metrics
+    """This function takes the current coded IRR and calculates several reliability
+    metrics.
 
     Args:
         request: The POST request
@@ -269,10 +270,8 @@ def get_irr_metrics(request, project_pk):
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))
 def perc_agree_table(request, project_pk):
-    """
-    Finds the percent agreement between each pair of coders
-    to be displayed on the IRR page as a table
-    """
+    """Finds the percent agreement between each pair of coders to be displayed on the
+    IRR page as a table."""
     project = Project.objects.get(pk=project_pk)
     irr_data = set(
         IRRLog.objects.filter(data__project=project).values_list("data", flat=True)
@@ -288,16 +287,14 @@ def perc_agree_table(request, project_pk):
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))
 def heat_map_data(request, project_pk):
-    """
-    Calculates the data for the heat map of irr data and returns the
-    correct one for the pair of coders given
+    """Calculates the data for the heat map of irr data and returns the correct one for
+    the pair of coders given.
 
     Args:
         request: the GET request with the pk of the two users
         project_pk: the Primary key of the project
     Returns:
         a list of dictionaries of form {label1, label2, count}
-
     """
     project = Project.objects.get(pk=project_pk)
 
