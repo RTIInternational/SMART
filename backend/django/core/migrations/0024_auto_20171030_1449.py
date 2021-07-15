@@ -8,12 +8,12 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0023_trainingset_celery_task_id'),
+        ("core", "0023_trainingset_celery_task_id"),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='datalabel',
-            unique_together=set([('data', 'profile')]),
+            name="datalabel",
+            unique_together=set([("data", "profile")]),
         ),
     ]

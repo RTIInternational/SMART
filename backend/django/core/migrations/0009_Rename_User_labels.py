@@ -8,13 +8,13 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0008_Make_Queue_user_correctly_nullable'),
+        ("core", "0008_Make_Queue_user_correctly_nullable"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='user',
-            old_name='labels',
-            new_name='labeled_data',
+            model_name="user",
+            old_name="labels",
+            new_name="labeled_data",
         ),
     ]

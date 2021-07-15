@@ -8,13 +8,26 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0049_merge_20180807_1352'),
+        ("core", "0049_merge_20180807_1352"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='project',
-            name='classifier',
-            field=models.CharField(choices=[('logistic regression', 'Logistic Regression (default)'), ('svm', 'Support Vector Machine (warning: slower for large datasets)'), ('random forest', 'Random Forest'), ('gnb', 'Gaussian Naive Bayes')], default='logistic regression', max_length=19, null=True),
+            model_name="project",
+            name="classifier",
+            field=models.CharField(
+                choices=[
+                    ("logistic regression", "Logistic Regression (default)"),
+                    (
+                        "svm",
+                        "Support Vector Machine (warning: slower for large datasets)",
+                    ),
+                    ("random forest", "Random Forest"),
+                    ("gnb", "Gaussian Naive Bayes"),
+                ],
+                default="logistic regression",
+                max_length=19,
+                null=True,
+            ),
         ),
     ]

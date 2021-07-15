@@ -86,7 +86,7 @@ def label_project(project, profile, num_labels):
     assignments = get_assignments(profile, project, num_labels)
     for i in range(min(len(labels), len(assignments))):
         label_data(labels[i], assignments[i], profile, random.randint(0, 25))
-    for assignment in assignments[len(labels):]:
+    for assignment in assignments[len(labels) :]:
         label_data(random.choice(labels), assignment, profile, random.randint(0, 25))
 
     task_num = tasks.send_model_task.apply(args=[project.pk])

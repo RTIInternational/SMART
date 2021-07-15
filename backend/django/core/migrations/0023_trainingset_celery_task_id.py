@@ -8,13 +8,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0022_data_df_idx'),
+        ("core", "0022_data_df_idx"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='trainingset',
-            name='celery_task_id',
+            model_name="trainingset",
+            name="celery_task_id",
             field=models.TextField(blank=True),
         ),
     ]

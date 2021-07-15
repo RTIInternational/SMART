@@ -8,17 +8,17 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0042_auto_20180730_1837'),
+        ("core", "0042_auto_20180730_1837"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='data',
-            old_name='df_idx_hash',
-            new_name='upload_id_hash',
+            model_name="data",
+            old_name="df_idx_hash",
+            new_name="upload_id_hash",
         ),
         migrations.AlterUniqueTogether(
-            name='data',
-            unique_together=set([('hash', 'upload_id_hash')]),
+            name="data",
+            unique_together=set([("hash", "upload_id_hash")]),
         ),
     ]

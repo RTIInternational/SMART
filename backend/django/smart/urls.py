@@ -1,4 +1,4 @@
-"""smart URL Configuration
+"""smart URL Configuration.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/1.11/topics/http/urls/
@@ -13,8 +13,8 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import re_path, include
     2. Add a URL to urlpatterns:  re_path(r'^blog/', include('blog.urls'))
 """
-from django.conf.urls import re_path, include
 from django.conf import settings
+from django.conf.urls import include, re_path
 from django.contrib import admin
 from django.http import HttpResponseRedirect
 from rest_framework_swagger.views import get_swagger_view

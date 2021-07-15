@@ -8,12 +8,12 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0044_remove_data_df_idx'),
+        ("core", "0044_remove_data_df_idx"),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='data',
-            unique_together=set([('hash', 'upload_id_hash', 'project')]),
+            name="data",
+            unique_together=set([("hash", "upload_id_hash", "project")]),
         ),
     ]
