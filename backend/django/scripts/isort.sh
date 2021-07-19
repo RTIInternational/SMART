@@ -8,10 +8,10 @@ set -euo pipefail
 IFS=$'\n\t'
 
 if [[ $* == --format ]]; then
-  isort -rc /code/
+  isort /code/
 else
   set +e
-  isort -rc --check-only /code/
+  isort --check-only /code/
   exitcode=$?
   set -e
 

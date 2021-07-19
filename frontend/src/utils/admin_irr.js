@@ -81,16 +81,16 @@ function drawHeatmap(response) {
             .enter()
             .append("text")
             .text(function (d) {
-                return d.slice(0, 5); 
+                return d.slice(0, 5);
             })
             .attr("x", 0)
             .attr("y", function (d, i) {
-                return i * gridSize; 
+                return i * gridSize;
             })
             .style("text-anchor", "end")
             .attr("transform", "translate(-6," + gridSize / 1.5 + ")")
             .attr("class", function (d, i) {
-                return ((i >= 0 && i <= 4) ? "vertLabel mono axis axis-workweek" : "vertLabel mono axis"); 
+                return ((i >= 0 && i <= 4) ? "vertLabel mono axis axis-workweek" : "vertLabel mono axis");
             });
 
         //add the x axis labels
@@ -99,16 +99,16 @@ function drawHeatmap(response) {
             .enter()
             .append("text")
             .text(function(d) {
-                return d.slice(0, 5); 
+                return d.slice(0, 5);
             })
             .attr("x", function(d, i) {
-                return i * gridSize; 
+                return i * gridSize;
             })
             .attr("y", 0)
             .style("text-anchor", "middle")
             .attr("transform", "translate(" + gridSize / 2 + ", -6)")
             .attr("class", function(d, i) {
-                return ((i >= 7 && i <= 16) ? "horzLabel mono axis axis-worktime" : "horzLabel mono axis"); 
+                return ((i >= 7 && i <= 16) ? "horzLabel mono axis axis-worktime" : "horzLabel mono axis");
             });
 
         let colorScale = d3.scale.quantile()
@@ -123,10 +123,10 @@ function drawHeatmap(response) {
 
         cards.enter().append("rect")
             .attr("x", function(d) {
-                return (labels.indexOf(d.label1) * gridSize); 
+                return (labels.indexOf(d.label1) * gridSize);
             })
             .attr("y", function(d) {
-                return (labels.indexOf(d.label2) * gridSize); 
+                return (labels.indexOf(d.label2) * gridSize);
             })
             .attr("rx", 4)
             .attr("ry", 4)
@@ -146,7 +146,7 @@ function drawHeatmap(response) {
             });
 
         cards.select("title").text(function(d) {
-            return d.count; 
+            return d.count;
         });
 
         //Axis code found at https://bl.ocks.org/d3noob/23e42c8f67210ac6c678db2cd07a747e
@@ -170,7 +170,7 @@ function drawHeatmap(response) {
 
         let legend = svg.selectAll(".legend")
             .data([0].concat(colorScale.quantiles()), function(d) {
-                return d; 
+                return d;
             });
 
         legend.enter().append("g")
@@ -178,22 +178,22 @@ function drawHeatmap(response) {
 
         legend.append("rect")
             .attr("x", function(d, i) {
-                return legendElementWidth * i; 
+                return legendElementWidth * i;
             })
             .attr("y", height + margin.top)
             .attr("width", legendElementWidth)
             .attr("height", gridSize / 2)
             .style("fill", function(d, i) {
-                return colors[i]; 
+                return colors[i];
             });
 
         legend.append("text")
             .attr("class", "mono")
             .text(function(d) {
-                return "≥ " + Math.round(d); 
+                return "≥ " + Math.round(d);
             })
             .attr("x", function(d, i) {
-                return legendElementWidth * i; 
+                return legendElementWidth * i;
             })
             .attr("y", height + gridSize + margin.top);
 
@@ -275,11 +275,12 @@ if (PROJECT_PERCENTAGE_IRR > 0) {
         $('#pairwise_perc_agreement_table').DataTable({
             "ajax": '/api/perc_agree_table/' + PROJECT_PK + '/',
             "columns": [
-                { "data": "First Coder", "searchable": false },
+                { "data": "First Coder", "searchable": true },
                 { "data": "Second Coder", "searchable": false },
                 { "data": "Percent Agreement", "searchable": false }
             ],
             "oLanguage": {
+                "sSearch": "Filter First Coder: ",
                 "sEmptyTable": "No irr data processed"
             },
             "initComplete": function () {
