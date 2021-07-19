@@ -22,7 +22,7 @@
               </a>
             </h5>
           </div>
-          <div id="description-panel" class="panel-collapse collapse in">
+          <div id="description-panel" class="panel-collapse collapse show">
             <div class="panel-body">
               {% if project.description %}
               <p>{{ project.description }}</p>
@@ -44,7 +44,7 @@
               </a>
             </h5>
           </div>
-          <div id="admin-panel" class="panel-collapse collapse in">
+          <div id="admin-panel" class="panel-collapse collapse show">
             <div class="panel-body">
               <div class="row">
                 <div class="col-md-6">
@@ -86,7 +86,7 @@
               </a>
             </h5>
           </div>
-          <div id="settings-panel" class="panel-collapse collapse in">
+          <div id="settings-panel" class="panel-collapse collapse show">
             <div class="panel-body">
               <ul class="list-group-flush">
                 {% if project.classifier != None %}
@@ -132,7 +132,7 @@
         <div class="panel panel-default">
           <div class="panel-heading">
             <h5 class="panel-title">
-              <a data-toggle="collapse" href="#label-panel" class="accordion-toggle collapsed">
+              <a data-toggle="collapse" href="#label-panel" class="accordion-toggle collapsed collapsed">
                 Labels
               </a>
             </h5>
@@ -157,7 +157,7 @@
         <div class="panel panel-default">
           <div class="panel-heading">
             <h5 class="panel-title">
-              <a data-toggle="collapse" href="#Data-panel" class="accordion-toggle collapsed">
+              <a data-toggle="collapse" href="#Data-panel" class="accordion-toggle collapsed collapsed">
                 Data
               </a>
             </h5>

@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Glyphicon, Tabs, Tab, Badge } from "react-bootstrap";
+import { Tabs, Tab, Badge } from "react-bootstrap";
 import CardContainer from '../../containers/card_container';
 import HistoryContainer from '../../containers/history_container';
 import SkewContainer from '../../containers/skew_container';
@@ -14,7 +14,7 @@ const ADMIN = window.ADMIN;
 
 class Smart extends React.Component {
 
-    componentWillMount() {
+    componentDidMount() {
         this.props.getAdminTabsAvailable();
         this.props.getAdminCounts();
     }
@@ -25,7 +25,7 @@ class Smart extends React.Component {
 
         if (adminTabsAvailable) {
             adminTabSkew = (
-                <Tab eventKey={3} title="Fix Skew" className="full card">
+                <Tab eventKey={3} transition={false} title="Fix Skew" className="full card">
                     <div className="cardContent">
                         <SkewContainer />
                     </div>
@@ -33,7 +33,7 @@ class Smart extends React.Component {
             );
         } else {
             adminTabSkew = (
-                <Tab eventKey={3} title="Fix Skew" className="full card">
+                <Tab eventKey={3} transition={false} title="Fix Skew" className="full card">
                     <div className="cardContent">
                         <h2>Another admin is currently using this page. Please check back later.</h2>
                     </div>
@@ -75,6 +75,7 @@ class Smart extends React.Component {
 
             adminTabAdminTable = (
                 <Tab eventKey={4}
+                    transition={false}
                     title={badges}
                     className="full card">
                     <div className="cardContent">
@@ -84,7 +85,7 @@ class Smart extends React.Component {
             );
         } else {
             adminTabAdminTable = (
-                <Tab eventKey={4} title="Skipped Cards" className="full card">
+                <Tab eventKey={4} transition={false} title="Skipped Cards" className="full card">
                     <div className="cardContent">
                         <h2>Another admin is currently using this page. Please check back later.</h2>
                     </div>
@@ -101,7 +102,7 @@ class Smart extends React.Component {
 
         if (adminTabsAvailable) {
             adminTabRecycle = (
-                <Tab eventKey={5} title={<Glyphicon glyph="trash"/>} className="full card">
+                <Tab eventKey={5} transition={false} title={<span className="glyphicon glyphicon-trash" aria-hidden="true"></span>} className="full card">
                     <div className="cardContent">
                         <RecycleBinContainer />
                     </div>
@@ -109,7 +110,7 @@ class Smart extends React.Component {
             );
         } else {
             adminTabRecycle = (
-                <Tab eventKey={5} title={<Glyphicon glyph="trash"/>} className="full card">
+                <Tab eventKey={5} transition={false} title={<span className="glyphicon glyphicon-trash" aria-hidden="true"></span>} className="full card">
                     <div className="cardContent">
                         <h2>Another admin is currently using this page. Please check back later.</h2>
                     </div>
@@ -123,14 +124,14 @@ class Smart extends React.Component {
     render() {
         return (
             <Tabs defaultActiveKey={1} id="data_tabs" mountOnEnter={true} unmountOnExit={true}>
-                <Tab eventKey={1} title="Annotate Data" className="full card">
+                <Tab eventKey={1} title="Annotate Data" className="full card" transition={false}>
                     <div className="cardContent">
                         <CodebookLabelMenuContainer />
                         <SmartProgressBarContainer />
                         <CardContainer />
                     </div>
                 </Tab>
-                <Tab eventKey={2} title="History" className="full card">
+                <Tab eventKey={2} title="History" className="full card" transition={false}>
                     <div className="cardContent">
                         <HistoryContainer />
                     </div>

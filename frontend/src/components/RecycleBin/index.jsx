@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import ReactTable from 'react-table';
+import ReactTable from 'react-table-6';
 import { Button, ButtonToolbar, Tooltip, OverlayTrigger } from "react-bootstrap";
 import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
 
@@ -26,7 +26,7 @@ const COLUMNS = [
 
 class RecycleBin extends React.Component {
 
-    componentWillMount() {
+    componentDidMount() {
         this.props.getDiscarded();
     }
 
@@ -37,7 +37,7 @@ class RecycleBin extends React.Component {
             <div className="sub-row">
                 <p id="disc_text">{row.row.data}</p>
                 <div id="disc_buttons">
-                    <ButtonToolbar bsClass="btn-toolbar pull-right">
+                    <ButtonToolbar variant="btn-toolbar pull-right">
                         <OverlayTrigger
                             placement = "top"
                             overlay={
@@ -46,7 +46,7 @@ class RecycleBin extends React.Component {
                                 </Tooltip>
                             }>
                             <Button onClick = {() => restoreData(row.row.id)}
-                                bsStyle="danger">Restore</Button>
+                                variant="danger">Restore</Button>
                         </OverlayTrigger>
                     </ButtonToolbar>
                 </div>

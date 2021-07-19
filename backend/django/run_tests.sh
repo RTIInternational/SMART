@@ -10,7 +10,7 @@ while [ $n -ne 0 ]; do
 done
 
 echo "Checking Flake8...."
-result=$(flake8 --ignore E501,W503 .)
+result=$(flake8 --ignore E501,W503,W605 .)
 echo "$result"
 
 if [ -n "$result" ]; then

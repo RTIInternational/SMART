@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import ReactTable from 'react-table';
-import { Button, ButtonToolbar, Panel } from "react-bootstrap";
+import ReactTable from 'react-table-6';
+import { Button, ButtonToolbar, Card } from "react-bootstrap";
 import NVD3Chart from "react-nvd3";
 import d3 from 'd3';
 import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
@@ -28,7 +28,7 @@ const COLUMNS = [
 
 class Skew extends React.Component {
 
-    componentWillMount() {
+    componentDidMount() {
         this.props.getUnlabeled();
         this.props.getLabelCounts();
     }
@@ -46,7 +46,7 @@ class Skew extends React.Component {
                         <p>To annotate, click on a data entry below and select the label from the expanded list of labels. As you label data the chart to the left will update.</p>
                     </div>
                     <div className="col-md-6">
-                        <Panel id="chart_panel">
+                        <Card id="chart_panel">
                             <NVD3Chart
                                 id="label_counts"
                                 type="multiBarChart"
@@ -71,7 +71,7 @@ class Skew extends React.Component {
                                     left: 70
                                 }}
                             />
-                        </Panel>
+                        </Card>
                     </div>
                 </div>
                 <CodebookLabelMenuContainer />
@@ -86,11 +86,11 @@ class Skew extends React.Component {
                             <div className="sub-row">
                                 <p id="skew_text">{row.row.data}</p>
                                 <div id="skew_buttons">
-                                    <ButtonToolbar bsClass="btn-toolbar pull-right">
+                                    <ButtonToolbar variant="btn-toolbar pull-right">
                                         {labels.map( (label) => (
                                             <Button key={label.pk.toString() + "_" + row.row.id.toString()}
                                                 onClick={() => skewLabel(row.row.id, label.pk)}
-                                                bsStyle="primary">
+                                                variant="primary">
                                                 {label.name}
                                             </Button>
                                         ))}

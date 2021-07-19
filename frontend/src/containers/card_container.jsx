@@ -2,11 +2,11 @@ import React from 'react';
 import { connect } from 'react-redux';
 
 import { fetchCards, annotateCard, passCard } from '../actions/card';
-import Card from '../components/Card';
+import DataCard from '../components/DataCard';
 
 const PROJECT_ID = window.PROJECT_ID;
 
-const CardContainer = (props) => <Card {...props} />;
+const CardContainer = (props) => <DataCard {...props} />;
 
 const mapStateToProps = (state) => {
     return {

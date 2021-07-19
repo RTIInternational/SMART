@@ -82,6 +82,7 @@ if (PROJECT_CLASSIFIER !== 'None') {
                     $('[data-toggle="tooltip"]').tooltip();
                 });
             });
+
         },
         error: function (error) {
             console.log(error);

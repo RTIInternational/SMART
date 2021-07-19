@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Button, ButtonGroup, Glyphicon, Modal } from "react-bootstrap";
+import { Button, ButtonGroup, Modal } from "react-bootstrap";
 
 const CODEBOOK_URL = window.CODEBOOK_URL;
 
@@ -79,8 +79,8 @@ class CodebookLabelMenu extends React.Component {
                 <Button
                     onClick={this.toggleLabel}
                     className="minus_button"
-                    bsStyle="danger">
-                    <Glyphicon glyph="minus"/> Label Guide
+                    variant="danger">
+                    <span className="glyphicon glyphicon-minus" aria-hidden="true"></span> Label Guide
                 </Button>
             );
         } else {
@@ -88,8 +88,8 @@ class CodebookLabelMenu extends React.Component {
                 <Button
                     onClick={this.toggleLabel}
                     className="plus_button"
-                    bsStyle="success">
-                    <Glyphicon glyph="plus"/> Label Guide
+                    variant="success">
+                    <span className="glyphicon glyphicon-plus" aria-hidden="true"></span> Label Guide
                 </Button>
             );
         }

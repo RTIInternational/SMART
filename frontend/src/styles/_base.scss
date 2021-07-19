@@ -1,9 +1,10 @@
+$icon-font-path: '~bootstrap-sass/assets/fonts/bootstrap/';
 @import '~bootstrap-sass/assets/stylesheets/bootstrap';
 
 html {
     font-size: $base-font-size;
 
-    @include breakpoint(large) { 
+    @include breakpoint(large) {
         font-size: 1.25rem;
     }
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import ReactTable from 'react-table';
+import ReactTable from 'react-table-6';
 import { Button, ButtonToolbar, Tooltip, OverlayTrigger, Alert } from "react-bootstrap";
 import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
 
@@ -47,7 +47,7 @@ const COLUMNS = [
 
 class History extends React.Component {
 
-    componentWillMount() {
+    componentDidMount() {
         this.props.getHistory();
     }
 
@@ -58,7 +58,7 @@ class History extends React.Component {
             return (
                 <Button
                     key={label.pk.toString() + "_" + row.row.id.toString()}
-                    bsStyle="primary"
+                    variant="primary"
                     disabled>
                     {label.name}
                 </Button>
@@ -68,7 +68,7 @@ class History extends React.Component {
                 <Button
                     key={label.pk.toString() + "_" + row.row.id.toString()}
                     onClick={() => changeLabel(row.row.id, row.row.old_label_id, label.pk)}
-                    bsStyle="primary">
+                    variant="primary">
                     {label.name}
                 </Button>
             );
@@ -83,7 +83,7 @@ class History extends React.Component {
             subComponent = (
                 <div className="sub-row">
                     <p>{row.row.data}</p>
-                    <ButtonToolbar bsClass="btn-toolbar pull-right">
+                    <ButtonToolbar variant="btn-toolbar pull-right">
                         {labels.map( (label) => this.getLabelButton(row, label) )}
                         <OverlayTrigger
                             placement = "top"
@@ -93,7 +93,7 @@ class History extends React.Component {
                                 </Tooltip>
                             }>
                             <Button onClick={() => changeToSkip(row.row.id, row.row.old_label_id)}
-                                bsStyle="info">
+                                variant="info">
                                 Skip
                             </Button>
                         </OverlayTrigger>
@@ -104,7 +104,7 @@ class History extends React.Component {
             subComponent = (
                 <div className="sub-row">
                     <p>{row.row.data}</p>
-                    <Alert bsStyle="warning">
+                    <Alert variant="warning">
                         <strong>Note:</strong>
                          This is Inter-rater Reliability data and is not editable.
                     </Alert>

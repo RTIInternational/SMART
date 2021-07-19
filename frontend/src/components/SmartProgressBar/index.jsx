@@ -5,7 +5,7 @@ import { ProgressBar } from "react-bootstrap";
 
 class SmartProgressBar extends React.Component {
 
-    componentWillMount() {
+    componentDidMount() {
     }
 
     render() {

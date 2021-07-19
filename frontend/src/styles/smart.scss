@@ -1,6 +1,7 @@
 //General
 @import 'includes';
 
+
 header {
     @include border($attribute: border-top, $size: 12px, $color: $primary-color-dark);
     @include border($attribute: border-bottom, $size: 8px, $color: $primary-color-dark);
@@ -319,7 +320,7 @@ li.disabled {
 }
 
 .panel-heading .accordion-toggle:after {
-    font-family: Glyphicons Halflings;  /* essential for enabling glyphicon */
+    font-family: Glyphicons Halflings;
     content: '\e114';    /* adjust as needed, taken from bootstrap.css */
     float: right;        /* adjust as needed */
     color: grey;         /* adjust as needed */

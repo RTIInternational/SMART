@@ -1,4 +1,4 @@
-FROM node:6
+FROM node:14
 RUN mkdir /code
 ADD ./package.json /code/package.json
 ADD ./yarn.lock /code/yarn.lock

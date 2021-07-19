@@ -1,16 +1,16 @@
 import React, { Component } from 'react';
 import { shallow } from 'enzyme';
 import { assert } from 'chai';
-import Card from './index';
+import DataCard from './index';
 
-describe('<Card />', () => {
+describe('<DataCard />', () => {
     describe('render', () => {
         it('renders properly if all props provided', () => {
             const fn = () => {};
             const data = [];
             const message = "";
             const wrapper = shallow(
-              <Card
+              <DataCard
                 cards = {data}
                 message = {message}
                 fetchCards = {fn}
