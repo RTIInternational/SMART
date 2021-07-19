@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0051_adminprogress'),
+        ("core", "0051_adminprogress"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='model',
-            name='cv_metrics',
+            model_name="model",
+            name="cv_metrics",
             field=models.JSONField(),
         ),
     ]

@@ -8,17 +8,25 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0030_auto_20180622_1945'),
+        ("core", "0030_auto_20180622_1945"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='project',
-            name='use_active_learning',
+            model_name="project",
+            name="use_active_learning",
         ),
         migrations.AlterField(
-            model_name='project',
-            name='active_l_method',
-            field=models.CharField(choices=[('least confident', 'By Uncertainty using Least Confident'), ('margin sampling', 'By Uncertainty using the Margin'), ('entropy', 'By Uncertainty using Entropy')], default='least confident', max_length=15),
+            model_name="project",
+            name="active_l_method",
+            field=models.CharField(
+                choices=[
+                    ("least confident", "By Uncertainty using Least Confident"),
+                    ("margin sampling", "By Uncertainty using the Margin"),
+                    ("entropy", "By Uncertainty using Entropy"),
+                ],
+                default="least confident",
+                max_length=15,
+            ),
         ),
     ]

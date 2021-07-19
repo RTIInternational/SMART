@@ -8,13 +8,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0029_merge_20171108_2100'),
+        ("core", "0029_merge_20171108_2100"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='queue',
-            name='admin',
+            model_name="queue",
+            name="admin",
             field=models.BooleanField(default=False),
         ),
     ]
