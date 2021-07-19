@@ -1,6 +1,7 @@
 import math
 import random
 
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from django.utils.html import escape
@@ -31,6 +32,7 @@ from core.utils.utils_annotate import (
     unassign_datum,
 )
 from core.utils.utils_model import check_and_trigger_model
+from core.utils.utils_redis import redis_serialize_data, redis_serialize_set
 
 
 @api_view(["GET"])
@@ -54,6 +56,7 @@ def get_card_deck(request, project_pk):
     coder_size = math.ceil(batch_size / num_coders)
 
     data = get_assignments(profile, project, coder_size)
+
     # shuffle so the irr is not all at the front
     random.shuffle(data)
     labels = Label.objects.all().filter(project=project)
@@ -217,6 +220,10 @@ def discard_data(request, data_pk):
         # remove it from the admin queue
         queue = Queue.objects.get(project=project, type="admin")
         DataQueue.objects.get(data=data, queue=queue).delete()
+
+        # update redis
+        settings.REDIS.srem(redis_serialize_set(queue), redis_serialize_data(data))
+
         IRRLog.objects.filter(data=data).delete()
         Data.objects.filter(pk=data_pk).update(irr_ind=False)
         RecycleBin.objects.create(data=data, timestamp=timezone.now())
@@ -248,6 +255,12 @@ def restore_data(request, data_pk):
     # Make sure coder is an admin
     if project_extras.proj_permission_level(data.project, profile) > 1:
         # remove it from the recycle bin
+        queue = Queue.objects.get(project=data.project, type="admin")
+        DataQueue.objects.create(data=data, queue=queue)
+
+        # update redis
+        settings.REDIS.sadd(redis_serialize_set(queue), redis_serialize_data(data))
+
         RecycleBin.objects.get(data=data).delete()
     else:
         response["error"] = "Invalid credentials. Must be an admin."
@@ -320,6 +333,9 @@ def modify_label_to_skip(request, data_pk):
         else:
             # if it's not irr, add it to the admin queue immediately
             DataQueue.objects.create(data=data, queue=queue)
+
+            # update redis
+            settings.REDIS.sadd(redis_serialize_set(queue), redis_serialize_data(data))
         LabelChangeLog.objects.create(
             project=project,
             data=data,
@@ -568,6 +584,9 @@ def label_admin_label(request, data_pk):
         )
 
         DataQueue.objects.filter(data=datum, queue=queue).delete()
+
+        # update redis
+        settings.REDIS.srem(redis_serialize_set(queue), redis_serialize_data(datum))
 
         # make sure the data is no longer irr
         if datum.irr_ind:
