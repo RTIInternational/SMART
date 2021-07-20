@@ -13,9 +13,9 @@ const ADMIN = window.ADMIN;
 class DataCard extends React.Component {
     componentDidMount() {
         //Don't fetch cards unless you don't have any
-         //NOTE: otherwise it appends the same cards
-         //to the current list again.
-         if (this.props.cards.length == 0) {
+        //NOTE: otherwise it appends the same cards
+        //to the current list again.
+        if (this.props.cards.length == 0) {
             this.props.fetchCards();
         }
     }
