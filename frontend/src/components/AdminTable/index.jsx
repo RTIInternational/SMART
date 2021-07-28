@@ -7,6 +7,7 @@ import {
     Tooltip,
     OverlayTrigger
 } from "react-bootstrap";
+import Select from "react-dropdown-select";
 import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
 
 class AdminTable extends React.Component {
@@ -16,6 +17,8 @@ class AdminTable extends React.Component {
 
     render() {
         const { admin_data, labels, adminLabel, discardData } = this.props;
+
+        let labelsOptions = labels.map(label => Object.assign(label, { value: label["pk"] }));
 
         const columns = [
             {
@@ -37,23 +40,29 @@ class AdminTable extends React.Component {
                         <p id="admin_text">{row.row.data}</p>
                         <div id="admin_buttons">
                             <ButtonToolbar variant="btn-toolbar pull-right">
-                                {labels.map(label => {
-                                    return (
+                                {labels.length > 5 ?
+                                    <Select
+                                        className="absolute align-items-center flex py-1 px-2"
+                                        dropdownHandle={false}
+                                        labelField="name"
+                                        onChange={(value) => adminLabel(row.row.id, value[0]["pk"])}
+                                        options={labelsOptions}
+                                        placeholder="Select label..."
+                                        searchBy="name"
+                                        sortBy="name"
+                                        style={{ position: 'absolute', minWidth: '200px', width: 'fit-content' }}
+                                    />
+                                    :
+                                    labels.map(opt => (
                                         <Button
-                                            key={
-                                                label.pk.toString() +
-                                                "_" +
-                                                row.row.id.toString()
-                                            }
-                                            onClick={() =>
-                                                adminLabel(row.row.id, label.pk)
-                                            }
+                                            onClick={() => adminLabel(row.row.id, opt["pk"])}
                                             variant="primary"
+                                            key={opt["pk"].toString() + "_" + row.row.id.toString()}
                                         >
-                                            {label.name}
+                                            {opt["name"]}
                                         </Button>
-                                    );
-                                })}
+                                    ))
+                                }
                                 <OverlayTrigger
                                     placement="top"
                                     overlay={
@@ -68,6 +77,7 @@ class AdminTable extends React.Component {
                                         key={"discard_" + row.row.id.toString()}
                                         onClick={() => discardData(row.row.id)}
                                         variant="danger"
+                                        style={{ marginLeft: '205px' }}
                                     >
                                         Discard
                                     </Button>
@@ -101,7 +111,14 @@ class AdminTable extends React.Component {
                     defaultPageSize={1}
                     filterable={false}
                 />
+                <style>{"\
+                    .react-dropdown-select-dropdown {\
+                        min-width: 200px;\
+                        width: fit-content;\
+                    }\
+                "}</style>
             </div>
+
         );
     }
 }

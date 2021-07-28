@@ -54,7 +54,7 @@ class DataCard extends React.Component {
                                     sortBy="name"
                                     style={{ minWidth: '200px' }}
                                 />
-                            :
+                                :
                                 labels.map(opt => (
                                     <Button
                                         onClick={() =>
