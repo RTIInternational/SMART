@@ -40,9 +40,19 @@ def label_distribution(request, project_pk):
     users.append(project.creator)
     users.extend([perm.profile for perm in project.projectpermissions_set.all()])
 
+    def sortCount(label):
+        label_count = 0
+        for u in users:
+            label_count += DataLabel.objects.filter(profile=u, label=label).count()
+        return label_count
+
+    # Sort labels by the count
+    labels.sort(key=sortCount, reverse=True)
+
     dataset = []
     all_counts = []
-    for label in labels:
+    # Get first labels
+    for label in labels[0:5]:
         temp_values = []
         for u in users:
             label_count = DataLabel.objects.filter(profile=u, label=label).count()
@@ -50,8 +60,14 @@ def label_distribution(request, project_pk):
             temp_values.append({"x": u.__str__(), "y": label_count})
         dataset.append({"key": label.name, "values": temp_values})
 
-    if not any(count > 0 for count in all_counts):
-        dataset = []
+    other_values = []
+    for u in users:
+        other_count = 0
+        for label in labels[5:]:
+            other_count += DataLabel.objects.filter(profile=u, label=label).count()
+            all_counts.append(DataLabel.objects.filter(profile=u, label=label).count())
+        other_values.append({"x": u.__str__(), "y": other_count})
+    dataset.append({"key": "other labels", "values": other_values})
 
     return Response(dataset)
 
