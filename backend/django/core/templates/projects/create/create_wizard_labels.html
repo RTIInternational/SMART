@@ -39,7 +39,10 @@
           </ul>
           <div class="form-group">
             <label class="control-label" for="{{ wizard.form.data.id_for_label }}">You may also upload a .csv file containing labels and their descriptions (label and description columns required):</label>
+            <label class="control-label" for="{{ wizard.form.data.id_for_label }}">Note: Any labels currently in the table will be overwritten by the file data.</label>
             <label class="control-label" for="{{ wizard.form.data.id_for_label }}">{{ wizard.form.data.label }}</label>
+            <p>An example dataset can be downloaded from <a href="{% static 'example-labels.csv' %}">here</a>.</p>
+            <hr>
             <input class="form-control" id="{{ wizard.form.data.id_for_label }}" maxlength="30" name="{{ wizard.form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" onChange="handleUpload(event)" onclick="this.value = null;" />
           </div>
           <br />
@@ -93,6 +96,7 @@
       $('#loading_text').html("Please wait. Generating labels...");
       $("#second_progress").addClass("loader");
       var reader = new FileReader();
+      $('.error-messages').empty();
       try {
         reader.readAsText(event.target.files[0]);
         reader.onload = function(event){
@@ -123,11 +127,9 @@
             $('.overlay').hide();
         }
       } catch (error) {
-        $('.error-messages').empty();
         $('.error-messages').eq(1).append('<ul class="error-list"><li>There was an error processing your label file. Please try again.</li></ul>');
       }
     } else {
-      $('.error-messages').empty();
       $('.error-messages').eq(1).append('<ul class="error-list"><li>There was an error processing your label file. Please make sure your file is a .csv and has a Label and Description column.</li></ul>');
     }
   }
