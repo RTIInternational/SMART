@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import ReactTable from 'react-table-6';
 import { Button, ButtonToolbar, Card } from "react-bootstrap";
 import NVD3Chart from "react-nvd3";
+import Select from "react-dropdown-select";
 import d3 from 'd3';
 import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
 
@@ -35,6 +36,8 @@ class Skew extends React.Component {
 
     render() {
         const { unlabeled_data, labels, skewLabel, label_counts } = this.props;
+
+        let labelsOptions = labels.map(label => Object.assign(label, { value: label["pk"] }));
 
         return (
             <div>
@@ -87,13 +90,29 @@ class Skew extends React.Component {
                                 <p id="skew_text">{row.row.data}</p>
                                 <div id="skew_buttons">
                                     <ButtonToolbar variant="btn-toolbar pull-right">
-                                        {labels.map( (label) => (
-                                            <Button key={label.pk.toString() + "_" + row.row.id.toString()}
-                                                onClick={() => skewLabel(row.row.id, label.pk)}
-                                                variant="primary">
-                                                {label.name}
-                                            </Button>
-                                        ))}
+                                        {labels.length > 5 ?
+                                            <Select
+                                                className="align-items-center flex py-1 px-2"
+                                                dropdownHandle={false}
+                                                labelField="name"
+                                                onChange={(value) => skewLabel(row.row.id, value[0]["pk"])}
+                                                options={labelsOptions}
+                                                placeholder="Select label..."
+                                                searchBy="name"
+                                                sortBy="name"
+                                                style={{ minWidth: '200px' }}
+                                            />
+                                            :
+                                            labels.map(opt => (
+                                                <Button
+                                                    onClick={() => skewLabel(row.row.id, opt["pk"])}
+                                                    variant="primary"
+                                                    key={opt["pk"].toString() + "_" + row.row.id.toString()}
+                                                >
+                                                    {opt["name"]}
+                                                </Button>
+                                            ))
+                                        }
                                     </ButtonToolbar>
                                 </div>
                             </div>

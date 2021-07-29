@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import ReactTable from 'react-table-6';
 import { Button, ButtonToolbar, Tooltip, OverlayTrigger, Alert } from "react-bootstrap";
+import Select from "react-dropdown-select";
 import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
 
 const COLUMNS = [
@@ -77,14 +78,32 @@ class History extends React.Component {
 
     getSubComponent(row) {
         let subComponent;
-        const { labels, changeToSkip } = this.props;
+        const { labels, changeLabel, changeToSkip } = this.props;
+
+        let labelsOptions = labels.map(label => Object.assign(label, { value: label["pk"] }));
 
         if (row.row.edit === "yes") {
             subComponent = (
                 <div className="sub-row">
                     <p>{row.row.data}</p>
                     <ButtonToolbar variant="btn-toolbar pull-right">
-                        {labels.map( (label) => this.getLabelButton(row, label) )}
+                        {labels.length > 5 ?
+                            <Select
+                                className="align-items-center flex py-1 px-2"
+                                dropdownHandle={false}
+                                labelField="name"
+                                onChange={(value) => changeLabel(row.row.id, row.row.old_label_id, value[0]["pk"])}
+                                options={labelsOptions}
+                                placeholder="Select label..."
+                                searchBy="name"
+                                sortBy="name"
+                                style={{ minWidth: '200px' }}
+                            />
+                            :
+                            <React.Fragment>
+                                {labels.map((label) => this.getLabelButton(row, label))}
+                            </React.Fragment>
+                        }
                         <OverlayTrigger
                             placement = "top"
                             overlay={
@@ -104,7 +123,7 @@ class History extends React.Component {
             subComponent = (
                 <div className="sub-row">
                     <p>{row.row.data}</p>
-                    <Alert variant="warning">
+                    <Alert variant="warning" transition={false}>
                         <strong>Note:</strong>
                          This is Inter-rater Reliability data and is not editable.
                     </Alert>
