@@ -123,7 +123,7 @@ class History extends React.Component {
             subComponent = (
                 <div className="sub-row">
                     <p>{row.row.data}</p>
-                    <Alert variant="warning">
+                    <Alert variant="warning" transition={false}>
                         <strong>Note:</strong>
                          This is Inter-rater Reliability data and is not editable.
                     </Alert>
