@@ -91,17 +91,18 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/0.71/jquery.csv-0.71.min.js"></script>
 <script type="text/javascript">
   function handleUpload(event) {
+    $('.error-messages').empty();
     if (event.target.files[0] && event.target.files[0].name.includes('.csv')) {
       $('.overlay').show();
       $('#loading_text').html("Please wait. Generating labels...");
       $("#second_progress").addClass("loader");
       var reader = new FileReader();
-      $('.error-messages').empty();
       try {
         reader.readAsText(event.target.files[0]);
         reader.onload = function(event){
           var csv = event.target.result;
           var data = $.csv.toArrays(csv);
+          if(data[0][0] === 'Label' && data[0][1] === 'Description') {
             data.forEach((label, index) => {
               if(index !== 0) {
                 if($('.formset_row_label').eq(index - 1).length > 0) {
@@ -121,10 +122,13 @@
                 }
               }
             });
-            if($('.formset_row_label').length > data.length -1) {
-              $('.formset_row_label').slice(data.length - 1).remove();
-            }
-            $('.overlay').hide();
+          } else {
+            $('.error-messages').eq(1).append('<ul class="error-list"><li>There was an error processing your label file. Please make sure your .csv file only contains a Label and Description column and try again.</li></ul>');
+          }
+          if($('.formset_row_label').length > data.length -1) {
+            $('.formset_row_label').slice(data.length - 1).remove();
+          }
+          $('.overlay').hide();
         }
       } catch (error) {
         $('.error-messages').eq(1).append('<ul class="error-list"><li>There was an error processing your label file. Please try again.</li></ul>');
