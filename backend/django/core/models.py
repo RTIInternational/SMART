@@ -130,6 +130,26 @@ class Data(models.Model):
         return self.text
 
 
+class MetaDataField(models.Model):
+    project = models.ForeignKey("Project", on_delete=models.CASCADE)
+    field_name = models.TextField()
+
+    def __str__(self):
+        return self.field_name
+
+
+class MetaData(models.Model):
+    class Meta:
+        unique_together = ("data", "metadata_field")
+
+    data = models.ForeignKey("Data", on_delete=models.CASCADE, related_name="metadata")
+    metadata_field = models.ForeignKey("MetaDataField", on_delete=models.CASCADE)
+    value = models.TextField()
+
+    def __str__(self):
+        return f"{str(self.metadata_field)}: {self.value}"
+
+
 class Label(models.Model):
     class Meta:
         unique_together = ("name", "project")

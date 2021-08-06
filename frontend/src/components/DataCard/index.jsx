@@ -5,7 +5,9 @@ import {
     ButtonToolbar,
     Card,
     Tooltip,
-    OverlayTrigger
+    OverlayTrigger,
+    Container,
+    Row
 } from "react-bootstrap";
 import Select from "react-dropdown-select";
 
@@ -25,7 +27,9 @@ class DataCard extends React.Component {
         let card;
         const { labels, message, cards, passCard, annotateCard } = this.props;
 
-        let labelsOptions = labels.map(label => Object.assign(label, { value: label["pk"] }));
+        let labelsOptions = labels.map(label =>
+            Object.assign(label, { value: label["pk"] })
+        );
 
         if (!(cards === undefined) && cards.length > 0) {
             //just get the labels from the cards
@@ -33,14 +37,22 @@ class DataCard extends React.Component {
                 <div className="full" key={cards[0].id}>
                     <div className="cardface clearfix">
                         <h2>Card {cards[0].id + 1}</h2>
+                        {cards[0].text["metadata"].length > 0 ? (
+                            cards[0].text["metadata"].map(val => (
+                                <p key={val}>{val}</p>
+                            ))
+                        ) : (
+                            <p></p>
+                        )}
+                        <h3>Text to Label:</h3>
                         <p>{cards[0].text["text"]}</p>
                         <ButtonToolbar className="btn-toolbar pull-right">
-                            {labels.length > 5 ?
+                            {labels.length > 5 ? (
                                 <Select
                                     className="align-items-center flex py-1 px-2"
                                     dropdownHandle={false}
                                     labelField="name"
-                                    onChange={(value) =>
+                                    onChange={value =>
                                         annotateCard(
                                             cards[0],
                                             value[0]["pk"],
@@ -52,9 +64,9 @@ class DataCard extends React.Component {
                                     placeholder="Select label..."
                                     searchBy="name"
                                     sortBy="name"
-                                    style={{ minWidth: '200px' }}
+                                    style={{ minWidth: "200px" }}
                                 />
-                                :
+                            ) : (
                                 labels.map(opt => (
                                     <Button
                                         onClick={() =>
@@ -71,7 +83,7 @@ class DataCard extends React.Component {
                                         {opt["name"]}
                                     </Button>
                                 ))
-                            }
+                            )}
                             <OverlayTrigger
                                 placement="top"
                                 overlay={

@@ -17,6 +17,8 @@ from core.models import (
     DataLabel,
     IRRLog,
     Label,
+    MetaData,
+    MetaDataField,
     Profile,
     Project,
     ProjectPermissions,
@@ -182,6 +184,26 @@ def create_labels_from_csv(df, project):
         )
 
 
+def create_metadata_objects(df, project):
+    """Insert metadata objects into database using bulk_create."""
+
+    metadataFields = MetaDataField.objects.filter(project=project)
+    df["data_id"] = df["hash"].apply(
+        lambda x: Data.objects.get(hash=x, project=project).pk
+    )
+
+    for meta in metadataFields:
+        field_name = str(meta)
+        df_meta = df[["data_id", field_name]].rename(columns={field_name: "value"})
+        df_meta["metadata_field_id"] = meta.pk
+
+        metadata_objects = []
+        for index, row in df_meta.iterrows():
+            metadata_objects.append(MetaData(**row.to_dict()))
+
+        MetaData.objects.bulk_create(metadata_objects)
+
+
 def add_data(project, df):
     """Add data to an existing project.
 
@@ -228,6 +250,8 @@ def add_data(project, df):
 
     # Create the data objects
     create_data_from_csv(df.copy(deep=True), project)
+
+    create_metadata_objects(df.copy(), project)
 
     # Find the data that has labels
     labeled_df = df[~pd.isnull(df["Label"])]
