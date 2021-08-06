@@ -17,10 +17,15 @@ const COLUMNS = [
         show: false
     },
     {
+        Header: "hidden",
+        accessor: "metadata",
+        show: false
+    },
+    {
         Header: "Data",
         accessor: "data",
         filterMethod: (filter, row) => {
-            if (String(row["data"]).toLowerCase().includes(filter.value.toLowerCase())) {
+            if (String(row.data).toLowerCase().includes(filter.value.toLowerCase())) {
                 return true;
             } else {
                 return false;
@@ -85,6 +90,14 @@ class History extends React.Component {
         if (row.row.edit === "yes") {
             subComponent = (
                 <div className="sub-row">
+                    {row.row["metadata"].length > 0 ? (
+                        row.row["metadata"].map(val => (
+                            <p key={val}>{val}</p>
+                        ))
+                    ) : (
+                        <p></p>
+                    )}
+                    <h3>Text to Label</h3>
                     <p>{row.row.data}</p>
                     <ButtonToolbar variant="btn-toolbar pull-right">
                         {labels.length > 5 ?

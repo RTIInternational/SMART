@@ -647,8 +647,11 @@ def get_label_history(request, project_pk):
             )
         else:
             new_timestamp = "None"
+
+        serialized_data = DataSerializer(d.data, many=False).data
         temp_dict = {
-            "data": d.data.text,
+            "data": serialized_data["text"],
+            "metadata": serialized_data["metadata"],
             "id": d.data.id,
             "label": d.label.name,
             "labelID": d.label.id,
