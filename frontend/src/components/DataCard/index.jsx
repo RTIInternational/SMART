@@ -21,6 +21,22 @@ class DataCard extends React.Component {
         }
     }
 
+    getText(card) {
+        if (card.text["metadata"].length == 0) {
+            return <p></p>;
+        } else {
+            return (
+                <div>
+                    <u>Background Data</u>
+                    {card.text["metadata"].map(val => (
+                        <p key={val}>{val}</p>
+                    ))}
+                    <u>Text to Label</u>
+                </div>
+            );
+        }
+    }
+
     render() {
         let card;
         const { labels, message, cards, passCard, annotateCard } = this.props;
@@ -35,14 +51,7 @@ class DataCard extends React.Component {
                 <div className="full" key={cards[0].id}>
                     <div className="cardface clearfix">
                         <h2>Card {cards[0].id + 1}</h2>
-                        {cards[0].text["metadata"].length > 0 ? (
-                            cards[0].text["metadata"].map(val => (
-                                <p key={val}>{val}</p>
-                            ))
-                        ) : (
-                            <p></p>
-                        )}
-                        <h3>Text to Label:</h3>
+                        {this.getText(cards[0])}
                         <p>{cards[0].text["text"]}</p>
                         <ButtonToolbar className="btn-toolbar pull-right">
                             {labels.length > 5 ? (

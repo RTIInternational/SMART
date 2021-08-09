@@ -1,9 +1,15 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import ReactTable from 'react-table-6';
-import { Button, ButtonToolbar, Tooltip, OverlayTrigger, Alert } from "react-bootstrap";
+import React from "react";
+import PropTypes from "prop-types";
+import ReactTable from "react-table-6";
+import {
+    Button,
+    ButtonToolbar,
+    Tooltip,
+    OverlayTrigger,
+    Alert
+} from "react-bootstrap";
 import Select from "react-dropdown-select";
-import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
+import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
 
 const COLUMNS = [
     {
@@ -25,7 +31,11 @@ const COLUMNS = [
         Header: "Data",
         accessor: "data",
         filterMethod: (filter, row) => {
-            if (String(row.data).toLowerCase().includes(filter.value.toLowerCase())) {
+            if (
+                String(row.data)
+                    .toLowerCase()
+                    .includes(filter.value.toLowerCase())
+            ) {
                 return true;
             } else {
                 return false;
@@ -50,9 +60,7 @@ const COLUMNS = [
     }
 ];
 
-
 class History extends React.Component {
-
     componentDidMount() {
         this.props.getHistory();
     }
@@ -65,7 +73,8 @@ class History extends React.Component {
                 <Button
                     key={label.pk.toString() + "_" + row.row.id.toString()}
                     variant="primary"
-                    disabled>
+                    disabled
+                >
                     {label.name}
                 </Button>
             );
@@ -73,10 +82,29 @@ class History extends React.Component {
             return (
                 <Button
                     key={label.pk.toString() + "_" + row.row.id.toString()}
-                    onClick={() => changeLabel(row.row.id, row.row.old_label_id, label.pk)}
-                    variant="primary">
+                    onClick={() =>
+                        changeLabel(row.row.id, row.row.old_label_id, label.pk)
+                    }
+                    variant="primary"
+                >
                     {label.name}
                 </Button>
+            );
+        }
+    }
+
+    getText(row) {
+        if (row.row["metadata"].length == 0) {
+            return <p></p>;
+        } else {
+            return (
+                <div>
+                    <u>Background Data</u>
+                    {row.row["metadata"].map(val => (
+                        <p key={val}>{val}</p>
+                    ))}
+                    <u>Text to Label</u>
+                </div>
             );
         }
     }
@@ -85,47 +113,59 @@ class History extends React.Component {
         let subComponent;
         const { labels, changeLabel, changeToSkip } = this.props;
 
-        let labelsOptions = labels.map(label => Object.assign(label, { value: label["pk"] }));
+        let labelsOptions = labels.map(label =>
+            Object.assign(label, { value: label["pk"] })
+        );
 
         if (row.row.edit === "yes") {
             subComponent = (
                 <div className="sub-row">
-                    {row.row["metadata"].length > 0 ? (
-                        row.row["metadata"].map(val => (
-                            <p key={val}>{val}</p>
-                        ))
-                    ) : (
-                        <p></p>
-                    )}
-                    <h3>Text to Label</h3>
+                    {this.getText(row)}
                     <p>{row.row.data}</p>
                     <ButtonToolbar variant="btn-toolbar pull-right">
-                        {labels.length > 5 ?
+                        {labels.length > 5 ? (
                             <Select
                                 className="align-items-center flex py-1 px-2"
                                 dropdownHandle={false}
                                 labelField="name"
-                                onChange={(value) => changeLabel(row.row.id, row.row.old_label_id, value[0]["pk"])}
+                                onChange={value =>
+                                    changeLabel(
+                                        row.row.id,
+                                        row.row.old_label_id,
+                                        value[0]["pk"]
+                                    )
+                                }
                                 options={labelsOptions}
                                 placeholder="Select label..."
                                 searchBy="name"
                                 sortBy="name"
-                                style={{ minWidth: '200px' }}
+                                style={{ minWidth: "200px" }}
                             />
-                            :
+                        ) : (
                             <React.Fragment>
-                                {labels.map((label) => this.getLabelButton(row, label))}
+                                {labels.map(label =>
+                                    this.getLabelButton(row, label)
+                                )}
                             </React.Fragment>
-                        }
+                        )}
                         <OverlayTrigger
-                            placement = "top"
+                            placement="top"
                             overlay={
                                 <Tooltip id="skip_tooltip">
-                                    Clicking this button will send this document to an administrator for review
+                                    Clicking this button will send this document
+                                    to an administrator for review
                                 </Tooltip>
-                            }>
-                            <Button onClick={() => changeToSkip(row.row.id, row.row.old_label_id)}
-                                variant="info">
+                            }
+                        >
+                            <Button
+                                onClick={() =>
+                                    changeToSkip(
+                                        row.row.id,
+                                        row.row.old_label_id
+                                    )
+                                }
+                                variant="info"
+                            >
                                 Skip
                             </Button>
                         </OverlayTrigger>
@@ -138,7 +178,8 @@ class History extends React.Component {
                     <p>{row.row.data}</p>
                     <Alert variant="warning" transition={false}>
                         <strong>Note:</strong>
-                         This is Inter-rater Reliability data and is not editable.
+                        This is Inter-rater Reliability data and is not
+                        editable.
                     </Alert>
                 </div>
             );
@@ -162,26 +203,38 @@ class History extends React.Component {
             <div>
                 <h3>Instructions</h3>
                 <p>This page allows a coder to change past labels.</p>
-                <p>To annotate, click on a data entry below and select the label from the expanded list of labels. The chart will then update with the new label and current timestamp </p>
-                <p><strong>NOTE:</strong> Data labels that are changed on this page will not effect past model accuracy or data selected by active learning in the past. The training data will only be updated for the next run of the model</p>
+                <p>
+                    To annotate, click on a data entry below and select the
+                    label from the expanded list of labels. The chart will then
+                    update with the new label and current timestamp{" "}
+                </p>
+                <p>
+                    <strong>NOTE:</strong> Data labels that are changed on this
+                    page will not effect past model accuracy or data selected by
+                    active learning in the past. The training data will only be
+                    updated for the next run of the model
+                </p>
                 <CodebookLabelMenuContainer />
                 <ReactTable
                     data={history_data}
                     columns={COLUMNS}
-                    pageSize={(history_data.length < 50) ? history_data.length : 50}
+                    pageSize={
+                        history_data.length < 50 ? history_data.length : 50
+                    }
                     showPageSizeOptions={false}
                     SubComponent={row => this.getSubComponent(row)}
                     filterable={true}
-                    defaultSorted={[{
-                        id: "timestamp",
-                        desc: true
-                    }]}
+                    defaultSorted={[
+                        {
+                            id: "timestamp",
+                            desc: true
+                        }
+                    ]}
                 />
             </div>
         );
     }
 }
-
 
 //This component will have
 // change label (action)
