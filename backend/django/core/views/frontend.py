@@ -370,6 +370,12 @@ class ProjectUpdateData(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
             )
         )
 
+        form_kwargs["metadata"] = list(
+            MetaDataField.objects.filter(project=form_kwargs["instance"]).values_list(
+                "field_name", flat=True
+            )
+        )
+
         del form_kwargs["instance"]
 
         return form_kwargs

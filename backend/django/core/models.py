@@ -144,7 +144,7 @@ class MetaData(models.Model):
 
     data = models.ForeignKey("Data", on_delete=models.CASCADE, related_name="metadata")
     metadata_field = models.ForeignKey("MetaDataField", on_delete=models.CASCADE)
-    value = models.TextField()
+    value = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return f"{str(self.metadata_field)}: {self.value}"

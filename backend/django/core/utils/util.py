@@ -195,6 +195,7 @@ def create_metadata_objects(df, project):
     for meta in metadataFields:
         field_name = str(meta)
         df_meta = df[["data_id", field_name]].rename(columns={field_name: "value"})
+        df_meta["value"] = df_meta["value"].fillna("")
         df_meta["metadata_field_id"] = meta.pk
 
         metadata_objects = []
