@@ -17,13 +17,17 @@ function drawHeatmap(response) {
     let all_zero = true;
     //don't draw the heatmap if there is no data
     let most_data = 0;
-    for (let i = 0; i < data.length; i++) {
-        if (data[i]["count"] > most_data) {
-            most_data = data[i]["count"];
+    try {
+        for (let i = 0; i < data.length; i++) {
+            if (data[i]["count"] > most_data) {
+                most_data = data[i]["count"];
+            }
+            if (data[i]["count"] > 0) {
+                all_zero = false;
+            }
         }
-        if (data[i]["count"] > 0) {
-            all_zero = false;
-        }
+    } catch (error) {
+        all_zero = true;
     }
 
     let coder1_name = "";
@@ -51,7 +55,7 @@ function drawHeatmap(response) {
         height = labels.length * 50;
     }
 
-    let colors = ["#f7fbff", "#deebf7", "#c6dbef", "#9ecae1", "#6baed6", "#4292c6", "#2171b5", "#08519c", "#08306b"];
+    let colors = ["#ffffff", "#deebf7", "#c6dbef", "#9ecae1", "#6baed6", "#4292c6", "#2171b5", "#08519c", "#08306b"];
     let buckets;
     if (most_data >= 9) {
         buckets = 9;

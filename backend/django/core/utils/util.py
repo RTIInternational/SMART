@@ -373,14 +373,16 @@ def irr_heatmap_data(project):
         end_data_list = []
         for label1 in user_label_counts[user_combo]:
             for label2 in user_label_counts[user_combo][label1]:
-                end_data_list.append(
-                    {
-                        "label1": label1,
-                        "label2": label2,
-                        "count": user_label_counts[user_combo][label1][label2],
-                    }
-                )
-        end_data[user_combo] = end_data_list
+                if user_label_counts[user_combo][label1][label2] > 0:
+                    end_data_list.append(
+                        {
+                            "label1": label1,
+                            "label2": label2,
+                            "count": user_label_counts[user_combo][label1][label2],
+                        }
+                    )
+        if len(end_data_list):
+            end_data[user_combo] = end_data_list
 
     return end_data
 

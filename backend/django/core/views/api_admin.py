@@ -312,10 +312,21 @@ def heat_map_data(request, project_pk):
     project = Project.objects.get(pk=project_pk)
 
     heatmap_data = irr_heatmap_data(project)
-    labels = list(
-        Label.objects.all().filter(project=project).values_list("name", flat=True)
-    )
-    labels.append("Skip")
+
+    allLabels = [label for label in project.labels.all()]
+
+    users = []
+    users.append(project.creator)
+    users.extend([perm.profile for perm in project.projectpermissions_set.all()])
+
+    labels = []
+    for label in allLabels:
+        if (
+            DataLabel.objects.filter(profile=users[0], label=label).count() > 0
+            or DataLabel.objects.filter(profile=users[1], label=label).count() > 0
+        ):
+            labels.append(label.name)
+
     coders = []
     profiles = ProjectPermissions.objects.filter(project=project)
     coders.append({"name": str(project.creator), "pk": project.creator.pk})
