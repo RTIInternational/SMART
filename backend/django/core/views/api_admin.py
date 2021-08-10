@@ -30,7 +30,7 @@ def label_distribution(request, project_pk):
 
     Args:
         request: The POST request
-        project_pk: Primary key o the project
+        project_pk: Primary key of the project
     Returns:
         a dictionary of the amount of labels per person per type
     """
