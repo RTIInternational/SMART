@@ -209,6 +209,8 @@ class Dev(Configuration):
         }
     }
 
+    DATA_UPLOAD_MAX_NUMBER_FIELDS = None
+
 
 class Prod(Dev):
     DEBUG = False
