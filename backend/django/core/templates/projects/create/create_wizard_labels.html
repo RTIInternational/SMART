@@ -11,6 +11,12 @@
 {% endblock %}
 
 {% block content %}
+<div class="overlay">
+  <div class="overlay_contents">
+      <div id="second_progress"></div>
+      <span id="loading_text"></span>
+  </div>
+</div>
 <div class="error-messages">{{ wizard.non_form_errors }}</div>
 <div class="row">
   <div class="col-md-8 col-md-offset-2">
@@ -31,7 +37,16 @@
             <li class="list-group-item">If you plan on uploading a data file that contains labels, the label categories in the file must match those provided on this page.</li>
             <li class="list-group-item">You cannot update the labels for a project after the project is created.</li>
           </ul>
-          <table class="table table-striped">
+          <div class="form-group">
+            <label class="control-label" for="{{ wizard.form.data.id_for_label }}">You may also upload a .csv file containing labels and their descriptions (label and description columns required):</label>
+            <label class="control-label" for="{{ wizard.form.data.id_for_label }}">Note: Any labels currently in the table will be overwritten by the file data.</label>
+            <label class="control-label" for="{{ wizard.form.data.id_for_label }}">{{ wizard.form.data.label }}</label>
+            <p>An example dataset can be downloaded from <a href="{% static 'example-labels.csv' %}">here</a>.</p>
+            <hr>
+            <input class="form-control" id="{{ wizard.form.data.id_for_label }}" maxlength="30" name="{{ wizard.form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" onChange="handleUpload(event)" onclick="this.value = null;" />
+          </div>
+          <br />
+          <table class="table table-striped" id="form-table">
             {{ wizard.form.management_form }}
             <div class="error-messages">{{ wizard.form.non_form_errors }}</div>
             {% for form in wizard.form %}
@@ -73,15 +88,63 @@
 {% endblock %}
 
 {% block scripts_body %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/0.71/jquery.csv-0.71.min.js"></script>
 <script type="text/javascript">
-$('.formset_row_label').formset({
-  addText: 'add label',
-  deleteText: 'remove label',
-  prefix: 'label_set',
-  added: function() {
-    // Reset drop down and errors from both columns when adding new rows
-    $('tr.formset_row_label').last().children(':first').find('ul.errorlist li').empty();
+  function handleUpload(event) {
+    $('.error-messages').empty();
+    if (event.target.files[0] && event.target.files[0].name.includes('.csv')) {
+      $('.overlay').show();
+      $('#loading_text').html("Please wait. Generating labels...");
+      $("#second_progress").addClass("loader");
+      var reader = new FileReader();
+      try {
+        reader.readAsText(event.target.files[0]);
+        reader.onload = function(event){
+          var csv = event.target.result;
+          var data = $.csv.toArrays(csv);
+          if(data[0][0] === 'Label' && data[0][1] === 'Description') {
+            data.forEach((label, index) => {
+              if(index !== 0) {
+                if($('.formset_row_label').eq(index - 1).length > 0) {
+                  $('.formset_row_label').eq(index - 1).css('display', '');
+                  $('.formset_row_label').eq(index - 1).find('input[type=text]').eq(0).val(label[0]);
+                  if(label[1].length > 0) {
+                    $('.formset_row_label').eq(index - 1).find('textarea').eq(0).val(label[1]);
+                  } else {
+                    $('.formset_row_label').eq(index - 1).find('textarea').eq(0).val('');
+                  }
+                } else {
+                  $(':contains("add label")').click();
+                  $('.formset_row_label').last().find('input[type=text]').eq(0).val(label[0]);
+                  if(label[1].length > 0) {
+                    $('.formset_row_label').last().find('textarea').eq(0).val(label[1]);
+                  }
+                }
+              }
+            });
+          } else {
+            $('.error-messages').eq(1).append('<ul class="error-list"><li>There was an error processing your label file. Please make sure your .csv file only contains a Label and Description column and try again.</li></ul>');
+          }
+          if($('.formset_row_label').length > data.length -1) {
+            $('.formset_row_label').slice(data.length - 1).remove();
+          }
+          $('.overlay').hide();
+        }
+      } catch (error) {
+        $('.error-messages').eq(1).append('<ul class="error-list"><li>There was an error processing your label file. Please try again.</li></ul>');
+      }
+    } else {
+      $('.error-messages').eq(1).append('<ul class="error-list"><li>There was an error processing your label file. Please make sure your file is a .csv and has a Label and Description column.</li></ul>');
+    }
   }
-});
+  $('.formset_row_label').formset({
+    addText: 'add label',
+    deleteText: 'remove label',
+    prefix: 'label_set',
+    added: function() {
+      // Reset drop down and errors from both columns when adding new rows
+      $('tr.formset_row_label').last().children(':first').find('ul.errorlist li').empty();
+    }
+  });
 </script>
 {% endblock %}
