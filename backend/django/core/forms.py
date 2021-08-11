@@ -13,7 +13,7 @@ from core.utils.util import md5_hash
 from .models import Label, Project, ProjectPermissions
 
 
-def clean_data_helper(data, supplied_labels):
+def clean_data_helper(data, supplied_labels, metadata_fields=[]):
     ALLOWED_TYPES = [
         "text/csv",
         "text/tab-separated-values",
@@ -25,8 +25,7 @@ def clean_data_helper(data, supplied_labels):
         "application/vnd.ms-excel.addin.macroenabled.12",
         "application/vnd.ms-excel.sheet.binary.macroenabled.12",
     ]
-    ALLOWED_HEADER = ["Text", "Label"]
-    ALLOWED_HEADER_ID = ["ID", "Text", "Label"]
+    REQUIRED_HEADERS = ["Text", "Label"]
     MAX_FILE_SIZE = 500 * 1000 * 1000
 
     if data.size > MAX_FILE_SIZE:
@@ -76,33 +75,31 @@ def clean_data_helper(data, supplied_labels):
             "Unable to read the file.  Please ensure that the file is encoded in UTF-8."
         )
 
-    if (len(data.columns) != len(ALLOWED_HEADER)) and len(data.columns) != len(
-        ALLOWED_HEADER_ID
-    ):
-        raise ValidationError(
-            "File has incorrect number of columns.  Received {0} but expected {1} or {2}.".format(
-                len(data.columns), len(ALLOWED_HEADER), len(ALLOWED_HEADER_ID)
-            )
-        )
-
-    if (data.columns.tolist() != ALLOWED_HEADER) and (
-        data.columns.tolist() != ALLOWED_HEADER_ID
-    ):
-        raise ValidationError(
-            "File headers are incorrect.  Received {0} but header must be {1} or {2}.".format(
-                ", ".join(data.columns),
-                ", ".join(ALLOWED_HEADER),
-                ", ".join(ALLOWED_HEADER_ID),
-            )
-        )
+    for col in REQUIRED_HEADERS:
+        if col not in data.columns:
+            raise ValidationError(f"File is missing required field {col}.")
 
     if len(data) < 1:
         raise ValidationError("File should contain some data.")
 
-    labels_in_data = data["Label"].dropna(inplace=False).unique()
-    if len(labels_in_data) > 0 and set(labels_in_data) != set(supplied_labels):
+    found_metadata_fields = [
+        c for c in data.columns if c.lower() not in ["text", "label", "id"]
+    ]
+    if metadata_fields is not None and (
+        len(metadata_fields) > 0
+        and (set(metadata_fields) != set(found_metadata_fields))
+    ):
         raise ValidationError(
-            "Labels in file do not match labels created in step 2.  File supplied {0} "
+            "There were metadata fields provided in the "
+            "initial data upload that are missing from this data."
+            f" Original fields: {', '.join(metadata_fields)}."
+            f" Found fields: {', '.join(found_metadata_fields)}."
+        )
+
+    labels_in_data = data["Label"].dropna(inplace=False).unique()
+    if len(labels_in_data) > 0 and len(set(labels_in_data) - set(supplied_labels)) > 0:
+        raise ValidationError(
+            "There are extra labels in the file which were not created in step 2.  File supplied {0} "
             "but step 2 was given {1}".format(
                 ", ".join(labels_in_data), ", ".join(supplied_labels)
             )
@@ -115,7 +112,7 @@ def clean_data_helper(data, supplied_labels):
             "to do active learning.  Please upload a file that has less labels."
         )
 
-    if len(data.columns) == len(ALLOWED_HEADER_ID):
+    if "ID" in data.columns:
         # there should be no null values
         if data["ID"].isnull().sum() > 0:
             raise ValidationError("Unique ID field cannot have missing values.")
@@ -153,14 +150,16 @@ class ProjectUpdateForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         self.project_labels = kwargs.pop("labels", None)
+        self.project_metadata = kwargs.pop("metadata", None)
         super(ProjectUpdateForm, self).__init__(*args, **kwargs)
 
     def clean_data(self):
         data = self.cleaned_data.get("data", False)
         labels = self.project_labels
+        metadata_fields = self.project_metadata
         cb_data = self.cleaned_data.get("cb_data", False)
         if data:
-            return clean_data_helper(data, labels)
+            return clean_data_helper(data, labels, metadata_fields)
         if cb_data:
             return cleanCodebookDataHelper(cb_data)
 
@@ -320,12 +319,14 @@ class DataWizardForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         self.supplied_labels = kwargs.pop("labels", None)
+        self.supplied_metadata = kwargs.pop("metadata", None)
         super(DataWizardForm, self).__init__(*args, **kwargs)
 
     def clean_data(self):
         data = self.cleaned_data.get("data", False)
         labels = self.supplied_labels
-        return clean_data_helper(data, labels)
+        metadata = self.supplied_metadata
+        return clean_data_helper(data, labels, metadata)
 
 
 class CodeBookWizardForm(forms.Form):

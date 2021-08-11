@@ -4,7 +4,6 @@ import random
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
-from django.utils.html import escape
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
@@ -436,7 +435,12 @@ def data_unlabeled_table(request, project_pk):
     )
     data = []
     for d in unlabeled_data:
-        temp = {"Text": escape(d.text), "ID": d.id}
+        serialized_data = DataSerializer(d, many=False).data
+        temp = {
+            "Text": serialized_data["text"],
+            "metadata": serialized_data["metadata"],
+            "ID": d.id,
+        }
         data.append(temp)
 
     return Response({"data": data})
@@ -464,7 +468,14 @@ def data_admin_table(request, project_pk):
             reason = "IRR"
         else:
             reason = "Skipped"
-        temp = {"Text": d.data.text, "ID": d.data.id, "Reason": reason}
+
+        serialized_data = DataSerializer(d.data, many=False).data
+        temp = {
+            "Text": serialized_data["text"],
+            "metadata": serialized_data["metadata"],
+            "ID": d.data.id,
+            "Reason": reason,
+        }
         data.append(temp)
 
     return Response({"data": data})
@@ -509,7 +520,12 @@ def recycle_bin_table(request, project_pk):
 
     data = []
     for d in data_objs:
-        temp = {"Text": d.data.text, "ID": d.data.id}
+        serialized_data = DataSerializer(d.data, many=False).data
+        temp = {
+            "Text": serialized_data["text"],
+            "metadata": serialized_data["metadata"],
+            "ID": d.data.id,
+        }
         data.append(temp)
 
     return Response({"data": data})
@@ -647,8 +663,11 @@ def get_label_history(request, project_pk):
             )
         else:
             new_timestamp = "None"
+
+        serialized_data = DataSerializer(d.data, many=False).data
         temp_dict = {
-            "data": d.data.text,
+            "data": serialized_data["text"],
+            "metadata": serialized_data["metadata"],
             "id": d.data.id,
             "label": d.label.name,
             "labelID": d.label.id,

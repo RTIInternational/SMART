@@ -15,10 +15,28 @@ class AdminTable extends React.Component {
         this.props.getAdmin();
     }
 
+    getText(row) {
+        if (row.row["metadata"].length == 0) {
+            return <p></p>;
+        } else {
+            return (
+                <div>
+                    <u>Background Data</u>
+                    {row.row["metadata"].map(val => (
+                        <p key={val}>{val}</p>
+                    ))}
+                    <u>Text to Label</u>
+                </div>
+            );
+        }
+    }
+
     render() {
         const { admin_data, labels, adminLabel, discardData } = this.props;
 
-        let labelsOptions = labels.map(label => Object.assign(label, { value: label["pk"] }));
+        let labelsOptions = labels.map(label =>
+            Object.assign(label, { value: label["pk"] })
+        );
 
         const columns = [
             {
@@ -33,36 +51,60 @@ class AdminTable extends React.Component {
                 width: 70
             },
             {
+                Header: "metadata",
+                accessor: "metadata",
+                show: false
+            },
+            {
                 Header: "Unlabeled Data",
                 accessor: "data",
                 Cell: row => (
                     <div>
+                        {this.getText(row)}
                         <p id="admin_text">{row.row.data}</p>
                         <div id="admin_buttons">
                             <ButtonToolbar variant="btn-toolbar pull-right">
-                                {labels.length > 5 ?
+                                {labels.length > 5 ? (
                                     <Select
                                         className="absolute align-items-center flex py-1 px-2"
                                         dropdownHandle={false}
                                         labelField="name"
-                                        onChange={(value) => adminLabel(row.row.id, value[0]["pk"])}
+                                        onChange={value =>
+                                            adminLabel(
+                                                row.row.id,
+                                                value[0]["pk"]
+                                            )
+                                        }
                                         options={labelsOptions}
                                         placeholder="Select label..."
                                         searchBy="name"
                                         sortBy="name"
-                                        style={{ position: 'absolute', minWidth: '200px', width: 'fit-content' }}
+                                        style={{
+                                            position: "absolute",
+                                            minWidth: "200px",
+                                            width: "fit-content"
+                                        }}
                                     />
-                                    :
+                                ) : (
                                     labels.map(opt => (
                                         <Button
-                                            onClick={() => adminLabel(row.row.id, opt["pk"])}
+                                            onClick={() =>
+                                                adminLabel(
+                                                    row.row.id,
+                                                    opt["pk"]
+                                                )
+                                            }
                                             variant="primary"
-                                            key={opt["pk"].toString() + "_" + row.row.id.toString()}
+                                            key={
+                                                opt["pk"].toString() +
+                                                "_" +
+                                                row.row.id.toString()
+                                            }
                                         >
                                             {opt["name"]}
                                         </Button>
                                     ))
-                                }
+                                )}
                                 <OverlayTrigger
                                     placement="top"
                                     overlay={
@@ -77,7 +119,7 @@ class AdminTable extends React.Component {
                                         key={"discard_" + row.row.id.toString()}
                                         onClick={() => discardData(row.row.id)}
                                         variant="danger"
-                                        style={{ marginLeft: '205px' }}
+                                        style={{ marginLeft: "205px" }}
                                     >
                                         Discard
                                     </Button>
@@ -111,14 +153,17 @@ class AdminTable extends React.Component {
                     defaultPageSize={1}
                     filterable={false}
                 />
-                <style>{"\
+                <style>
+                    {
+                        "\
                     .react-dropdown-select-dropdown {\
                         min-width: 200px;\
                         width: fit-content;\
                     }\
-                "}</style>
+                "
+                    }
+                </style>
             </div>
-
         );
     }
 }
