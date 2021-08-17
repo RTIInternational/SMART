@@ -42,7 +42,7 @@ class DataCard extends React.Component {
         const { labels, message, cards, passCard, annotateCard } = this.props;
 
         let labelsOptions = labels.map(label =>
-            Object.assign(label, { value: label["pk"] })
+            Object.assign(label, { value: label["pk"], dropdownLabel: `${label["name"]} (${label["description"]})` })
         );
 
         if (!(cards === undefined) && cards.length > 0) {
@@ -58,7 +58,7 @@ class DataCard extends React.Component {
                                 <Select
                                     className="align-items-center flex py-1 px-2"
                                     dropdownHandle={false}
-                                    labelField="name"
+                                    labelField="dropdownLabel"
                                     onChange={value =>
                                         annotateCard(
                                             cards[0],
@@ -110,6 +110,29 @@ class DataCard extends React.Component {
                                 </Button>
                             </OverlayTrigger>
                         </ButtonToolbar>
+                        {labels.length > 5 && (
+                            <div className="suggestions dropdown">
+                                <button type="button" className="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    Suggested Labels
+                                </button>
+                                <ul className="dropdown-menu dropdown-menu-right">
+                                    {labelsOptions.slice(0, 5).map(opt => (
+                                        <li key={opt.name}>
+                                            <button className="suggestion" 
+                                                onClick={() =>
+                                                    annotateCard(
+                                                        cards[0],
+                                                        opt["pk"],
+                                                        cards.length,
+                                                        ADMIN
+                                                    )
+                                                }
+                                            >{opt.dropdownLabel}</button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
                     </div>
                 </div>
             );

@@ -124,6 +124,8 @@ main {
 }
 
 .cardface {
+    position: relative;
+
     border: 1px solid $table-border-color;
 
     padding: 12px 16px;
@@ -147,6 +149,48 @@ main {
         padding: 16px 24px;
         margin: 24px 32px;
     }
+}
+
+.suggestions {
+    position: absolute;
+    right: 24px;
+    top: 32px;
+
+    @include breakpoint(large) {
+        right: 28px;
+        top: 40px;
+    }
+
+    text-align: right;
+
+    background-color: #F5F5F5;
+}
+
+.suggestion {
+    display: block;
+
+    margin: 0px 0px 0px auto;
+
+    text-align: right;
+    background-color: white;
+    border: none;
+}
+
+.suggestion:hover {
+    width: 100%;
+    background-color: #F5F5F5;
+}
+
+.unlabeled-status {
+    padding: 0px 16px;
+    margin: 0px 24px;
+
+    @include breakpoint(large) {
+        padding: 0px 24px;
+        margin: 0px 32px;
+    }
+
+    color: #9E9E9E;
 }
 
 .margin-top {

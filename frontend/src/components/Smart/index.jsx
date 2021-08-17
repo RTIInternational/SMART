@@ -8,9 +8,11 @@ import AdminTableContainer from '../../containers/adminTable_container';
 import RecycleBinContainer from '../../containers/recycleBin_container';
 import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
 import SmartProgressBarContainer from '../../containers/smartProgressBar_container';
+import UnlabeledDataStatusContainer from '../../containers/unlabeled_data_status_container';
+
 
 const ADMIN = window.ADMIN;
-
+const PROJECT_ID = window.PROJECT_PK;
 
 class Smart extends React.Component {
 
@@ -129,6 +131,7 @@ class Smart extends React.Component {
                         <CodebookLabelMenuContainer />
                         <SmartProgressBarContainer />
                         <CardContainer />
+                        <UnlabeledDataStatusContainer />
                     </div>
                 </Tab>
                 <Tab eventKey={2} title="History" className="full card" transition={false}>
