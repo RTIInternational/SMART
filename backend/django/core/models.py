@@ -152,6 +152,7 @@ class MetaData(models.Model):
 
 class DataLabelSimilarityPairs(models.Model):
     class Meta:
+        ordering = ["-similarity_score"]
         unique_together = ("data", "label")
 
     data = models.ForeignKey(
@@ -161,6 +162,9 @@ class DataLabelSimilarityPairs(models.Model):
         "Label", on_delete=models.CASCADE, related_name="similarityPair"
     )
     similarity_score = models.IntegerField()
+
+    def __str__(self):
+        return f"{str(self.label.name)} {str(self.label.description)}: {self.similarity_score}"
 
 
 class Label(models.Model):

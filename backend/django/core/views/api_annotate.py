@@ -1,3 +1,4 @@
+import json
 import math
 import random
 
@@ -436,9 +437,14 @@ def data_unlabeled_table(request, project_pk):
     data = []
     for d in unlabeled_data:
         serialized_data = DataSerializer(d, many=False).data
+
+        sorted_similarity_pairs = []
+        for pair in serialized_data["similarityPair"]:
+            sorted_similarity_pairs.append(json.loads(pair))
         temp = {
             "Text": serialized_data["text"],
             "metadata": serialized_data["metadata"],
+            "similarity_pairs": sorted_similarity_pairs,
             "ID": d.id,
         }
         data.append(temp)

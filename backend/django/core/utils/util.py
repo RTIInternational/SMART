@@ -10,11 +10,13 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import connection, transaction
 from django.utils import timezone
+from fuzzywuzzy import fuzz
 
 from core import tasks
 from core.models import (
     Data,
     DataLabel,
+    DataLabelSimilarityPairs,
     IRRLog,
     Label,
     MetaData,
@@ -148,6 +150,8 @@ def create_data_from_csv(df, project):
             ],
         )
 
+    create_label_similarity_results(df, project)
+
 
 def create_labels_from_csv(df, project):
     """Insert DataLabel objects into database using cursor.copy_from by creating an in-
@@ -203,6 +207,28 @@ def create_metadata_objects(df, project):
             metadata_objects.append(MetaData(**row.to_dict()))
 
         MetaData.objects.bulk_create(metadata_objects)
+
+
+def create_label_similarity_results(df, project):
+    """Insert data label similarity results into database using bulk_create."""
+
+    project_labels = Label.objects.filter(project=project)
+    project_data = Data.objects.filter(project=project)
+
+    label_similarity_scores = []
+    for data in project_data:
+        for label in project_labels:
+            label_similarity_scores.append(
+                DataLabelSimilarityPairs(
+                    data=data,
+                    label=label,
+                    similarity_score=fuzz.ratio(
+                        f"{label.name} {label.description}", data.text
+                    ),
+                )
+            )
+
+    DataLabelSimilarityPairs.objects.bulk_create(label_similarity_scores)
 
 
 def add_data(project, df):
