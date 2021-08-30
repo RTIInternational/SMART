@@ -214,7 +214,13 @@ def add_data(project, df):
     """
     # Create hash of text and drop duplicates
     df["hash"] = df["Text"].apply(md5_hash)
-    df.drop_duplicates(subset="hash", keep="first", inplace=True)
+    dedup_fields = ["hash"] + list(
+        MetaDataField.objects.filter(project=project, use_with_dedup=True).values_list(
+            "field_name", flat=True
+        )
+    )
+
+    df.drop_duplicates(subset=dedup_fields, keep="first", inplace=True)
 
     # check that the data is not already in the system and drop duplicates
     df = df.loc[

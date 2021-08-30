@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0056_alter_metadata_value'),
+        ("core", "0056_alter_metadata_value"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='metadatafield',
-            name='use_with_dedup',
+            model_name="metadatafield",
+            name="use_with_dedup",
             field=models.BooleanField(default=True),
         ),
     ]
