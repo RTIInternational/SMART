@@ -125,11 +125,21 @@ class Skew extends React.Component {
                     }
                     SubComponent={row => {
                         return (
-                            <div className="sub-row">
-                                {this.getText(row)}
-                                <p id="skew_text">{row.row.data}</p>
-                                <div id="skew_buttons">
-                                    <ButtonToolbar variant="btn-toolbar pull-right">
+                            <div className="sub-row cardface cardface-datacard clearfix">
+                                <div className="cardface-info">
+                                    {this.getText(row)}
+                                    <p>{row.row.data}</p>
+                                </div>
+                                {labels.length > 5 && (
+                                    <div className="suggestions">
+                                        <h4>Suggested Labels</h4>
+                                        {row.original.similarityPair.slice(0, 5).map((opt, index) => (
+                                            <div key={index + 1} className="">{index + 1}. {opt.split(':')[0]}</div>
+                                        ))}
+                                    </div>
+                                )}
+                                <ButtonToolbar variant="btn-toolbar pull-right">
+                                    <div id="skew_buttons">
                                         {labels.length > 5 ? (
                                             <Select
                                                 className="align-items-center flex py-1 px-2"
@@ -167,8 +177,8 @@ class Skew extends React.Component {
                                                 </Button>
                                             ))
                                         )}
-                                    </ButtonToolbar>
-                                </div>
+                                    </div>
+                                </ButtonToolbar>
                             </div>
                         );
                     }}

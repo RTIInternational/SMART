@@ -80,8 +80,8 @@ class DataCard extends React.Component {
                                     }
                                     options={labelsOptions}
                                     placeholder="Select label..."
-                                    searchBy="name"
-                                    sortBy="name"
+                                    searchBy="dropdownLabel"
+                                    sortBy="dropdownLabel"
                                     style={{ minWidth: "200px" }}
                                 />
                             ) : (

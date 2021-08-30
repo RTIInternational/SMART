@@ -97,6 +97,8 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
             batch_size=batch_size,
         )
 
+    tasks.send_label_similarity_results_task(project.pk)
+
     # Since User can upload Labeled Data and this data is added to current training_set
     # we need to check_and_trigger model.  However since training model requires
     # tf_idf to be created we must create a chord which garuntees that tfidf
@@ -149,8 +151,6 @@ def create_data_from_csv(df, project):
                 "irr_ind",
             ],
         )
-
-    create_label_similarity_results(df, project)
 
 
 def create_labels_from_csv(df, project):
@@ -209,7 +209,7 @@ def create_metadata_objects(df, project):
         MetaData.objects.bulk_create(metadata_objects)
 
 
-def create_label_similarity_results(df, project):
+def create_label_similarity_results(project):
     """Insert data label similarity results into database using bulk_create."""
 
     project_labels = Label.objects.filter(project=project)
@@ -227,7 +227,6 @@ def create_label_similarity_results(df, project):
                     ),
                 )
             )
-
     DataLabelSimilarityPairs.objects.bulk_create(label_similarity_scores)
 
 

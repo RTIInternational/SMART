@@ -12,7 +12,6 @@ import UnlabeledDataStatusContainer from '../../containers/unlabeled_data_status
 
 
 const ADMIN = window.ADMIN;
-const PROJECT_ID = window.PROJECT_PK;
 
 class Smart extends React.Component {
 

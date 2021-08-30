@@ -9,10 +9,9 @@ class UnlabeledDataStatus extends React.Component {
     render() {
         const { unlabeled_data } = this.props;
 
-        console.log(this.props);
         return (
             <p className="unlabeled-status">
-                Unlabeled Outstanding: {unlabeled_data.length}
+                Unlabeled and Unassigned Outstanding: {unlabeled_data.length}
             </p>
         );
     }
