@@ -133,6 +133,7 @@ class Data(models.Model):
 class MetaDataField(models.Model):
     project = models.ForeignKey("Project", on_delete=models.CASCADE)
     field_name = models.TextField()
+    use_with_dedup = models.BooleanField(default=True)
 
     def __str__(self):
         return self.field_name
