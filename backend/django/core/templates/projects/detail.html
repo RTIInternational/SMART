@@ -35,6 +35,26 @@
       </div>
     </div>
     <div class="row">
+      <div class="col-md-12">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h5 class="panel-title">
+              <a data-toggle="collapse" href="#status-panel" class="accordion-toggle">
+                Project Status
+              </a>
+            </h5>
+          </div>
+          <div id="status-panel" class="panel-collapse collapse show">
+            <div class="panel-body">
+              <p>Fully Labeled: <span id="fully-labeled"></span></p>
+              <p>Unlabeled and Unassigned: <span id="unlabeled-unassigned"></span></p>
+              <p>Other (Partially Labeled/IRR/Skipped): <span id="other-labeled"></span></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row">
       <div class="col-md-8">
         <div class="panel panel-default">
           <div class="panel-heading">
@@ -265,6 +285,18 @@ $('#download_btn').on('click', function() {
   xhttp.setRequestHeader('Content-Type', 'application/json');
   xhttp.responseType = 'blob';
   xhttp.send();
+});
+
+$(document).ready(function() {
+  $.ajax({
+    method: "GET",
+    url: '/api/project_status/' + {{ project.pk }} + '/',
+    success: function (response) {
+      $('#fully-labeled').append(response.final);
+      $('#unlabeled-unassigned').append(response.unlabeled);
+      $('#other-labeled').append((response.total - response.final) - response.unlabeled)
+    }
+  })
 });
 </script>
 {% endblock %}
