@@ -317,12 +317,26 @@ class AdvancedWizardForm(forms.ModelForm):
 class DataWizardForm(forms.Form):
     data = forms.FileField()
 
+    deduplicate = forms.ChoiceField(
+        widget=RadioSelect(),
+        choices=(
+            ("Text", "Text only"),
+            ("ID", "Unique ID Only (not valid if data does not have ID field)"),
+            ("Metadata_Text", "Text and all Metadata fields"),
+            ("Text_Some_Metadata", "Text and selected Metadata fields"),
+        ),
+        initial="Text",
+        required=True,
+    )
+    dedup_fields = forms.CharField(required=False,initial="")
+
     def __init__(self, *args, **kwargs):
         self.supplied_labels = kwargs.pop("labels", None)
         self.supplied_metadata = kwargs.pop("metadata", None)
         super(DataWizardForm, self).__init__(*args, **kwargs)
 
     def clean_data(self):
+        print(self.cleaned_data.get("deduplicate"))
         data = self.cleaned_data.get("data", False)
         labels = self.supplied_labels
         metadata = self.supplied_metadata
