@@ -280,6 +280,8 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             # Data
             f_data = data.cleaned_data["data"]
 
+            # TODO: use the data dedup choice to set dedup property of metadata fields
+
             # metatata fields
             metadata_fields = [
                 c for c in f_data if c.lower() not in ["text", "label", "id"]

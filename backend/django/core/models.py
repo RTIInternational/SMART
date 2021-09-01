@@ -66,6 +66,21 @@ class Project(models.Model):
         null=True,
     )
 
+    DEDUP_CHOICES = (
+        ("Text", "Text only"),
+        ("ID", "Unique ID Only (not valid if data does not have ID field)"),
+        ("Metadata_Text", "Text and all Metadata fields"),
+        ("Text_Some_Metadata", "Text and selected Metadata fields"),
+    )
+    dedup_on = models.CharField(
+        max_length=19,
+        default="Text",
+        choices=DEDUP_CHOICES,
+        null=False,
+    )
+
+
+
     def get_absolute_url(self):
         return reverse("projects:project_detail", kwargs={"pk": self.pk})
 
