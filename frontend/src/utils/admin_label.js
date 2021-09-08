@@ -15,6 +15,7 @@ $.ajax({
                 .duration(300)
                 .margin({ bottom: 70, left: 70 })
                 .groupSpacing(0.1)
+                .legendPosition('bottom')
             ;
             chart.xAxis
                 .axisLabel("User")
@@ -26,6 +27,7 @@ $.ajax({
                 .axisLabelDistance(-5)
                 .tickFormat(d3.format(',.01f'))
             ;
+            chart.legend.rightAlign(false);
             chart.noData("Insufficient labeled data -- please code more documents");
             d3.select('#distribution_chart svg')
                 .datum(response)
@@ -51,8 +53,8 @@ $.ajax({
     success: function (response) {
         nv.addGraph(function() {
             let chart = nv.models.boxPlotChart()
-                .x(function(d) {
-                    return d.label; 
+                .x(function (d) {
+                    return d.label;
                 })
                 .staggerLabels(true)
                 .maxBoxWidth(75) // prevent boxes from being incredibly wide

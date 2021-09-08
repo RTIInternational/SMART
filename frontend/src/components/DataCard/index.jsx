@@ -7,6 +7,7 @@ import {
     Tooltip,
     OverlayTrigger
 } from "react-bootstrap";
+import Select from "react-dropdown-select";
 
 const ADMIN = window.ADMIN;
 
@@ -20,9 +21,29 @@ class DataCard extends React.Component {
         }
     }
 
+    getText(card) {
+        if (card.text["metadata"].length == 0) {
+            return <p></p>;
+        } else {
+            return (
+                <div>
+                    <u>Background Data</u>
+                    {card.text["metadata"].map(val => (
+                        <p key={val}>{val}</p>
+                    ))}
+                    <u>Text to Label</u>
+                </div>
+            );
+        }
+    }
+
     render() {
         let card;
         const { labels, message, cards, passCard, annotateCard } = this.props;
+
+        let labelsOptions = labels.map(label =>
+            Object.assign(label, { value: label["pk"] })
+        );
 
         if (!(cards === undefined) && cards.length > 0) {
             //just get the labels from the cards
@@ -30,24 +51,46 @@ class DataCard extends React.Component {
                 <div className="full" key={cards[0].id}>
                     <div className="cardface clearfix">
                         <h2>Card {cards[0].id + 1}</h2>
+                        {this.getText(cards[0])}
                         <p>{cards[0].text["text"]}</p>
                         <ButtonToolbar className="btn-toolbar pull-right">
-                            {labels.map(opt => (
-                                <Button
-                                    onClick={() =>
+                            {labels.length > 5 ? (
+                                <Select
+                                    className="align-items-center flex py-1 px-2"
+                                    dropdownHandle={false}
+                                    labelField="name"
+                                    onChange={value =>
                                         annotateCard(
                                             cards[0],
-                                            opt["pk"],
+                                            value[0]["pk"],
                                             cards.length,
                                             ADMIN
                                         )
                                     }
-                                    variant="primary"
-                                    key={`deck-button-${opt["name"]}`}
-                                >
-                                    {opt["name"]}
-                                </Button>
-                            ))}
+                                    options={labelsOptions}
+                                    placeholder="Select label..."
+                                    searchBy="name"
+                                    sortBy="name"
+                                    style={{ minWidth: "200px" }}
+                                />
+                            ) : (
+                                labels.map(opt => (
+                                    <Button
+                                        onClick={() =>
+                                            annotateCard(
+                                                cards[0],
+                                                opt["pk"],
+                                                cards.length,
+                                                ADMIN
+                                            )
+                                        }
+                                        variant="primary"
+                                        key={`deck-button-${opt["name"]}`}
+                                    >
+                                        {opt["name"]}
+                                    </Button>
+                                ))
+                            )}
                             <OverlayTrigger
                                 placement="top"
                                 overlay={

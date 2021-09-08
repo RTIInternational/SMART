@@ -56,6 +56,7 @@ export const getDiscarded = (projectID) => {
                 for (let i = 0; i < response.data.length; i++) {
                     const row = {
                         id: response.data[i].ID,
+                        metadata: response.data[i].metadata,
                         data: response.data[i].Text,
                     };
                     all_data.push(row);

@@ -21,7 +21,7 @@ from core.forms import (
     ProjectUpdateOverviewForm,
     ProjectWizardForm,
 )
-from core.models import Data, Label, Project, TrainingSet
+from core.models import Data, Label, MetaDataField, Project, TrainingSet
 from core.templatetags import project_extras
 from core.utils.util import save_codebook_file, upload_data
 from core.utils.utils_annotate import batch_unassign
@@ -279,6 +279,14 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
             # Data
             f_data = data.cleaned_data["data"]
+
+            # metatata fields
+            metadata_fields = [
+                c for c in f_data if c.lower() not in ["text", "label", "id"]
+            ]
+            for field in metadata_fields:
+                MetaDataField.objects.create(project=proj_obj, field_name=field)
+
             add_queue(project=proj_obj, length=2000000, type="admin")
             irr_queue = add_queue(project=proj_obj, length=2000000, type="irr")
             upload_data(f_data, proj_obj, queue, irr_queue, batch_size)
@@ -359,6 +367,12 @@ class ProjectUpdateData(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         form_kwargs["labels"] = list(
             Label.objects.filter(project=form_kwargs["instance"]).values_list(
                 "name", flat=True
+            )
+        )
+
+        form_kwargs["metadata"] = list(
+            MetaDataField.objects.filter(project=form_kwargs["instance"]).values_list(
+                "field_name", flat=True
             )
         )
 

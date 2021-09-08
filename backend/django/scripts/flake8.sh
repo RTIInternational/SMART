@@ -6,7 +6,7 @@ set -euo pipefail
 IFS=$'\n\t'
 
 set +e
-flake8 /code/
+flake8 /code/ 
 exitcode=$?
 set -e
 

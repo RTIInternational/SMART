@@ -56,9 +56,19 @@ class LabelSerializer(serializers.ModelSerializer):
 
 
 class DataSerializer(serializers.ModelSerializer):
+    metadata = serializers.StringRelatedField(many=True, read_only=True)
+
     class Meta:
         model = Data
-        fields = ("pk", "text", "project", "irr_ind", "hash", "upload_id_hash")
+        fields = (
+            "pk",
+            "text",
+            "project",
+            "irr_ind",
+            "hash",
+            "upload_id_hash",
+            "metadata",
+        )
 
 
 class DataLabelSerializer(serializers.HyperlinkedModelSerializer):
