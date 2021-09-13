@@ -61,7 +61,7 @@ class Skew extends React.Component {
         const { unlabeled_data, labels, skewLabel, label_counts } = this.props;
 
         let labelsOptions = labels.map(label =>
-            Object.assign(label, { value: label["pk"] })
+            Object.assign(label, { value: label["pk"], dropdownLabel: `${label["name"]} ${label["description"] !== "" ? `(${label["description"]})` : ""}` })
         );
 
         return (
@@ -144,7 +144,7 @@ class Skew extends React.Component {
                                             <Select
                                                 className="align-items-center flex py-1 px-2"
                                                 dropdownHandle={false}
-                                                labelField="name"
+                                                labelField="dropdownLabel"
                                                 onChange={value =>
                                                     skewLabel(
                                                         row.row.id,
@@ -153,8 +153,8 @@ class Skew extends React.Component {
                                                 }
                                                 options={labelsOptions}
                                                 placeholder="Select label..."
-                                                searchBy="name"
-                                                sortBy="name"
+                                                searchBy="dropdownLabel"
+                                                sortBy="dropdownLabel"
                                                 style={{ minWidth: "200px" }}
                                             />
                                         ) : (

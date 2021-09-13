@@ -114,7 +114,7 @@ class History extends React.Component {
         const { labels, changeLabel, changeToSkip } = this.props;
 
         let labelsOptions = labels.map(label =>
-            Object.assign(label, { value: label["pk"] })
+            Object.assign(label, { value: label["pk"], dropdownLabel: `${label["name"]} ${label["description"] !== "" ? `(${label["description"]})` : ""}` })
         );
 
         if (row.row.edit === "yes") {
@@ -137,7 +137,7 @@ class History extends React.Component {
                             <Select
                                 className="align-items-center flex py-1 px-2"
                                 dropdownHandle={false}
-                                labelField="name"
+                                labelField="dropdownLabel"
                                 onChange={value =>
                                     changeLabel(
                                         row.row.id,
@@ -147,8 +147,8 @@ class History extends React.Component {
                                 }
                                 options={labelsOptions}
                                 placeholder="Select label..."
-                                searchBy="name"
-                                sortBy="name"
+                                searchBy="dropdownLabel"
+                                sortBy="dropdownLabel"
                                 style={{ minWidth: "200px" }}
                             />
                         ) : (

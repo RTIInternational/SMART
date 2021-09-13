@@ -475,7 +475,6 @@ def data_admin_table(request, project_pk):
             reason = "Skipped"
 
         serialized_data = DataSerializer(d.data, many=False).data
-        print(serialized_data)
         temp = {
             "Text": serialized_data["text"],
             "metadata": serialized_data["metadata"],

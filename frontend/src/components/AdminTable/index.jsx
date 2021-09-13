@@ -35,7 +35,7 @@ class AdminTable extends React.Component {
         const { admin_data, labels, adminLabel, discardData } = this.props;
 
         let labelsOptions = labels.map(label =>
-            Object.assign(label, { value: label["pk"] })
+            Object.assign(label, { value: label["pk"], dropdownLabel: `${label["name"]} ${label["description"] !== "" ? `(${label["description"]})` : ""}` })
         );
 
         const columns = [
@@ -78,7 +78,7 @@ class AdminTable extends React.Component {
                                     <Select
                                         className="absolute align-items-center flex py-1 px-2"
                                         dropdownHandle={false}
-                                        labelField="name"
+                                        labelField="dropdownLabel"
                                         onChange={value =>
                                             adminLabel(
                                                 row.row.id,
@@ -87,8 +87,8 @@ class AdminTable extends React.Component {
                                         }
                                         options={labelsOptions}
                                         placeholder="Select label..."
-                                        searchBy="name"
-                                        sortBy="name"
+                                        searchBy="dropdownLabel"
+                                        sortBy="dropdownLabel"
                                         style={{
                                             position: "absolute",
                                             minWidth: "200px",

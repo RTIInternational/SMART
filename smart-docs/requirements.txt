@@ -5,7 +5,6 @@ certifi==2018.4.16
 chardet==3.0.4
 CommonMark==0.5.4
 docutils==0.14
-fuzzywuzzy==0.18.0
 idna==2.7
 imagesize==1.0.0
 Jinja2==2.10
@@ -26,6 +25,7 @@ Sphinx==1.7.6
 sphinx-autobuild==0.7.1
 sphinx-rtd-theme==0.4.0
 sphinxcontrib-websupport==1.1.0
+string-grouper==0.5.0
 tornado==5.1
 urllib3==1.23
 watchdog==0.8.3

@@ -10,7 +10,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import connection, transaction
 from django.utils import timezone
-from fuzzywuzzy import fuzz
+from string_grouper import compute_pairwise_similarities
 
 from core import tasks
 from core.models import (
@@ -96,8 +96,9 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
             irr_percent=project.percentage_irr,
             batch_size=batch_size,
         )
-
-    tasks.send_label_similarity_results_task(project.pk)
+    transaction.on_commit(
+        lambda: tasks.send_label_similarity_results_task.apply_async(kwargs={"project_pk":project.pk})
+    )
 
     # Since User can upload Labeled Data and this data is added to current training_set
     # we need to check_and_trigger model.  However since training model requires
@@ -212,22 +213,30 @@ def create_metadata_objects(df, project):
 def create_label_similarity_results(project):
     """Insert data label similarity results into database using bulk_create."""
 
-    project_labels = Label.objects.filter(project=project)
-    project_data = Data.objects.filter(project=project)
+    project_data = Data.objects.filter(project=project, similarityPair__isnull=True)
 
-    label_similarity_scores = []
-    for data in project_data:
-        for label in project_labels:
-            label_similarity_scores.append(
-                DataLabelSimilarityPairs(
-                    data=data,
-                    label=label,
-                    similarity_score=fuzz.ratio(
-                        f"{label.name} {label.description}", data.text
-                    ),
-                )
-            )
-    DataLabelSimilarityPairs.objects.bulk_create(label_similarity_scores)
+    project_labels = Label.objects.filter(project=project)
+    for label in project_labels:
+        # get the data in dataframe form
+        data_df = pd.DataFrame(list(project_data.values("pk","text"))).rename(columns={"pk":"data"})
+
+        # set up the label series
+        label_string = f"{label.name} {label.description}"
+        label_series = pd.Series(len(data_df) * [label_string])
+
+        # compute the similarity score
+        data_df["similarity_score"] = compute_pairwise_similarities(label_series, data_df["text"])
+        data_df["label"] = label.pk
+
+        label_similarity_scores = []
+        for index, row in data_df.iterrows():
+            label_similarity_scores.append(DataLabelSimilarityPairs(
+                data=Data.objects.filter(id=row["data"])[0],
+                label=label,
+                similarity_score=row["similarity_score"] * 1000
+            ))
+
+        DataLabelSimilarityPairs.objects.bulk_create(label_similarity_scores)
 
 
 def add_data(project, df):
