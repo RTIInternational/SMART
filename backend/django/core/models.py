@@ -78,6 +78,12 @@ class Project(models.Model):
         null=False,
     )
 
+    dedup_fields = models.CharField(
+        max_length=50,
+        default="",
+        null=True,
+    )
+
     def get_absolute_url(self):
         return reverse("projects:project_detail", kwargs={"pk": self.pk})
 

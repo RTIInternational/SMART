@@ -212,15 +212,17 @@ def add_data(project, df):
     and should have at least one null value.  Any row that has Label should be added to
     DataLabel
     """
-    # Create hash of text and drop duplicates
-    df["hash"] = df["Text"].apply(md5_hash)
-    dedup_fields = ["hash"] + list(
-        MetaDataField.objects.filter(project=project, use_with_dedup=True).values_list(
-            "field_name", flat=True
-        )
-    )
+    # Create hash of (text + dedup fields). So each unique combination should have a different hash
+    dedup_on_fields = MetaDataField.objects.filter(
+        project=project, use_with_dedup=True
+    ).values_list("field_name", flat=True)
 
-    df.drop_duplicates(subset=dedup_fields, keep="first", inplace=True)
+    hash_field = df["Text"].astype(str)
+    for f in dedup_on_fields:
+        hash_field += "_" + df[f].astype(str)
+
+    df["hash"] = hash_field.apply(md5_hash)
+    df.drop_duplicates(subset=["hash"], keep="first", inplace=True)
 
     # check that the data is not already in the system and drop duplicates
     df = df.loc[

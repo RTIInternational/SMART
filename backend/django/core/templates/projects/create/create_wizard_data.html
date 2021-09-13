@@ -48,9 +48,36 @@
                         <li class="list-group-item">SMART will keep up to two million unique records per data set.</li>
                     </ul>
                     <div class="form-group">
-                        <label class="control-label" for="{{ wizard.form.data.id_for_label }}">{{ wizard.form.data.label }}</label>
-                        <input class="form-control" id="{{ wizard.form.data.id_for_label }}" maxlength="30" name="{{ wizard.form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" />
-                        <div class="error-messages">{{ wizard.form.data.errors }}</div>
+                      <div class="panel panel-default">
+                        <div class="panel-heading">
+                          <h5 class="panel-title">
+                            <a data-toggle="collapse" href="#d-panel" class="accordion-toggle">
+                              Deduplication Options
+                            </a>
+                          </h5>
+                        </div>
+                        <div id="d-panel" class="panel-collapse collapse show">
+                          <div class="panel-body">
+                              <div id="dedup_radios">
+                                <p>Smart only saves one version of each unique data by default. Use the options below to select which fields should be used to determine uniqueness.</p>
+                                {% for radio2 in wizard.form.dedup_on %}
+                                <div class="choose_dedup_on" name="dedup_on_choice" id="{{radio2.value}}" onchange="showHideOptions(event)">
+                                  {{ radio2 }}
+                                </div>
+                                {% endfor %}
+                              </div>
+                              <div id="choose_dedup_fields">
+                                Metadata fields to deduplicate on (seperated by ';'): {{ wizard.form.dedup_fields }}
+                              </div>
+                              <p>{{ wizard.form.deduplication.errors }}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                          <label class="control-label" for="{{ wizard.form.data.id_for_label }}">{{ wizard.form.data.label }}</label>
+                          <input class="form-control" id="{{ wizard.form.data.id_for_label }}" maxlength="30" name="{{ wizard.form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" />
+                          <div class="error-messages">{{ wizard.form.data.errors }}</div>
+                      </div>
                     </div>
                     <div class="wizard_nav_bar">
                         <button class="btn btn-info" name="wizard_goto_step" type="submit" value="project">1. Info</button>
@@ -61,32 +88,6 @@
                         <input class="btn btn-primary" type="submit" value="Submit" />
                         <p class="pull-right">Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
                     </div>
-                    <div class="panel panel-default">
-                      <div class="panel-heading">
-                        <h5 class="panel-title">
-                          <a data-toggle="collapse" href="#d-panel" class="accordion-toggle">
-                            Deduplication Options
-                          </a>
-                        </h5>
-                      </div>
-                      <div id="d-panel" class="panel-collapse collapse show">
-                        <div class="panel-body">
-                            <div id="dedup_radios">
-                              <p>Smart only saves one version of each unique data by default. Use the options below to select which fields should be used to determine uniqueness.</p>
-                              {% for radio2 in wizard.form.deduplicate %}
-                              <div class="choose_dedup_method" name="dedup_choice" id="{{radio2.value}}" onchange="showHideOptions(event)">
-                                {{radio2}}
-                              </div>
-                              {% endfor %}
-                              <div id="choose_dedup_fields">
-                                Metadata fields to deduplicate on (seperated by ';'): {{ wizard.form.dedup_fields}}
-                              </div>
-                            </div>
-                            <p>{{ wizard.form.deduplication.errors }}</p>
-                        </div>
-                      </div>
-                    </div>
-
                 </form>
                 <hr>
                 <p>An example dataset can be downloaded from <a href="{% static 'example.csv' %}">here</a>.</p>
@@ -104,7 +105,7 @@
     show_dedup_option.hide();
 
     function showHideOptions(event) {
-      if(event.target.id == "id_deduplicate_2") {
+      if(event.target.id == "id_dedup_on_2") {
         show_dedup_option.show();
       } else {
         show_dedup_option.hide();

@@ -248,6 +248,11 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             proj_obj.percentage_irr = advanced_data["percentage_irr"]
             proj_obj.num_users_irr = advanced_data["num_users_irr"]
             proj_obj.classifier = advanced_data["classifier"]
+
+            # use the data dedup choice to set dedup property of metadata fields
+            proj_obj.dedup_on = data.cleaned_data["dedup_on"]
+            proj_obj.dedup_fields = data.cleaned_data["dedup_fields"]
+
             proj_obj.save()
 
             # Training Set
@@ -280,14 +285,30 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             # Data
             f_data = data.cleaned_data["data"]
 
-            # TODO: use the data dedup choice to set dedup property of metadata fields
-
             # metatata fields
             metadata_fields = [
                 c for c in f_data if c.lower() not in ["text", "label", "id"]
             ]
+            # get list of items to dedup on
+            if data.cleaned_data["dedup_on"] == "Text only":
+                dedup_metadata_fields = []
+            elif data.cleaned_data["dedup_on"] == "Text and all Metadata fields":
+                dedup_metadata_fields = metadata_fields
+            else:
+                dedup_metadata_fields = [
+                    d.strip()
+                    for d in data.cleaned_data["dedup_fields"].strip().split(";")
+                    if len(d.strip()) > 0
+                ]
+
             for field in metadata_fields:
-                MetaDataField.objects.create(project=proj_obj, field_name=field)
+                use_with_dedup = False
+                if field in dedup_metadata_fields:
+                    use_with_dedup = True
+
+                MetaDataField.objects.create(
+                    project=proj_obj, field_name=field, use_with_dedup=use_with_dedup
+                )
 
             add_queue(project=proj_obj, length=2000000, type="admin")
             irr_queue = add_queue(project=proj_obj, length=2000000, type="irr")
@@ -377,6 +398,12 @@ class ProjectUpdateData(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
                 "field_name", flat=True
             )
         )
+        form_kwargs["dedup_on"] = Project.objects.get(
+            project=form_kwargs["instance"]
+        ).dedup_on
+        form_kwargs["dedup_fields"] = Project.objects.get(
+            project=form_kwargs["instance"]
+        ).dedup_fields
 
         del form_kwargs["instance"]
 
