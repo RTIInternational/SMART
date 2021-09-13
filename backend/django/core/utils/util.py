@@ -480,6 +480,9 @@ def get_labeled_data(project):
             temp = {}
             temp["ID"] = d.data.upload_id
             temp["Text"] = d.data.text
+            metadata = MetaData.objects.get(data=d.data)
+            for m in metadata:
+                temp[m.metadata_field.field_name] = m.value
             temp["Label"] = label.name
             data.append(temp)
     labeled_data_frame = pd.DataFrame(data)
