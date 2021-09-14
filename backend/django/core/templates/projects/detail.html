@@ -121,6 +121,24 @@
                   <dd>{{ project.num_users_irr }}</dd>
                 </li>
                 {% endif %}
+                {% if project.metadatafields != None %}
+                <li class="list-group-item">
+                  <dt>Metadata Fields Displayed with Data</dt>
+                  {% for meta in project.metadatafields.all %}
+                      <dd>- {{ meta.field_name }}</dd>
+                  {% endfor %}
+                </li>
+                {% endif %}
+                <li class="list-group-item">
+                  <dt>Method for Identifying Duplicates in Data Upload</dt>
+                  {% if project.dedup_on == "Text" %}
+                  <dd>Matching text</dd>
+                  {% elif project.dedup_on == "Metadata_Text" %}
+                  <dd>Text and all metadata fields match.</dd>
+                  {% else %}
+                  <dd>Text and the following metadata fields match: {{ project.dedup_fields }}.</dd>
+                  {% endif %}
+                </li>
               </ul>
             </div>
           </div>

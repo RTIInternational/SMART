@@ -398,12 +398,8 @@ class ProjectUpdateData(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
                 "field_name", flat=True
             )
         )
-        form_kwargs["dedup_on"] = Project.objects.get(
-            project=form_kwargs["instance"]
-        ).dedup_on
-        form_kwargs["dedup_fields"] = Project.objects.get(
-            project=form_kwargs["instance"]
-        ).dedup_fields
+        form_kwargs["dedup_on"] = form_kwargs["instance"].dedup_on
+        form_kwargs["dedup_fields"] = form_kwargs["instance"].dedup_fields
 
         del form_kwargs["instance"]
 
@@ -416,12 +412,20 @@ class ProjectUpdateData(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
         return data
 
+    def form_invalid(self, form):
+        print("FORM IS INVALID")
+        context = self.get_context_data()
+        return self.render_to_response(context)
+
     def form_valid(self, form):
+        print("IN FORM VALID")
         context = self.get_context_data()
 
         if form.is_valid():
+            print("FORM IS VALID")
             with transaction.atomic():
                 f_data = form.cleaned_data.get("data", False)
+                print(f_data)
                 if isinstance(f_data, pd.DataFrame):
                     upload_data(f_data, self.object, batch_size=self.object.batch_size)
 

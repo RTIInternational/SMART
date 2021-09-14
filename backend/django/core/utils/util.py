@@ -212,6 +212,7 @@ def add_data(project, df):
     and should have at least one null value.  Any row that has Label should be added to
     DataLabel
     """
+    print("ADD_DATA")
     # Create hash of (text + dedup fields). So each unique combination should have a different hash
     dedup_on_fields = MetaDataField.objects.filter(
         project=project, use_with_dedup=True
@@ -221,15 +222,20 @@ def add_data(project, df):
     for f in dedup_on_fields:
         hash_field += "_" + df[f].astype(str)
 
+    print("SETTING HASH")
+
     df["hash"] = hash_field.apply(md5_hash)
     df.drop_duplicates(subset=["hash"], keep="first", inplace=True)
 
+    print("FILTERIGN ON EXISTING DATA")
     # check that the data is not already in the system and drop duplicates
     df = df.loc[
         ~df["hash"].isin(
             list(Data.objects.filter(project=project).values_list("hash", flat=True))
         )
     ]
+    print("AFTER THAT FILTER")
+    print(df)
 
     if len(df) == 0:
         return []
@@ -480,7 +486,7 @@ def get_labeled_data(project):
             temp = {}
             temp["ID"] = d.data.upload_id
             temp["Text"] = d.data.text
-            metadata = MetaData.objects.get(data=d.data)
+            metadata = MetaData.objects.filter(data=d.data)
             for m in metadata:
                 temp[m.metadata_field.field_name] = m.value
             temp["Label"] = label.name
