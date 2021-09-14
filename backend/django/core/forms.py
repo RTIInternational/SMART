@@ -76,8 +76,6 @@ def clean_data_helper(
         raise ValidationError(
             "Unable to read the file.  Please ensure that the file is encoded in UTF-8."
         )
-    except Exception as e:
-        raise e
 
     for col in REQUIRED_HEADERS:
         if col not in data.columns:
