@@ -185,18 +185,15 @@ class ProjectUpdateForm(forms.ModelForm):
         self.project_metadata = kwargs.pop("metadata", None)
         self.dedup_on = kwargs.pop("dedup_on", None)
         self.dedup_fields = kwargs.pop("dedup_fields", None)
-        print("IN INIT. Sending:", kwargs)
         super(ProjectUpdateForm, self).__init__(*args, **kwargs)
 
     def clean_data(self):
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         data = self.cleaned_data.get("data", False)
         labels = self.project_labels
         metadata_fields = self.project_metadata
         dedup_on = self.dedup_on
         dedup_fields = self.dedup_fields
         cb_data = self.cleaned_data.get("cb_data", False)
-        print("IN CLEAN DATA", data, type(data))
         if data:
             return clean_data_helper(
                 data, labels, dedup_on, dedup_fields, metadata_fields
@@ -377,6 +374,30 @@ class DataWizardForm(forms.ModelForm):
         self.dedup_on = kwargs.pop("dedup_on", None)
         self.dedup_fields = kwargs.pop("dedup_fields", None)
         super(DataWizardForm, self).__init__(*args, **kwargs)
+
+    def clean_data(self):
+        data = self.cleaned_data.get("data", False)
+        dedup_on = self.dedup_on
+        dedup_fields = ""
+        if dedup_on == "Text_Some_Metadata":
+            dedup_fields = self.dedup_fields
+
+        labels = self.supplied_labels
+        metadata = self.supplied_metadata
+
+        return clean_data_helper(data, labels, dedup_on, dedup_fields, metadata)
+
+
+class DataUpdateWizardForm(forms.Form):
+
+    data = forms.FileField()
+
+    def __init__(self, *args, **kwargs):
+        self.supplied_labels = kwargs.pop("labels", None)
+        self.supplied_metadata = kwargs.pop("metadata", None)
+        self.dedup_on = kwargs.pop("dedup_on", None)
+        self.dedup_fields = kwargs.pop("dedup_fields", None)
+        super(DataUpdateWizardForm, self).__init__(*args, **kwargs)
 
     def clean_data(self):
         data = self.cleaned_data.get("data", False)

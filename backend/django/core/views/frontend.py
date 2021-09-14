@@ -14,6 +14,7 @@ from formtools.wizard.views import SessionWizardView
 from core.forms import (
     AdvancedWizardForm,
     CodeBookWizardForm,
+    DataUpdateWizardForm,
     DataWizardForm,
     LabelDescriptionFormSet,
     LabelFormSet,
@@ -369,7 +370,7 @@ class ProjectUpdateOverview(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
 
 class ProjectUpdateData(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Project
-    form_class = DataWizardForm
+    form_class = DataUpdateWizardForm
     template_name = "projects/update/data.html"
     permission_denied_message = (
         "You must be an Admin or Project Creator to access the Project Update page."
@@ -412,20 +413,12 @@ class ProjectUpdateData(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
         return data
 
-    def form_invalid(self, form):
-        print("FORM IS INVALID")
-        context = self.get_context_data()
-        return self.render_to_response(context)
-
     def form_valid(self, form):
-        print("IN FORM VALID")
         context = self.get_context_data()
 
         if form.is_valid():
-            print("FORM IS VALID")
             with transaction.atomic():
                 f_data = form.cleaned_data.get("data", False)
-                print(f_data)
                 if isinstance(f_data, pd.DataFrame):
                     upload_data(f_data, self.object, batch_size=self.object.batch_size)
 
