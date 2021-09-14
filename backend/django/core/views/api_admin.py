@@ -341,7 +341,7 @@ def get_project_status(request, project_pk):
 
     project = Project.objects.get(pk=project_pk)
 
-    total_data_objs = list(project.data_set.filter(datalabel__isnull=True))
+    total_data_objs = project.data_set.all()
 
     final_data_objs = list(
         DataLabel.objects.filter(data__project=project, data__irr_ind=False)

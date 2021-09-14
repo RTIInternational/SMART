@@ -97,7 +97,7 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
             batch_size=batch_size,
         )
 
-    tasks.send_label_similarity_results_task(project.pk)
+    # tasks.send_label_similarity_results_task(project.pk)
 
     # Since User can upload Labeled Data and this data is added to current training_set
     # we need to check_and_trigger model.  However since training model requires
