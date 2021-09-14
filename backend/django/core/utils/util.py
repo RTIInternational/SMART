@@ -1,3 +1,4 @@
+import datetime
 import hashlib
 import os
 from io import StringIO
@@ -214,9 +215,10 @@ def create_label_similarity_results(project):
     """Insert data label similarity results into database using bulk_create."""
 
     project_data = Data.objects.filter(project=project, similarityPair__isnull=True)
-
+    label_similarity_scores = []
     project_labels = Label.objects.filter(project=project)
     for label in project_labels:
+        print(f"starting new label {datetime.datetime.now()}")
         # get the data in dataframe form
         data_df = pd.DataFrame(list(project_data.values("pk","text"))).rename(columns={"pk":"data"})
 
@@ -228,15 +230,21 @@ def create_label_similarity_results(project):
         data_df["similarity_score"] = compute_pairwise_similarities(label_series, data_df["text"])
         data_df["label"] = label.pk
 
-        label_similarity_scores = []
-        for index, row in data_df.iterrows():
+        # sort 
+        # --> THIS NEEDS TO INCLUDE EACH DATA OBJECT (NOT PER LABEL)
+        data_df.sort_values(by=["similarity_score"])
+
+        print(f"looping through data_df {datetime.datetime.now()}")
+        for index, row in data_df.head().iterrows():
             label_similarity_scores.append(DataLabelSimilarityPairs(
                 data=Data.objects.filter(id=row["data"])[0],
                 label=label,
-                similarity_score=row["similarity_score"] * 1000
+                similarity_score=row["similarity_score"]
             ))
+        print(f"finished label {datetime.datetime.now()}")
 
-        DataLabelSimilarityPairs.objects.bulk_create(label_similarity_scores)
+    print("adding to db")
+    DataLabelSimilarityPairs.objects.bulk_create(label_similarity_scores)
 
 
 def add_data(project, df):

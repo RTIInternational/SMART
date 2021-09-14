@@ -161,7 +161,7 @@ class DataLabelSimilarityPairs(models.Model):
     label = models.ForeignKey(
         "Label", on_delete=models.CASCADE, related_name="similarityPair"
     )
-    similarity_score = models.IntegerField()
+    similarity_score = models.FloatField()
 
     def __str__(self):
         return f"{str(self.label.name)} {str(self.label.description)}: {self.similarity_score}"
