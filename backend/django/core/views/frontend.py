@@ -291,9 +291,9 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
                 c for c in f_data if c.lower() not in ["text", "label", "id"]
             ]
             # get list of items to dedup on
-            if data.cleaned_data["dedup_on"] == "Text only":
+            if data.cleaned_data["dedup_on"] == "Text":
                 dedup_metadata_fields = []
-            elif data.cleaned_data["dedup_on"] == "Text and all Metadata fields":
+            elif data.cleaned_data["dedup_on"] == "Metadata_Text":
                 dedup_metadata_fields = metadata_fields
             else:
                 dedup_metadata_fields = [
