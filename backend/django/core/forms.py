@@ -14,7 +14,7 @@ from .models import Label, Project, ProjectPermissions
 
 
 def clean_data_helper(
-    data, supplied_labels, dedup_on, dedup_fields, metadata_fields=[]
+    data, supplied_labels, dedup_on, dedup_fields, metadata_fields=None
 ):
     ALLOWED_TYPES = [
         "text/csv",
@@ -368,22 +368,18 @@ class DataWizardForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         self.supplied_labels = kwargs.pop("labels", None)
-        self.supplied_metadata = kwargs.pop("metadata", None)
-        self.dedup_on = kwargs.pop("dedup_on", None)
-        self.dedup_fields = kwargs.pop("dedup_fields", None)
         super(DataWizardForm, self).__init__(*args, **kwargs)
 
     def clean_data(self):
         data = self.cleaned_data.get("data", False)
-        dedup_on = self.dedup_on
+        dedup_on = self.cleaned_data.get("dedup_on", False)
         dedup_fields = ""
         if dedup_on == "Text_Some_Metadata":
-            dedup_fields = self.dedup_fields
+            dedup_fields = self.cleaned_data.get("dedup_fields", False)
 
         labels = self.supplied_labels
-        metadata = self.supplied_metadata
 
-        return clean_data_helper(data, labels, dedup_on, dedup_fields, metadata)
+        return clean_data_helper(data, labels, dedup_on, dedup_fields)
 
 
 class DataUpdateWizardForm(forms.Form):
