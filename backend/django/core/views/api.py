@@ -26,12 +26,11 @@ def download_data(request, project_pk):
     """
     project = Project.objects.get(pk=project_pk)
     data, labels = get_labeled_data(project)
+    fieldnames = data.columns.values.tolist()
     data = data.to_dict("records")
 
     buffer = io.StringIO()
-    wr = csv.DictWriter(
-        buffer, fieldnames=["ID", "Text", "Label"], quoting=csv.QUOTE_ALL
-    )
+    wr = csv.DictWriter(buffer, fieldnames=fieldnames, quoting=csv.QUOTE_ALL)
     wr.writeheader()
     wr.writerows(data)
     buffer.seek(0)

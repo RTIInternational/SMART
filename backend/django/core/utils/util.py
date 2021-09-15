@@ -126,11 +126,15 @@ def create_data_from_csv(df, project):
 
     # Replace tabs since thats our delimiter, remove carriage returns since copy_from doesnt like them
     # escape all backslashes because it seems to fix "end-of-copy marker corrupt"
-    df["Text"] = df["Text"].apply(
-        lambda x: x.replace("\t", " ")
-        .replace("\r", " ")
-        .replace("\n", " ")
-        .replace("\\", "\\\\")
+    df["Text"] = (
+        df["Text"]
+        .astype(str)
+        .apply(
+            lambda x: x.replace("\t", " ")
+            .replace("\r", " ")
+            .replace("\n", " ")
+            .replace("\\", "\\\\")
+        )
     )
 
     df.to_csv(stream, sep="\t", header=False, index=False, columns=columns)
@@ -237,9 +241,17 @@ def add_data(project, df):
     and should have at least one null value.  Any row that has Label should be added to
     DataLabel
     """
-    # Create hash of text and drop duplicates
-    df["hash"] = df["Text"].apply(md5_hash)
-    df.drop_duplicates(subset="hash", keep="first", inplace=True)
+    # Create hash of (text + dedup fields). So each unique combination should have a different hash
+    dedup_on_fields = MetaDataField.objects.filter(
+        project=project, use_with_dedup=True
+    ).values_list("field_name", flat=True)
+
+    hash_field = df["Text"].astype(str)
+    for f in dedup_on_fields:
+        hash_field += "_" + df[f].astype(str)
+
+    df["hash"] = hash_field.apply(md5_hash)
+    df.drop_duplicates(subset=["hash"], keep="first", inplace=True)
 
     # check that the data is not already in the system and drop duplicates
     df = df.loc[
@@ -497,6 +509,9 @@ def get_labeled_data(project):
             temp = {}
             temp["ID"] = d.data.upload_id
             temp["Text"] = d.data.text
+            metadata = MetaData.objects.filter(data=d.data)
+            for m in metadata:
+                temp[m.metadata_field.field_name] = m.value
             temp["Label"] = label.name
             data.append(temp)
     labeled_data_frame = pd.DataFrame(data)

@@ -13,7 +13,9 @@ from core.utils.util import md5_hash
 from .models import Label, Project, ProjectPermissions
 
 
-def clean_data_helper(data, supplied_labels, metadata_fields=[]):
+def clean_data_helper(
+    data, supplied_labels, dedup_on, dedup_fields, metadata_fields=None
+):
     ALLOWED_TYPES = [
         "text/csv",
         "text/tab-separated-values",
@@ -85,8 +87,11 @@ def clean_data_helper(data, supplied_labels, metadata_fields=[]):
     found_metadata_fields = [
         c for c in data.columns if c.lower() not in ["text", "label", "id"]
     ]
-    if metadata_fields is not None and (
-        len(metadata_fields) > 0
+
+    # this option is only true if we're adding data to an existing project
+    if (
+        metadata_fields is not None
+        and len(metadata_fields) > 0
         and (set(metadata_fields) != set(found_metadata_fields))
     ):
         raise ValidationError(
@@ -95,6 +100,31 @@ def clean_data_helper(data, supplied_labels, metadata_fields=[]):
             f" Original fields: {', '.join(metadata_fields)}."
             f" Found fields: {', '.join(found_metadata_fields)}."
         )
+
+    # validating the dedup list being sent
+    if dedup_on == "Text_Some_Metadata" and len(dedup_fields) == 0:
+        raise ValidationError(
+            "The 'Text and Metadata fields'"
+            " option was selected but no metadata fields were specified."
+        )
+
+    if len(dedup_fields) > 0:
+        dedup_list = [
+            d.strip() for d in dedup_fields.strip().split(";") if len(d.strip()) > 0
+        ]
+        if metadata_fields is not None:
+            compare_list = metadata_fields
+        else:
+            compare_list = found_metadata_fields
+
+        # if there is no metadata then there can't be dedup fields
+        if len(set(dedup_list) - set(compare_list)) > 0:
+            raise ValidationError(
+                "The dedup fields specified should be a subset of"
+                " the data's provided metadata fields. "
+                f"Dedup fields: {dedup_list},"
+                f" Metadata fields: {compare_list}"
+            )
 
     labels_in_data = data["Label"].dropna(inplace=False).unique()
     if len(labels_in_data) > 0 and len(set(labels_in_data) - set(supplied_labels)) > 0:
@@ -151,15 +181,21 @@ class ProjectUpdateForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.project_labels = kwargs.pop("labels", None)
         self.project_metadata = kwargs.pop("metadata", None)
+        self.dedup_on = kwargs.pop("dedup_on", None)
+        self.dedup_fields = kwargs.pop("dedup_fields", None)
         super(ProjectUpdateForm, self).__init__(*args, **kwargs)
 
     def clean_data(self):
         data = self.cleaned_data.get("data", False)
         labels = self.project_labels
         metadata_fields = self.project_metadata
+        dedup_on = self.dedup_on
+        dedup_fields = self.dedup_fields
         cb_data = self.cleaned_data.get("cb_data", False)
         if data:
-            return clean_data_helper(data, labels, metadata_fields)
+            return clean_data_helper(
+                data, labels, dedup_on, dedup_fields, metadata_fields
+            )
         if cb_data:
             return cleanCodebookDataHelper(cb_data)
 
@@ -314,19 +350,60 @@ class AdvancedWizardForm(forms.ModelForm):
         return self.cleaned_data
 
 
-class DataWizardForm(forms.Form):
+class DataWizardForm(forms.ModelForm):
+    class Meta:
+        model = Project
+        fields = ["dedup_on", "dedup_fields"]
+
+    data = forms.FileField()
+
+    dedup_on = forms.ChoiceField(
+        widget=RadioSelect(),
+        choices=Project.DEDUP_CHOICES,
+        initial="Text",
+        required=True,
+    )
+
+    dedup_fields = forms.CharField(required=False, initial="", max_length=50)
+
+    def __init__(self, *args, **kwargs):
+        self.supplied_labels = kwargs.pop("labels", None)
+        super(DataWizardForm, self).__init__(*args, **kwargs)
+
+    def clean_data(self):
+        data = self.cleaned_data.get("data", False)
+        dedup_on = self.cleaned_data.get("dedup_on", False)
+        dedup_fields = ""
+        if dedup_on == "Text_Some_Metadata":
+            dedup_fields = self.cleaned_data.get("dedup_fields", False)
+
+        labels = self.supplied_labels
+
+        return clean_data_helper(data, labels, dedup_on, dedup_fields)
+
+
+class DataUpdateWizardForm(forms.Form):
+
     data = forms.FileField()
 
     def __init__(self, *args, **kwargs):
         self.supplied_labels = kwargs.pop("labels", None)
         self.supplied_metadata = kwargs.pop("metadata", None)
-        super(DataWizardForm, self).__init__(*args, **kwargs)
+        self.dedup_on = kwargs.pop("dedup_on", None)
+        self.dedup_fields = kwargs.pop("dedup_fields", None)
+        super(DataUpdateWizardForm, self).__init__(*args, **kwargs)
 
     def clean_data(self):
         data = self.cleaned_data.get("data", False)
+        dedup_on = self.dedup_on
+        dedup_fields = ""
+        if dedup_on == "Text_Some_Metadata":
+            dedup_fields = self.dedup_fields
+
         labels = self.supplied_labels
         metadata = self.supplied_metadata
-        return clean_data_helper(data, labels, metadata)
+
+        return clean_data_helper(data, labels, dedup_on, dedup_fields, metadata)
 
 
 class CodeBookWizardForm(forms.Form):
