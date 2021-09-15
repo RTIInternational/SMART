@@ -35,7 +35,7 @@ class AdminTable extends React.Component {
         const { admin_data, labels, adminLabel, discardData } = this.props;
 
         let labelsOptions = labels.map(label =>
-            Object.assign(label, { value: label["pk"] })
+            Object.assign(label, { value: label["pk"], dropdownLabel: `${label["name"]} ${label["description"] !== '' ? '(' + label["description"] + ')' : ''}` })
         );
 
         const columns = [
@@ -59,16 +59,26 @@ class AdminTable extends React.Component {
                 Header: "Unlabeled Data",
                 accessor: "data",
                 Cell: row => (
-                    <div>
-                        {this.getText(row)}
-                        <p id="admin_text">{row.row.data}</p>
-                        <div id="admin_buttons">
-                            <ButtonToolbar variant="btn-toolbar pull-right">
+                    <div className="sub-row cardface cardface-datacard clearfix">
+                        <div className="cardface-info">
+                            {this.getText(row)}
+                            <p>{row.row.data}</p>
+                        </div>
+                        {labels.length > 5 && (
+                            <div className="suggestions">
+                                <h4>Suggested Labels</h4>
+                                {row.original.similarityPair.slice(0, 5).map((opt, index) => (
+                                    <div key={index + 1} className="">{index + 1}. {opt.split(':')[0]}</div>
+                                ))}
+                            </div>
+                        )}
+                        <ButtonToolbar variant="btn-toolbar pull-right">
+                            <div id="admin_buttons">
                                 {labels.length > 5 ? (
                                     <Select
                                         className="absolute align-items-center flex py-1 px-2"
                                         dropdownHandle={false}
-                                        labelField="name"
+                                        labelField="dropdownLabel"
                                         onChange={value =>
                                             adminLabel(
                                                 row.row.id,
@@ -77,8 +87,8 @@ class AdminTable extends React.Component {
                                         }
                                         options={labelsOptions}
                                         placeholder="Select label..."
-                                        searchBy="name"
-                                        sortBy="name"
+                                        searchBy="dropdownLabel"
+                                        sortBy="dropdownLabel"
                                         style={{
                                             position: "absolute",
                                             minWidth: "200px",
@@ -124,8 +134,8 @@ class AdminTable extends React.Component {
                                         Discard
                                     </Button>
                                 </OverlayTrigger>
-                            </ButtonToolbar>
-                        </div>
+                            </div>
+                        </ButtonToolbar>
                     </div>
                 )
             }

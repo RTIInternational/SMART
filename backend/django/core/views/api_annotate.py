@@ -436,9 +436,14 @@ def data_unlabeled_table(request, project_pk):
     data = []
     for d in unlabeled_data:
         serialized_data = DataSerializer(d, many=False).data
+
+        sorted_similarity_pairs = []
+        for pair in serialized_data["similarityPair"]:
+            sorted_similarity_pairs.append(pair)
         temp = {
             "Text": serialized_data["text"],
             "metadata": serialized_data["metadata"],
+            "similarityPair": serialized_data["similarityPair"],
             "ID": d.id,
         }
         data.append(temp)
@@ -473,6 +478,7 @@ def data_admin_table(request, project_pk):
         temp = {
             "Text": serialized_data["text"],
             "metadata": serialized_data["metadata"],
+            "similarityPair": serialized_data["similarityPair"],
             "ID": d.data.id,
             "Reason": reason,
         }
@@ -524,6 +530,7 @@ def recycle_bin_table(request, project_pk):
         temp = {
             "Text": serialized_data["text"],
             "metadata": serialized_data["metadata"],
+            "similarityPair": serialized_data["similarityPair"],
             "ID": d.data.id,
         }
         data.append(temp)
@@ -668,6 +675,7 @@ def get_label_history(request, project_pk):
         temp_dict = {
             "data": serialized_data["text"],
             "metadata": serialized_data["metadata"],
+            "similarityPair": serialized_data["similarityPair"],
             "id": d.data.id,
             "label": d.label.name,
             "labelID": d.label.id,

@@ -124,6 +124,8 @@ main {
 }
 
 .cardface {
+    position: relative;
+
     border: 1px solid $table-border-color;
 
     padding: 12px 16px;
@@ -139,6 +141,15 @@ main {
     }
 }
 
+.cardface-datacard {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.cardface-info {
+    flex-grow: 1;
+}
+
 .cardContent {
     padding: 12px 16px;
     margin: 16px 24px;
@@ -147,6 +158,46 @@ main {
         padding: 16px 24px;
         margin: 24px 32px;
     }
+}
+
+.btn-toolbar {
+    margin-left: auto;
+
+    display: flex;
+    justify-content: flex-end;
+
+    width: 100%;
+    flex-shrink: 0;
+}
+
+.suggestions {
+    right: 24px;
+    top: 32px;
+    min-width: 250px;
+
+    margin-bottom: 20px;
+    margin-top: 20px;
+    padding: 16px 24px;
+
+    @include breakpoint(large) {
+        right: 28px;
+        top: 40px;
+    }
+
+    background-color: #F5F5F5;
+    border-radius: 4px;
+}
+
+.unlabeled-status {
+    padding: 0px 16px;
+    margin: 0px 24px;
+
+    @include breakpoint(large) {
+        padding: 0px 24px;
+        margin: 0px 32px;
+    }
+
+    color: #9E9E9E;
 }
 
 .margin-top {
