@@ -7,6 +7,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
 from core.models import (
+    AssignedData,
     Data,
     DataLabel,
     DataPrediction,
@@ -330,7 +331,7 @@ def heat_map_data(request, project_pk):
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))
 def get_project_status(request, project_pk):
-    """This returns the labeled data.
+    """This returns data information.
 
     Args:
         request: The GET request
@@ -347,16 +348,24 @@ def get_project_status(request, project_pk):
         DataLabel.objects.filter(data__project=project, data__irr_ind=False)
     )
 
-    stuff_in_queue = DataQueue.objects.filter(queue__project=project)
-    queued_ids = [queued.data.id for queued in stuff_in_queue]
-
+    stuff_in_irrlog = IRRLog.objects.filter(data__project=project).values_list(
+        "data__pk", flat=True
+    )
+    stuff_in_queue = DataQueue.objects.filter(
+        queue__project=project, queue__type="admin"
+    ).values_list("data__pk", flat=True)
     recycle_ids = RecycleBin.objects.filter(data__project=project).values_list(
+        "data__pk", flat=True
+    )
+    assigned_ids = AssignedData.objects.filter(data__project=project).values_list(
         "data__pk", flat=True
     )
     unlabeled_data_objs = list(
         project.data_set.filter(datalabel__isnull=True)
-        .exclude(id__in=queued_ids)
+        .exclude(id__in=stuff_in_queue)
+        .exclude(id__in=stuff_in_irrlog)
         .exclude(id__in=recycle_ids)
+        .exclude(id__in=assigned_ids)
     )
 
     return Response(
