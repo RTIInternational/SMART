@@ -97,7 +97,13 @@ class ProjectList(LoginRequiredMixin, ListView):
             projectpermissions__profile=self.request.user.profile
         )
 
-        qs = qs1 | qs2
+        qs_projects = qs1 | qs2
+
+        qs_umbrellas = Project.objects.filter(
+            is_umbrella=True
+        )
+
+        qs = qs_projects | qs_umbrellas
 
         return qs.distinct().order_by(self.ordering)
 
