@@ -61,6 +61,13 @@ def send_tfidf_creation_task(project_pk):
 
 
 @shared_task
+def send_label_similarity_results_task(project_pk):
+    from core.utils.util import create_label_similarity_results
+
+    create_label_similarity_results(project_pk)
+
+
+@shared_task
 def send_check_and_trigger_model_task(project_pk):
     from core.models import Data
     from core.utils.utils_model import check_and_trigger_model

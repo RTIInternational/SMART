@@ -9,8 +9,8 @@ import RecycleBinContainer from '../../containers/recycleBin_container';
 import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
 import SmartProgressBarContainer from '../../containers/smartProgressBar_container';
 
-const ADMIN = window.ADMIN;
 
+const ADMIN = window.ADMIN;
 
 class Smart extends React.Component {
 

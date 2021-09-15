@@ -119,15 +119,25 @@ class History extends React.Component {
 
         if (row.row.edit === "yes") {
             subComponent = (
-                <div className="sub-row">
-                    {this.getText(row)}
-                    <p>{row.row.data}</p>
+                <div className="sub-row cardface cardface-datacard clearfix">
+                    <div className="cardface-info">
+                        {this.getText(row)}
+                        <p>{row.row.data}</p>
+                    </div>
+                    {labels.length > 5 && (
+                        <div className="suggestions">
+                            <h4>Suggested Labels</h4>
+                            {row.original.similarityPair.slice(0, 5).map((opt, index) => (
+                                <div key={index + 1} className="">{index + 1}. {opt.split(':')[0]}</div>
+                            ))}
+                        </div>
+                    )}
                     <ButtonToolbar variant="btn-toolbar pull-right">
                         {labels.length > 5 ? (
                             <Select
                                 className="align-items-center flex py-1 px-2"
                                 dropdownHandle={false}
-                                labelField="name"
+                                labelField="dropdownLabel"
                                 onChange={value =>
                                     changeLabel(
                                         row.row.id,
@@ -137,8 +147,8 @@ class History extends React.Component {
                                 }
                                 options={labelsOptions}
                                 placeholder="Select label..."
-                                searchBy="name"
-                                sortBy="name"
+                                searchBy="dropdownLabel"
+                                sortBy="dropdownLabel"
                                 style={{ minWidth: "200px" }}
                             />
                         ) : (
