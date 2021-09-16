@@ -87,6 +87,7 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
     4. Create tf_idf file
     5. Check and Trigger model
     """
+
     new_df = add_data(project, form_data)
     if queue:
         fill_queue(
@@ -192,25 +193,51 @@ def create_labels_from_csv(df, project):
         )
 
 
-def create_metadata_objects(df, project):
-    """Insert metadata objects into database using bulk_create."""
-
+def create_metadata_objects_from_csv(df, project):
+    """Insert metadata objects into database."""
+    print("IN THE FUNCTION")
     metadataFields = MetaDataField.objects.filter(project=project)
-    df["data_id"] = df["hash"].apply(
-        lambda x: Data.objects.get(hash=x, project=project).pk
+    print("Getting the IDs from the hashes")
+    print("There are", len(df["hash"].unique()), "unique hashes")
+    data_objects = pd.DataFrame(
+        list(
+            Data.objects.filter(hash__in=df["hash"].tolist(), project=project).values(
+                "id", "hash"
+            )
+        )
     )
+    print("Called filter, now merging on output")
+    df = df.merge(data_objects, on="hash", how="left")
+    print("JUST GOT THE DATA IDS")
+    print(df)
 
     for meta in metadataFields:
         field_name = str(meta)
-        df_meta = df[["data_id", field_name]].rename(columns={field_name: "value"})
+        df_meta = df[["data_id", field_name]].rename(
+            columns={field_name: "value", "id": "data_id"}
+        )
         df_meta["value"] = df_meta["value"].fillna("")
         df_meta["metadata_field_id"] = meta.pk
+        print("MAKING METADATA")
+        print(df_meta)
 
-        metadata_objects = []
-        for index, row in df_meta.iterrows():
-            metadata_objects.append(MetaData(**row.to_dict()))
-
-        MetaData.objects.bulk_create(metadata_objects)
+        stream = StringIO()
+        df_meta.to_csv(
+            stream,
+            sep="\t",
+            header=False,
+            index=False,
+            columns=df_meta.columns.values.tolist(),
+        )
+        stream.seek(0)
+        with connection.cursor() as c:
+            c.copy_from(
+                stream,
+                MetaData._meta.db_table,
+                sep="\t",
+                null="",
+                columns=df_meta.columns.values.tolist(),
+            )
 
 
 def create_label_similarity_results(project):
@@ -287,10 +314,11 @@ def add_data(project, df):
             return []
 
     # Create the data objects
+    print("ABOUT TO CREATE DATA FROM CSV")
     create_data_from_csv(df.copy(deep=True), project)
-
-    create_metadata_objects(df.copy(), project)
-
+    print("ABOUT TO CREATE METADATA FROM CSV")
+    create_metadata_objects_from_csv(df.copy(), project)
+    print("ABOUT TO CREATE LABELS FROM CSV")
     # Find the data that has labels
     labeled_df = df[~pd.isnull(df["Label"])]
     if len(labeled_df) > 0:
