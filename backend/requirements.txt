@@ -24,7 +24,6 @@ djangorestframework==3.12.4
 djangorestframework-jwt==1.11.0
 docformatter==1.4
 flake8==3.9.2
-fuzzywuzzy==0.18.0
 idna==2.10
 isort[requirements]==5.9.2
 itypes==1.2.0

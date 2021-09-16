@@ -10,7 +10,6 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import connection, transaction
 from django.utils import timezone
-from fuzzywuzzy import fuzz
 
 from core import tasks
 from core.models import (
@@ -223,13 +222,7 @@ def create_label_similarity_results(project):
     for data in project_data:
         for label in project_labels:
             label_similarity_scores.append(
-                DataLabelSimilarityPairs(
-                    data=data,
-                    label=label,
-                    similarity_score=fuzz.ratio(
-                        f"{label.name} {label.description}", data.text
-                    ),
-                )
+                DataLabelSimilarityPairs(data=data, label=label, similarity_score=0)
             )
     DataLabelSimilarityPairs.objects.bulk_create(label_similarity_scores)
 
