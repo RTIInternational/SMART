@@ -43,7 +43,7 @@ class DataCard extends React.Component {
         const { labels, message, cards, passCard, annotateCard } = this.props;
 
         let labelsOptions = labels.map(label =>
-            Object.assign(label, { value: label["pk"], dropdownLabel: `${label["name"]} ${label["description"] !== "" ? `(${label["description"]})` : ""}` })
+            Object.assign(label, { value: label["pk"], dropdownLabel: `${label["name"]} ${label["description"] !== '' ? '(' + label["description"] + ')' : ''}` })
         );
 
         if (!(cards === undefined) && cards.length > 0) {

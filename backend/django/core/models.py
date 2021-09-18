@@ -66,6 +66,24 @@ class Project(models.Model):
         null=True,
     )
 
+    DEDUP_CHOICES = (
+        ("Text", "Text only"),
+        ("Metadata_Text", "Text and all Metadata fields"),
+        ("Text_Some_Metadata", "Text and selected Metadata fields"),
+    )
+    dedup_on = models.CharField(
+        max_length=19,
+        default="Text",
+        choices=DEDUP_CHOICES,
+        null=False,
+    )
+
+    dedup_fields = models.CharField(
+        max_length=50,
+        default="",
+        null=True,
+    )
+
     def get_absolute_url(self):
         return reverse("projects:project_detail", kwargs={"pk": self.pk})
 
@@ -131,8 +149,11 @@ class Data(models.Model):
 
 
 class MetaDataField(models.Model):
-    project = models.ForeignKey("Project", on_delete=models.CASCADE)
+    project = models.ForeignKey(
+        "Project", related_name="metadatafields", on_delete=models.CASCADE
+    )
     field_name = models.TextField()
+    use_with_dedup = models.BooleanField(default=True)
 
     def __str__(self):
         return self.field_name

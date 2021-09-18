@@ -35,7 +35,7 @@ class AdminTable extends React.Component {
         const { admin_data, labels, adminLabel, discardData } = this.props;
 
         let labelsOptions = labels.map(label =>
-            Object.assign(label, { value: label["pk"], dropdownLabel: `${label["name"]} ${label["description"] !== "" ? `(${label["description"]})` : ""}` })
+            Object.assign(label, { value: label["pk"], dropdownLabel: `${label["name"]} ${label["description"] !== '' ? '(' + label["description"] + ')' : ''}` })
         );
 
         const columns = [
