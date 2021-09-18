@@ -6,17 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0057_datalabelsimilaritypairs'),
+        ("core", "0057_datalabelsimilaritypairs"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='datalabelsimilaritypairs',
-            options={'ordering': ['-similarity_score']},
+            name="datalabelsimilaritypairs",
+            options={"ordering": ["-similarity_score"]},
         ),
         migrations.AlterField(
-            model_name='datalabelsimilaritypairs',
-            name='similarity_score',
+            model_name="datalabelsimilaritypairs",
+            name="similarity_score",
             field=models.FloatField(),
         ),
     ]

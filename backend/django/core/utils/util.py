@@ -1,4 +1,3 @@
-import datetime
 import hashlib
 import os
 from io import StringIO
@@ -98,7 +97,9 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
             batch_size=batch_size,
         )
     transaction.on_commit(
-        lambda: tasks.send_label_similarity_results_task.apply_async(kwargs={"project_pk":project.pk})
+        lambda: tasks.send_label_similarity_results_task.apply_async(
+            kwargs={"project_pk": project.pk}
+        )
     )
 
     # Since User can upload Labeled Data and this data is added to current training_set
@@ -215,36 +216,55 @@ def create_label_similarity_results(project):
     """Insert data label similarity results into database using bulk_create."""
 
     project_data = Data.objects.filter(project=project, similarityPair__isnull=True)
-    label_similarity_scores = []
     project_labels = Label.objects.filter(project=project)
-    for label in project_labels:
-        print(f"starting new label {datetime.datetime.now()}")
-        # get the data in dataframe form
-        data_df = pd.DataFrame(list(project_data.values("pk","text"))).rename(columns={"pk":"data"})
 
+    # get the data in dataframe form
+    data_df = pd.DataFrame(list(project_data.values("pk", "text"))).rename(
+        columns={"pk": "data_id"}
+    )
+    res_list = []
+    for label in project_labels:
         # set up the label series
         label_string = f"{label.name} {label.description}"
         label_series = pd.Series(len(data_df) * [label_string])
 
         # compute the similarity score
-        data_df["similarity_score"] = compute_pairwise_similarities(label_series, data_df["text"])
-        data_df["label"] = label.pk
+        data_df["similarity_score"] = compute_pairwise_similarities(
+            label_series, data_df["text"]
+        )
+        data_df["label_id"] = label.pk
+        res_list += data_df[["data_id", "label_id", "similarity_score"]].to_dict(
+            "records"
+        )
 
-        # sort 
-        # --> THIS NEEDS TO INCLUDE EACH DATA OBJECT (NOT PER LABEL)
-        data_df.sort_values(by=["similarity_score"])
+    # compare all data with all labels at once
+    res_df = pd.DataFrame(res_list).sort_values(
+        by=["data_id", "similarity_score"], ascending=False
+    )
+    res_df["sim_rank"] = res_df.groupby("data_id")["similarity_score"].rank(
+        method="first", ascending=False
+    )
 
-        print(f"looping through data_df {datetime.datetime.now()}")
-        for index, row in data_df.head().iterrows():
-            label_similarity_scores.append(DataLabelSimilarityPairs(
-                data=Data.objects.filter(id=row["data"])[0],
-                label=label,
-                similarity_score=row["similarity_score"]
-            ))
-        print(f"finished label {datetime.datetime.now()}")
+    # rank the results, and drop all but the top 5 for each data
+    res_df = res_df.loc[res_df["sim_rank"] <= 5]
 
-    print("adding to db")
-    DataLabelSimilarityPairs.objects.bulk_create(label_similarity_scores)
+    stream = StringIO()
+    res_df.to_csv(
+        stream,
+        sep="\t",
+        header=False,
+        index=False,
+        columns=["data_id", "label_id", "similarity_score"],
+    )
+    stream.seek(0)
+    with connection.cursor() as c:
+        c.copy_from(
+            stream,
+            DataLabelSimilarityPairs._meta.db_table,
+            sep="\t",
+            null="",
+            columns=["data_id", "label_id", "similarity_score"],
+        )
 
 
 def add_data(project, df):
