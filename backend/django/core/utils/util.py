@@ -195,31 +195,19 @@ def create_labels_from_csv(df, project):
 
 def create_metadata_objects_from_csv(df, project):
     """Insert metadata objects into database."""
-    print("IN THE FUNCTION")
     metadataFields = MetaDataField.objects.filter(project=project)
-    print("Getting the IDs from the hashes")
-    print("There are", len(df["hash"].unique()), "unique hashes")
     data_objects = pd.DataFrame(
-        list(
-            Data.objects.filter(hash__in=df["hash"].tolist(), project=project).values(
-                "id", "hash"
-            )
-        )
+        list(Data.objects.filter(project=project).values("id", "hash"))
     )
-    print("Called filter, now merging on output")
     df = df.merge(data_objects, on="hash", how="left")
-    print("JUST GOT THE DATA IDS")
-    print(df)
 
     for meta in metadataFields:
         field_name = str(meta)
-        df_meta = df[["data_id", field_name]].rename(
+        df_meta = df[["id", field_name]].rename(
             columns={field_name: "value", "id": "data_id"}
         )
         df_meta["value"] = df_meta["value"].fillna("")
         df_meta["metadata_field_id"] = meta.pk
-        print("MAKING METADATA")
-        print(df_meta)
 
         stream = StringIO()
         df_meta.to_csv(
@@ -273,11 +261,13 @@ def add_data(project, df):
         project=project, use_with_dedup=True
     ).values_list("field_name", flat=True)
 
-    hash_field = df["Text"].astype(str)
+    df["hash"] = ""
     for f in dedup_on_fields:
-        hash_field += "_" + df[f].astype(str)
+        df["hash"] += df[f].astype(str) + "_"
 
-    df["hash"] = hash_field.apply(md5_hash)
+    df["hash"] += df["Text"].astype(str)
+    df["hash"] = df["hash"].apply(md5_hash)
+
     df.drop_duplicates(subset=["hash"], keep="first", inplace=True)
 
     # check that the data is not already in the system and drop duplicates
@@ -314,11 +304,9 @@ def add_data(project, df):
             return []
 
     # Create the data objects
-    print("ABOUT TO CREATE DATA FROM CSV")
     create_data_from_csv(df.copy(deep=True), project)
-    print("ABOUT TO CREATE METADATA FROM CSV")
-    create_metadata_objects_from_csv(df.copy(), project)
-    print("ABOUT TO CREATE LABELS FROM CSV")
+    create_metadata_objects_from_csv(df.copy(deep=True), project)
+
     # Find the data that has labels
     labeled_df = df[~pd.isnull(df["Label"])]
     if len(labeled_df) > 0:
