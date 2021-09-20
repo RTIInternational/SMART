@@ -86,6 +86,7 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
     4. Create tf_idf file
     5. Check and Trigger model
     """
+
     new_df = add_data(project, form_data)
     if queue:
         fill_queue(
@@ -191,25 +192,39 @@ def create_labels_from_csv(df, project):
         )
 
 
-def create_metadata_objects(df, project):
-    """Insert metadata objects into database using bulk_create."""
-
+def create_metadata_objects_from_csv(df, project):
+    """Insert metadata objects into database."""
     metadataFields = MetaDataField.objects.filter(project=project)
-    df["data_id"] = df["hash"].apply(
-        lambda x: Data.objects.get(hash=x, project=project).pk
+    data_objects = pd.DataFrame(
+        list(Data.objects.filter(project=project).values("id", "hash"))
     )
+    df = df.merge(data_objects, on="hash", how="left")
 
     for meta in metadataFields:
         field_name = str(meta)
-        df_meta = df[["data_id", field_name]].rename(columns={field_name: "value"})
+        df_meta = df[["id", field_name]].rename(
+            columns={field_name: "value", "id": "data_id"}
+        )
         df_meta["value"] = df_meta["value"].fillna("")
         df_meta["metadata_field_id"] = meta.pk
 
-        metadata_objects = []
-        for index, row in df_meta.iterrows():
-            metadata_objects.append(MetaData(**row.to_dict()))
-
-        MetaData.objects.bulk_create(metadata_objects)
+        stream = StringIO()
+        df_meta.to_csv(
+            stream,
+            sep="\t",
+            header=False,
+            index=False,
+            columns=df_meta.columns.values.tolist(),
+        )
+        stream.seek(0)
+        with connection.cursor() as c:
+            c.copy_from(
+                stream,
+                MetaData._meta.db_table,
+                sep="\t",
+                null="",
+                columns=df_meta.columns.values.tolist(),
+            )
 
 
 def create_label_similarity_results(project):
@@ -239,11 +254,13 @@ def add_data(project, df):
         project=project, use_with_dedup=True
     ).values_list("field_name", flat=True)
 
-    hash_field = df["Text"].astype(str)
+    df["hash"] = ""
     for f in dedup_on_fields:
-        hash_field += "_" + df[f].astype(str)
+        df["hash"] += df[f].astype(str) + "_"
 
-    df["hash"] = hash_field.apply(md5_hash)
+    df["hash"] += df["Text"].astype(str)
+    df["hash"] = df["hash"].apply(md5_hash)
+
     df.drop_duplicates(subset=["hash"], keep="first", inplace=True)
 
     # check that the data is not already in the system and drop duplicates
@@ -281,8 +298,7 @@ def add_data(project, df):
 
     # Create the data objects
     create_data_from_csv(df.copy(deep=True), project)
-
-    create_metadata_objects(df.copy(), project)
+    create_metadata_objects_from_csv(df.copy(deep=True), project)
 
     # Find the data that has labels
     labeled_df = df[~pd.isnull(df["Label"])]
