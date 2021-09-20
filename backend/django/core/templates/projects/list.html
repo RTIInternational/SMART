@@ -5,33 +5,94 @@
 {% block content %}
 <div class="card full">
   <div class="cardface">
-    <h1>Projects</h1>
+    <h1 style="margin-bottom: 1rem;">Projects</h1>
     <div class="list-group">
-      <table class="table table-striped">
-        <tbody>
-          {% for project in object_list %}
-          <tr>
-            <td>{{ project.name }}</td>
-            <td><a href="{{ project.get_absolute_url }}">Details</a></td>
-            <td><a href="{% url 'projects:project_code' project.pk %}">Annotate</a></td>
-            {% if project|proj_permission_level:request.user.profile > 1 %}
-            <td><a href="{% url 'projects:project_admin' project.pk %}">Admin Dashboard</a></td>
-              {% if project.has_model %}
-                <td><a class="download_btn" name="{{ project.pk }}" onclick="download_model({{project.pk}})">Download Model and Labeled Data</a></td>
-              {% else %}
-                {% if project.labeled_data_count > 0 %}
-                <td><a class="download_btn" name="{{ project.pk }}" onclick="download_data({{project.pk}})">Download Labeled Data</a></td>
-                {% else %}
-                <td><p>No Labeled Data to Download</p></td>
-                {% endif %}
-              {% endif %}
-            {% endif %}
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      {% for potential_umbrella_project in object_list %}
+        {% if potential_umbrella_project.is_umbrella %}
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h5 class="panel-title">
+              <a data-toggle="collapse" href="#{{potential_umbrella_project.name.split|join:"-"}}" class="accordion-toggle collapsed collapsed">
+                {{ potential_umbrella_project.name }}
+              </a>
+            </h5>
+          </div>
+          <div id="{{potential_umbrella_project.name.split|join:"-"}}" class="panel-collapse collapse">
+            <div class="panel-body">
+              <a href="{{ potential_umbrella_project.get_absolute_url }}">Update Folder</a>
+              <table class="table table-striped" style="border: 0;">
+                <tbody>
+                  {% for project in object_list %}
+                    {% if project.umbrella_project_id == potential_umbrella_project.id %}
+                      <tr>
+                        <td>{{ project.name }}</td>
+                        <td><a href="{{ project.get_absolute_url }}">Details</a></td>
+                        <td><a href="{% url 'projects:project_code' project.pk %}">Annotate</a></td>
+                        {% if project|proj_permission_level:request.user.profile > 1 %}
+                        <td><a href="{% url 'projects:project_admin' project.pk %}">Admin Dashboard</a></td>
+                          {% if project.has_model %}
+                            <td><a class="download_btn" name="{{ project.pk }}" onclick="download_model({{project.pk}})">Download Model and Labeled Data</a></td>
+                          {% else %}
+                            {% if project.labeled_data_count > 0 %}
+                            <td><a class="download_btn" name="{{ project.pk }}" onclick="download_data({{project.pk}})">Download Labeled Data</a></td>
+                            {% else %}
+                            <td><p>No Labeled Data to Download</p></td>
+                            {% endif %}
+                          {% endif %}
+                        {% endif %}
+                      </tr>
+                    {% endif %}
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      {% endfor %}
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h5 class="panel-title">
+            <h5 class="panel-title">
+              <a data-toggle="collapse" href="#other-projects" class="accordion-toggle collapsed collapsed">
+                Other Projects
+              </a>
+            </h5>
+          </h5>
+        </div>
+        <div id="other-projects" class="panel-collapse collapse">
+          <div class="panel-body">
+            <table class="table table-striped">
+              <tbody>
+                {% for project in object_list %}
+                  {% if project.is_umbrella == False and project.umbrella_project_id == None %}
+                    <tr>
+                      <td>{{ project.name }}</td>
+                      <td><a href="{{ project.get_absolute_url }}">Details</a></td>
+                      <td><a href="{% url 'projects:project_code' project.pk %}">Annotate</a></td>
+                      {% if project|proj_permission_level:request.user.profile > 1 %}
+                      <td><a href="{% url 'projects:project_admin' project.pk %}">Admin Dashboard</a></td>
+                        {% if project.has_model %}
+                          <td><a class="download_btn" name="{{ project.pk }}" onclick="download_model({{project.pk}})">Download Model and Labeled Data</a></td>
+                        {% else %}
+                          {% if project.labeled_data_count > 0 %}
+                          <td><a class="download_btn" name="{{ project.pk }}" onclick="download_data({{project.pk}})">Download Labeled Data</a></td>
+                          {% else %}
+                          <td><p>No Labeled Data to Download</p></td>
+                          {% endif %}
+                        {% endif %}
+                      {% endif %}
+                    </tr>
+                  {% endif %}
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
     <a class="btn btn-primary margin-top" href="{% url 'projects:project_create' %}">New Project</a>
+    <a class="btn btn-primary margin-top" href="{% url 'projects:umbrella_project_create' %}">New Folder</a>
 
     {% if is_paginated %}
       <div class="pagination">

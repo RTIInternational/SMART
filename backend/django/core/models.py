@@ -40,6 +40,10 @@ class Project(models.Model):
     num_users_irr = models.IntegerField(default=2, validators=[MinValueValidator(2)])
     codebook_file = models.TextField(default="")
     batch_size = models.IntegerField(default=30)
+    is_umbrella = models.BooleanField(default=False)
+    umbrella_project = models.ForeignKey(
+        "Project", on_delete=models.CASCADE, null=True, default=None
+    )
     """ Advanced options """
     # the current options are 'random', 'least confident', 'entropy', and 'margin sampling'
     ACTIVE_L_CHOICES = [

@@ -21,6 +21,7 @@ from core.forms import (
     PermissionsFormSet,
     ProjectUpdateOverviewForm,
     ProjectWizardForm,
+    UmbrellaWizardForm,
 )
 from core.models import Data, Label, MetaDataField, Project, TrainingSet
 from core.templatetags import project_extras
@@ -91,14 +92,27 @@ class ProjectList(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         # Projects profile created
-        qs1 = Project.objects.filter(creator=self.request.user.profile)
+        qs_projects_1 = Project.objects.filter(creator=self.request.user.profile)
 
         # Projects profile has permissions for
-        qs2 = Project.objects.filter(
+        qs_projects_2 = Project.objects.filter(
             projectpermissions__profile=self.request.user.profile
         )
 
-        qs = qs1 | qs2
+        qs_projects = qs_projects_1 | qs_projects_2
+        qs_projects_umbrella_ids = (
+            proj["umbrella_project_id"] for proj in qs_projects.values()
+        )
+
+        qs_umbrellas_1 = Project.objects.filter(
+            is_umbrella=True, creator=self.request.user.profile
+        )
+
+        qs_umbrellas_2 = Project.objects.filter(id__in=list(qs_projects_umbrella_ids))
+
+        qs_umbrellas = qs_umbrellas_1 | qs_umbrellas_2
+
+        qs = qs_projects | qs_umbrellas
 
         return qs.distinct().order_by(self.ordering)
 
@@ -318,6 +332,25 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         return HttpResponseRedirect(proj_obj.get_absolute_url())
 
 
+class ProjectUmbrellaCreate(LoginRequiredMixin, SessionWizardView):
+    template_name = "projects/add_umbrella.html"
+    form_list = [("umbrella", UmbrellaWizardForm)]
+    template_list = {"umbrella": "projects/create/umbrella_wizard_.html"}
+
+    def done(self, form_list, form_dict, **kwargs):
+        if form_list[0].is_valid():
+            Project.objects.create(
+                name=form_list[0].cleaned_data["name"],
+                description=form_list[0].cleaned_data["description"],
+                creator_id=1,
+                batch_size=0,
+                num_users_irr=0,
+                percentage_irr=0,
+                is_umbrella=True,
+            )
+            return HttpResponseRedirect("/projects/")
+
+
 class ProjectUpdateLanding(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = "projects/update_landing.html"
     permission_denied_message = (
@@ -462,6 +495,76 @@ class ProjectUpdateCodebook(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
                     self.object.save()
 
                 return redirect(self.get_success_url())
+        else:
+            return self.render_to_response(context)
+
+
+class ProjectUpdateUmbrella(LoginRequiredMixin, UserPassesTestMixin, View):
+    model = Project
+    template_name = "projects/update/umbrella.html"
+    permission_denied_message = (
+        "You must be an Admin or Project Creator to access the Project Update page."
+    )
+    raise_exception = True
+    ordering = "name"
+
+    def test_func(self):
+        project = Project.objects.get(pk=self.kwargs["pk"])
+
+        return (
+            project_extras.proj_permission_level(project, self.request.user.profile)
+            >= 2
+        )
+
+    def get_context_data(self, **kwargs):
+        context = {}
+        project = Project.objects.get(pk=self.kwargs["pk"])
+        context["project"] = project
+
+        if self.request.POST:
+            context["permissions"] = PermissionsFormSet(
+                self.request.POST,
+                instance=project,
+                prefix="permissions_set",
+                form_kwargs={
+                    "action": "update",
+                    "creator": project.creator,
+                    "profile": self.request.user.profile,
+                },
+            )
+        else:
+            context["permissions"] = PermissionsFormSet(
+                instance=project,
+                prefix="permissions_set",
+                form_kwargs={
+                    "action": "update",
+                    "creator": project.creator,
+                    "profile": self.request.user.profile,
+                },
+            )
+
+        context["umbrella_projects"] = Project.objects.filter(
+            is_umbrella=True, creator=self.request.user.profile
+        )
+
+        return context
+
+    def get_success_url(self):
+        context = self.get_context_data()
+        return context["project"].get_absolute_url()
+
+    def get(self, request, *args, **kwargs):
+        return render(request, self.template_name, context=self.get_context_data())
+
+    def post(self, request, *args, **kwargs):
+        context = self.get_context_data()
+        permissions = context["permissions"]
+        if permissions.is_valid():
+            Project.objects.filter(id=context["project"].id).update(
+                umbrella_project_id=request.POST.get("umbrella")
+            )
+
+            return redirect(self.get_success_url())
         else:
             return self.render_to_response(context)
 

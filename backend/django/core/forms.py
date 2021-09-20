@@ -418,3 +418,9 @@ class CodeBookWizardForm(forms.Form):
             return cleanCodebookDataHelper(data)
         else:
             return ""
+
+
+class UmbrellaWizardForm(forms.ModelForm):
+    class Meta:
+        model = Project
+        fields = ["name", "description"]

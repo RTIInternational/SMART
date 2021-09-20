@@ -12,6 +12,11 @@ urlpatterns = [
         name="project_create",
     ),
     re_path(
+        r"^projects/add/umbrella/$",
+        frontend.ProjectUmbrellaCreate.as_view(),
+        name="umbrella_project_create",
+    ),
+    re_path(
         r"^projects/(?P<pk>\d+)/$",
         frontend.ProjectDetail.as_view(),
         name="project_detail",
@@ -60,5 +65,10 @@ urlpatterns = [
         r"^projects/(?P<pk>\d+)/admin/$",
         frontend.ProjectAdmin.as_view(),
         name="project_admin",
+    ),
+    re_path(
+        r"^projects/(?P<pk>\d+)/update/umbrella/$",
+        frontend.ProjectUpdateUmbrella.as_view(),
+        name="project_update_umbrella",
     ),
 ]
