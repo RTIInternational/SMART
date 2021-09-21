@@ -60,7 +60,14 @@ class DataCard extends React.Component {
                             <div className="suggestions">
                                 <h4>Suggested Labels</h4>
                                 {cards[0].text.similarityPair.slice(0, 5).map((opt, index) => (
-                                    <div key={index + 1} className="">{index + 1}. {opt.split(':')[0]}</div>
+                                    <button key={index + 1} onClick={() =>
+                                        annotateCard(
+                                            cards[0],
+                                            labelsOptions.find(label => label.dropdownLabel === opt).value,
+                                            cards.length,
+                                            ADMIN
+                                        )
+                                    }>{index + 1}. {opt}</button>
                                 ))}
                             </div>
                         )}

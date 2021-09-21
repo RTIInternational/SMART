@@ -134,8 +134,12 @@ class Skew extends React.Component {
                                     <div className="suggestions">
                                         <h4>Suggested Labels</h4>
                                         {row.original.similarityPair.slice(0, 5).map((opt, index) => (
-                                            <div key={index + 1} className="">{index + 1}. {opt.split(':')[0]}</div>
-                                        ))}
+                                            <button key={index + 1} onClick={() =>
+                                            skewLabel(
+                                                row.row.id,
+                                                labelsOptions.find(label => label.dropdownLabel === opt).value
+                                            )
+                                    }>{index + 1}. {opt}</button>                                        ))}
                                     </div>
                                 )}
                                 <ButtonToolbar variant="btn-toolbar pull-right">
