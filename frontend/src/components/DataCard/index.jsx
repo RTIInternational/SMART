@@ -117,7 +117,7 @@ class DataCard extends React.Component {
                                     }}
                                     variant="info"
                                 >
-                                    Skip
+                                    Ajudicate
                                 </Button>
                             </OverlayTrigger>
                         </ButtonToolbar>
