@@ -48,7 +48,9 @@
             <div class="panel-body">
               <p>Fully Labeled: <span id="fully-labeled"></span></p>
               <p>Unlabeled and Unassigned: <span id="unlabeled-unassigned"></span></p>
-              <p>Other (Partially Labeled/IRR/Skipped): <span id="other-labeled"></span></p>
+              <p>Awaiting Adjudication: <span id="awaiting-adjudication"></span></p>
+              <p>Recycle Bin: <span id="recycled"></span></p>
+              <p>Partially Labeled/IRR): <span id="other-labeled"></span></p>
             </div>
           </div>
         </div>
@@ -312,7 +314,9 @@ $(document).ready(function() {
     success: function (response) {
       $('#fully-labeled').append(response.final);
       $('#unlabeled-unassigned').append(response.unlabeled);
-      $('#other-labeled').append((response.total - response.final) - response.unlabeled)
+      $('#awaiting-adjudication').append(response.adjudication);
+      $('#recycled').append(response.recycled);
+      $('#other-labeled').append((response.total - response.final - response.adjudication - response.recycled) - response.unlabeled);
     }
   })
 });
