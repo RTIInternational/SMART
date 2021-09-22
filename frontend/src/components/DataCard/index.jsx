@@ -82,7 +82,7 @@ class DataCard extends React.Component {
                                     placeholder="Select label..."
                                     searchBy="dropdownLabel"
                                     sortBy="dropdownLabel"
-                                    style={{ minWidth: "200px" }}
+                                    style={{ minWidth: "400px" }}
                                 />
                             ) : (
                                 labels.map(opt => (
