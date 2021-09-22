@@ -10,7 +10,7 @@ coreschema==0.0.4
 coverage==5.5
 cython==0.29.23
 defusedxml==0.7.1
-Django==3.2.3
+Django==3.2.5
 django-allauth==0.44.0
 django-configurations==2.2
 django-extensions==3.1.3
