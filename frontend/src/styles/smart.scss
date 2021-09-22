@@ -168,6 +168,10 @@ main {
 
     flex: 0 0 100%;
 
+    .btn, & > div {
+        margin-top: 4px;
+    }
+
     & > div {
         flex: 1 1 auto;
 
