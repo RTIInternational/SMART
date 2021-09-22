@@ -176,7 +176,7 @@ class History extends React.Component {
                                 }
                                 variant="info"
                             >
-                                Skip
+                                Adjudicate
                             </Button>
                         </OverlayTrigger>
                     </ButtonToolbar>
