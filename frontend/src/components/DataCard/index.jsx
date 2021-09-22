@@ -82,7 +82,6 @@ class DataCard extends React.Component {
                                     placeholder="Select label..."
                                     searchBy="dropdownLabel"
                                     sortBy="dropdownLabel"
-                                    style={{ minWidth: "400px" }}
                                 />
                             ) : (
                                 labels.map(opt => (
@@ -112,6 +111,7 @@ class DataCard extends React.Component {
                                 }
                             >
                                 <Button
+                                    className="ajucate-button"
                                     onClick={() => {
                                         passCard(cards[0], cards.length, ADMIN);
                                     }}

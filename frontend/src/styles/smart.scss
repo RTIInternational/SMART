@@ -167,6 +167,30 @@ main {
     justify-content: flex-end;
 
     flex: 0 0 100%;
+
+    & > div {
+        flex: 1 1 auto;
+
+        @include breakpoint(medium) {
+            flex: none;
+        }
+    }
+
+    .react-dropdown-select {
+        width: 100%;
+
+        @include breakpoint(medium) {
+            width: 300px;
+        }
+
+        @include breakpoint(large) {
+            width: 400px;
+        }
+    }
+
+    .ajucate-button {
+        flex: 0 0 auto;
+    }
 }
 
 .suggestions {
