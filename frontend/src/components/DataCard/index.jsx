@@ -8,6 +8,8 @@ import {
     OverlayTrigger
 } from "react-bootstrap";
 import Select from "react-dropdown-select";
+import CardData from "./CardData";
+import SuggestedLabels from "./SuggestedLabels";
 
 const ADMIN = window.ADMIN;
 
@@ -18,22 +20,6 @@ class DataCard extends React.Component {
         //to the current list again.
         if (this.props.cards.length == 0) {
             this.props.fetchCards();
-        }
-    }
-
-    getText(card) {
-        if (card.text["metadata"].length == 0) {
-            return <p></p>;
-        } else {
-            return (
-                <div>
-                    <u>Background Data</u>
-                    {card.text["metadata"].map(val => (
-                        <p key={val}>{val}</p>
-                    ))}
-                    <u>Text to Label</u>
-                </div>
-            );
         }
     }
 
@@ -50,20 +36,12 @@ class DataCard extends React.Component {
             //just get the labels from the cards
             card = (
                 <div className="full" key={cards[0].id}>
-                    <div className="cardface cardface-datacard clearfix">
-                        <div className="cardface-info">
-                            <h2>Card {cards[0].id + 1}</h2>
-                            {this.getText(cards[0])}
-                            <p>{cards[0].text["text"]}</p>
+                    <div className="cardface clearfix">
+                        <div className="cardface-datacard">
+                            <CardData card={cards[0]} />
+                            <SuggestedLabels card={cards[0]} labels={labels} />
                         </div>
-                        {labels.length > 5 && (
-                            <div className="suggestions">
-                                <h4>Suggested Labels</h4>
-                                {cards[0].text.similarityPair.slice(0, 5).map((opt, index) => (
-                                    <div key={index + 1} className="">{index + 1}. {opt.split(':')[0]}</div>
-                                ))}
-                            </div>
-                        )}
+                        
                         <ButtonToolbar className="btn-toolbar">
                             {labels.length > 5 ? (
                                 <Select
