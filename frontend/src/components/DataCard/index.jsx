@@ -117,7 +117,7 @@ class DataCard extends React.Component {
                                     }}
                                     variant="info"
                                 >
-                                    Ajudicate
+                                    Adjudicate
                                 </Button>
                             </OverlayTrigger>
                         </ButtonToolbar>
