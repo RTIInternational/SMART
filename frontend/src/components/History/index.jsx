@@ -146,7 +146,7 @@ class History extends React.Component {
                                     )
                                 }
                                 options={labelsOptions}
-                                placeholder="Select label..."
+                                placeholder={labelsOptions.find(labelOption => labelOption.name.includes(row.original.old_label)).dropdownLabel}
                                 searchBy="dropdownLabel"
                                 sortBy="dropdownLabel"
                                 style={{ minWidth: "200px" }}
