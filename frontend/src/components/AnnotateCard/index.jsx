@@ -69,3 +69,11 @@ export default function AnnotateCard({ card, labels, onSelectLabel, onSkip }) {
         </div>
     );
 }
+
+export function buildCard(id, start_time, text) {
+    return {
+        id,
+        start_time,
+        text
+    };
+}

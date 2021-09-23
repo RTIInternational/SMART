@@ -6,7 +6,7 @@ export default function CardData({ card }) {
             <h2>Card {card.id + 1}</h2>
             <div className="card-data">
                 <h4>Text to Label</h4>
-                <p>{card.text["text"]}</p>
+                <p>{card.text["text"] || card.text["data"]}</p>
             </div>
             {extractMetadata(card)}
         </div>
