@@ -48,23 +48,26 @@ export default function AnnotateCard({ card, labels, onSelectLabel, onSkip }) {
                         </Button>
                     ))
                 )}
-                <OverlayTrigger
-                    placement="top"
-                    overlay={
-                        <Tooltip id="skip_tooltip">
-                            Clicking this button will send this
-                            document to an administrator for review
-                        </Tooltip>
-                    }
-                >
-                    <Button
-                        className="ajucate-button"
-                        onClick={() => onSkip(card)}
-                        variant="info"
+                {
+                    onSkip != null &&
+                    <OverlayTrigger
+                        placement="top"
+                        overlay={
+                            <Tooltip id="skip_tooltip">
+                                Clicking this button will send this
+                                document to an administrator for review
+                            </Tooltip>
+                        }
                     >
-                        Adjudicate
-                    </Button>
-                </OverlayTrigger>
+                        <Button
+                            className="ajucate-button"
+                            onClick={() => onSkip(card)}
+                            variant="info"
+                        >
+                            Adjudicate
+                        </Button>
+                    </OverlayTrigger>
+                }
             </ButtonToolbar>
         </div>
     );
