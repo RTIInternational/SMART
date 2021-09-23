@@ -56,7 +56,7 @@ def label_distribution(request, project_pk):
         if label_count > 0:
             user_labels.append({"x": u.__str__(), "y": label_count})
 
-    dataset = [{"key": "labels", "values": user_labels}]
+    dataset = [{"key": "Count", "values": user_labels}]
 
     return Response(dataset)
 
