@@ -10,7 +10,7 @@ import Select from "react-dropdown-select";
 import CardData from '../DataCard/CardData';
 import SuggestedLabels from '../DataCard/SuggestedLabels';
 
-export default function AnnotateCard({ card, labels, onSelectLabel, onSkip }) {
+export default function AnnotateCard({ card, labels, onSelectLabel, onSkip = null, onDiscard = null }) {
     const labelsOptions = useMemo(() => labels.map(label => ({
         value: label["pk"],
         dropdownLabel: `${label["name"]} ${label["description"] !== '' ? '(' + label["description"] + ')' : ''}`
@@ -65,6 +65,27 @@ export default function AnnotateCard({ card, labels, onSelectLabel, onSkip }) {
                             variant="info"
                         >
                             Adjudicate
+                        </Button>
+                    </OverlayTrigger>
+                }
+                {
+                    onDiscard != null &&
+                    <OverlayTrigger
+                        placement="top"
+                        overlay={
+                            <Tooltip id="discard_tooltip">
+                                This marks this data as uncodable,
+                                and will remove it from the active
+                                data in this project.
+                            </Tooltip>
+                        }
+                    >
+                        <Button
+                            key={`discard_${card.id}`}
+                            onClick={() => onDiscard(card.id)}
+                            variant="danger"
+                        >
+                            Discard
                         </Button>
                     </OverlayTrigger>
                 }
