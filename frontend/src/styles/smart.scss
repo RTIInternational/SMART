@@ -211,6 +211,34 @@ main {
         }
     }
 
+    .react-dropdown-select-content {
+        width: 100%;
+
+        @include breakpoint(medium) {
+            width: 300px;
+        }
+
+        @include breakpoint(large) {
+            width: 400px;
+        }
+    }
+
+    .react-dropdown-select-input {
+        width: 95%;
+
+        @include breakpoint(medium) {
+            width: 280px;
+        }
+
+        @include breakpoint(large) {
+            width: 380px;
+        }
+    }
+
+    .react-dropdown-select-input::placeholder {
+        text-overflow: ellipsis;
+    }
+
     .ajucate-button {
         flex: 0 0 auto;
     }
