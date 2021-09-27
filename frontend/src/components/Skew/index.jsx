@@ -60,10 +60,6 @@ class Skew extends React.Component {
     render() {
         const { unlabeled_data, labels, skewLabel, label_counts } = this.props;
 
-        let labelsOptions = labels.map(label =>
-            Object.assign(label, { value: label["pk"], dropdownLabel: `${label["name"]} ${label["description"] !== '' ? '(' + label["description"] + ')' : ''}` })
-        );
-
         return (
             <div>
                 <div className="row">

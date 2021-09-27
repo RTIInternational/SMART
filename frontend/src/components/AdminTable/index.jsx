@@ -1,13 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
 import ReactTable from "react-table-6";
-import {
-    Button,
-    ButtonToolbar,
-    Tooltip,
-    OverlayTrigger
-} from "react-bootstrap";
-import Select from "react-dropdown-select";
 import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
 import AnnotateCard, { buildCard } from "../AnnotateCard";
 
