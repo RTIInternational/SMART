@@ -10,6 +10,9 @@
       <div class="col-md-12">
         <h2>{{ project.name }}</h2>
         <p>Created By: {{ project.creator }}</p>
+        {% if project.umbrella_string %}
+          <p>Folder: {{ project.umbrella_string }}</p>
+        {% endif %}
       </div>
     </div>
     <div class="row">
