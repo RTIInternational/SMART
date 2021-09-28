@@ -28,46 +28,29 @@ from core.utils.utils_model import cohens_kappa, fleiss_kappa
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))
 def label_distribution(request, project_pk):
-    """This function finds and returns the number of each label per user. This is used
+    """This function finds and returns the number of all labels coded per user. This is used
     by a graph on the front end admin page.
 
     Args:
         request: The POST request
         project_pk: Primary key of the project
     Returns:
-        a dictionary of the amount of labels per person per type
+        a dictionary of the amount of labels per person
     """
     project = Project.objects.get(pk=project_pk)
-    labels = [label for label in project.labels.all()]
     users = []
     users.append(project.creator)
     users.extend([perm.profile for perm in project.projectpermissions_set.all()])
 
-    # Sort labels by the count
-    labels.sort(
-        key=lambda label: DataLabel.objects.filter(label=label).count(), reverse=True
-    )
-
-    dataset = []
-    # Get first labels
-    for label in labels[0:5]:
-        temp_values = []
-        for u in users:
-            label_count = DataLabel.objects.filter(profile=u, label=label).count()
-            if label_count > 0:
-                temp_values.append({"x": u.__str__(), "y": label_count})
-        if temp_values != []:
-            dataset.append({"key": label.name, "values": temp_values})
-
-    other_values = []
+    user_labels = []
+    
     for u in users:
-        other_count = 0
-        for label in labels[5:]:
-            other_count += DataLabel.objects.filter(profile=u, label=label).count()
-        if other_count > 0:
-            other_values.append({"x": u.__str__(), "y": other_count})
-    if other_values != []:
-        dataset.append({"key": "other labels", "values": other_values})
+        label_count = DataLabel.objects.filter(profile=u, label__project=project_pk).count()
+        
+        if label_count > 0:
+            user_labels.append({"x": u.__str__(), "y": label_count})
+
+    dataset = [{"key": "Count", "values": user_labels}]
 
     return Response(dataset)
 
