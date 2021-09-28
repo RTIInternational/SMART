@@ -362,8 +362,10 @@ def get_project_status(request, project_pk):
     )
     unlabeled_data_objs = list(
         project.data_set.filter(datalabel__isnull=True)
+        .exclude(id__in=stuff_in_queue)
         .exclude(id__in=stuff_in_irrlog)
         .exclude(id__in=assigned_ids)
+        .exclude(id__in=recycle_ids)
     )
 
     return Response(
