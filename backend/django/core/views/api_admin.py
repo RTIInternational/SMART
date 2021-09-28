@@ -364,13 +364,15 @@ def get_project_status(request, project_pk):
         project.data_set.filter(datalabel__isnull=True)
         .exclude(id__in=stuff_in_queue)
         .exclude(id__in=stuff_in_irrlog)
-        .exclude(id__in=recycle_ids)
         .exclude(id__in=assigned_ids)
+        .exclude(id__in=recycle_ids)
     )
 
     return Response(
         {
+            "adjudication": len(stuff_in_queue),
             "final": len(final_data_objs),
+            "recycled": len(recycle_ids),
             "total": len(total_data_objs),
             "unlabeled": len(unlabeled_data_objs),
         }
