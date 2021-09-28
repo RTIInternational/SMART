@@ -1,11 +1,11 @@
 import React from "react";
 import PropTypes from "prop-types";
 import ReactTable from "react-table-6";
-import { Button, ButtonToolbar, Card } from "react-bootstrap";
+import { Card } from "react-bootstrap";
 import NVD3Chart from "react-nvd3";
-import Select from "react-dropdown-select";
 import d3 from "d3";
 import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
+import AnnotateCard, { buildCard } from "../AnnotateCard";
 
 const COLUMNS = [
     {
@@ -59,10 +59,6 @@ class Skew extends React.Component {
 
     render() {
         const { unlabeled_data, labels, skewLabel, label_counts } = this.props;
-
-        let labelsOptions = labels.map(label =>
-            Object.assign(label, { value: label["pk"], dropdownLabel: `${label["name"]} ${label["description"] !== '' ? '(' + label["description"] + ')' : ''}` })
-        );
 
         return (
             <div>
@@ -124,61 +120,21 @@ class Skew extends React.Component {
                         unlabeled_data.length < 50 ? unlabeled_data.length : 50
                     }
                     SubComponent={row => {
+                        const card = buildCard(row.row.id, null, row.original);
+
                         return (
-                            <div className="sub-row cardface cardface-datacard clearfix">
-                                <div className="cardface-info">
-                                    {this.getText(row)}
-                                    <p>{row.row.data}</p>
-                                </div>
-                                {labels.length > 5 && (
-                                    <div className="suggestions">
-                                        <h4>Suggested Labels</h4>
-                                        {row.original.similarityPair.slice(0, 5).map((opt, index) => (
-                                            <div key={index + 1} className="">{index + 1}. {opt.split(':')[0]}</div>
-                                        ))}
-                                    </div>
-                                )}
-                                <ButtonToolbar variant="btn-toolbar pull-right">
-                                    <div id="skew_buttons">
-                                        {labels.length > 5 ? (
-                                            <Select
-                                                className="align-items-center flex py-1 px-2"
-                                                dropdownHandle={false}
-                                                labelField="dropdownLabel"
-                                                onChange={value =>
-                                                    skewLabel(
-                                                        row.row.id,
-                                                        value[0]["pk"]
-                                                    )
-                                                }
-                                                options={labelsOptions}
-                                                placeholder="Select label..."
-                                                searchBy="dropdownLabel"
-                                                sortBy="dropdownLabel"
-                                                style={{ minWidth: "200px" }}
-                                            />
-                                        ) : (
-                                            labels.map(opt => (
-                                                <Button
-                                                    onClick={() =>
-                                                        skewLabel(
-                                                            row.row.id,
-                                                            opt["pk"]
-                                                        )
-                                                    }
-                                                    variant="primary"
-                                                    key={
-                                                        opt["pk"].toString() +
-                                                        "_" +
-                                                        row.row.id.toString()
-                                                    }
-                                                >
-                                                    {opt["name"]}
-                                                </Button>
-                                            ))
-                                        )}
-                                    </div>
-                                </ButtonToolbar>
+                            <div className="sub-row cardface clearfix">
+                                <AnnotateCard
+                                    card={card}
+                                    labels={labels}
+                                    onSelectLabel={(card, label) => {
+                                        skewLabel(
+                                            card.id,
+                                            label
+                                        );
+                                    }}
+                                    onSkip={null}
+                                />
                             </div>
                         );
                     }}

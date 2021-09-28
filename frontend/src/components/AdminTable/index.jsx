@@ -1,14 +1,8 @@
 import React from "react";
 import PropTypes from "prop-types";
 import ReactTable from "react-table-6";
-import {
-    Button,
-    ButtonToolbar,
-    Tooltip,
-    OverlayTrigger
-} from "react-bootstrap";
-import Select from "react-dropdown-select";
 import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
+import AnnotateCard, { buildCard } from "../AnnotateCard";
 
 class AdminTable extends React.Component {
     componentDidMount() {
@@ -34,10 +28,6 @@ class AdminTable extends React.Component {
     render() {
         const { admin_data, labels, adminLabel, discardData } = this.props;
 
-        let labelsOptions = labels.map(label =>
-            Object.assign(label, { value: label["pk"], dropdownLabel: `${label["name"]} ${label["description"] !== '' ? '(' + label["description"] + ')' : ''}` })
-        );
-
         const columns = [
             {
                 Header: "id",
@@ -59,83 +49,13 @@ class AdminTable extends React.Component {
                 Header: "Unlabeled Data",
                 accessor: "data",
                 Cell: row => (
-                    <div className="sub-row cardface cardface-datacard clearfix">
-                        <div className="cardface-info">
-                            {this.getText(row)}
-                            <p>{row.row.data}</p>
-                        </div>
-                        {labels.length > 5 && (
-                            <div className="suggestions">
-                                <h4>Suggested Labels</h4>
-                                {row.original.similarityPair.slice(0, 5).map((opt, index) => (
-                                    <div key={index + 1} className="">{index + 1}. {opt.split(':')[0]}</div>
-                                ))}
-                            </div>
-                        )}
-                        <ButtonToolbar variant="btn-toolbar pull-right">
-                            <div id="admin_buttons">
-                                {labels.length > 5 ? (
-                                    <Select
-                                        className="absolute align-items-center flex py-1 px-2"
-                                        dropdownHandle={false}
-                                        labelField="dropdownLabel"
-                                        onChange={value =>
-                                            adminLabel(
-                                                row.row.id,
-                                                value[0]["pk"]
-                                            )
-                                        }
-                                        options={labelsOptions}
-                                        placeholder="Select label..."
-                                        searchBy="dropdownLabel"
-                                        sortBy="dropdownLabel"
-                                        style={{
-                                            position: "absolute",
-                                            minWidth: "200px",
-                                            width: "fit-content"
-                                        }}
-                                    />
-                                ) : (
-                                    labels.map(opt => (
-                                        <Button
-                                            onClick={() =>
-                                                adminLabel(
-                                                    row.row.id,
-                                                    opt["pk"]
-                                                )
-                                            }
-                                            variant="primary"
-                                            key={
-                                                opt["pk"].toString() +
-                                                "_" +
-                                                row.row.id.toString()
-                                            }
-                                        >
-                                            {opt["name"]}
-                                        </Button>
-                                    ))
-                                )}
-                                <OverlayTrigger
-                                    placement="top"
-                                    overlay={
-                                        <Tooltip id="discard_tooltip">
-                                            This marks this data as uncodable,
-                                            and will remove it from the active
-                                            data in this project.
-                                        </Tooltip>
-                                    }
-                                >
-                                    <Button
-                                        key={"discard_" + row.row.id.toString()}
-                                        onClick={() => discardData(row.row.id)}
-                                        variant="danger"
-                                        style={{ marginLeft: "205px" }}
-                                    >
-                                        Discard
-                                    </Button>
-                                </OverlayTrigger>
-                            </div>
-                        </ButtonToolbar>
+                    <div className="sub-row">
+                        <AnnotateCard
+                            card={buildCard(row.row.id, null, row.original)}
+                            labels={labels}
+                            onSelectLabel={(card, label) => adminLabel(card.id, label)}
+                            onDiscard={(id) => discardData(id)}
+                        />
                     </div>
                 )
             }
