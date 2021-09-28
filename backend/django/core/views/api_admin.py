@@ -38,20 +38,14 @@ def label_distribution(request, project_pk):
         a dictionary of the amount of labels per person
     """
     project = Project.objects.get(pk=project_pk)
-    labels = [label for label in project.labels.all()]
     users = []
     users.append(project.creator)
     users.extend([perm.profile for perm in project.projectpermissions_set.all()])
 
-    # Sort labels by the count
-    labels.sort(
-        key=lambda label: DataLabel.objects.filter(label=label).count(), reverse=True
-    )
-
     user_labels = []
     
     for u in users:
-        label_count = DataLabel.objects.filter(profile=u, label__in=labels).count()
+        label_count = DataLabel.objects.filter(profile=u, label__project=project_pk).count()
         
         if label_count > 0:
             user_labels.append({"x": u.__str__(), "y": label_count})
