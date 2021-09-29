@@ -28,8 +28,8 @@ from core.utils.utils_model import cohens_kappa, fleiss_kappa
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))
 def label_distribution(request, project_pk):
-    """This function finds and returns the number of all labels coded per user. This is used
-    by a graph on the front end admin page.
+    """This function finds and returns the number of all labels coded per user. This is
+    used by a graph on the front end admin page.
 
     Args:
         request: The POST request
@@ -43,10 +43,12 @@ def label_distribution(request, project_pk):
     users.extend([perm.profile for perm in project.projectpermissions_set.all()])
 
     user_labels = []
-    
+
     for u in users:
-        label_count = DataLabel.objects.filter(profile=u, label__project=project_pk).count()
-        
+        label_count = DataLabel.objects.filter(
+            profile=u, label__project=project_pk
+        ).count()
+
         if label_count > 0:
             user_labels.append({"x": u.__str__(), "y": label_count})
 

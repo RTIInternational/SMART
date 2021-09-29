@@ -513,7 +513,7 @@ def get_labeled_data(project):
     labels = []
     for label in project_labels:
         labels.append({"Name": label.name, "Label_ID": label.pk})
-        labeled_data = DataLabel.objects.filter(label=label)
+        labeled_data = DataLabel.objects.filter(label=label, data__irr_ind=False)
         for d in labeled_data:
             temp = {}
             temp["ID"] = d.data.upload_id
