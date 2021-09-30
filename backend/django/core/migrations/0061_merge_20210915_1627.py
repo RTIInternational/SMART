@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("core", "0057_datalabelsimilaritypairs"),
+        ("core", "0058_auto_20210914_1337"),
         ("core", "0060_alter_metadatafield_project"),
     ]
 

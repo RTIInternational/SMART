@@ -264,6 +264,18 @@ main {
     border-radius: 4px;
 }
 
+.suggestions button {
+    border: none;
+    outline: none;
+    display: block;
+    margin: 0px 0px 4px;
+    background-color: transparent;
+}
+
+.suggestions button:hover {
+    text-decoration: underline;
+}
+
 .unlabeled-status {
     padding: 0px 16px;
     margin: 0px 24px;

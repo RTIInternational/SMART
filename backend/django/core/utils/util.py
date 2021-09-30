@@ -10,6 +10,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import connection, transaction
 from django.utils import timezone
+from string_grouper import compute_pairwise_similarities
 
 from core import tasks
 from core.models import (
@@ -96,8 +97,11 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
             irr_percent=project.percentage_irr,
             batch_size=batch_size,
         )
-
-    # tasks.send_label_similarity_results_task(project.pk)
+    transaction.on_commit(
+        lambda: tasks.send_label_similarity_results_task.apply_async(
+            kwargs={"project_pk": project.pk}
+        )
+    )
 
     # Since User can upload Labeled Data and this data is added to current training_set
     # we need to check_and_trigger model.  However since training model requires
@@ -230,16 +234,56 @@ def create_metadata_objects_from_csv(df, project):
 def create_label_similarity_results(project):
     """Insert data label similarity results into database using bulk_create."""
 
+    project_data = Data.objects.filter(project=project, similarityPair__isnull=True)
     project_labels = Label.objects.filter(project=project)
-    project_data = Data.objects.filter(project=project)
 
-    label_similarity_scores = []
-    for data in project_data:
-        for label in project_labels:
-            label_similarity_scores.append(
-                DataLabelSimilarityPairs(data=data, label=label, similarity_score=0)
-            )
-    DataLabelSimilarityPairs.objects.bulk_create(label_similarity_scores)
+    # get the data in dataframe form
+    data_df = pd.DataFrame(list(project_data.values("pk", "text"))).rename(
+        columns={"pk": "data_id"}
+    )
+    res_list = []
+    for label in project_labels:
+        # set up the label series
+        label_string = f"{label.name} {label.description}"
+        label_series = pd.Series(len(data_df) * [label_string])
+
+        # compute the similarity score
+        data_df["similarity_score"] = compute_pairwise_similarities(
+            label_series, data_df["text"]
+        )
+        data_df["label_id"] = label.pk
+        res_list += data_df[["data_id", "label_id", "similarity_score"]].to_dict(
+            "records"
+        )
+
+    # compare all data with all labels at once
+    res_df = pd.DataFrame(res_list).sort_values(
+        by=["data_id", "similarity_score"], ascending=False
+    )
+    res_df["sim_rank"] = res_df.groupby("data_id")["similarity_score"].rank(
+        method="first", ascending=False
+    )
+
+    # rank the results, and drop all but the top 5 for each data
+    res_df = res_df.loc[res_df["sim_rank"] <= 5]
+
+    stream = StringIO()
+    res_df.to_csv(
+        stream,
+        sep="\t",
+        header=False,
+        index=False,
+        columns=["data_id", "label_id", "similarity_score"],
+    )
+    stream.seek(0)
+    with connection.cursor() as c:
+        c.copy_from(
+            stream,
+            DataLabelSimilarityPairs._meta.db_table,
+            sep="\t",
+            null="",
+            columns=["data_id", "label_id", "similarity_score"],
+        )
 
 
 def add_data(project, df):
