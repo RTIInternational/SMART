@@ -290,7 +290,7 @@ PermissionsFormSet = forms.inlineformset_factory(
 class ProjectWizardForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ["name", "description"]
+        fields = ["name", "description", "umbrella_string"]
 
 
 class AdvancedWizardForm(forms.ModelForm):
