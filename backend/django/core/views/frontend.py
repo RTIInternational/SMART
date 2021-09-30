@@ -100,7 +100,7 @@ class ProjectList(LoginRequiredMixin, ListView):
 
         qs = qs1 | qs2
 
-        return qs.distinct().order_by(self.ordering)
+        return qs.distinct().order_by(self.ordering).reverse()
 
 
 class ProjectDetail(LoginRequiredMixin, UserPassesTestMixin, DetailView):
@@ -464,6 +464,47 @@ class ProjectUpdateCodebook(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
                 return redirect(self.get_success_url())
         else:
             return self.render_to_response(context)
+
+
+class ProjectUpdateUmbrella(LoginRequiredMixin, UserPassesTestMixin, View):
+    model = Project
+    template_name = "projects/update/umbrella.html"
+    permission_denied_message = (
+        "You must be an Admin or Project Creator to access the Project Update page."
+    )
+    raise_exception = True
+    ordering = "name"
+
+    def test_func(self):
+        project = Project.objects.get(pk=self.kwargs["pk"])
+
+        return (
+            project_extras.proj_permission_level(project, self.request.user.profile)
+            >= 2
+        )
+
+    def get_context_data(self, **kwargs):
+        context = {}
+        project = Project.objects.get(pk=self.kwargs["pk"])
+        context["project"] = project
+
+        return context
+
+    def get_success_url(self):
+        context = self.get_context_data()
+        return context["project"].get_absolute_url()
+
+    def get(self, request, *args, **kwargs):
+        return render(request, self.template_name, context=self.get_context_data())
+
+    def post(self, request, *args, **kwargs):
+        context = self.get_context_data()
+
+        Project.objects.filter(id=context["project"].id).update(
+            umbrella_string=request.POST.get("umbrella")
+        )
+
+        return redirect(self.get_success_url())
 
 
 class ProjectUpdatePermissions(LoginRequiredMixin, UserPassesTestMixin, View):

@@ -20,7 +20,7 @@ from core.models import (
     RecycleBin,
     TrainingSet,
 )
-from core.permissions import IsAdminOrCreator
+from core.permissions import IsAdminOrCreator, IsCoder
 from core.utils.util import irr_heatmap_data, perc_agreement_table_data
 from core.utils.utils_model import cohens_kappa, fleiss_kappa
 
@@ -314,7 +314,7 @@ def heat_map_data(request, project_pk):
 
 
 @api_view(["GET"])
-@permission_classes((IsAdminOrCreator,))
+@permission_classes((IsCoder,))
 def get_project_status(request, project_pk):
     """This returns data information.
 
