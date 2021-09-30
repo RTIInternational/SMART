@@ -3,13 +3,10 @@ import PropTypes from "prop-types";
 import ReactTable from "react-table-6";
 import {
     Button,
-    ButtonToolbar,
-    Tooltip,
-    OverlayTrigger,
     Alert
 } from "react-bootstrap";
-import Select from "react-dropdown-select";
 import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
+import AnnotateCard, { buildCard } from "../AnnotateCard";
 
 const COLUMNS = [
     {
@@ -112,80 +109,28 @@ class History extends React.Component {
     getSubComponent(row) {
         let subComponent;
         const { labels, changeLabel, changeToSkip } = this.props;
-
-        let labelsOptions = labels.map(label =>
-            Object.assign(label, { value: label["pk"], dropdownLabel: `${label["name"]} ${label["description"] !== "" ? `(${label["description"]})` : ""}` })
-        );
+        const card = buildCard(row.row.id, null, row.original);
 
         if (row.row.edit === "yes") {
             subComponent = (
-                <div className="sub-row cardface cardface-datacard clearfix">
-                    <div className="cardface-info">
-                        {this.getText(row)}
-                        <p>{row.row.data}</p>
-                    </div>
-                    {labels.length > 5 && (
-                        <div className="suggestions">
-                            <h4>Suggested Labels</h4>
-                            {row.original.similarityPair.slice(0, 5).map((opt, index) => (
-                                <button key={index + 1} onClick={() =>
-                                    changeLabel(
-                                        row.row.id,
-                                        row.row.old_label_id,
-                                        labelsOptions.find(label => label.dropdownLabel === opt).value
-                                    )
-                                }>{index + 1}. {opt}</button>
-                            ))}
-                        </div>
-                    )}
-                    <ButtonToolbar variant="btn-toolbar pull-right">
-                        {labels.length > 5 ? (
-                            <Select
-                                className="align-items-center flex py-1 px-2"
-                                dropdownHandle={false}
-                                labelField="dropdownLabel"
-                                onChange={value =>
-                                    changeLabel(
-                                        row.row.id,
-                                        row.row.old_label_id,
-                                        value[0]["pk"]
-                                    )
-                                }
-                                options={labelsOptions}
-                                placeholder="Select label..."
-                                searchBy="dropdownLabel"
-                                sortBy="dropdownLabel"
-                                style={{ minWidth: "200px" }}
-                            />
-                        ) : (
-                            <React.Fragment>
-                                {labels.map(label =>
-                                    this.getLabelButton(row, label)
-                                )}
-                            </React.Fragment>
-                        )}
-                        <OverlayTrigger
-                            placement="top"
-                            overlay={
-                                <Tooltip id="skip_tooltip">
-                                    Clicking this button will send this document
-                                    to an administrator for review
-                                </Tooltip>
-                            }
-                        >
-                            <Button
-                                onClick={() =>
-                                    changeToSkip(
-                                        row.row.id,
-                                        row.row.old_label_id
-                                    )
-                                }
-                                variant="info"
-                            >
-                                Adjudicate
-                            </Button>
-                        </OverlayTrigger>
-                    </ButtonToolbar>
+                <div className="sub-row cardface clearfix">
+                    <AnnotateCard
+                        card={card}
+                        labels={labels}
+                        onSelectLabel={(card, label) => {
+                            changeLabel(
+                                card.id,
+                                row.row.old_label_id,
+                                label
+                            );
+                        }}
+                        onSkip={(card) => {
+                            changeToSkip(
+                                card.id,
+                                row.row.old_label_id
+                            );
+                        }}
+                    />
                 </div>
             );
         } else {

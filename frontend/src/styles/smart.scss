@@ -147,7 +147,26 @@ main {
 }
 
 .cardface-info {
-    flex: 0 1 70%;
+    flex: 1 1 70%;
+    margin-right: 8px;
+    margin-bottom: 20px;
+
+    & > h4 {
+        margin-top: 16px;
+    }
+
+    .card-data {
+        margin: 0px 16px 8px;
+        padding: 8px;
+    }
+
+    .card-metadata {
+        margin: 16px;
+        margin-top: 24px;
+        background-color: #F5F5F5;
+        border-radius: 4px;
+        padding: 8px 16px;
+    }
 }
 
 .cardContent {
@@ -190,6 +209,34 @@ main {
         @include breakpoint(large) {
             width: 400px;
         }
+    }
+
+    .react-dropdown-select-content {
+        width: 100%;
+
+        @include breakpoint(medium) {
+            width: 300px;
+        }
+
+        @include breakpoint(large) {
+            width: 400px;
+        }
+    }
+
+    .react-dropdown-select-input {
+        width: 95%;
+
+        @include breakpoint(medium) {
+            width: 280px;
+        }
+
+        @include breakpoint(large) {
+            width: 380px;
+        }
+    }
+
+    .react-dropdown-select-input::placeholder {
+        text-overflow: ellipsis;
     }
 
     .ajucate-button {

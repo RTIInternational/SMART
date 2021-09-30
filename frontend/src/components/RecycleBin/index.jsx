@@ -8,6 +8,7 @@ import {
     OverlayTrigger
 } from "react-bootstrap";
 import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
+import AnnotateCard, { buildCard } from "../AnnotateCard";
 
 const COLUMNS = [
     {
@@ -65,6 +66,10 @@ class RecycleBin extends React.Component {
             <div className="sub-row">
                 {this.getText(row)}
                 <p id="disc_text">{row.row.data}</p>
+                <AnnotateCard
+                    card={buildCard(row.row.id, null, { data: row.row.data, metadata: row.row.metadata })}
+                    readonly={true}
+                />
                 <div id="disc_buttons">
                     <ButtonToolbar variant="btn-toolbar pull-right">
                         <OverlayTrigger
