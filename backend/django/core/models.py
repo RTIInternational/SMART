@@ -185,7 +185,9 @@ class DataLabelSimilarityPairs(models.Model):
     similarity_score = models.FloatField()
 
     def __str__(self):
-        return f"{str(self.label.name)} ({str(self.label.description)})"
+        return f"{str(self.label.name)} ({str(self.label.description)})".replace(
+            "()", ""
+        )
 
 
 class Label(models.Model):
