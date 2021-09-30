@@ -13,15 +13,10 @@
            {% csrf_token %}
            <h1>Add Project To Folder</h1>
            <h3>Description</h3>
-           <p>To help organize your labeling projects, you can assign projects to folders to organize your project list.</p>
-           <ul class="list-group">
-             <li class="list-group-item"><strong>Admins</strong> are able to update the project's folder to one they have created.</li>
-           </ul>
+           <p>To help organize your projects, you can assign projects to folders displayed on the project page.</p>
            <h3>Instructions</h3>
-           <p>Select a folder from the dropdown field below to add your project. If you want to add the project to a folder that is not on the list, contact the folder's owner.</p>
+           <p>Type the name of the folder in the input field you wish to categorize your project under. Projects with the same folder name will be automatically grouped together on the projects page.</p>
            {{ form.errors.as_ul }}
-           {{ permissions.management_form }}
-           <div class="error-messages">{{ permissions.non_form_errors }}</div>
            <input class="form-control" name="umbrella" placeholder="Folder Name" />
            <br />
            <div class="form-group">
