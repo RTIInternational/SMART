@@ -15,9 +15,9 @@ services:
     extends:
       file: ../docker-common.yml
       service: smart_backend
-    build: 
+    build:
       context: ../../backend/
-      dockerfile: Dockerfile.prod
+      dockerfile: docker/Dockerfile.prod
     image: rti/smart-backend-prod:R_0_0_1
     restart: always
     depends_on:

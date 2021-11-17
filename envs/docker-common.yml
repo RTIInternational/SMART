@@ -21,6 +21,7 @@ services:
     container_name: smart_backend
     volumes:
       - ../backend/django:/code
+      - ../backend/docker:/code/docker
       - ../frontend:/code/frontend
       - smart_data:/data/
     ports:

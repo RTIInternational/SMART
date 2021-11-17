@@ -15,7 +15,9 @@ services:
     extends:
       file: ../docker-common.yml
       service: smart_backend
-    build: ../../backend/
+    build:
+      context: ../../backend/
+      dockerfile: docker/Dockerfile
     image: rti/smart-backend:R_0_0_1
     depends_on:
       - postgres
@@ -33,7 +35,9 @@ services:
     extends:
       file: ../docker-common.yml
       service: celery_worker
-    build: ../../backend/
+    build:
+      context: ../../backend/
+      dockerfile: docker/Dockerfile
     image: rti/smart-backend:R_0_0_1
     depends_on:
       - postgres
