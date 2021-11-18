@@ -69,7 +69,7 @@ docker-compose run --rm smart_backend ./migrate.sh
 We use [pip-tools](https://github.com/jazzband/pip-tools) to manage Python dependencies. To change the dependencies:
 
 1. Edit [requirements.in](./backend/docker/requirements.in) to add, remove, or edit a dependency. You only need to put primary dependencies here, that is, the ones explicitly needed by our source code. pip-tools will take care of adding their dependencies.
-1. Run `docker-compose run --rm smart_backend pip-compile docker/requirements.in` to generate a new [requirements.txt](./backend/docker/requirements.txt).
+1. Run `docker-compose run --rm smart_backend pip-compile docker/requirements.in` to generate a new [requirements.txt](./backend/docker/requirements.txt). Note that pip-tools uses the existing `requirements.txt` file when building a new one, so that it can maintain existing versions. To upgrade a package to the newest version compatible with the other libraries, just remove it from the existing `requirements.txt` before running pip-compile.
 1. Run `docker-compose build smart_backend` to install the updated requirements into the Docker image.
 
 ### Custom Environment Variables
