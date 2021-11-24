@@ -14,7 +14,7 @@ backports.entry-points-selectable==1.1.1
     # via virtualenv
 billiard==3.6.4.0
     # via celery
-black==21.11b0
+black==21.11b1
     # via -r docker/requirements.in
 celery==5.2.1
     # via
@@ -108,7 +108,7 @@ idna==3.3
     # via requests
 iniconfig==1.1.1
     # via pytest
-isort[requirements]==5.10.1
+isort==5.10.1
     # via -r docker/requirements.in
 itypes==1.2.0
     # via coreapi

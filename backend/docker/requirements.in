@@ -24,7 +24,7 @@ black
 coverage
 docformatter
 flake8
-isort[requirements]
+isort
 pip-tools
 pre-commit
 pytest-django
