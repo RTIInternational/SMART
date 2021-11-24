@@ -46,8 +46,8 @@ services:
 
 volumes:
   smart_pgdata:
-    external:
-      name: vol_smart_pgdata
+    external: true
+    name: vol_smart_pgdata
   smart_data:
-    external:
-      name: vol_smart_data
+    external: true
+    name: vol_smart_data
