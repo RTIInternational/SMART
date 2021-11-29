@@ -57,7 +57,6 @@ class LabelSerializer(serializers.ModelSerializer):
 
 class DataSerializer(serializers.ModelSerializer):
     metadata = serializers.StringRelatedField(many=True, read_only=True)
-    similarityPair = serializers.StringRelatedField(many=True, read_only=True)
 
     class Meta:
         model = Data
@@ -69,7 +68,6 @@ class DataSerializer(serializers.ModelSerializer):
             "hash",
             "upload_id_hash",
             "metadata",
-            "similarityPair",
         )
 
 

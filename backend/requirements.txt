@@ -54,7 +54,6 @@ scipy==1.6.3
 simplejson==3.17.2
 six==1.15.0
 statsmodels==0.12.2
-string-grouper==0.5.0
 uritemplate==3.0.1
 urllib3==1.26.4
 vine==5.0.0
