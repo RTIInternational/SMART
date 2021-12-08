@@ -15,9 +15,9 @@ services:
     extends:
       file: ../docker-common.yml
       service: smart_backend
-    build: 
+    build:
       context: ../../backend/
-      dockerfile: Dockerfile.prod
+      dockerfile: docker/Dockerfile.prod
     image: rti/smart-backend-prod:R_0_0_1
     restart: always
     depends_on:
@@ -28,7 +28,7 @@ services:
     extends:
       file: ../docker-common.yml
       service: smart_frontend
-    build: 
+    build:
       context: ../../frontend/
       dockerfile: Dockerfile.prod
     image: rti/smart-frontend-prod:R_0_0_1
@@ -38,8 +38,8 @@ services:
 
 volumes:
   smart_pgdata:
-    external:
-      name: vol_smart_pgdata
+    external: true
+    name: vol_smart_pgdata
   smart_data:
-    external:
-      name: vol_smart_data
+    external: true
+    name: vol_smart_data

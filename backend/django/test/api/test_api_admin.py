@@ -267,8 +267,10 @@ def test_label_distribution(
         and "Invalid permission. Must be an admin" in response.json()["detail"]
     )
     # at the beginning, should return empty list
-    response = admin_client.get("/api/label_distribution/" + str(project.pk) + "/")
-    assert len(response.json()) == 0
+    response = admin_client.get(
+        "/api/label_distribution/" + str(project.pk) + "/"
+    ).json()[0]["values"]
+    assert len(response) == 0
 
     # have client label three things differently. Check values.
     data = get_assignments(client_profile, project, 3)
@@ -288,24 +290,15 @@ def test_label_distribution(
 
     response = admin_client.get(
         "/api/label_distribution/" + str(project.pk) + "/"
-    ).json()
+    ).json()[0]["values"]
     assert len(response) > 0
 
-    for row in response:
-        temp_dict = row["values"]
-        for label_dict in temp_dict:
-            assert label_dict["x"] in [
-                str(admin_profile),
-                str(client_profile),
-                "test_profile",
-            ]
-            if (
-                label_dict["x"] == str(admin_profile)
-                or label_dict["x"] == "test_profile"
-            ):
-                assert label_dict["y"] == 0
-            else:
-                assert label_dict["y"] == 1
+    for label_dict in response:
+        assert label_dict["x"] in [str(admin_profile), str(client_profile)]
+        if label_dict["x"] == str(admin_profile):
+            assert label_dict["y"] == 0
+        else:
+            assert label_dict["y"] == 3
 
     # Have admin label three things the same. Check values.
     data = get_assignments(admin_profile, project, 3)
@@ -317,34 +310,18 @@ def test_label_distribution(
         "/api/annotate_data/" + str(data[1].pk) + "/",
         {"labelID": test_labels[0].pk, "labeling_time": 3},
     )
-    response = admin_client.post(
-        "/api/annotate_data/" + str(data[2].pk) + "/",
-        {"labelID": test_labels[0].pk, "labeling_time": 3},
-    )
 
     response = admin_client.get(
         "/api/label_distribution/" + str(project.pk) + "/"
-    ).json()
+    ).json()[0]["values"]
     assert len(response) > 0
 
-    for row in response:
-        label = row["key"]
-        temp_dict = row["values"]
-        for label_dict in temp_dict:
-            assert label_dict["x"] in [
-                str(admin_profile),
-                str(client_profile),
-                "test_profile",
-            ]
-            if label_dict["x"] == str(admin_profile):
-                if label == test_labels[0].name:
-                    assert label_dict["y"] == 3
-                else:
-                    assert label_dict["y"] == 0
-            elif label_dict["x"] == "test_profile":
-                assert label_dict["y"] == 0
-            else:
-                assert label_dict["y"] == 1
+    for label_dict in response:
+        assert label_dict["x"] in [str(admin_profile), str(client_profile)]
+        if label_dict["x"] == str(admin_profile):
+            assert label_dict["y"] == 2
+        else:
+            assert label_dict["y"] == 3
 
 
 def test_label_timing(

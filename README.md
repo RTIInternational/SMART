@@ -64,6 +64,14 @@ If your database is blank, you will need to run migrations to initialize all the
 docker-compose run --rm smart_backend ./migrate.sh
 ```
 
+#### Dependency management in Python
+
+We use [pip-tools](https://github.com/jazzband/pip-tools) to manage Python dependencies. To change the dependencies:
+
+1. Edit [requirements.in](./backend/docker/requirements.in) to add, remove, or edit a dependency. You only need to put primary dependencies here, that is, the ones explicitly needed by our source code. pip-tools will take care of adding their dependencies.
+1. Run `docker-compose run --rm smart_backend pip-compile docker/requirements.in` to generate a new [requirements.txt](./backend/docker/requirements.txt). Note that pip-tools uses the existing `requirements.txt` file when building a new one, so that it can maintain existing versions. To upgrade a package to the newest version compatible with the other libraries, just remove it from the existing `requirements.txt` before running pip-compile.
+1. Run `docker-compose build smart_backend` to install the updated requirements into the Docker image.
+
 ### Custom Environment Variables
 
 The various services will be available on your machine at their standard ports, but you can override the port numbers if they conflict with other running services. For example, you don't want to run SMART's instance of Postgres on port 5432 if you already have your own local instance of Postgres running on port 5432. To override a port, create a file named `.env` in the `envs/dev` directory that looks something like this:

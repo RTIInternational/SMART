@@ -391,13 +391,15 @@ def test_label_distribution_inverted(
     )
 
     # at the beginning, should return empty list
-    response = client.get("/api/label_distribution/" + str(project.pk) + "/")
+    response = client.get("/api/label_distribution_inverted/" + str(project.pk) + "/")
     assert (
         "detail" in response.json()
         and "Invalid permission. Must be an admin" in response.json()["detail"]
     )
 
-    response = admin_client.get("/api/label_distribution/" + str(project.pk) + "/")
+    response = admin_client.get(
+        "/api/label_distribution_inverted/" + str(project.pk) + "/"
+    )
     assert len(response.json()) == 0
 
     # have client label three things differently. Check values.
