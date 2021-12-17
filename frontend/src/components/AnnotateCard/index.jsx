@@ -15,7 +15,7 @@ export default function AnnotateCard({ card, labels, onSelectLabel, readonly = f
         <div className="cardface clearfix">
             <div className="cardface-datacard">
                 <CardData card={card} />
-                { !readonly && <SuggestedLabels card={card} labels={labels} /> }
+                { !readonly && <SuggestedLabels card={card} labels={labels} onSelectLabel={onSelectLabel} /> }
             </div>
             
             { !readonly && drawEditOptions(card, labels, onSelectLabel, onSkip, onDiscard) }

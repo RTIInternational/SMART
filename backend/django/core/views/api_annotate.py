@@ -6,6 +6,7 @@ from django.db import transaction
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+from sentence_transformers import SentenceTransformer, util
 
 from core.models import (
     AdminProgress,
@@ -16,6 +17,7 @@ from core.models import (
     IRRLog,
     Label,
     LabelChangeLog,
+    LabelEmbeddings,
     Project,
     Queue,
     RecycleBin,
@@ -32,6 +34,8 @@ from core.utils.utils_annotate import (
 )
 from core.utils.utils_model import check_and_trigger_model
 from core.utils.utils_redis import redis_serialize_data, redis_serialize_set
+
+model = SentenceTransformer("multi-qa-MiniLM-L6-cos-v1")
 
 
 @api_view(["GET"])
@@ -437,18 +441,48 @@ def data_unlabeled_table(request, project_pk):
     for d in unlabeled_data:
         serialized_data = DataSerializer(d, many=False).data
 
-        sorted_similarity_pairs = []
-        for pair in serialized_data["similarityPair"]:
-            sorted_similarity_pairs.append(pair)
         temp = {
             "Text": serialized_data["text"],
             "metadata": serialized_data["metadata"],
-            "similarityPair": serialized_data["similarityPair"],
             "ID": d.id,
         }
         data.append(temp)
 
     return Response({"data": data})
+
+
+@api_view(["GET"])
+@permission_classes((IsAdminOrCreator,))
+def embeddings_comparison(request, project_pk):
+    """This finds the highest scoring labels when comparing cosine similarity scores of
+    their embeddingsfor a given input string.
+
+    Args:
+        input: The input string
+        request: The POST request
+        project_pk: Primary key of the project
+    Returns:
+        data: a list of data information
+    """
+    project = Project.objects.get(pk=project_pk)
+    project_labels = Label.objects.filter(project=project)
+    project_labels_embeddings = list(
+        LabelEmbeddings.objects.filter(label_id__in=project_labels).values_list(
+            "embedding", flat=True
+        )
+    )
+
+    text = request.GET.get("text")
+    text_embedding = model.encode(text)
+
+    cosine_scores = util.pytorch_cos_sim(text_embedding, project_labels_embeddings)
+    values, indices = cosine_scores[0].topk(5)
+
+    suggestions = []
+    for index in indices:
+        suggestions.append(LabelSerializer(project_labels[int(index)]).data)
+
+    return Response({"suggestions": suggestions})
 
 
 @api_view(["GET"])
@@ -478,7 +512,6 @@ def data_admin_table(request, project_pk):
         temp = {
             "Text": serialized_data["text"],
             "metadata": serialized_data["metadata"],
-            "similarityPair": serialized_data["similarityPair"],
             "ID": d.data.id,
             "Reason": reason,
         }
@@ -530,7 +563,6 @@ def recycle_bin_table(request, project_pk):
         temp = {
             "Text": serialized_data["text"],
             "metadata": serialized_data["metadata"],
-            "similarityPair": serialized_data["similarityPair"],
             "ID": d.data.id,
         }
         data.append(temp)
@@ -675,7 +707,6 @@ def get_label_history(request, project_pk):
         temp_dict = {
             "data": serialized_data["text"],
             "metadata": serialized_data["metadata"],
-            "similarityPair": serialized_data["similarityPair"],
             "id": d.data.id,
             "label": d.label.name,
             "labelID": d.label.id,

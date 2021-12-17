@@ -58,6 +58,7 @@ annotate_patterns = [
     re_path(
         r"^data_admin_counts/(?P<project_pk>\d+)/$", api_annotate.data_admin_counts
     ),
+    re_path(r"^embeddings/(?P<project_pk>\d+)/$", api_annotate.embeddings_comparison),
 ]
 
 adminpage_patterns = [

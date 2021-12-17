@@ -10,15 +10,15 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import connection, transaction
 from django.utils import timezone
-from string_grouper import compute_pairwise_similarities
+from sentence_transformers import SentenceTransformer
 
 from core import tasks
 from core.models import (
     Data,
     DataLabel,
-    DataLabelSimilarityPairs,
     IRRLog,
     Label,
+    LabelEmbeddings,
     MetaData,
     MetaDataField,
     Profile,
@@ -98,7 +98,7 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
             batch_size=batch_size,
         )
     transaction.on_commit(
-        lambda: tasks.send_label_similarity_results_task.apply_async(
+        lambda: tasks.send_label_embeddings_task.apply_async(
             kwargs={"project_pk": project.pk}
         )
     )
@@ -231,59 +231,24 @@ def create_metadata_objects_from_csv(df, project):
             )
 
 
-def create_label_similarity_results(project):
-    """Insert data label similarity results into database using bulk_create."""
+def generate_label_embeddings(project):
+    """Create embeddings for each description of label."""
+    model = SentenceTransformer("multi-qa-MiniLM-L6-cos-v1")
 
-    project_data = Data.objects.filter(project=project, similarityPair__isnull=True)
     project_labels = Label.objects.filter(project=project)
-
-    # get the data in dataframe form
-    data_df = pd.DataFrame(list(project_data.values("pk", "text"))).rename(
-        columns={"pk": "data_id"}
+    project_labels_descriptions = list(
+        project_labels.values_list("description", flat=True)
     )
-    res_list = []
-    for label in project_labels:
-        # set up the label series
-        label_string = f"{label.name} {label.description}"
-        label_series = pd.Series(len(data_df) * [label_string])
 
-        # compute the similarity score
-        data_df["similarity_score"] = compute_pairwise_similarities(
-            label_series, data_df["text"]
-        )
-        data_df["label_id"] = label.pk
-        res_list += data_df[["data_id", "label_id", "similarity_score"]].to_dict(
-            "records"
+    embeddings = model.encode(project_labels_descriptions)
+    label_embeddings = []
+
+    for embedding, label in zip(embeddings, project_labels):
+        label_embeddings.append(
+            LabelEmbeddings(embedding=embedding.tolist(), label=label)
         )
 
-    # compare all data with all labels at once
-    res_df = pd.DataFrame(res_list).sort_values(
-        by=["data_id", "similarity_score"], ascending=False
-    )
-    res_df["sim_rank"] = res_df.groupby("data_id")["similarity_score"].rank(
-        method="first", ascending=False
-    )
-
-    # rank the results, and drop all but the top 5 for each data
-    res_df = res_df.loc[res_df["sim_rank"] <= 5]
-
-    stream = StringIO()
-    res_df.to_csv(
-        stream,
-        sep="\t",
-        header=False,
-        index=False,
-        columns=["data_id", "label_id", "similarity_score"],
-    )
-    stream.seek(0)
-    with connection.cursor() as c:
-        c.copy_from(
-            stream,
-            DataLabelSimilarityPairs._meta.db_table,
-            sep="\t",
-            null="",
-            columns=["data_id", "label_id", "similarity_score"],
-        )
+    LabelEmbeddings.objects.bulk_create(label_embeddings)
 
 
 def add_data(project, df):

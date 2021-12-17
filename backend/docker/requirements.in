@@ -15,6 +15,7 @@ openpyxl
 pandas
 redis==3.5.3
 scikit-learn==0.24.1
+sentence_transformers==2.1.0
 statsmodels
 string-grouper
 xlrd
