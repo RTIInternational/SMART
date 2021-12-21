@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { fetchSuggestions } from '../../actions/card';
 
 export default function SuggestedLabels({ card, labels, onSelectLabel }) {
     const [suggestions, setSuggestions] = useState();
