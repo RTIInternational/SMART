@@ -102,6 +102,8 @@ filelock==3.4.0
     # via virtualenv
 flake8==4.0.1
     # via -r docker/requirements.in
+greenlet==1.1.2
+    # via sqlalchemy
 identify==2.3.6
     # via pre-commit
 idna==3.3
@@ -181,6 +183,8 @@ pyjwt[crypto]==1.7.1
     # via
     #   django-allauth
     #   djangorestframework-jwt
+pyodbc==4.0.32
+    # via -r docker/requirements.in
 pyparsing==2.4.7
     # via packaging
 pytest==6.2.5
@@ -231,6 +235,8 @@ six==1.16.0
     #   virtualenv
 sparse-dot-topn-for-blocks==0.3.1.post3
     # via string-grouper
+sqlalchemy==1.4.28
+    # via -r docker/requirements.in
 sqlparse==0.4.2
     # via django
 statsmodels==0.13.1
