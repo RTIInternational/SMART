@@ -1,7 +1,7 @@
 amqp==5.0.6
 billiard==3.6.4.0
 black==21.6b0
-celery==5.0.5
+celery==5.2.2
 certifi==2020.12.5
 chardet==4.0.0
 click==7.1.2
