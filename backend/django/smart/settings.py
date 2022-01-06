@@ -169,6 +169,7 @@ class Dev(Configuration):
     MODEL_PICKLE_PATH = os.path.join(DATA_DIR, "model_pickles")
     PROJECT_FILE_PATH = os.path.join(DATA_DIR, "data_files")
     CODEBOOK_FILE_PATH = os.path.join(DATA_DIR, "code_books")
+    ENV_FILE_PATH = os.path.join(DATA_DIR, "external_db")
 
     AUTH_USER_MODEL = "auth.User"
 

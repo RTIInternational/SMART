@@ -13,5 +13,5 @@ WORKDIR /code
 ADD ./docker/requirements.txt /code/requirements.txt
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
-RUN mkdir -p /data/data_files /data/tf_idf /data/model_pickles /data/code_books
+RUN mkdir -p /data/data_files /data/tf_idf /data/model_pickles /data/code_books /data/external_db
 EXPOSE 8000

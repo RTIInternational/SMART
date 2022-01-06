@@ -9,13 +9,12 @@ from django.forms.widgets import RadioSelect, Select, Textarea, TextInput
 from pandas.errors import ParserError
 
 from core.utils.util import md5_hash
+from core.utils.utils_external_db import get_connection, get_full_table, test_connection
 
-from .models import Label, Project, ProjectPermissions
+from .models import ExternalDatabase, Label, Project, ProjectPermissions
 
 
-def clean_data_helper(
-    data, supplied_labels, dedup_on, dedup_fields, metadata_fields=None
-):
+def read_data_file(data_file):
     ALLOWED_TYPES = [
         "text/csv",
         "text/tab-separated-values",
@@ -27,43 +26,42 @@ def clean_data_helper(
         "application/vnd.ms-excel.addin.macroenabled.12",
         "application/vnd.ms-excel.sheet.binary.macroenabled.12",
     ]
-    REQUIRED_HEADERS = ["Text", "Label"]
     MAX_FILE_SIZE = 500 * 1000 * 1000
 
-    if data.size > MAX_FILE_SIZE:
+    if data_file.size > MAX_FILE_SIZE:
         raise ValidationError(
             "File is too large.  Received {0} but max size is {1}.".format(
-                data.size, MAX_FILE_SIZE
+                data_file.size, MAX_FILE_SIZE
             )
         )
 
     try:
-        if data.content_type == "text/tab-separated-values":
+        if data_file.content_type == "text/tab-separated-values":
             data = pd.read_csv(
-                StringIO(data.read().decode("utf8", "ignore")),
+                StringIO(data_file.read().decode("utf8", "ignore")),
                 sep="\t",
                 dtype=str,
             ).dropna(axis=0, how="all")
-        elif data.content_type == "text/csv":
+        elif data_file.content_type == "text/csv":
             data = pd.read_csv(
-                StringIO(data.read().decode("utf8", "ignore")),
+                StringIO(data_file.read().decode("utf8", "ignore")),
                 dtype=str,
             ).dropna(axis=0, how="all")
-        elif data.content_type.startswith("application/vnd") and data.name.endswith(
-            ".csv"
-        ):
+        elif data_file.content_type.startswith(
+            "application/vnd"
+        ) and data.name.endswith(".csv"):
             data = pd.read_csv(
-                StringIO(data.read().decode("utf8", "ignore")),
+                StringIO(data_file.read().decode("utf8", "ignore")),
                 dtype=str,
             ).dropna(axis=0, how="all")
-        elif data.content_type.startswith("application/vnd") and data.name.endswith(
-            ".xlsx"
-        ):
-            data = pd.read_excel(data, dtype=str).dropna(axis=0, how="all")
+        elif data_file.content_type.startswith(
+            "application/vnd"
+        ) and data.name.endswith(".xlsx"):
+            data = pd.read_excel(data_file, dtype=str).dropna(axis=0, how="all")
         else:
             raise ValidationError(
                 "File type is not supported.  Received {0} but only {1} are supported.".format(
-                    data.content_type, ", ".join(ALLOWED_TYPES)
+                    data_file.content_type, ", ".join(ALLOWED_TYPES)
                 )
             )
     except ParserError:
@@ -76,16 +74,30 @@ def clean_data_helper(
         raise ValidationError(
             "Unable to read the file.  Please ensure that the file is encoded in UTF-8."
         )
+    return data
 
-    for col in REQUIRED_HEADERS:
-        if col not in data.columns:
-            raise ValidationError(f"File is missing required field {col}.")
+
+def clean_data_helper(
+    data, supplied_labels, dedup_on, dedup_fields, metadata_fields=None
+):
+
+    # correct for differences in capitalization
+    for col in data.columns:
+        for field, field_lower in zip(["Text", "Label", "ID"], ["text", "label", "id"]):
+            if col != field and col == field_lower:
+                data.rename(columns={col: field}, inplace=True)
+
+    if "Text" not in data.columns:
+        raise ValidationError("Data is missing required field 'Text'.")
+
+    if "Label" not in data.columns:
+        data["Label"] = None
 
     if len(data) < 1:
-        raise ValidationError("File should contain some data.")
+        raise ValidationError("Data is empty.")
 
     found_metadata_fields = [
-        c for c in data.columns if c.lower() not in ["text", "label", "id"]
+        c for c in data.columns if c not in ["Text", "Label", "ID"]
     ]
 
     # this option is only true if we're adding data to an existing project
@@ -193,8 +205,9 @@ class ProjectUpdateForm(forms.ModelForm):
         dedup_fields = self.dedup_fields
         cb_data = self.cleaned_data.get("cb_data", False)
         if data:
+            data_df = read_data_file(data)
             return clean_data_helper(
-                data, labels, dedup_on, dedup_fields, metadata_fields
+                data_df, labels, dedup_on, dedup_fields, metadata_fields
             )
         if cb_data:
             return cleanCodebookDataHelper(cb_data)
@@ -355,7 +368,17 @@ class DataWizardForm(forms.ModelForm):
         model = Project
         fields = ["dedup_on", "dedup_fields"]
 
-    data = forms.FileField()
+    data_source = forms.ChoiceField(
+        widget=RadioSelect(),
+        choices=(
+            ("File_Upload", "File Upload"),
+            ("Database_Ingest", "Connect to Database and Import Table"),
+        ),
+        initial="File_Upload",
+        required=True,
+    )
+
+    data = forms.FileField(required=False)
 
     dedup_on = forms.ChoiceField(
         widget=RadioSelect(),
@@ -368,18 +391,34 @@ class DataWizardForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         self.supplied_labels = kwargs.pop("labels", None)
+        self.engine_database = kwargs.pop("engine_database", None)
+        self.ingest_schema = kwargs.pop("ingest_schema", None)
+        self.ingest_table_name = kwargs.pop("ingest_table_name", None)
         super(DataWizardForm, self).__init__(*args, **kwargs)
 
-    def clean_data(self):
-        data = self.cleaned_data.get("data", False)
+    def clean(self):
+        data_source = self.cleaned_data.get("data_source", False)
+        if data_source == "File_Upload":
+            data_df = read_data_file(self.cleaned_data.get("data", False))
+        elif data_source == "Database_Ingest":
+            data_df = get_full_table(
+                self.engine_database, self.ingest_schema, self.ingest_table_name
+            )
+        else:
+            raise ValidationError(
+                f"Unrecognized value for data source type: {data_source}"
+            )
+
         dedup_on = self.cleaned_data.get("dedup_on", False)
         dedup_fields = ""
         if dedup_on == "Text_Some_Metadata":
             dedup_fields = self.cleaned_data.get("dedup_fields", False)
 
         labels = self.supplied_labels
-
-        return clean_data_helper(data, labels, dedup_on, dedup_fields)
+        self.cleaned_data["data"] = clean_data_helper(
+            data_df, labels, dedup_on, dedup_fields
+        )
+        return self.cleaned_data
 
 
 class DataUpdateWizardForm(forms.Form):
@@ -418,3 +457,71 @@ class CodeBookWizardForm(forms.Form):
             return cleanCodebookDataHelper(data)
         else:
             return ""
+
+
+class ExternalDatabaseWizardForm(forms.ModelForm):
+    class Meta:
+        model = ExternalDatabase
+        fields = ["database_type", "ingest_schema", "ingest_table_name"]
+
+    database_type = forms.ChoiceField(
+        widget=RadioSelect(),
+        choices=ExternalDatabase.DB_TYPE_CHOICES,
+        initial="none",
+        required=True,
+    )
+    ingest_table_name = forms.CharField(initial="", required=False, max_length=50)
+    ingest_schema = forms.CharField(initial="", required=False, max_length=50)
+    username = forms.CharField(initial="", required=False, max_length=50)
+    password = forms.CharField(
+        initial="", required=False, max_length=200, widget=forms.PasswordInput()
+    )
+    host = forms.CharField(initial="", required=False, max_length=50)
+    port = forms.IntegerField(required=False)
+    dbname = forms.CharField(initial="", required=False, max_length=50)
+    driver = forms.CharField(
+        initial="ODBC Driver 17 for SQL Server", required=False, max_length=200
+    )
+
+    def __init__(self, *args, **kwargs):
+        super(ExternalDatabaseWizardForm, self).__init__(*args, **kwargs)
+
+    def clean(self):
+        required_for_all_db = [
+            "ingest_table_name",
+            "ingest_schema",
+            "username",
+            "password",
+            "host",
+            "port",
+            "dbname",
+        ]
+        required_for_ms_sql = ["driver"]
+        db_type = self.cleaned_data.get("database_type")
+
+        field_error = False
+        if db_type != "none":
+            for field in required_for_all_db:
+                if self.cleaned_data.get(field) in ["", None]:
+                    self._errors[field] = self.error_class(
+                        ["This field is required for a database connection."]
+                    )
+                    field_error = True
+            if db_type == "microsoft":
+                for field in required_for_ms_sql:
+                    if self.cleaned_data.get(field) in ["", None]:
+                        self._errors[field] = self.error_class(
+                            ["This field is required for a MS SQL database connection."]
+                        )
+                        field_error = True
+            if field_error:
+                raise ValidationError("Please fix field errors before resubmitting.")
+
+            engine_database = get_connection(db_type, self.cleaned_data)
+            test_connection(
+                engine_database,
+                self.cleaned_data["ingest_schema"],
+                self.cleaned_data["ingest_table_name"],
+            )
+
+            self.cleaned_data["engine_database"] = engine_database

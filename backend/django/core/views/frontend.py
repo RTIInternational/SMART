@@ -16,15 +16,23 @@ from core.forms import (
     CodeBookWizardForm,
     DataUpdateWizardForm,
     DataWizardForm,
+    ExternalDatabaseWizardForm,
     LabelDescriptionFormSet,
     LabelFormSet,
     PermissionsFormSet,
     ProjectUpdateOverviewForm,
     ProjectWizardForm,
 )
-from core.models import Data, Label, MetaDataField, Project, TrainingSet
+from core.models import (
+    Data,
+    ExternalDatabase,
+    Label,
+    MetaDataField,
+    Project,
+    TrainingSet,
+)
 from core.templatetags import project_extras
-from core.utils.util import save_codebook_file, upload_data
+from core.utils.util import save_codebook_file, save_external_db_file, upload_data
 from core.utils.utils_annotate import batch_unassign
 from core.utils.utils_queue import add_queue, find_queue_length
 
@@ -125,6 +133,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         ("permissions", PermissionsFormSet),
         ("advanced", AdvancedWizardForm),
         ("codebook", CodeBookWizardForm),
+        ("external", ExternalDatabaseWizardForm),
         ("data", DataWizardForm),
     ]
     template_list = {
@@ -133,6 +142,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         "permissions": "projects/create/create_wizard_permissions.html",
         "advanced": "projects/create/create_wizard_advanced.html",
         "codebook": "projects/create/create_wizard_codebook.html",
+        "external": "projects/create/create_wizard_external_db.html",
         "data": "projects/create/create_wizard_data.html",
     }
 
@@ -147,6 +157,14 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
                 if "name" in label.keys():
                     temp.append(label["name"])
             kwargs["labels"] = temp
+            external_data = self.get_cleaned_data_for_step("external")
+            if "engine_database" in external_data:
+                kwargs["engine_database"] = external_data["engine_database"]
+                kwargs["ingest_table_name"] = external_data["ingest_table_name"]
+                kwargs["ingest_schema"] = external_data["ingest_schema"]
+            else:
+                kwargs["engine_database"] = None
+
         return kwargs
 
     def get_form_kwargs_special(self, step=None):
@@ -213,6 +231,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         labels = form_dict["labels"]
         permissions = form_dict["permissions"]
         advanced = form_dict["advanced"]
+        external = form_dict["external"]
         data = form_dict["data"]
         codebook_data = form_dict["codebook"]
 
@@ -233,6 +252,26 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             else:
                 cb_filepath = ""
             proj_obj.codebook_file = cb_filepath
+
+            external_data = external.cleaned_data
+            if external_data["database_type"] != "none":
+                connection_dict = {
+                    k: v
+                    for k, v in external_data.items()
+                    if k in ["username", "password", "host", "port", "dbname", "driver"]
+                }
+                external_file = save_external_db_file(connection_dict, proj_pk)
+                ExternalDatabase.objects.create(
+                    project=proj_obj,
+                    env_file=external_file,
+                    database_type=external_data["database_type"],
+                    has_ingest=True,
+                    ingest_schema=external_data["ingest_schema"],
+                    ingest_table_name=external_data["ingest_table_name"],
+                )
+
+            raise ValueError("NOPE!")
+
             if advanced_data["batch_size"] == 0:
                 batch_size = 10 * len(
                     [
