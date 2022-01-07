@@ -126,7 +126,7 @@ mypy-extensions==0.4.3
     # via black
 nodeenv==1.6.0
     # via pre-commit
-numpy==1.21.4
+numpy==1.22.0
     # via
     #   pandas
     #   patsy
