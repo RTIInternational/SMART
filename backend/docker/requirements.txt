@@ -16,7 +16,7 @@ billiard==3.6.4.0
     # via celery
 black==21.11b1
     # via -r docker/requirements.in
-celery==5.2.1
+celery==5.2.2
     # via
     #   -r docker/requirements.in
     #   django-celery-results
