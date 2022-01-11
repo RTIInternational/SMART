@@ -5,6 +5,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from sentence_transformers import SentenceTransformer, util
 
@@ -451,6 +452,23 @@ def data_unlabeled_table(request, project_pk):
     return Response({"data": data})
 
 
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def embeddings_calculations(request):
+    """This calculates embeddings for a given array of strings.
+
+    Args:
+        strings: The array of strings
+        request: The POST request
+    Returns:
+        data: a list of data information
+    """
+
+    embeddings = model.encode(request.data["strings"])
+
+    return Response(embeddings)
+
+
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))
 def embeddings_comparison(request, project_pk):
@@ -458,8 +476,8 @@ def embeddings_comparison(request, project_pk):
     their embeddingsfor a given input string.
 
     Args:
-        input: The input string
-        request: The POST request
+        text: The input string
+        request: The GET request
         project_pk: Primary key of the project
     Returns:
         data: a list of data information

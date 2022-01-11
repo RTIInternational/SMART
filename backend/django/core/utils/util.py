@@ -5,12 +5,12 @@ from itertools import combinations
 
 import numpy as np
 import pandas as pd
+import requests
 from celery import chord
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import connection, transaction
 from django.utils import timezone
-from sentence_transformers import SentenceTransformer
 
 from core import tasks
 from core.models import (
@@ -233,20 +233,22 @@ def create_metadata_objects_from_csv(df, project):
 
 def generate_label_embeddings(project):
     """Create embeddings for each description of label."""
-    model = SentenceTransformer("multi-qa-MiniLM-L6-cos-v1")
 
     project_labels = Label.objects.filter(project=project)
     project_labels_descriptions = list(
         project_labels.values_list("description", flat=True)
     )
 
-    embeddings = model.encode(project_labels_descriptions)
+    embeddings_request = requests.post(
+        "http://backend:8000/api/embeddings_calculations",
+        json={"strings": project_labels_descriptions},
+    )
+    embeddings = embeddings_request.json()
+
     label_embeddings = []
 
     for embedding, label in zip(embeddings, project_labels):
-        label_embeddings.append(
-            LabelEmbeddings(embedding=embedding.tolist(), label=label)
-        )
+        label_embeddings.append(LabelEmbeddings(embedding=embedding, label=label))
 
     LabelEmbeddings.objects.bulk_create(label_embeddings)
 

@@ -4,7 +4,7 @@ export default function SuggestedLabels({ card, labels, onSelectLabel }) {
     const [suggestions, setSuggestions] = useState();
 
     useEffect(() => {
-        fetch(`/api/embeddings/${card.text.project}?text=${card.text.text}`)
+        fetch(`/api/comparisons/${card.text.project}?text=${card.text.text}`)
             .then(res => res.json().then(result => setSuggestions(result)));
     }, []);
 
