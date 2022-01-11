@@ -240,7 +240,7 @@ def generate_label_embeddings(project):
     )
 
     embeddings_request = requests.post(
-        "http://backend:8000/api/embeddings_calculations",
+        "http://backend:8000/api/embeddings",
         json={"strings": project_labels_descriptions},
     )
     embeddings = embeddings_request.json()
