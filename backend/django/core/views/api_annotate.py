@@ -36,7 +36,9 @@ from core.utils.utils_annotate import (
 from core.utils.utils_model import check_and_trigger_model
 from core.utils.utils_redis import redis_serialize_data, redis_serialize_set
 
-model = SentenceTransformer("multi-qa-MiniLM-L6-cos-v1")
+# Model can be found here: https://www.sbert.net/docs/pretrained_models.html
+# Model Card: https://huggingface.co/sentence-transformers/multi-qa-mpnet-base-dot-v1
+embeddings_model = SentenceTransformer("multi-qa-MiniLM-L6-cos-v1")
 
 
 @api_view(["GET"])
@@ -464,7 +466,7 @@ def embeddings_calculations(request):
         data: a list of data information
     """
 
-    embeddings = model.encode(request.data["strings"])
+    embeddings = embeddings_model.encode(request.data["strings"])
 
     return Response(embeddings)
 
@@ -491,7 +493,7 @@ def embeddings_comparison(request, project_pk):
     )
 
     text = request.GET.get("text")
-    text_embedding = model.encode(text)
+    text_embedding = embeddings_model.encode(text)
 
     cosine_scores = util.pytorch_cos_sim(text_embedding, project_labels_embeddings)
     values, indices = cosine_scores[0].topk(5)
