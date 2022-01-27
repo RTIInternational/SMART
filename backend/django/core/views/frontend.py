@@ -270,8 +270,6 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
                     ingest_table_name=external_data["ingest_table_name"],
                 )
 
-            raise ValueError("NOPE!")
-
             if advanced_data["batch_size"] == 0:
                 batch_size = 10 * len(
                     [

@@ -11,7 +11,6 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import connection, transaction
 from django.utils import timezone
-from string_grouper import compute_pairwise_similarities
 
 from core import tasks
 from core.models import (
@@ -28,6 +27,9 @@ from core.models import (
     TrainingSet,
 )
 from core.utils.utils_queue import fill_queue
+
+# from string_grouper import compute_pairwise_similarities
+
 
 # https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
 # Disable warning for false positive warning that should only trigger on chained assignment
@@ -245,13 +247,13 @@ def create_label_similarity_results(project):
     res_list = []
     for label in project_labels:
         # set up the label series
-        label_string = f"{label.name} {label.description}"
-        label_series = pd.Series(len(data_df) * [label_string])
+        # label_string = f"{label.name} {label.description}"
+        # label_series = pd.Series(len(data_df) * [label_string])
 
         # compute the similarity score
-        data_df["similarity_score"] = compute_pairwise_similarities(
-            label_series, data_df["text"]
-        )
+        data_df[
+            "similarity_score"
+        ] = 1  # compute_pairwise_similarities(label_series, data_df["text"])
         data_df["label_id"] = label.pk
         res_list += data_df[["data_id", "label_id", "similarity_score"]].to_dict(
             "records"
