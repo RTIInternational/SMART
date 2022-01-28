@@ -7,10 +7,17 @@ import zipfile
 from django.conf import settings
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
 
-from core.models import Project
+from core.models import ExternalDatabase, Project
 from core.permissions import IsAdminOrCreator
+from core.templatetags import project_extras
 from core.utils.util import get_labeled_data
+from core.utils.utils_external_db import (
+    get_connection,
+    get_full_table,
+    load_external_db_file,
+)
 
 
 @api_view(["GET"])
@@ -130,3 +137,52 @@ def download_model(request, project_pk):
     response["Content-Disposition"] = "attachment;"
 
     return response
+
+
+@api_view(["POST"])
+@permission_classes((IsAdminOrCreator,))
+def import_database_table(request, project_pk):
+    """This function imports all data from an existing database connection.
+
+    Args:
+        request: The POST request
+        project_pk: Primary key of the project
+    Returns:
+        {}
+    """
+    response = {}
+    profile = request.user.profile
+    project = Project.objects.get(pk=project_pk)
+
+    # Make sure coder is an admin
+    if project_extras.proj_permission_level(project, profile) > 1:
+
+        if not project.externaldatabase.exists():
+            response["error"] = "Project does not have a database connection."
+        else:
+            # check that the project has a database connection and ingest tables
+            connection_dict = load_external_db_file(project_pk)
+            external_db = ExternalDatabase.objects.get(project=project)
+
+            if not external_db.has_ingest:
+                response["error"] = "Project does not have ingest connections set up."
+            else:
+                # pull the ingest table
+                try:
+                    engine_database = get_connection(
+                        external_db.database_type, connection_dict
+                    )
+
+                    # add the ingest table to SMART data
+                    data = get_full_table(
+                        engine_database,
+                        external_db.ingest_schema,
+                        external_db.ingest_table_name,
+                    )
+                    print(data)
+                except Exception as e:
+                    response["error"] = str(e)
+    else:
+        response["error"] = "Invalid credentials. Must be an admin."
+
+    return Response(response)

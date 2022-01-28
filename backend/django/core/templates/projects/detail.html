@@ -116,6 +116,12 @@
           <div id="settings-panel" class="panel-collapse collapse show">
             <div class="panel-body">
               <ul class="list-group-flush">
+                {% if project.externaldatabase.exists %}
+                <li class="list-group-item">
+                  <dt>Database connection:</dt>
+                  <dd>Ingest Table: {{ project.get_ingest_database }}</dd>
+                </li>
+                {% endif %}
                 {% if project.classifier != None %}
                 <li class="list-group-item">
                   <dt>Classifier</dt>
@@ -243,6 +249,11 @@
             <a class="btn btn-primary" href="{% url 'projects:project_admin' project.pk %}" role="button">
               Admin Page
             </a>
+            {% if project.get_ingest_database != "" %}
+            <a class="btn btn-primary" id="ingest_datatable_button">
+              Ingest new data from Database
+            </a>
+            {% endif %}
           {% if project.has_model %}
             <a class="btn btn-primary" id="download_model_btn">Download Model and Labeled Data</a>
           {% else %}
@@ -311,6 +322,18 @@ $('#download_btn').on('click', function() {
   xhttp.responseType = 'blob';
   xhttp.send();
 });
+
+/*
+ *  When the ingest datatable button is pressed, SMART pulls the entire
+ *  database table and tries to load it in as data
+ */
+$('#ingest_datatable_button').on('click', function() {
+  $.ajax({
+    method: "POST",
+    url: '/api/import_database_table/' + {{ project.pk }} + '/'
+  })
+});
+
 
 $(document).ready(function() {
   $.ajax({

@@ -109,6 +109,13 @@ class Project(models.Model):
         else:
             return False
 
+    def get_ingest_database(self):
+        if self.externaldatabase.exists() and self.externaldatabase.get().has_ingest:
+            ex_db = self.externaldatabase.get()
+            return f"{ex_db.ingest_schema}.{ex_db.ingest_table_name}"
+        else:
+            return ""
+
 
 class ProjectPermissions(models.Model):
     class Meta:

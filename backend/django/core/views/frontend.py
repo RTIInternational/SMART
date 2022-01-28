@@ -32,8 +32,9 @@ from core.models import (
     TrainingSet,
 )
 from core.templatetags import project_extras
-from core.utils.util import save_codebook_file, save_external_db_file, upload_data
+from core.utils.util import save_codebook_file, upload_data
 from core.utils.utils_annotate import batch_unassign
+from core.utils.utils_external_db import save_external_db_file
 from core.utils.utils_queue import add_queue, find_queue_length
 
 

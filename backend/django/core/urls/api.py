@@ -79,6 +79,7 @@ urlpatterns = [
     # re_path(r"^progressbarupload/", include("progressbarupload.urls")),
     re_path(r"^download_data/(?P<project_pk>\d+)/$", api.download_data),
     re_path(r"^download_model/(?P<project_pk>\d+)/$", api.download_model),
+    re_path(r"^import_database_table/(?P<project_pk>\d+)/$", api.import_database_table),
     re_path(r"^", include(annotate_patterns)),
     re_path(r"^", include(adminpage_patterns)),
 ]
