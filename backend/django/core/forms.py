@@ -433,7 +433,7 @@ class DataUpdateWizardForm(forms.Form):
         super(DataUpdateWizardForm, self).__init__(*args, **kwargs)
 
     def clean_data(self):
-        data = self.cleaned_data.get("data", False)
+        data_df = read_data_file(self.cleaned_data.get("data", False))
         dedup_on = self.dedup_on
         dedup_fields = ""
         if dedup_on == "Text_Some_Metadata":
@@ -442,7 +442,7 @@ class DataUpdateWizardForm(forms.Form):
         labels = self.supplied_labels
         metadata = self.supplied_metadata
 
-        return clean_data_helper(data, labels, dedup_on, dedup_fields, metadata)
+        return clean_data_helper(data_df, labels, dedup_on, dedup_fields, metadata)
 
 
 class CodeBookWizardForm(forms.Form):

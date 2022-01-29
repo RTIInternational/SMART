@@ -6,13 +6,15 @@ import zipfile
 
 from django.conf import settings
 from django.http import HttpResponse
+from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
-from core.models import ExternalDatabase, Project
+from core.forms import clean_data_helper
+from core.models import ExternalDatabase, Label, MetaDataField, Project
 from core.permissions import IsAdminOrCreator
 from core.templatetags import project_extras
-from core.utils.util import get_labeled_data
+from core.utils.util import get_labeled_data, upload_data
 from core.utils.utils_external_db import (
     get_connection,
     get_full_table,
@@ -173,16 +175,33 @@ def import_database_table(request, project_pk):
                         external_db.database_type, connection_dict
                     )
 
-                    # add the ingest table to SMART data
+                    # pull the full database table
                     data = get_full_table(
                         engine_database,
                         external_db.ingest_schema,
                         external_db.ingest_table_name,
                     )
-                    print(data)
+                    # clean it using the form validation tool
+                    cleaned_data = clean_data_helper(
+                        data,
+                        Label.objects.filter(project=project).values_list(
+                            "name", flat=True
+                        ),
+                        project.dedup_on,
+                        project.dedup_fields,
+                        MetaDataField.objects.filter(project=project).values_list(
+                            "field_name", flat=True
+                        ),
+                    )
+                    # add the data to the project
+                    upload_data(cleaned_data, project, batch_size=project.batch_size)
                 except Exception as e:
+                    # return errors in the validation tool
                     response["error"] = str(e)
     else:
         response["error"] = "Invalid credentials. Must be an admin."
+
+    if "error" in response.keys():
+        return Response(response, status=status.HTTP_404_NOT_FOUND)
 
     return Response(response)

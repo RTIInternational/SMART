@@ -331,7 +331,9 @@ $('#ingest_datatable_button').on('click', function() {
   $.ajax({
     method: "POST",
     url: '/api/import_database_table/' + {{ project.pk }} + '/'
-  })
+  }).fail(function(response) {
+    console.log('Error: ' + response.responseText);
+  });
 });
 
 
