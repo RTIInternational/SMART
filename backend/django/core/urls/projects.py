@@ -42,6 +42,11 @@ urlpatterns = [
         name="project_update_codebook",
     ),
     re_path(
+        r"^projects/(?P<pk>\d+)/update/external_db/$",
+        frontend.ProjectUpdateExternalDB.as_view(),
+        name="project_update_external_db",
+    ),
+    re_path(
         r"^projects/(?P<pk>\d+)/update/permissions/$",
         frontend.ProjectUpdatePermissions.as_view(),
         name="project_update_permissions",

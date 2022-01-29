@@ -119,6 +119,7 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
                     tasks.send_check_and_trigger_model_task.si(project.pk),
                 ).apply_async()
             )
+    return len(new_df)
 
 
 def create_data_from_csv(df, project):

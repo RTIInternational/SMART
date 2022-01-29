@@ -330,9 +330,12 @@ $('#download_btn').on('click', function() {
 $('#ingest_datatable_button').on('click', function() {
   $.ajax({
     method: "POST",
-    url: '/api/import_database_table/' + {{ project.pk }} + '/'
+    url: '/api/import_database_table/' + {{ project.pk }} + '/',
+    success: function (response) {
+      alert("Datatable successfully imported. New data added: "+ response.num_added);
+    }
   }).fail(function(response) {
-    console.log('Error: ' + response.responseText);
+    alert('Error: datatable import failed with error ' + response.responseText);
   });
 });
 

@@ -34,7 +34,7 @@ from core.models import (
 from core.templatetags import project_extras
 from core.utils.util import save_codebook_file, upload_data
 from core.utils.utils_annotate import batch_unassign
-from core.utils.utils_external_db import save_external_db_file
+from core.utils.utils_external_db import delete_external_db_file, save_external_db_file
 from core.utils.utils_queue import add_queue, find_queue_length
 
 
@@ -498,6 +498,78 @@ class ProjectUpdateCodebook(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
                     cb_filepath = save_codebook_file(cb_data, self.object.pk)
                     self.object.codebook_file = cb_filepath
                     self.object.save()
+
+                return redirect(self.get_success_url())
+        else:
+            return self.render_to_response(context)
+
+
+class ProjectUpdateExternalDB(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    model = Project
+    form_class = ExternalDatabaseWizardForm
+    template_name = "projects/update/external_db.html"
+    permission_denied_message = (
+        "You must be an Admin or Project Creator to access the Project Update page."
+    )
+    raise_exception = True
+
+    def test_func(self):
+        project = Project.objects.get(pk=self.kwargs["pk"])
+
+        return (
+            project_extras.proj_permission_level(project, self.request.user.profile)
+            >= 2
+        )
+
+    def get_form_kwargs(self):
+        form_kwargs = super(ProjectUpdateExternalDB, self).get_form_kwargs()
+
+        del form_kwargs["instance"]
+
+        return form_kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super(ProjectUpdateExternalDB, self).get_context_data(**kwargs)
+        project = Project.objects.get(pk=self.kwargs["pk"])
+        context["database_exists"] = project.externaldatabase.exists()
+        if context["database_exists"]:
+            exdb = ExternalDatabase.objects.get(project=project)
+            context["database_type"] = exdb.database_type
+            context["ingest_table_name"] = exdb.ingest_table_name
+            context["ingest_schema"] = exdb.ingest_schema
+
+        return context
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        project = context["project"]
+        if form.is_valid():
+            with transaction.atomic():
+                external_data = form.cleaned_data
+
+                # either create or update existing external database connection
+                if external_data["database_type"] != "none":
+                    connection_dict = {
+                        k: v
+                        for k, v in external_data.items()
+                        if k
+                        in ["username", "password", "host", "port", "dbname", "driver"]
+                    }
+                    external_file = save_external_db_file(connection_dict, project.pk)
+                    ExternalDatabase.objects.update_or_create(
+                        project=project,
+                        env_file=external_file,
+                        database_type=external_data["database_type"],
+                        has_ingest=True,
+                        ingest_schema=external_data["ingest_schema"],
+                        ingest_table_name=external_data["ingest_table_name"],
+                    )
+                elif self.object.externaldatabase.exists():
+                    # remove existing database connection
+                    ExternalDatabase.objects.get(project=project).delete()
+
+                    # delete credential file
+                    delete_external_db_file(project.pk)
 
                 return redirect(self.get_success_url())
         else:

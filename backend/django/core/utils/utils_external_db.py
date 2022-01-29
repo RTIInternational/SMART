@@ -68,3 +68,10 @@ def load_external_db_file(project_pk):
     with open(fpath, "r") as inputFile:
         connection_dict = json.load(inputFile)
     return connection_dict
+
+
+def delete_external_db_file(project_pk):
+    """Given the project id, delete the external db file."""
+    file_name = "project_" + str(project_pk) + "_db_connection.json"
+    fpath = os.path.join(settings.ENV_FILE_PATH, file_name)
+    os.remove(fpath)

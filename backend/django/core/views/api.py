@@ -194,7 +194,10 @@ def import_database_table(request, project_pk):
                         ),
                     )
                     # add the data to the project
-                    upload_data(cleaned_data, project, batch_size=project.batch_size)
+                    num_added = upload_data(
+                        cleaned_data, project, batch_size=project.batch_size
+                    )
+                    response["num_added"] = num_added
                 except Exception as e:
                     # return errors in the validation tool
                     response["error"] = str(e)
