@@ -109,10 +109,12 @@ class Project(models.Model):
         else:
             return False
 
+    def has_database_connection(self):
+        return self.externaldatabase.env_file != ""
+
     def get_ingest_database(self):
-        if self.externaldatabase.exists() and self.externaldatabase.get().has_ingest:
-            ex_db = self.externaldatabase.get()
-            return f"{ex_db.ingest_schema}.{ex_db.ingest_table_name}"
+        if self.externaldatabase.has_ingest:
+            return f"{self.externaldatabase.ingest_schema}.{self.externaldatabase.ingest_table_name}"
         else:
             return ""
 
@@ -180,7 +182,7 @@ class MetaData(models.Model):
 
 
 class ExternalDatabase(models.Model):
-    project = models.ForeignKey(
+    project = models.OneToOneField(
         "Project", related_name="externaldatabase", on_delete=models.CASCADE
     )
     env_file = models.TextField()

@@ -238,6 +238,8 @@ def create_label_similarity_results(project):
     """Insert data label similarity results into database using bulk_create."""
 
     project_data = Data.objects.filter(project=project, similarityPair__isnull=True)
+    if project_data.count() == 0:
+        return
     project_labels = Label.objects.filter(project=project)
 
     # get the data in dataframe form

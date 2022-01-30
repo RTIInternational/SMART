@@ -159,7 +159,7 @@ def import_database_table(request, project_pk):
     # Make sure coder is an admin
     if project_extras.proj_permission_level(project, profile) > 1:
 
-        if not project.externaldatabase.exists():
+        if not project.has_database_connection():
             response["error"] = "Project does not have a database connection."
         else:
             # check that the project has a database connection and ingest tables

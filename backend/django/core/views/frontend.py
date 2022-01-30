@@ -270,6 +270,11 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
                     ingest_schema=external_data["ingest_schema"],
                     ingest_table_name=external_data["ingest_table_name"],
                 )
+            else:
+                # Create an empty database object
+                ExternalDatabase.objects.create(
+                    project=proj_obj, env_file="", database_type="none"
+                )
 
             if advanced_data["batch_size"] == 0:
                 batch_size = 10 * len(
@@ -505,7 +510,7 @@ class ProjectUpdateCodebook(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
 
 
 class ProjectUpdateExternalDB(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
-    model = Project
+    model = ExternalDatabase
     form_class = ExternalDatabaseWizardForm
     template_name = "projects/update/external_db.html"
     permission_denied_message = (
@@ -523,26 +528,21 @@ class ProjectUpdateExternalDB(LoginRequiredMixin, UserPassesTestMixin, UpdateVie
 
     def get_form_kwargs(self):
         form_kwargs = super(ProjectUpdateExternalDB, self).get_form_kwargs()
-
-        del form_kwargs["instance"]
-
         return form_kwargs
+
+    def get_success_url(self):
+        context = self.get_context_data()
+        return context["project"].get_absolute_url()
 
     def get_context_data(self, **kwargs):
         context = super(ProjectUpdateExternalDB, self).get_context_data(**kwargs)
-        project = Project.objects.get(pk=self.kwargs["pk"])
-        context["database_exists"] = project.externaldatabase.exists()
-        if context["database_exists"]:
-            exdb = ExternalDatabase.objects.get(project=project)
-            context["database_type"] = exdb.database_type
-            context["ingest_table_name"] = exdb.ingest_table_name
-            context["ingest_schema"] = exdb.ingest_schema
-
+        context["project"] = ExternalDatabase.objects.get(pk=self.kwargs["pk"]).project
         return context
 
     def form_valid(self, form):
         context = self.get_context_data()
         project = context["project"]
+        external_db = ExternalDatabase.objects.filter(project=project)
         if form.is_valid():
             with transaction.atomic():
                 external_data = form.cleaned_data
@@ -556,17 +556,25 @@ class ProjectUpdateExternalDB(LoginRequiredMixin, UserPassesTestMixin, UpdateVie
                         in ["username", "password", "host", "port", "dbname", "driver"]
                     }
                     external_file = save_external_db_file(connection_dict, project.pk)
-                    ExternalDatabase.objects.update_or_create(
-                        project=project,
+                    external_db.update(
                         env_file=external_file,
                         database_type=external_data["database_type"],
                         has_ingest=True,
                         ingest_schema=external_data["ingest_schema"],
                         ingest_table_name=external_data["ingest_table_name"],
                     )
-                elif self.object.externaldatabase.exists():
+                elif project.has_database_connection():
                     # remove existing database connection
-                    ExternalDatabase.objects.get(project=project).delete()
+                    external_db.update(
+                        env_file="",
+                        database_type="none",
+                        has_ingest=False,
+                        ingest_schema=None,
+                        ingest_table_name=None,
+                        has_export=False,
+                        export_schema=None,
+                        export_table_name=None,
+                    )
 
                     # delete credential file
                     delete_external_db_file(project.pk)

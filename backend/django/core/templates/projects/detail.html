@@ -116,7 +116,7 @@
           <div id="settings-panel" class="panel-collapse collapse show">
             <div class="panel-body">
               <ul class="list-group-flush">
-                {% if project.externaldatabase.exists %}
+                {% if project.has_database_connection %}
                 <li class="list-group-item">
                   <dt>Database connection:</dt>
                   <dd>Ingest Table: {{ project.get_ingest_database }}</dd>
