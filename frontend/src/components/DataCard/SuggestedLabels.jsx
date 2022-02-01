@@ -1,14 +1,23 @@
 import React, { useEffect, useState } from "react";
 
+function handleErrors(res) {
+    if (!res.ok) {
+        throw Error(res.statusText);
+    }
+    return res;
+}
+
 export default function SuggestedLabels({ card, labels, onSelectLabel }) {
     const [suggestions, setSuggestions] = useState();
 
     useEffect(() => {
-        fetch(`/api/comparisons/${card.text.project}?text=${card.text.text}`)
-            .then(res => res.json().then(result => setSuggestions(result)));
+        fetch(`/api/comparisons/${card.text.project}?text=${card.text.text || card.text.data}`)
+            .then(handleErrors)
+            .then(res => res.json().then(result => setSuggestions(result)))
+            .catch(error => console.log(error) );
     }, []);
 
-    if (labels.length <= 5 || !suggestions) {
+    if (!labels || labels.length <= 5 || !suggestions) {
         return null;
     }
 

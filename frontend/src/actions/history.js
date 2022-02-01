@@ -35,7 +35,8 @@ export const getHistory = (projectID) => {
                         old_label: response.data[i].label,
                         old_label_id: response.data[i].labelID,
                         timestamp: response.data[i].timestamp,
-                        edit: response.data[i].edit
+                        edit: response.data[i].edit,
+                        project: projectID
                     };
                     all_data.push(row);
                 }
