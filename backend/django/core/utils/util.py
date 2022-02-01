@@ -5,7 +5,6 @@ from itertools import combinations
 
 import numpy as np
 import pandas as pd
-import requests
 from celery import chord
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -13,6 +12,7 @@ from django.db import connection, transaction
 from django.utils import timezone
 
 from core import tasks
+from core.embeddings import getEmbeddings
 from core.models import (
     Data,
     DataLabel,
@@ -239,11 +239,13 @@ def generate_label_embeddings(project):
         project_labels.values_list("description", flat=True)
     )
 
-    embeddings_request = requests.post(
-        "http://backend:8000/api/embeddings",
-        json={"strings": project_labels_descriptions},
-    )
-    embeddings = embeddings_request.json()
+    # embeddings_request = requests.post(
+    #     "http://backend:8000/api/embeddings",
+    #     json={"strings": project_labels_descriptions},
+    # )
+    # embeddings = embeddings_request.json()
+
+    embeddings = getEmbeddings(project_labels_descriptions)
 
     label_embeddings = []
 
