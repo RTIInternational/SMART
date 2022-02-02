@@ -239,6 +239,10 @@ def generate_label_embeddings(project):
         project_labels.values_list("description", flat=True)
     )
 
+    # This calls backend API because the SentenceTransformer model evaluation
+    # clashes with the Celery container:
+    # See: https://github.com/huggingface/transformers/issues/7516
+
     embeddings_request = requests.post(
         "http://backend:8000/api/embeddings",
         json={"strings": project_labels_descriptions},
