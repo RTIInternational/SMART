@@ -15,7 +15,7 @@ export default function AnnotateCard({ card, labels, onSelectLabel, readonly = f
         <div className="cardface clearfix">
             <div className="cardface-datacard">
                 <CardData card={card} />
-                {suggestions && (
+                {suggestions && labels.length > 5 && (
                     <SuggestedLabels card={card} labels={labels} onSelectLabel={onSelectLabel} />
                 )}
             </div>

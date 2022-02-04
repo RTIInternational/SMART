@@ -8,7 +8,6 @@ function handleErrors(res) {
 }
 
 export default function SuggestedLabels({ card, labels, onSelectLabel }) {
-    console.log(card);
     const [suggestions, setSuggestions] = useState();
 
     useEffect(() => {
@@ -24,7 +23,7 @@ export default function SuggestedLabels({ card, labels, onSelectLabel }) {
         };
     }, []);
 
-    if (!labels || labels.length <= 5 || !suggestions) {
+    if (!labels || !suggestions) {
         return null;
     }
 
