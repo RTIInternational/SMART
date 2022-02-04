@@ -8,13 +8,20 @@ function handleErrors(res) {
 }
 
 export default function SuggestedLabels({ card, labels, onSelectLabel }) {
+    console.log(card);
     const [suggestions, setSuggestions] = useState();
 
     useEffect(() => {
+        let isMounted = true;
         fetch(`/api/comparisons/${card.text.project}?text=${card.text.text || card.text.data}`)
             .then(handleErrors)
-            .then(res => res.json().then(result => setSuggestions(result)))
-            .catch(error => console.log(error) );
+            .then(res => res.json().then(result => {
+                if (isMounted) setSuggestions(result);
+            }))
+            .catch(error => console.log(error));
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     if (!labels || labels.length <= 5 || !suggestions) {
