@@ -55,6 +55,8 @@ def save_external_db_file(connection_dict, project_pk):
     """Given the database credentials for a project, save that information in a file to
     be used later."""
     file_name = "project_" + str(project_pk) + "_db_connection.json"
+    os.makedirs(settings.ENV_FILE_PATH, exist_ok=True)
+
     fpath = os.path.join(settings.ENV_FILE_PATH, file_name)
     with open(fpath, "w") as outputFile:
         json.dump(connection_dict, outputFile)
