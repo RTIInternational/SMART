@@ -24,7 +24,7 @@ from core.forms import (
 )
 from core.models import Data, Label, MetaDataField, Project, TrainingSet
 from core.templatetags import project_extras
-from core.utils.util import save_codebook_file, upload_data
+from core.utils.util import project_status, save_codebook_file, upload_data
 from core.utils.utils_annotate import batch_unassign
 from core.utils.utils_queue import add_queue, find_queue_length
 
@@ -100,7 +100,12 @@ class ProjectList(LoginRequiredMixin, ListView):
 
         qs = qs1 | qs2
 
-        return qs.distinct().order_by(self.ordering).reverse()
+        projects = qs.distinct().order_by(self.ordering).reverse()
+        for project in projects:
+            project_details = project_status(project)
+            project.project_details = project_details
+
+        return projects
 
 
 class ProjectDetail(LoginRequiredMixin, UserPassesTestMixin, DetailView):

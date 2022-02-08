@@ -540,3 +540,14 @@ li.disabled {
     border: 1px solid lightgrey;
     padding-left: 10px;
 }
+
+.project_status_badge {
+    padding: 4px;
+    background-color: #E6F5EB;
+    // border: 1px solid #E4D375;
+    // border: 1px solid #DDDDDD;
+    border-radius: 4px;
+    color: #62AF7C;
+    font-size: 14px;
+    width: fit-content;
+}
