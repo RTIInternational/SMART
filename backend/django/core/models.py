@@ -174,7 +174,7 @@ class MetaData(models.Model):
 
 
 class LabelEmbeddings(models.Model):
-    label = models.ForeignKey(
+    label = models.OneToOneField(
         "Label", on_delete=models.CASCADE, related_name="labelEmbedding"
     )
     embedding = ArrayField(models.FloatField())
