@@ -617,5 +617,5 @@ def project_status(project):
         "recycled": len(recycle_ids),
         "total": len(total_data_objs),
         "unlabeled": len(unlabeled_data_objs),
-        "badge": f"{len(total_data_objs) - len(unlabeled_data_objs)}/{len(unlabeled_data_objs)}",
+        "badge": f"{len(total_data_objs) - len(unlabeled_data_objs) - len(recycle_ids)}/{len(unlabeled_data_objs) - len(recycle_ids)}",
     }
