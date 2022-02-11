@@ -24,7 +24,7 @@ from core.forms import (
 )
 from core.models import Data, Label, MetaDataField, Project, TrainingSet
 from core.templatetags import project_extras
-from core.utils.util import save_codebook_file, upload_data
+from core.utils.util import save_codebook_file, update_label_embeddings, upload_data
 from core.utils.utils_annotate import batch_unassign
 from core.utils.utils_queue import add_queue, find_queue_length
 
@@ -627,6 +627,8 @@ class ProjectUpdateLabel(LoginRequiredMixin, UserPassesTestMixin, View):
             with transaction.atomic():
                 labels.instance = context["project"]
                 labels.save()
+
+                update_label_embeddings(context["project"])
 
                 return redirect(self.get_success_url())
         else:

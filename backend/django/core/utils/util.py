@@ -235,26 +235,59 @@ def generate_label_embeddings(project):
     """Create embeddings for each description of label."""
 
     project_labels = Label.objects.filter(project=project)
-    project_labels_descriptions = list(
-        project_labels.values_list("description", flat=True)
-    )
 
-    # This calls backend API because the SentenceTransformer model evaluation
-    # clashes with the Celery container:
-    # See: https://github.com/huggingface/transformers/issues/7516
+    if len(project_labels) > 5:
+        project_labels_descriptions = list(
+            project_labels.values_list("description", flat=True)
+        )
 
-    embeddings_request = requests.post(
-        "http://backend:8000/api/embeddings",
-        json={"strings": project_labels_descriptions},
-    )
-    embeddings = embeddings_request.json()
+        # This calls backend API because the SentenceTransformer model evaluation
+        # clashes with the Celery container:
+        # See: https://github.com/huggingface/transformers/issues/7516
 
-    label_embeddings = []
+        embeddings_request = requests.post(
+            "http://backend:8000/api/embeddings",
+            json={"strings": project_labels_descriptions},
+        )
+        embeddings = embeddings_request.json()
 
-    for embedding, label in zip(embeddings, project_labels):
-        label_embeddings.append(LabelEmbeddings(embedding=embedding, label=label))
+        label_embeddings = []
 
-    LabelEmbeddings.objects.bulk_create(label_embeddings)
+        for embedding, label in zip(embeddings, project_labels):
+            label_embeddings.append(LabelEmbeddings(embedding=embedding, label=label))
+
+        LabelEmbeddings.objects.bulk_create(label_embeddings, ignore_conflicts=True)
+
+
+def update_label_embeddings(project):
+    """Update embeddings for each description of label."""
+
+    project_labels = Label.objects.filter(project=project)
+
+    if len(project_labels) > 5:
+        project_labels_descriptions = list(
+            project_labels.values_list("description", flat=True)
+        )
+        project_labels_ids = list(project_labels.values_list("id", flat=True))
+
+        # This calls backend API because the SentenceTransformer model evaluation
+        # clashes with the Celery container:
+        # See: https://github.com/huggingface/transformers/issues/7516
+
+        embeddings_request = requests.post(
+            "http://backend:8000/api/embeddings",
+            json={"strings": project_labels_descriptions},
+        )
+        embeddings = embeddings_request.json()
+
+        project_labels_embeddings = LabelEmbeddings.objects.filter(
+            label_id__in=project_labels_ids
+        )
+
+        for embedding, label_embedding in zip(embeddings, project_labels_embeddings):
+            label_embedding.embedding = embedding
+
+        LabelEmbeddings.objects.bulk_update(project_labels_embeddings, ["embedding"])
 
 
 def add_data(project, df):

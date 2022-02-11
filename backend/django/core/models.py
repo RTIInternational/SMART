@@ -174,6 +174,9 @@ class MetaData(models.Model):
 
 
 class LabelEmbeddings(models.Model):
+    class Meta:
+        ordering = ("label_id",)
+
     label = models.OneToOneField(
         "Label", on_delete=models.CASCADE, related_name="labelEmbedding"
     )
@@ -182,6 +185,7 @@ class LabelEmbeddings(models.Model):
 
 class Label(models.Model):
     class Meta:
+        ordering = ("id",)
         unique_together = ("name", "project")
 
     name = models.TextField()
