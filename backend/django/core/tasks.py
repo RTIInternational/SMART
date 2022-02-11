@@ -61,10 +61,10 @@ def send_tfidf_creation_task(project_pk):
 
 
 @shared_task
-def send_label_similarity_results_task(project_pk):
-    from core.utils.util import create_label_similarity_results
+def send_label_embeddings_task(project_pk):
+    from core.utils.util import generate_label_embeddings
 
-    create_label_similarity_results(project_pk)
+    generate_label_embeddings(project_pk)
 
 
 @shared_task
