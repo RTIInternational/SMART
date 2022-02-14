@@ -14,9 +14,10 @@ djangorestframework-jwt
 openpyxl
 pandas
 redis==3.5.3
+requests
 scikit-learn==0.24.1
+sentence_transformers==2.1.0
 statsmodels
-string-grouper
 xlrd
 
 # dependencies for code formatters, dependency management, testing, etc.

@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import JSONField
@@ -172,27 +173,19 @@ class MetaData(models.Model):
         return f"{str(self.metadata_field)}: {self.value}"
 
 
-class DataLabelSimilarityPairs(models.Model):
+class LabelEmbeddings(models.Model):
     class Meta:
-        ordering = ["-similarity_score"]
-        unique_together = ("data", "label")
+        ordering = ("label_id",)
 
-    data = models.ForeignKey(
-        "Data", on_delete=models.CASCADE, related_name="similarityPair"
+    label = models.OneToOneField(
+        "Label", on_delete=models.CASCADE, related_name="labelEmbedding"
     )
-    label = models.ForeignKey(
-        "Label", on_delete=models.CASCADE, related_name="similarityPair"
-    )
-    similarity_score = models.FloatField()
-
-    def __str__(self):
-        return f"{str(self.label.name)} ({str(self.label.description)})".replace(
-            "()", ""
-        )
+    embedding = ArrayField(models.FloatField())
 
 
 class Label(models.Model):
     class Meta:
+        ordering = ("id",)
         unique_together = ("name", "project")
 
     name = models.TextField()

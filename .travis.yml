@@ -19,7 +19,7 @@ before_script:
 script:
   - docker-compose up -d
   - docker-compose exec smart_frontend bash -c "./run_tests.sh"
-  - docker-compose exec smart_backend bash -c "./run_tests.sh"
+  - docker-compose exec backend bash -c "./run_tests.sh"
 
 after_script:
   - docker-compose down
