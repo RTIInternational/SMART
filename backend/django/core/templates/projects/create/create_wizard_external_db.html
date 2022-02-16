@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block page_title %}Add Project - Step {{ wizard.steps.step1 }}{% endblock %}
+
+{% load i18n %}
+{% load static %}
+{% load render_bundle from webpack_loader %}
+
+{% block head %}
+{{ wizard.form.media }}
+{{ form.media.css }}
+{% endblock %}
+
+{% block content %}
+<div class="error-messages">{{ wizard.non_form_errors }}</div>
+<div class="row">
+    <div class="col-md-8 col-md-offset-2">
+        <div class="card">
+            <div class="cardface">
+                <form action="." method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{ wizard.management_form }}
+                    <h1>External Database Connection</h1>
+                    <h3>Description</h3>
+                    <p>This page gives you the opportunity to set up a database connection to SMART. The ingest connection is used to import new unlabeled data into the SMART project to be labeled.</p>
+                    <div id="choose_db_type_box">
+                        <label class="control-label" for="{{ wizard.form.database_type.id_for_label }}">{{ wizard.form.database_type.label }}</label>
+                        {% for radio in wizard.form.database_type %}
+                        <div class="choose_db_type" name="db_choice" id={{radio.value}}>
+                            {{radio}}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-group" id="database-fields">
+                        <p>Please provide the following fields for your Database Connection. </p>
+                        <div id="host_field">
+                            Host/Server: {{ wizard.form.host }}
+                        </div>
+                        <div class="error-messages">{{ wizard.form.host.errors }}</div>
+                        <div id="dbname_field">
+                            Database Name: {{ wizard.form.dbname }}
+                        </div>
+                        <div class="error-messages">{{ wizard.form.dbname.errors }}</div>
+                        <div id="user_field">
+                            Username: {{ wizard.form.username }}
+                        </div>
+                        <div class="error-messages">{{ wizard.form.username.errors }}</div>
+                        <div id="pwd_field">
+                            Password: {{ wizard.form.password }}
+                        </div>
+                        <div class="error-messages">{{ wizard.form.password.errors }}</div>
+                        <div id="port_field">
+                            Port: {{ wizard.form.port }}
+                        </div>
+                        <div class="error-messages">{{ wizard.form.port.errors }}</div>
+                        <hr />
+                        <p>The following fields are the table name and schema for the database table you wish SMART to read new data from.
+                            At minimum the table must have a column "Text" with the text that needs to be labeled.</p>
+                        <div id="ingest_table_fields">
+                            Ingest Table Name: {{ wizard.form.ingest_table_name }}
+                        </div>
+                        <div class="error-messages">{{ wizard.form.ingest_table_name.errors }}</div>
+                        <div id="ingest_schema_fields">
+                            Ingest Schema: {{ wizard.form.ingest_schema }}
+                        </div>
+                        <div class="error-messages">{{ wizard.form.ingest_schema.errors }}</div>
+                    </div>
+
+                    <div class="form-group" id="ms-sql-fields">
+                        <div id="driver_field">
+                            Driver Type: {{ wizard.form.driver }}
+                        </div>
+                        <div class="error-messages">{{ wizard.form.driver.errors }}</div>
+                    </div>
+                    <div class="error-messages">{{ wizard.form.non_field_errors }}</div>
+                    <div class="wizard_nav_bar">
+                        <button class="btn btn-info" name="wizard_goto_step" type="submit" value="project">1. Info</button>
+                        <button class="btn btn-info" name="wizard_goto_step" type="submit" value="labels">2. Labels</button>
+                        <button class="btn btn-info" name="wizard_goto_step" type="submit" value="permissions">3. Permissions</button>
+                        <button class="btn btn-info" name="wizard_goto_step" type="submit" value="advanced">4. Advanced</button>
+                        <button class="btn btn-info" name="wizard_goto_step" type="submit" value="codebook">5. CodeBook</button>
+                        <input class="btn btn-primary" type="submit" value="Next Step" />
+                        <p class="pull-right">Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts_body %}
+<script type="text/javascript">
+    var sql_fields = $('#ms-sql-fields');
+    var database_fields = $('#database-fields');
+
+    if ($('input#id_database_type_1').prop('checked') == true) {
+        sql_fields.show();
+        database_fields.show();
+    } else {
+        sql_fields.hide();
+        database_fields.hide();
+    }
+
+    $('input#id_database_type_0').change(function() {
+        if ($(this).prop('checked') == true) {
+            sql_fields.hide();
+            database_fields.hide();
+        } else {
+            sql_fields.show();
+            database_fields.show();
+        }
+    });
+
+    $('input#id_database_type_1').change(function() {
+        if ($(this).prop('checked') == true) {
+            sql_fields.show();
+            database_fields.show();
+        } else {
+            sql_fields.hide();
+            database_fields.hide();
+        }
+    });
+</script>
+{% endblock %}

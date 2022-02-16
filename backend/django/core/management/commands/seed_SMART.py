@@ -6,7 +6,14 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from core import tasks
-from core.models import Label, Profile, Project, ProjectPermissions, TrainingSet
+from core.models import (
+    ExternalDatabase,
+    Label,
+    Profile,
+    Project,
+    ProjectPermissions,
+    TrainingSet,
+)
 from core.utils.util import add_data, save_data_file
 from core.utils.utils_annotate import get_assignments, label_data
 from core.utils.utils_queue import add_queue, fill_queue, find_queue_length
@@ -40,6 +47,8 @@ def seed_project(
     )
 
     TrainingSet.objects.create(project=project, set_number=0)
+
+    ExternalDatabase.objects.create(project=project, env_file="", database_type="none")
 
     labels = []
     for name in label_list:

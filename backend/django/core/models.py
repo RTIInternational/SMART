@@ -110,6 +110,15 @@ class Project(models.Model):
         else:
             return False
 
+    def has_database_connection(self):
+        return self.externaldatabase.env_file != ""
+
+    def get_ingest_database(self):
+        if self.externaldatabase.has_ingest:
+            return f"{self.externaldatabase.ingest_schema}.{self.externaldatabase.ingest_table_name}"
+        else:
+            return ""
+
 
 class ProjectPermissions(models.Model):
     class Meta:
@@ -171,6 +180,30 @@ class MetaData(models.Model):
 
     def __str__(self):
         return f"{str(self.metadata_field)}: {self.value}"
+
+
+class ExternalDatabase(models.Model):
+    project = models.OneToOneField(
+        "Project", related_name="externaldatabase", on_delete=models.CASCADE
+    )
+    env_file = models.TextField()
+    DB_TYPE_CHOICES = (
+        ("none", "No Database Connection"),
+        ("microsoft", "MS SQL"),
+    )
+    database_type = models.CharField(
+        max_length=9,
+        default="none",
+        choices=DB_TYPE_CHOICES,
+        null=False,
+    )
+
+    has_ingest = models.BooleanField(default=False)
+    ingest_schema = models.CharField(max_length=50, null=True)
+    ingest_table_name = models.CharField(max_length=50, null=True)
+    has_export = models.BooleanField(default=False)
+    export_schema = models.CharField(max_length=50, null=True)
+    export_table_name = models.CharField(max_length=50, null=True)
 
 
 class LabelEmbeddings(models.Model):

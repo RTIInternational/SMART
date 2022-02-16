@@ -28,6 +28,9 @@ from core.models import (
 )
 from core.utils.utils_queue import fill_queue
 
+# from string_grouper import compute_pairwise_similarities
+
+
 # https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
 # Disable warning for false positive warning that should only trigger on chained assignment
 pd.options.mode.chained_assignment = None  # default='warn'
@@ -117,6 +120,7 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
                     tasks.send_check_and_trigger_model_task.si(project.pk),
                 ).apply_async()
             )
+    return len(new_df)
 
 
 def create_data_from_csv(df, project):

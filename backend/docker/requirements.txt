@@ -10,7 +10,7 @@ asgiref==3.4.1
     # via django
 attrs==21.2.0
     # via pytest
-backports.entry-points-selectable==1.1.1
+backports-entry-points-selectable==1.1.1
     # via virtualenv
 billiard==3.6.4.0
     # via celery
@@ -103,6 +103,8 @@ filelock==3.4.0
     #   virtualenv
 flake8==4.0.1
     # via -r docker/requirements.in
+greenlet==1.1.2
+    # via sqlalchemy
 huggingface-hub==0.2.1
     # via
     #   sentence-transformers
@@ -169,7 +171,7 @@ pep517==0.12.0
     # via pip-tools
 pillow==8.4.0
     # via torchvision
-pip-tools==6.4.0
+pip-tools==6.5.1
     # via -r docker/requirements.in
 platformdirs==2.4.0
     # via
@@ -195,6 +197,8 @@ pyjwt[crypto]==1.7.1
     # via
     #   django-allauth
     #   djangorestframework-jwt
+pyodbc==4.0.32
+    # via -r docker/requirements.in
 pyparsing==2.4.7
     # via packaging
 pytest==6.2.5
@@ -244,7 +248,7 @@ scipy==1.7.2
     #   scikit-learn
     #   sentence-transformers
     #   statsmodels
-sentence_transformers==2.1.0
+sentence-transformers==2.1.0
     # via -r docker/requirements.in
 sentencepiece==0.1.96
     # via sentence-transformers
@@ -258,6 +262,8 @@ six==1.16.0
     #   python-dateutil
     #   sacremoses
     #   virtualenv
+sqlalchemy==1.4.28
+    # via -r docker/requirements.in
 sqlparse==0.4.2
     # via django
 statsmodels==0.13.1
