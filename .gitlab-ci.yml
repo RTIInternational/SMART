@@ -41,7 +41,7 @@ test_backend:
   script:
     - cd envs/dev
     - docker-compose start
-    - docker exec -i smart_backend bash -c "./run_tests.sh"
+    - docker exec -i backend bash -c "./run_tests.sh"
   after_script:
     - cd envs/dev
     - docker-compose stop
