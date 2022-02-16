@@ -245,23 +245,10 @@ main {
 }
 
 .suggestions {
-    flex: 1 1 auto;
-
-    right: 24px;
-    top: 32px;
-    min-width: 250px;
-
-    margin-bottom: 20px;
-    margin-top: 20px;
-    padding: 16px 24px;
-
-    @include breakpoint(large) {
-        right: 28px;
-        top: 40px;
-    }
-
-    background-color: #F5F5F5;
+    margin: 0px 24px 16px 16px;
     border-radius: 4px;
+    padding: 8px;
+    width: 100%
 }
 
 .suggestions button {

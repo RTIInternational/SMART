@@ -5,22 +5,21 @@ from itertools import combinations
 
 import numpy as np
 import pandas as pd
+import requests
 from celery import chord
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import connection, transaction
 from django.utils import timezone
-from string_grouper import compute_pairwise_similarities
 
 from core import tasks
 from core.models import (
     AssignedData,
     Data,
     DataLabel,
-    DataLabelSimilarityPairs,
-    DataQueue,
     IRRLog,
     Label,
+    LabelEmbeddings,
     MetaData,
     MetaDataField,
     Profile,
@@ -101,7 +100,7 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
             batch_size=batch_size,
         )
     transaction.on_commit(
-        lambda: tasks.send_label_similarity_results_task.apply_async(
+        lambda: tasks.send_label_embeddings_task.apply_async(
             kwargs={"project_pk": project.pk}
         )
     )
@@ -234,59 +233,63 @@ def create_metadata_objects_from_csv(df, project):
             )
 
 
-def create_label_similarity_results(project):
-    """Insert data label similarity results into database using bulk_create."""
+def generate_label_embeddings(project):
+    """Create embeddings for each description of label."""
 
-    project_data = Data.objects.filter(project=project, similarityPair__isnull=True)
     project_labels = Label.objects.filter(project=project)
 
-    # get the data in dataframe form
-    data_df = pd.DataFrame(list(project_data.values("pk", "text"))).rename(
-        columns={"pk": "data_id"}
-    )
-    res_list = []
-    for label in project_labels:
-        # set up the label series
-        label_string = f"{label.name} {label.description}"
-        label_series = pd.Series(len(data_df) * [label_string])
-
-        # compute the similarity score
-        data_df["similarity_score"] = compute_pairwise_similarities(
-            label_series, data_df["text"]
-        )
-        data_df["label_id"] = label.pk
-        res_list += data_df[["data_id", "label_id", "similarity_score"]].to_dict(
-            "records"
+    if len(project_labels) > 5:
+        project_labels_descriptions = list(
+            project_labels.values_list("description", flat=True)
         )
 
-    # compare all data with all labels at once
-    res_df = pd.DataFrame(res_list).sort_values(
-        by=["data_id", "similarity_score"], ascending=False
-    )
-    res_df["sim_rank"] = res_df.groupby("data_id")["similarity_score"].rank(
-        method="first", ascending=False
-    )
+        # This calls backend API because the SentenceTransformer model evaluation
+        # clashes with the Celery container:
+        # See: https://github.com/huggingface/transformers/issues/7516
 
-    # rank the results, and drop all but the top 5 for each data
-    res_df = res_df.loc[res_df["sim_rank"] <= 5]
-
-    stream = StringIO()
-    res_df.to_csv(
-        stream,
-        sep="\t",
-        header=False,
-        index=False,
-        columns=["data_id", "label_id", "similarity_score"],
-    )
-    stream.seek(0)
-    with connection.cursor() as c:
-        c.copy_from(
-            stream,
-            DataLabelSimilarityPairs._meta.db_table,
-            sep="\t",
-            null="",
-            columns=["data_id", "label_id", "similarity_score"],
+        embeddings_request = requests.post(
+            "http://backend:8000/api/embeddings",
+            json={"strings": project_labels_descriptions},
         )
+        embeddings = embeddings_request.json()
+
+        label_embeddings = []
+
+        for embedding, label in zip(embeddings, project_labels):
+            label_embeddings.append(LabelEmbeddings(embedding=embedding, label=label))
+
+        LabelEmbeddings.objects.bulk_create(label_embeddings, ignore_conflicts=True)
+
+
+def update_label_embeddings(project):
+    """Update embeddings for each description of label."""
+
+    project_labels = Label.objects.filter(project=project)
+
+    if len(project_labels) > 5:
+        project_labels_descriptions = list(
+            project_labels.values_list("description", flat=True)
+        )
+        project_labels_ids = list(project_labels.values_list("id", flat=True))
+
+        # This calls backend API because the SentenceTransformer model evaluation
+        # clashes with the Celery container:
+        # See: https://github.com/huggingface/transformers/issues/7516
+
+        embeddings_request = requests.post(
+            "http://backend:8000/api/embeddings",
+            json={"strings": project_labels_descriptions},
+        )
+        embeddings = embeddings_request.json()
+
+        project_labels_embeddings = LabelEmbeddings.objects.filter(
+            label_id__in=project_labels_ids
+        )
+
+        for embedding, label_embedding in zip(embeddings, project_labels_embeddings):
+            label_embedding.embedding = embedding
+
+        LabelEmbeddings.objects.bulk_update(project_labels_embeddings, ["embedding"])
 
 
 def add_data(project, df):

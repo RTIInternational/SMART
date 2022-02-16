@@ -99,7 +99,7 @@ def init_redis():
     except ProgrammingError:
         raise ValueError(
             "There are unrun migrations.  Please migrate the database."
-            " Use `docker-compose run --rm smart_backend ./migrate.sh`"
+            " Use `docker-compose run --rm backend ./migrate.sh`"
             " Then restart the django server."
         )
 
