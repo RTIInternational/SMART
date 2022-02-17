@@ -17,6 +17,7 @@ from core.models import (
     AssignedData,
     Data,
     DataLabel,
+    DataQueue,
     IRRLog,
     Label,
     LabelEmbeddings,

@@ -24,7 +24,12 @@ from core.forms import (
 )
 from core.models import Data, Label, MetaDataField, Project, TrainingSet
 from core.templatetags import project_extras
-from core.utils.util import project_status, save_codebook_file, update_label_embeddings, upload_data
+from core.utils.util import (
+    project_status,
+    save_codebook_file,
+    update_label_embeddings,
+    upload_data,
+)
 from core.utils.utils_annotate import batch_unassign
 from core.utils.utils_queue import add_queue, find_queue_length
 
