@@ -1,5 +1,6 @@
 import copy
 from io import StringIO
+from tkinter import FALSE
 
 import numpy as np
 import pandas as pd
@@ -49,14 +50,14 @@ def read_data_file(data_file):
             ).dropna(axis=0, how="all")
         elif data_file.content_type.startswith(
             "application/vnd"
-        ) and data.name.endswith(".csv"):
+        ) and data_file.name.endswith(".csv"):
             data = pd.read_csv(
                 StringIO(data_file.read().decode("utf8", "ignore")),
                 dtype=str,
             ).dropna(axis=0, how="all")
         elif data_file.content_type.startswith(
             "application/vnd"
-        ) and data.name.endswith(".xlsx"):
+        ) and data_file.name.endswith(".xlsx"):
             data = pd.read_excel(data_file, dtype=str).dropna(axis=0, how="all")
         else:
             raise ValidationError(
@@ -317,7 +318,7 @@ class AdvancedWizardForm(forms.ModelForm):
             "classifier",
         ]
 
-    use_active_learning = forms.BooleanField(initial=True, required=False)
+    use_active_learning = forms.BooleanField(initial=False, required=False)
     active_l_choices = copy.deepcopy(Project.ACTIVE_L_CHOICES)
     # remove random from the options
     active_l_choices.remove(("random", "Randomly (No Active Learning)"))
@@ -333,7 +334,7 @@ class AdvancedWizardForm(forms.ModelForm):
     use_default_batch_size = forms.BooleanField(initial=True, required=False)
     batch_size = forms.IntegerField(initial=30, min_value=10, max_value=10000)
 
-    use_model = forms.BooleanField(initial=True, required=False)
+    use_model = forms.BooleanField(initial=False, required=False)
     classifier = forms.ChoiceField(
         widget=RadioSelect(),
         choices=Project.CLASSIFIER_CHOICES,
