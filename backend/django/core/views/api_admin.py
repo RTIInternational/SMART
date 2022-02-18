@@ -7,21 +7,18 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
 from core.models import (
-    AssignedData,
     Data,
     DataLabel,
     DataPrediction,
-    DataQueue,
     IRRLog,
     Label,
     Model,
     Project,
     ProjectPermissions,
-    RecycleBin,
     TrainingSet,
 )
 from core.permissions import IsAdminOrCreator, IsCoder
-from core.utils.util import irr_heatmap_data, perc_agreement_table_data
+from core.utils.util import irr_heatmap_data, perc_agreement_table_data, project_status
 from core.utils.utils_model import cohens_kappa, fleiss_kappa
 
 
@@ -326,39 +323,6 @@ def get_project_status(request, project_pk):
     """
 
     project = Project.objects.get(pk=project_pk)
+    project_details = project_status(project)
 
-    total_data_objs = project.data_set.all()
-
-    final_data_objs = list(
-        DataLabel.objects.filter(data__project=project, data__irr_ind=False)
-    )
-
-    stuff_in_irrlog = IRRLog.objects.filter(data__project=project).values_list(
-        "data__pk", flat=True
-    )
-    stuff_in_queue = DataQueue.objects.filter(
-        queue__project=project, queue__type="admin"
-    ).values_list("data__pk", flat=True)
-    recycle_ids = RecycleBin.objects.filter(data__project=project).values_list(
-        "data__pk", flat=True
-    )
-    assigned_ids = AssignedData.objects.filter(data__project=project).values_list(
-        "data__pk", flat=True
-    )
-    unlabeled_data_objs = list(
-        project.data_set.filter(datalabel__isnull=True)
-        .exclude(id__in=stuff_in_queue)
-        .exclude(id__in=stuff_in_irrlog)
-        .exclude(id__in=assigned_ids)
-        .exclude(id__in=recycle_ids)
-    )
-
-    return Response(
-        {
-            "adjudication": len(stuff_in_queue),
-            "final": len(final_data_objs),
-            "recycled": len(recycle_ids),
-            "total": len(total_data_objs),
-            "unlabeled": len(unlabeled_data_objs),
-        }
-    )
+    return Response(project_details)

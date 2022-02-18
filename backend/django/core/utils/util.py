@@ -14,8 +14,10 @@ from django.utils import timezone
 
 from core import tasks
 from core.models import (
+    AssignedData,
     Data,
     DataLabel,
+    DataQueue,
     IRRLog,
     Label,
     LabelEmbeddings,
@@ -24,6 +26,7 @@ from core.models import (
     Profile,
     Project,
     ProjectPermissions,
+    RecycleBin,
     TrainingSet,
 )
 from core.utils.utils_queue import fill_queue
@@ -579,3 +582,48 @@ def get_labeled_data(project):
     label_frame = pd.DataFrame(labels)
 
     return labeled_data_frame, label_frame
+
+
+def project_status(project):
+    """This returns data information.
+
+    Args:
+        project
+    Returns:
+        data: a list of data information
+    """
+    total_data_objs = project.data_set.all()
+
+    final_data_objs = list(
+        DataLabel.objects.filter(data__project=project, data__irr_ind=False)
+    )
+
+    stuff_in_irrlog = IRRLog.objects.filter(data__project=project).values_list(
+        "data__pk", flat=True
+    )
+    stuff_in_queue = DataQueue.objects.filter(
+        queue__project=project, queue__type="admin"
+    ).values_list("data__pk", flat=True)
+    recycle_ids = RecycleBin.objects.filter(data__project=project).values_list(
+        "data__pk", flat=True
+    )
+    assigned_ids = AssignedData.objects.filter(data__project=project).values_list(
+        "data__pk", flat=True
+    )
+    unlabeled_data_objs = list(
+        project.data_set.filter(datalabel__isnull=True)
+        .exclude(id__in=stuff_in_queue)
+        .exclude(id__in=stuff_in_irrlog)
+        .exclude(id__in=assigned_ids)
+        .exclude(id__in=recycle_ids)
+    )
+
+    return {
+        "adjudication": len(stuff_in_queue),
+        "assigned": len(assigned_ids),
+        "final": len(final_data_objs),
+        "recycled": len(recycle_ids),
+        "total": len(total_data_objs),
+        "unlabeled": len(unlabeled_data_objs),
+        "badge": f"{len(final_data_objs)}/{len(total_data_objs) - len(recycle_ids)}",
+    }
