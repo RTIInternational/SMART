@@ -9,7 +9,12 @@ from django.forms.widgets import RadioSelect, Select, Textarea, TextInput
 from pandas.errors import ParserError
 
 from core.utils.util import md5_hash
-from core.utils.utils_external_db import get_connection, get_full_table, test_connection
+from core.utils.utils_external_db import (
+    get_connection,
+    get_full_table,
+    test_connection,
+    test_schema_exists,
+)
 
 from .models import ExternalDatabase, Label, Project, ProjectPermissions
 
@@ -472,6 +477,8 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
     )
     ingest_table_name = forms.CharField(initial="", required=False, max_length=50)
     ingest_schema = forms.CharField(initial="", required=False, max_length=50)
+    export_table_name = forms.CharField(initial="", required=False, max_length=50)
+    export_schema = forms.CharField(initial="", required=False, max_length=50)
     username = forms.CharField(initial="", required=False, max_length=50)
     password = forms.CharField(
         initial="", required=False, max_length=200, widget=forms.PasswordInput()
@@ -490,6 +497,8 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
         required_for_all_db = [
             "ingest_table_name",
             "ingest_schema",
+            "export_table_name",
+            "export_schema",
             "username",
             "password",
             "host",
@@ -518,10 +527,43 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
                 raise ValidationError("Please fix field errors before resubmitting.")
 
             engine_database = get_connection(db_type, self.cleaned_data)
-            test_connection(
-                engine_database,
-                self.cleaned_data["ingest_schema"],
-                self.cleaned_data["ingest_table_name"],
-            )
+
+            # need to specify both schema and table for ingest/export if using it
+            if (
+                len(self.cleaned_data["ingest_schema"]) > 0
+                or len(self.cleaned_data["ingest_table_name"]) > 0
+            ):
+                if len(self.cleaned_data["ingest_table_name"]) == 0:
+                    raise ValueError(
+                        "ERROR: need to specify ingest table if schema is set."
+                    )
+                if len(self.cleaned_data["ingest_schema"]) == 0:
+                    raise ValueError(
+                        "ERROR: need to specify ingest schema if table name is set."
+                    )
+
+                # for ingest, schema and table should exist and table should have fields needed
+                test_schema_exists(engine_database, self.cleaned_data["ingest_schema"])
+                test_connection(
+                    engine_database,
+                    self.cleaned_data["ingest_schema"],
+                    self.cleaned_data["ingest_table_name"],
+                )
+
+            if (
+                len(self.cleaned_data["export_schema"]) > 0
+                or len(self.cleaned_data["export_table_name"]) > 0
+            ):
+                if len(self.cleaned_data["export_table_name"]) == 0:
+                    raise ValueError(
+                        "ERROR: need to specify export table if schema is set."
+                    )
+                if len(self.cleaned_data["export_schema"]) == 0:
+                    raise ValueError(
+                        "ERROR: need to specify export schema if table name is set."
+                    )
+
+                # for export, table may not exist but schema should exist
+                test_schema_exists(engine_database, self.cleaned_data["export_schema"])
 
             self.cleaned_data["engine_database"] = engine_database
