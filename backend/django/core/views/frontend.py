@@ -276,9 +276,12 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
                     project=proj_obj,
                     env_file=external_file,
                     database_type=external_data["database_type"],
-                    has_ingest=True,
+                    has_ingest=external_data["has_ingest"],
                     ingest_schema=external_data["ingest_schema"],
                     ingest_table_name=external_data["ingest_table_name"],
+                    has_export=external_data["has_export"],
+                    export_schema=external_data["export_schema"],
+                    export_table_name=external_data["export_table_name"],
                 )
             else:
                 # Create an empty database object

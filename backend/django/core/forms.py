@@ -528,6 +528,9 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
 
             engine_database = get_connection(db_type, self.cleaned_data)
 
+            self.cleaned_data["has_ingest"] = False
+            self.cleaned_data["has_export"] = False
+
             # need to specify both schema and table for ingest/export if using it
             if (
                 len(self.cleaned_data["ingest_schema"]) > 0
@@ -541,6 +544,8 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
                     raise ValueError(
                         "ERROR: need to specify ingest schema if table name is set."
                     )
+
+                self.cleaned_data["has_ingest"] = True
 
                 # for ingest, schema and table should exist and table should have fields needed
                 test_schema_exists(engine_database, self.cleaned_data["ingest_schema"])
@@ -562,6 +567,8 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
                     raise ValueError(
                         "ERROR: need to specify export schema if table name is set."
                     )
+
+                self.cleaned_data["has_export"] = True
 
                 # for export, table may not exist but schema should exist
                 test_schema_exists(engine_database, self.cleaned_data["export_schema"])

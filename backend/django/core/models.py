@@ -119,6 +119,12 @@ class Project(models.Model):
         else:
             return ""
 
+    def get_export_database(self):
+        if self.externaldatabase.has_export:
+            return f"{self.externaldatabase.export_schema}.{self.externaldatabase.export_table_name}"
+        else:
+            return ""
+
 
 class ProjectPermissions(models.Model):
     class Meta:
