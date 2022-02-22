@@ -406,6 +406,11 @@ class DataWizardForm(forms.ModelForm):
         if data_source == "File_Upload":
             data_df = read_data_file(self.cleaned_data.get("data", False))
         elif data_source == "Database_Ingest":
+            if self.ingest_schema is None:
+                raise ValidationError(
+                    "No ingest table specified. Please add an ingest "
+                    "schema and table to the external database connection."
+                )
             data_df = get_full_table(
                 self.engine_database, self.ingest_schema, self.ingest_table_name
             )

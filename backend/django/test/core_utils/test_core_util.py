@@ -499,5 +499,5 @@ def test_get_labeled_data(
     # check that the labeled data is returned matches the stuff in DataLabel
     assert len(
         set(project_labeled.values_list("data__upload_id", flat=True))
-        & set(labeled_data["ID"].tolist())
+        & set(labeled_data["Upload_ID"].tolist())
     ) == len(labeled_data)
