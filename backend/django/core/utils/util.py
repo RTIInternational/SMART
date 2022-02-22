@@ -571,7 +571,7 @@ def get_labeled_data(project):
         labeled_data = DataLabel.objects.filter(label=label, data__irr_ind=False)
         for d in labeled_data:
             temp = {}
-            temp["Upload_ID"] = d.data.upload_id
+            temp["ID"] = d.data.upload_id
             temp["Text"] = d.data.text
             metadata = MetaData.objects.filter(data=d.data)
             for m in metadata:

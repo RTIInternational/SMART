@@ -265,10 +265,10 @@ def export_database_table(request, project_pk):
                             # Only upload new data. Deduping on upload ID, since duplicate contents
                             # are deduped when the data is first added
                             existing_ids = pd.read_sql(
-                                sql=f"SELECT DISTINCT Upload_ID FROM {table_name_string}",
+                                sql=f"SELECT DISTINCT ID FROM {table_name_string}",
                                 con=engine_database,
-                            )["Upload_ID"].tolist()
-                            data = data.loc[~data["Upload_ID"].isin(existing_ids)]
+                            )["ID"].tolist()
+                            data = data.loc[~data["ID"].isin(existing_ids)]
                             if len(data) > 0:
                                 data.to_sql(
                                     name=external_db.export_table_name,
