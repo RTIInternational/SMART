@@ -569,12 +569,16 @@ class ProjectUpdateExternalDB(LoginRequiredMixin, UserPassesTestMixin, UpdateVie
                         in ["username", "password", "host", "port", "dbname", "driver"]
                     }
                     external_file = save_external_db_file(connection_dict, project.pk)
+
                     external_db.update(
                         env_file=external_file,
                         database_type=external_data["database_type"],
-                        has_ingest=True,
+                        has_ingest=external_data["has_ingest"],
                         ingest_schema=external_data["ingest_schema"],
                         ingest_table_name=external_data["ingest_table_name"],
+                        has_export=external_data["has_export"],
+                        export_schema=external_data["export_schema"],
+                        export_table_name=external_data["export_table_name"],
                     )
                 elif project.has_database_connection():
                     # remove existing database connection

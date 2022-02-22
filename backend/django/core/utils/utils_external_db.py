@@ -48,6 +48,19 @@ def test_schema_exists(engine_database, schema):
         raise ValidationError(f"ERROR: schema {schema} not found in the database.")
 
 
+def check_if_table_exists(engine_database, schema, table):
+    """Check if the given table exists in the database."""
+    table_set = pd.read_sql(
+        sql=f"SELECT table_name FROM information_schema.tables WHERE "
+        f"table_schema = '{schema}' AND table_name = '{table}'",
+        con=engine_database,
+    )
+    if len(table_set) == 0:
+        return False
+    else:
+        return True
+
+
 def get_full_table(engine_database, schema, table):
     """Read in a table from a database."""
     try:

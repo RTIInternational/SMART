@@ -467,7 +467,13 @@ class CodeBookWizardForm(forms.Form):
 class ExternalDatabaseWizardForm(forms.ModelForm):
     class Meta:
         model = ExternalDatabase
-        fields = ["database_type", "ingest_schema", "ingest_table_name"]
+        fields = [
+            "database_type",
+            "ingest_schema",
+            "ingest_table_name",
+            "export_schema",
+            "export_table_name",
+        ]
 
     database_type = forms.ChoiceField(
         widget=RadioSelect(),

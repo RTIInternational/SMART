@@ -4,6 +4,7 @@ import os
 import tempfile
 import zipfile
 
+import pandas as pd
 from django.conf import settings
 from django.http import HttpResponse
 from rest_framework import status
@@ -16,6 +17,7 @@ from core.permissions import IsAdminOrCreator
 from core.templatetags import project_extras
 from core.utils.util import get_labeled_data, upload_data
 from core.utils.utils_external_db import (
+    check_if_table_exists,
     get_connection,
     get_full_table,
     load_external_db_file,
@@ -198,6 +200,100 @@ def import_database_table(request, project_pk):
                         cleaned_data, project, batch_size=project.batch_size
                     )
                     response["num_added"] = num_added
+                except Exception as e:
+                    # return errors in the validation tool
+                    response["error"] = str(e)
+    else:
+        response["error"] = "Invalid credentials. Must be an admin."
+
+    if "error" in response.keys():
+        return Response(response, status=status.HTTP_404_NOT_FOUND)
+
+    return Response(response)
+
+
+@api_view(["POST"])
+@permission_classes((IsAdminOrCreator,))
+def export_database_table(request, project_pk):
+    """This function exports labeled data to an existing database connection.
+
+    Args:
+        request: The POST request
+        project_pk: Primary key of the project
+    Returns:
+        {}
+    """
+    response = {}
+    profile = request.user.profile
+    project = Project.objects.get(pk=project_pk)
+
+    # Make sure coder is an admin
+    if project_extras.proj_permission_level(project, profile) > 1:
+
+        if not project.has_database_connection():
+            response["error"] = "Project does not have a database connection."
+        else:
+            # check that the project has a database connection and export tables
+            connection_dict = load_external_db_file(project_pk)
+            external_db = ExternalDatabase.objects.get(project=project)
+
+            if not external_db.has_export:
+                response["error"] = "Project does not have export connections set up."
+            else:
+                try:
+                    engine_database = get_connection(
+                        external_db.database_type, connection_dict
+                    )
+                    table_name_string = (
+                        f"{external_db.export_schema}.{external_db.export_table_name}"
+                    )
+
+                    # pull all labeled data
+                    data, labels = get_labeled_data(project)
+                    if len(data) > 0:
+
+                        # pull the export table
+                        if check_if_table_exists(
+                            engine_database,
+                            external_db.export_schema,
+                            external_db.export_table_name,
+                        ):
+                            response[
+                                "success_message"
+                            ] = "Appending labeled data to existing table."
+
+                            # Only upload new data. Deduping on upload ID, since duplicate contents
+                            # are deduped when the data is first added
+                            existing_ids = pd.read_sql(
+                                sql=f"SELECT DISTINCT Upload_ID FROM {table_name_string}",
+                                con=engine_database,
+                            )["Upload_ID"].tolist()
+                            data = data.loc[~data["Upload_ID"].isin(existing_ids)]
+                            if len(data) > 0:
+                                data.to_sql(
+                                    name=external_db.export_table_name,
+                                    con=engine_database,
+                                    schema=external_db.export_schema,
+                                    if_exists="append",
+                                    index=False,
+                                )
+
+                        else:
+                            response[
+                                "success_message"
+                            ] = "Creating new table in database."
+                            # create table with columns from labeled data
+                            data.to_sql(
+                                name=external_db.export_table_name,
+                                con=engine_database,
+                                schema=external_db.export_schema,
+                                if_exists="fail",
+                                index=False,
+                            )
+                    response[
+                        "success_message"
+                    ] += f" Added {len(data)} rows to the database."
+
                 except Exception as e:
                     # return errors in the validation tool
                     response["error"] = str(e)
