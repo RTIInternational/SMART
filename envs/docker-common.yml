@@ -8,7 +8,7 @@ services:
       - POSTGRES_USER=smart
       - POSTGRES_DB=smart
     ports:
-      - "${EXTERNAL_POSTGRES_PORT:-5432}:5432"
+      - "${EXTERNAL_POSTGRES_PORT:-5432}:6832"
     volumes:
       - smart_pgdata:/var/lib/postgresql/data
 
