@@ -344,7 +344,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
             # metatata fields
             metadata_fields = [
-                c for c in f_data if c.lower() not in ["text", "label", "id"]
+                c for c in f_data if c.lower() not in ["text", "label", "id", "id_hash"]
             ]
             # get list of items to dedup on
             if data.cleaned_data["dedup_on"] == "Text":
@@ -476,7 +476,15 @@ class ProjectUpdateData(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
             with transaction.atomic():
                 f_data = form.cleaned_data.get("data", False)
                 if isinstance(f_data, pd.DataFrame):
-                    upload_data(f_data, self.object, batch_size=self.object.batch_size)
+                    queue = self.object.queue_set.get(type="normal")
+                    irr_queue = self.object.queue_set.get(type="irr")
+                    upload_data(
+                        f_data,
+                        self.object,
+                        queue,
+                        irr_queue,
+                        batch_size=self.object.batch_size,
+                    )
 
                 return redirect(self.get_success_url())
         else:

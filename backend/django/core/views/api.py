@@ -197,7 +197,11 @@ def import_database_table(request, project_pk):
                     )
                     # add the data to the project
                     num_added = upload_data(
-                        cleaned_data, project, batch_size=project.batch_size
+                        cleaned_data,
+                        project,
+                        project.queue_set.get(type="normal"),
+                        project.queue_set.get(type="irr"),
+                        batch_size=project.batch_size,
                     )
                     response["num_added"] = num_added
                 except Exception as e:

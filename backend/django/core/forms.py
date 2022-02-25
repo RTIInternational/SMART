@@ -54,14 +54,14 @@ def read_data_file(data_file):
             ).dropna(axis=0, how="all")
         elif data_file.content_type.startswith(
             "application/vnd"
-        ) and data.name.endswith(".csv"):
+        ) and data_file.name.endswith(".csv"):
             data = pd.read_csv(
                 StringIO(data_file.read().decode("utf8", "ignore")),
                 dtype=str,
             ).dropna(axis=0, how="all")
         elif data_file.content_type.startswith(
             "application/vnd"
-        ) and data.name.endswith(".xlsx"):
+        ) and data_file.name.endswith(".xlsx"):
             data = pd.read_excel(data_file, dtype=str).dropna(axis=0, how="all")
         else:
             raise ValidationError(
