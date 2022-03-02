@@ -756,9 +756,9 @@ class ProjectUpdateLabel(LoginRequiredMixin, UserPassesTestMixin, View):
                 labels.instance = context["project"]
                 labels.save()
 
-                update_label_embeddings(context["project"])
+            update_label_embeddings(context["project"])
 
-                return redirect(self.get_success_url())
+            return redirect(self.get_success_url())
         else:
             return self.render_to_response(context)
 
