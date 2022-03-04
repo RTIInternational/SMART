@@ -1,30 +1,23 @@
 version: '2.1'
 
 services:
-
-  ##############################
-  # Traefik Reverse Proxy      #
-  # Published at Port 8010     # 
-  # Web interface at Port 8080 #
-  ##############################
   reverse-proxy:
     image: traefik:v2.2
     container_name: smart-reverse-proxy
-    # Enables the web UI and tells Traefik to listen to docker
     command: 
-      - "--api.insecure=true" # uncomment this to open the traefik web interface
+      # - "--api.insecure=true" # uncomment this to open the traefik web interface
       - "--providers.docker"
       - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:8010"
+      - "--providers.docker.constraints=Label(`traefik.constraint`,`smart-prod`)"
+      - "--entrypoints.web.address=:80"
     volumes:
-      # So that Traefik can listen to the Docker events
       - /var/run/docker.sock:/var/run/docker.sock:ro
     ports:
-      # the port that your proxy is available at
-      - "8010:8010"
-      - "8080:8080" # The Web UI (enabled by --api.insecure=true)
+      - "80:80"
+      # - "8080:8080" # The Web UI (enabled by --api.insecure=true)
     labels:
       - "traefik.enable=true"
+      - "traefik.constraint=smart-prod"
 
   postgres:
     extends:
@@ -52,7 +45,8 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.backend.entrypoints=web"
       - "traefik.http.services.backend.loadbalancer.server.port=8000"
-      - "traefik.http.routers.backend.rule=PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/health`)"
+      - "traefik.http.routers.backend.rule=PathPrefix(`/api`)"
+      - "traefik.constraint=smart-prod"
 
   smart_frontend:
     extends:
@@ -62,17 +56,13 @@ services:
       context: ../../frontend/
       dockerfile: Dockerfile.prod
     image: rti/smart-frontend-prod:R_0_0_1
-    ports:
-      - "${EXTERNAL_FRONTEND_PORT:-8080}:8080"
     command: nginx -c /code/nginx.conf -g "daemon off;"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.smart_frontend.entrypoints=web"
-      - "traefik.http.routers.smart_frontend.rule=PathPrefix(`/smart_frontend`)"
-      - "traefik.http.middlewares.smart_frontend-stripprefix.stripprefix.prefixes=/smart_frontend"
-      - "traefik.http.middlewares.smart_frontend-stripprefix.stripprefix.forceSlash=false"
-      - "traefik.http.routers.smart_frontend.middlewares=smart_frontend-stripprefix@docker"
-      - "traefik.http.services.smart_frontend.loadbalancer.server.port=80"
+      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+      - "traefik.constraint=smart-prod"
 
 volumes:
   smart_pgdata:
