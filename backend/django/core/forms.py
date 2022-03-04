@@ -27,6 +27,8 @@ def read_data_file(data_file):
         "application/vnd.ms-excel.sheet.binary.macroenabled.12",
     ]
     MAX_FILE_SIZE = 500 * 1000 * 1000
+    if data_file is None:
+        raise ValidationError("ERROR: no file specified.")
 
     if data_file.size > MAX_FILE_SIZE:
         raise ValidationError(
