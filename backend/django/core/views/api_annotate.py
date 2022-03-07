@@ -28,6 +28,7 @@ from core.serializers import DataSerializer, LabelSerializer
 from core.templatetags import project_extras
 from core.utils.utils_annotate import (
     get_assignments,
+    get_unlabeled_data,
     label_data,
     move_skipped_to_admin_queue,
     process_irr_label,
@@ -427,29 +428,50 @@ def data_unlabeled_table(request, project_pk):
     Returns:
         data: a list of data information
     """
-    project = Project.objects.get(pk=project_pk)
-
-    stuff_in_queue = DataQueue.objects.filter(queue__project=project)
-    queued_ids = [queued.data.id for queued in stuff_in_queue]
-
-    recycle_ids = RecycleBin.objects.filter(data__project=project).values_list(
-        "data__pk", flat=True
-    )
-    unlabeled_data = (
-        project.data_set.filter(datalabel__isnull=True)
-        .exclude(id__in=queued_ids)
-        .exclude(id__in=recycle_ids)
-    )
+    unlabeled_data = get_unlabeled_data(project_pk)
     data = []
     for d in unlabeled_data:
-        serialized_data = DataSerializer(d, many=False).data
+        if len(data) < 50:
+            serialized_data = DataSerializer(d, many=False).data
 
-        temp = {
-            "Text": serialized_data["text"],
-            "metadata": serialized_data["metadata"],
-            "ID": d.id,
-        }
-        data.append(temp)
+            temp = {
+                "Text": serialized_data["text"],
+                "metadata": serialized_data["metadata"],
+                "ID": d.id,
+            }
+            data.append(temp)
+
+    return Response({"data": data})
+
+
+@api_view(["GET"])
+@permission_classes((IsAdminOrCreator,))
+def search_data_unlabeled_table(request, project_pk):
+    """This returns the unlebeled data not in a queue for the skew table filtered for a
+    search input.
+
+    Args:
+        request: The POST request
+        project_pk: Primary key of the project
+    Returns:
+        data: a filtered list of data information
+    """
+    unlabeled_data = get_unlabeled_data(project_pk)
+    data = []
+    text = request.GET.get("text")
+    print(text)
+    for d in unlabeled_data:
+        if len(data) < 50:
+            serialized_data = DataSerializer(d, many=False).data
+
+            if text.lower() in serialized_data["text"].lower():
+                temp = {
+                    "data": serialized_data["text"],
+                    "metadata": serialized_data["metadata"],
+                    "id": d.id,
+                    "project": project_pk,
+                }
+                data.append(temp)
 
     return Response({"data": data})
 
