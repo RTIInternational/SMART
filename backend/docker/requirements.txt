@@ -10,7 +10,7 @@ asgiref==3.4.1
     # via django
 attrs==21.2.0
     # via pytest
-backports.entry-points-selectable==1.1.1
+backports-entry-points-selectable==1.1.1
     # via virtualenv
 billiard==3.6.4.0
     # via celery
@@ -126,7 +126,7 @@ mypy-extensions==0.4.3
     # via black
 nodeenv==1.6.0
     # via pre-commit
-numpy==1.21.4
+numpy==1.22.3
     # via
     #   pandas
     #   patsy
@@ -155,7 +155,7 @@ patsy==0.5.2
     # via statsmodels
 pep517==0.12.0
     # via pip-tools
-pip-tools==6.4.0
+pip-tools==6.5.1
     # via -r docker/requirements.in
 platformdirs==2.4.0
     # via
