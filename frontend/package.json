@@ -53,7 +53,7 @@
     "mini-css-extract-plugin": "^1.6.0",
     "mocha": "^3.4.2",
     "moment": "^2.19.1",
-    "node-sass": "^6.0.0",
+    "node-sass": "^7.0.0",
     "nvd3": "^1.8.6",
     "optimize-css-assets-webpack-plugin": "^5.0.4",
     "popper.js": "^1.14.3",
