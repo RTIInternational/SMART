@@ -428,19 +428,16 @@ def data_unlabeled_table(request, project_pk):
     Returns:
         data: a list of data information
     """
-    unlabeled_data = get_unlabeled_data(project_pk)
-    data = []
-    for d in unlabeled_data:
-        if len(data) < 50:
-            serialized_data = DataSerializer(d, many=False).data
-
-            temp = {
-                "Text": serialized_data["text"],
-                "metadata": serialized_data["metadata"],
-                "ID": d.id,
-            }
-            data.append(temp)
-
+    unlabeled_data = get_unlabeled_data(project_pk)[:50]
+    serialized_data = DataSerializer(unlabeled_data, many=True).data
+    data = [
+        {
+            "Text": d["text"],
+            "metadata": d["metadata"],
+            "ID": d["pk"],
+        }
+        for d in serialized_data
+    ]
     return Response({"data": data})
 
 
@@ -457,23 +454,19 @@ def search_data_unlabeled_table(request, project_pk):
         data: a filtered list of data information
     """
     unlabeled_data = get_unlabeled_data(project_pk)
-    data = []
     text = request.GET.get("text")
-    print(text)
-    for d in unlabeled_data:
-        if len(data) < 50:
-            serialized_data = DataSerializer(d, many=False).data
-
-            if text.lower() in serialized_data["text"].lower():
-                temp = {
-                    "data": serialized_data["text"],
-                    "metadata": serialized_data["metadata"],
-                    "id": d.id,
-                    "project": project_pk,
-                }
-                data.append(temp)
-
-    return Response({"data": data})
+    unlabeled_data = unlabeled_data.filter(text__icontains=text.lower())
+    serialized_data = DataSerializer(unlabeled_data, many=True).data
+    data = [
+        {
+            "data": d["text"],
+            "metadata": d["metadata"],
+            "id": d["pk"],
+            "project": project_pk,
+        }
+        for d in serialized_data
+    ]
+    return Response({"data": data[:50]})
 
 
 @api_view(["POST"])
