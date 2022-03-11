@@ -45,6 +45,14 @@
                             Port: {{ form.port }}
                         </div>
                         <div class="error-messages">{{ form.port.errors }}</div>
+                    </div>
+                    <div class="form-group" id="ms-sql-fields-update">
+                        <div id="driver_field_update">
+                            Driver Type: {{ form.driver }}
+                        </div>
+                        <div class="error-messages">{{ form.driver.errors }}</div>
+                    </div>
+                    <div class="form-group" id="database-ingest-fields-update">
                         <hr />
                         <p>The following fields are the table name and schema for the database table you wish SMART to read new data from.
                             At minimum the table must have a column "Text" with the text that needs to be labeled.</p>
@@ -56,13 +64,17 @@
                             Ingest Schema: {{ form.ingest_schema }}
                         </div>
                         <div class="error-messages">{{ form.ingest_schema.errors }}</div>
-                    </div>
-
-                    <div class="form-group" id="ms-sql-fields-update">
-                        <div id="driver_field_update">
-                            Driver Type: {{ form.driver }}
+                        <hr />
+                        <p>The following fields are the table name and schema for the database table you wish SMART to export labeled data to.
+                          The output table will be created if it doesn't already exist when data is exported for the first time.</p>
+                        <div id="export_table_fields_update">
+                            Export Table Name: {{ form.export_table_name }}
                         </div>
-                        <div class="error-messages">{{ form.driver.errors }}</div>
+                        <div class="error-messages">{{ form.export_table_name.errors }}</div>
+                        <div id="export_schema_fields_update">
+                            Export Schema: {{ form.export_schema }}
+                        </div>
+                        <div class="error-messages">{{ form.export_schema.errors }}</div>
                     </div>
                     <div class="error-messages">{{ form.non_field_errors }}</div>
                     <button class="btn btn-primary" type="submit" id="submitButton">Submit</button>
@@ -76,22 +88,27 @@
 <script type="text/javascript">
     var sql_fields = $('#ms-sql-fields-update');
     var database_fields = $('#database-fields-update');
+    var database_ingest_fields = $('#database-ingest-fields-update');
 
     if ($('input#id_database_type_1').prop('checked') == true) {
         sql_fields.show();
         database_fields.show();
+        database_ingest_fields.show();
     } else {
         sql_fields.hide();
         database_fields.hide();
+        database_ingest_fields.hide();
     }
 
     $('input#id_database_type_0').change(function() {
         if ($(this).prop('checked') == true) {
             sql_fields.hide();
             database_fields.hide();
+            database_ingest_fields.hide();
         } else {
             sql_fields.show();
             database_fields.show();
+            database_ingest_fields.show();
         }
     });
 
@@ -99,9 +116,11 @@
         if ($(this).prop('checked') == true) {
             sql_fields.show();
             database_fields.show();
+            database_ingest_fields.show();
         } else {
             sql_fields.hide();
             database_fields.hide();
+            database_ingest_fields.hide();
         }
     });
 

@@ -338,8 +338,22 @@ def add_data(project, df):
     # if there is no ID column already, add it and hash it
     df.reset_index(drop=True, inplace=True)
     if "ID" not in df.columns:
+        # need to check what ID's are already in the data in case a previous upload DID have IDs
+        existing_ids = Data.objects.filter(project=project).values_list(
+            "upload_id", flat=True
+        )
+
+        # build a list of integers for the IDs. Skip any IDs already in use
+        counter = num_existing_data - 1
+        new_id_list = []
+        while len(new_id_list) < len(df):
+            counter += 1
+            if counter in existing_ids:
+                continue
+            new_id_list.append(counter)
+
         # should add to what already exists
-        df["ID"] = [x + num_existing_data for x in list(df.index.values)]
+        df["ID"] = new_id_list
         df["id_hash"] = df["ID"].astype(str).apply(md5_hash)
     else:
         # get the hashes from existing identifiers. Check that the new identifiers do not overlap

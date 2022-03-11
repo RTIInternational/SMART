@@ -120,6 +120,7 @@
                 <li class="list-group-item">
                   <dt>Database connection:</dt>
                   <dd>Ingest Table: {{ project.get_ingest_database }}</dd>
+                  <dd>Export Table: {{ project.get_export_database }}</dd>
                 </li>
                 {% endif %}
                 {% if project.classifier != None %}
@@ -254,6 +255,11 @@
               Ingest new data from Database
             </a>
             {% endif %}
+            {% if project.get_export_database != "" %}
+            <a class="btn btn-primary" id="export_datatable_button">
+              Export labeled data to Database
+            </a>
+            {% endif %}
           {% if project.has_model %}
             <a class="btn btn-primary" id="download_model_btn">Download Model and Labeled Data</a>
           {% else %}
@@ -333,6 +339,23 @@ $('#ingest_datatable_button').on('click', function() {
     url: '/api/import_database_table/' + {{ project.pk }} + '/',
     success: function (response) {
       alert("Datatable successfully imported. New data added: "+ response.num_added);
+    }
+  }).fail(function(response) {
+    alert('Error: datatable import failed with error ' + response.responseText);
+  });
+});
+
+
+/*
+ *  When the export datatable button is pressed, SMART exports labeled data to
+ *  a specified database table.
+ */
+$('#export_datatable_button').on('click', function() {
+  $.ajax({
+    method: "POST",
+    url: '/api/export_database_table/' + {{ project.pk }} + '/',
+    success: function (response) {
+      alert("Datatable successfully exported. "+ response.success_message);
     }
   }).fail(function(response) {
     alert('Error: datatable import failed with error ' + response.responseText);
