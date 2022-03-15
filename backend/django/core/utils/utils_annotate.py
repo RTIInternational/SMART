@@ -2,7 +2,16 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
-from core.models import AssignedData, Data, DataLabel, DataQueue, IRRLog, Queue
+from core.models import (
+    AssignedData,
+    Data,
+    DataLabel,
+    DataQueue,
+    IRRLog,
+    Project,
+    Queue,
+    RecycleBin,
+)
 from core.templatetags import project_extras
 from core.utils.utils_queue import pop_first_nonempty_queue
 from core.utils.utils_redis import (
@@ -225,3 +234,21 @@ def process_irr_label(data, label):
             settings.REDIS.sadd(
                 redis_serialize_set(admin_queue), redis_serialize_data(data)
             )
+
+
+def get_unlabeled_data(project_pk):
+    project = Project.objects.get(pk=project_pk)
+
+    stuff_in_queue = DataQueue.objects.filter(queue__project=project)
+    queued_ids = [queued.data.id for queued in stuff_in_queue]
+
+    recycle_ids = RecycleBin.objects.filter(data__project=project).values_list(
+        "data__pk", flat=True
+    )
+    unlabeled_data = (
+        project.data_set.filter(datalabel__isnull=True)
+        .exclude(id__in=queued_ids)
+        .exclude(id__in=recycle_ids)
+    )
+
+    return unlabeled_data

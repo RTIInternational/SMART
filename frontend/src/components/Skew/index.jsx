@@ -20,22 +20,21 @@ const COLUMNS = [
     },
     {
         Header: "Unlabeled Data",
-        accessor: "data",
-        filterMethod: (filter, row) => {
-            if (
-                String(row["data"])
-                    .toLowerCase()
-                    .includes(filter.value.toLowerCase())
-            ) {
-                return true;
-            } else {
-                return false;
-            }
-        }
+        accessor: "data"
     }
 ];
 
 class Skew extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            filteredData: undefined,
+            isSearching: false,
+            search: ''
+        };
+        this.handleSearch = this.handleSearch.bind(this);
+    }
+
     componentDidMount() {
         this.props.getUnlabeled();
         this.props.getLabelCounts();
@@ -54,6 +53,22 @@ class Skew extends React.Component {
                     <u>Text to Label</u>
                 </div>
             );
+        }
+    }
+
+    handleSearch(event) {
+        event.preventDefault();
+        this.setState({ isSearching: true });
+        if (this.state.search.length > 0) {
+            fetch(`/api/search_data_unlabeled_table/${window.PROJECT_ID}?text=${this.state.search}`)
+                .then(res => res.json().then(result => {
+                    this.setState({ filteredData: result.data });
+                    this.setState({ isSearching: false });
+                }))
+                .catch(error => console.log(error));
+        } else {
+            this.setState({ filteredData: undefined });
+            this.setState({ isSearching: false });
         }
     }
 
@@ -111,13 +126,24 @@ class Skew extends React.Component {
                     </div>
                 </div>
                 <CodebookLabelMenuContainer />
+                <p>
+                    View the unlabeled data for this project in the table below.<br/>
+                    Note: The first 50 unlabeled data items appear in the table. If you are looking for a specific value, use the search input to filter the data.
+                </p>
+                <form onSubmit={this.handleSearch}>
+                    <input className="skew-input" onChange={event => this.setState({ search: event.target.value })} placeholder="Search Data..." value={this.state.search} />
+                    {!this.state.isSearching ? (
+                        <button className="btn btn-info skew-search-button" type="submit">Search</button>
+                    ) : (
+                        <p style={{ marginBottom: '8px', marginTop: '8px' }}>Searching unlabeled data for {this.state.search}...</p>
+                    )}
+                </form>
                 <ReactTable
-                    data={unlabeled_data}
+                    data={this.state.filteredData ? this.state.filteredData : unlabeled_data}
                     columns={COLUMNS}
-                    filterable={true}
                     showPageSizeOptions={false}
                     pageSize={
-                        unlabeled_data.length < 50 ? unlabeled_data.length : 50
+                        this.state.filteredData ? this.state.filteredData.length < 50 ? this.state.filteredData.length : 50 : unlabeled_data.length < 50 ? unlabeled_data.length : 50
                     }
                     SubComponent={row => {
                         const card = buildCard(row.row.id, null, row.original);
@@ -132,6 +158,9 @@ class Skew extends React.Component {
                                             card.id,
                                             label
                                         );
+                                        if (this.state.filteredData) {
+                                            this.setState({ filteredData: this.state.filteredData.filter(d => d.id !== card.id) });
+                                        }
                                     }}
                                     onSkip={null}
                                 />

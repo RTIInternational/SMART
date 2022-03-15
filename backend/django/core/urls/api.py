@@ -45,6 +45,10 @@ annotate_patterns = [
         r"^data_unlabeled_table/(?P<project_pk>\d+)/$",
         api_annotate.data_unlabeled_table,
     ),
+    re_path(
+        r"^search_data_unlabeled_table/(?P<project_pk>\d+)/$",
+        api_annotate.search_data_unlabeled_table,
+    ),
     re_path(r"^get_card_deck/(?P<project_pk>\d+)/$", api_annotate.get_card_deck),
     re_path(
         r"^recycle_bin_table/(?P<project_pk>\d+)/$", api_annotate.recycle_bin_table
