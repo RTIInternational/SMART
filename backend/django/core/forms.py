@@ -300,7 +300,12 @@ LabelFormSet = forms.inlineformset_factory(
     absolute_max=10000,
 )
 LabelDescriptionFormSet = forms.inlineformset_factory(
-    Project, Label, form=LabelDescriptionForm, can_delete=False, extra=0
+    Project,
+    Label,
+    form=LabelDescriptionForm,
+    can_delete=False,
+    extra=0,
+    absolute_max=10000,
 )
 PermissionsFormSet = forms.inlineformset_factory(
     Project, ProjectPermissions, form=ProjectPermissionsForm, extra=1, can_delete=True
