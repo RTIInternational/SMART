@@ -22,29 +22,6 @@
 
           <h1>Advanced Settings</h1>
           <div class="form-group">
-            <div class="panel panel-default" id="al_tab">
-              <div class="panel-heading">
-                <h5 class="panel-title">
-                  <a data-toggle="collapse" href="#al-panel" class="accordion-toggle">
-                    Active Learning
-                  </a>
-                </h5>
-              </div>
-              <div id="al-panel" class="panel-collapse collapse show">
-                <div class="panel-body">
-                  <div>
-                  {{ wizard.form.use_active_learning }} Use Active Learning to select data to label
-                  </div>
-                  <div id="choose_method_box">
-                    {% for radio in wizard.form.learning_method %}
-                    <div class="choose_method" name = "al_choice" id={{radio.value}}>
-                      {{radio}}
-                    </div>
-                    {% endfor %}
-                  </div>
-                </div>
-              </div>
-            </div>
             <div class="panel panel-default">
               <div class="panel-heading">
                 <h5 class="panel-title">
@@ -70,6 +47,29 @@
                       {% endfor %}
                     </div>
                     <p>{{ wizard.form.classifier.errors }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="panel panel-default" id="al_tab">
+              <div class="panel-heading">
+                <h5 class="panel-title">
+                  <a data-toggle="collapse" href="#al-panel" class="accordion-toggle">
+                    Active Learning
+                  </a>
+                </h5>
+              </div>
+              <div id="al-panel" class="panel-collapse collapse show">
+                <div class="panel-body">
+                  <div>
+                  {{ wizard.form.use_active_learning }} Use Active Learning to select data to label
+                  </div>
+                  <div id="choose_method_box">
+                    {% for radio in wizard.form.learning_method %}
+                    <div class="choose_method" name = "al_choice" id={{radio.value}}>
+                      {{radio}}
+                    </div>
+                    {% endfor %}
                   </div>
                 </div>
               </div>
