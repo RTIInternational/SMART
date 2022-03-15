@@ -538,3 +538,19 @@ li.disabled {
     font-size: 14px;
     width: fit-content;
 }
+
+.skew-input {
+    border: 1px solid rgba(0,0,0,0.1);
+    background: #FFFFFF;
+    padding: 5px 7px;
+    font-size: inherit;
+    border-radius: 3px;
+    font-weight: 400;
+    outline-width: 0;
+    width: 100%;
+}
+
+.skew-search-button {
+    margin-bottom: 8px;
+    margin-top: 8px;
+}

@@ -45,6 +45,10 @@ annotate_patterns = [
         r"^data_unlabeled_table/(?P<project_pk>\d+)/$",
         api_annotate.data_unlabeled_table,
     ),
+    re_path(
+        r"^search_data_unlabeled_table/(?P<project_pk>\d+)/$",
+        api_annotate.search_data_unlabeled_table,
+    ),
     re_path(r"^get_card_deck/(?P<project_pk>\d+)/$", api_annotate.get_card_deck),
     re_path(
         r"^recycle_bin_table/(?P<project_pk>\d+)/$", api_annotate.recycle_bin_table
@@ -82,6 +86,7 @@ urlpatterns = [
     re_path(r"^download_data/(?P<project_pk>\d+)/$", api.download_data),
     re_path(r"^download_model/(?P<project_pk>\d+)/$", api.download_model),
     re_path(r"^import_database_table/(?P<project_pk>\d+)/$", api.import_database_table),
+    re_path(r"^export_database_table/(?P<project_pk>\d+)/$", api.export_database_table),
     re_path(r"^", include(annotate_patterns)),
     re_path(r"^", include(adminpage_patterns)),
 ]

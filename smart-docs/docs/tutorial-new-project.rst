@@ -31,6 +31,7 @@ In the Labels section, we will create categories for labeling. These labeled obs
 
 	* SMART requires at least two category labels and the labels must be unique.
 	* If you plan on uploading a data file that contains labels, the label categories in the file must match those provided on this page.
+	* You may add up to 10,000 labels to each project.
 
 .. warning::
 	* You cannot add, remove, or update any labels for a project after the project is created.

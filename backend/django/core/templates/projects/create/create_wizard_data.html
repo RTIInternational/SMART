@@ -129,10 +129,26 @@
 {% block scripts_body %}
 <script type="text/javascript">
     var show_dedup_option = $('#choose_dedup_fields');
-    show_dedup_option.hide();
-
     var upload_data = $('#data-upload-panel');
-    upload_data.show();
+
+    if ($('input#id_data_source_0').prop('checked') == true) {
+      upload_data.show();
+    } else {
+      upload_data.hide();
+    }
+
+    if ($('input#id_data_source_1').prop('checked') == true) {
+      upload_data.hide();
+    } else {
+      upload_data.show();
+    }
+
+
+    if ($('input#id_dedup_on_2').prop('checked') == true) {
+      show_dedup_option.show();
+    } else {
+      show_dedup_option.hide();
+    }
 
     function showHideOptions(event) {
       if(event.target.id == "id_dedup_on_2") {

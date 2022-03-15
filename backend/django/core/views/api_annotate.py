@@ -28,6 +28,7 @@ from core.serializers import DataSerializer, LabelSerializer
 from core.templatetags import project_extras
 from core.utils.utils_annotate import (
     get_assignments,
+    get_unlabeled_data,
     label_data,
     move_skipped_to_admin_queue,
     process_irr_label,
@@ -427,31 +428,45 @@ def data_unlabeled_table(request, project_pk):
     Returns:
         data: a list of data information
     """
-    project = Project.objects.get(pk=project_pk)
-
-    stuff_in_queue = DataQueue.objects.filter(queue__project=project)
-    queued_ids = [queued.data.id for queued in stuff_in_queue]
-
-    recycle_ids = RecycleBin.objects.filter(data__project=project).values_list(
-        "data__pk", flat=True
-    )
-    unlabeled_data = (
-        project.data_set.filter(datalabel__isnull=True)
-        .exclude(id__in=queued_ids)
-        .exclude(id__in=recycle_ids)
-    )
-    data = []
-    for d in unlabeled_data:
-        serialized_data = DataSerializer(d, many=False).data
-
-        temp = {
-            "Text": serialized_data["text"],
-            "metadata": serialized_data["metadata"],
-            "ID": d.id,
+    unlabeled_data = get_unlabeled_data(project_pk)[:50]
+    serialized_data = DataSerializer(unlabeled_data, many=True).data
+    data = [
+        {
+            "Text": d["text"],
+            "metadata": d["metadata"],
+            "ID": d["pk"],
         }
-        data.append(temp)
-
+        for d in serialized_data
+    ]
     return Response({"data": data})
+
+
+@api_view(["GET"])
+@permission_classes((IsAdminOrCreator,))
+def search_data_unlabeled_table(request, project_pk):
+    """This returns the unlebeled data not in a queue for the skew table filtered for a
+    search input.
+
+    Args:
+        request: The POST request
+        project_pk: Primary key of the project
+    Returns:
+        data: a filtered list of data information
+    """
+    unlabeled_data = get_unlabeled_data(project_pk)
+    text = request.GET.get("text")
+    unlabeled_data = unlabeled_data.filter(text__icontains=text.lower())
+    serialized_data = DataSerializer(unlabeled_data, many=True).data
+    data = [
+        {
+            "data": d["text"],
+            "metadata": d["metadata"],
+            "id": d["pk"],
+            "project": project_pk,
+        }
+        for d in serialized_data
+    ]
+    return Response({"data": data[:50]})
 
 
 @api_view(["POST"])

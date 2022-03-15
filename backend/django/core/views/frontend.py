@@ -276,9 +276,12 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
                     project=proj_obj,
                     env_file=external_file,
                     database_type=external_data["database_type"],
-                    has_ingest=True,
+                    has_ingest=external_data["has_ingest"],
                     ingest_schema=external_data["ingest_schema"],
                     ingest_table_name=external_data["ingest_table_name"],
+                    has_export=external_data["has_export"],
+                    export_schema=external_data["export_schema"],
+                    export_table_name=external_data["export_table_name"],
                 )
             else:
                 # Create an empty database object
@@ -341,7 +344,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
             # metatata fields
             metadata_fields = [
-                c for c in f_data if c.lower() not in ["text", "label", "id"]
+                c for c in f_data if c.lower() not in ["text", "label", "id", "id_hash"]
             ]
             # get list of items to dedup on
             if data.cleaned_data["dedup_on"] == "Text":
@@ -473,7 +476,15 @@ class ProjectUpdateData(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
             with transaction.atomic():
                 f_data = form.cleaned_data.get("data", False)
                 if isinstance(f_data, pd.DataFrame):
-                    upload_data(f_data, self.object, batch_size=self.object.batch_size)
+                    queue = self.object.queue_set.get(type="normal")
+                    irr_queue = self.object.queue_set.get(type="irr")
+                    upload_data(
+                        f_data,
+                        self.object,
+                        queue,
+                        irr_queue,
+                        batch_size=self.object.batch_size,
+                    )
 
                 return redirect(self.get_success_url())
         else:
@@ -566,12 +577,16 @@ class ProjectUpdateExternalDB(LoginRequiredMixin, UserPassesTestMixin, UpdateVie
                         in ["username", "password", "host", "port", "dbname", "driver"]
                     }
                     external_file = save_external_db_file(connection_dict, project.pk)
+
                     external_db.update(
                         env_file=external_file,
                         database_type=external_data["database_type"],
-                        has_ingest=True,
+                        has_ingest=external_data["has_ingest"],
                         ingest_schema=external_data["ingest_schema"],
                         ingest_table_name=external_data["ingest_table_name"],
+                        has_export=external_data["has_export"],
+                        export_schema=external_data["export_schema"],
+                        export_table_name=external_data["export_table_name"],
                     )
                 elif project.has_database_connection():
                     # remove existing database connection
@@ -756,9 +771,9 @@ class ProjectUpdateLabel(LoginRequiredMixin, UserPassesTestMixin, View):
                 labels.instance = context["project"]
                 labels.save()
 
-                update_label_embeddings(context["project"])
+            update_label_embeddings(context["project"])
 
-                return redirect(self.get_success_url())
+            return redirect(self.get_success_url())
         else:
             return self.render_to_response(context)
 
