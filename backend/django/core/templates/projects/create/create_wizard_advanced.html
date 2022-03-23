@@ -22,6 +22,35 @@
 
           <h1>Advanced Settings</h1>
           <div class="form-group">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h5 class="panel-title">
+                  <a data-toggle="collapse" href="#c-panel" class="accordion-toggle">
+                    Model Selection
+                  </a>
+                </h5>
+              </div>
+              <div id="c-panel" class="panel-collapse collapse show">
+                <div class="panel-body">
+                  <div id="choose_classifier_box">
+                    <div id="use_model_div">
+                      <p>Train and display results for a model: {{ wizard.form.use_model }}</p>
+                      <p>NOTE: This option must be checked to use Active Learning</p>
+                      <br />
+                    </div>
+                    <div id="classifier_radios">
+                      <p>Choose the classification algorithm used by active learning algorithms and for general prediction.</p>
+                      {% for radio2 in wizard.form.classifier %}
+                      <div class="choose_classifier" name="classifier_choice" id="{{radio2.value}}">
+                        {{radio2}}
+                      </div>
+                      {% endfor %}
+                    </div>
+                    <p>{{ wizard.form.classifier.errors }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
             <div class="panel panel-default" id="al_tab">
               <div class="panel-heading">
                 <h5 class="panel-title">
@@ -41,35 +70,6 @@
                       {{radio}}
                     </div>
                     {% endfor %}
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="panel panel-default">
-              <div class="panel-heading">
-                <h5 class="panel-title">
-                  <a data-toggle="collapse" href="#c-panel" class="accordion-toggle">
-                    Model Selection
-                  </a>
-                </h5>
-              </div>
-              <div id="c-panel" class="panel-collapse collapse show">
-                <div class="panel-body">
-                  <div id="choose_classifier_box">
-                    <div id="use_model_div">
-                      <p>Train and display results for a model: {{ wizard.form.use_model }}</p>
-                      <p>NOTE: If you uncheck this option, you cannot use Active Learning</p>
-                      <br />
-                    </div>
-                    <div id="classifier_radios">
-                      <p>Choose the classification algorithm used by active learning algorithms and for general prediction.</p>
-                      {% for radio2 in wizard.form.classifier %}
-                      <div class="choose_classifier" name="classifier_choice" id="{{radio2.value}}">
-                        {{radio2}}
-                      </div>
-                      {% endfor %}
-                    </div>
-                    <p>{{ wizard.form.classifier.errors }}</p>
                   </div>
                 </div>
               </div>
