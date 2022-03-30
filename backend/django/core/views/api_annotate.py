@@ -37,9 +37,12 @@ from core.utils.utils_annotate import (
 from core.utils.utils_model import check_and_trigger_model
 from core.utils.utils_redis import redis_serialize_data, redis_serialize_set
 
-# Model can be found here: https://www.sbert.net/docs/pretrained_models.html
-# Model Card: https://huggingface.co/sentence-transformers/multi-qa-mpnet-base-dot-v1
-embeddings_model = SentenceTransformer("multi-qa-MiniLM-L6-cos-v1")
+# Using a prebuilt model
+# How this model was built: https://github.com/dsteedRTI/csv-to-embeddings-model
+# Sbert Model can be found here: https://www.sbert.net/docs/pretrained_models.html
+# Sbert Model Card: https://huggingface.co/sentence-transformers/multi-qa-mpnet-base-dot-v1
+model_path = "core/views/smart_embeddings_model"
+embeddings_model = SentenceTransformer(model_path)
 
 
 @api_view(["GET"])

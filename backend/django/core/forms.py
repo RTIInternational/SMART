@@ -1,6 +1,5 @@
 import copy
 from io import StringIO
-from tkinter import FALSE
 
 import numpy as np
 import pandas as pd
