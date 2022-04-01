@@ -213,6 +213,7 @@ def check_and_trigger_model(datum, profile=None):
     Returns:
         return_str: String to represent which path the function took
     """
+    print("In check_and_trigger_model")
     project = datum.project
     current_training_set = project.get_current_training_set()
     batch_size = project.batch_size
@@ -227,7 +228,7 @@ def check_and_trigger_model(datum, profile=None):
     elif labeled_data_count >= batch_size:
         if labels_count < project.labels.count() or project.classifier is None:
             queue = project.queue_set.get(type="normal")
-
+            print("Calling fill_queue with orderby random")
             fill_queue(queue=queue, orderby="random", batch_size=batch_size)
             return_str = "random"
         else:
@@ -237,6 +238,7 @@ def check_and_trigger_model(datum, profile=None):
             return_str = "model running"
     elif profile:
         # Model is not running, check if user needs more data
+        print("Calling handle_empty_queue")
         handle_empty_queue(profile, project)
 
         return_str = "user queue refill"

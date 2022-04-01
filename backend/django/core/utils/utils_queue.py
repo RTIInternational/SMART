@@ -395,6 +395,7 @@ def handle_empty_queue(profile, project):
                 batch_size=project.batch_size,
             )
         else:
+            print("in handle_empty_queue calling fill_queue with orderby random")
             fill_queue(
                 queue=queue,
                 orderby="random",
