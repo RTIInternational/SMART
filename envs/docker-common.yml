@@ -17,8 +17,8 @@ services:
     ports:
       - "${EXTERNAL_REDIS_PORT:-6379}:6379"
 
-  backend:
-    container_name: backend
+  smart_backend:
+    container_name: smart_backend
     volumes:
       - ../backend/django:/code
       - ../backend/docker:/code/docker
