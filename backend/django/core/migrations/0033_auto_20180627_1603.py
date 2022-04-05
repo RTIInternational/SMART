@@ -15,6 +15,6 @@ class Migration(migrations.Migration):
         migrations.RenameField(
             model_name="project",
             old_name="active_l_method",
-            new_name="learning_method",
+            new_name="ordering_method",
         ),
     ]

@@ -18,11 +18,11 @@ def send_model_task(project_pk):
     project = Project.objects.get(pk=project_pk)
     queue = project.queue_set.get(type="normal")
     irr_queue = project.queue_set.get(type="irr")
-    al_method = project.learning_method
+    ordering_method = project.ordering_method
     batch_size = project.batch_size
 
     model = train_and_save_model(project)
-    if al_method != "random":
+    if ordering_method not in ["random","newest","oldest"]:
         predict_data(project, model)
     TrainingSet.objects.create(
         project=project, set_number=project.get_current_training_set().set_number + 1
@@ -38,7 +38,6 @@ def send_model_task(project_pk):
     fill_queue(
         queue,
         irr_queue=irr_queue,
-        orderby=al_method,
         irr_percent=project.percentage_irr,
         batch_size=batch_size,
     )

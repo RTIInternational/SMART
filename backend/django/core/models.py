@@ -43,12 +43,15 @@ class Project(models.Model):
     batch_size = models.IntegerField(default=30)
     umbrella_string = models.TextField(blank=True)
     """ Advanced options """
-    # the current options are 'random', 'least confident', 'entropy', and 'margin sampling'
-    ACTIVE_L_CHOICES = [
-        ("least confident", "By Uncertainty using Least Confident"),
-        ("margin sampling", "By Uncertainty using the Margin"),
-        ("entropy", "By Uncertainty using Entropy"),
-        ("random", "Randomly (No Active Learning)"),
+    # the current model options are 'least confident', 'entropy', and 'margin sampling'
+    # the non-model options are 'random', 'oldest', and 'newest'
+    DATA_ORDERING_CHOICES = [
+        ("random", "Randomly"),
+        ("newest", "By date added to SMART - newest first"),
+        ("oldest", "By date added to SMART - oldest first"),
+        ("least confident", "By Uncertainty using Least Confident (Active Learning)"),
+        ("margin sampling", "By Uncertainty using the Margin (Active Learning)"),
+        ("entropy", "By Uncertainty using Entropy (Active Learning)"),
     ]
 
     CLASSIFIER_CHOICES = [
@@ -58,8 +61,8 @@ class Project(models.Model):
         ("gnb", "Gaussian Naive Bayes"),
     ]
 
-    learning_method = models.CharField(
-        max_length=15, default="least confident", choices=ACTIVE_L_CHOICES
+    ordering_method = models.CharField(
+        max_length=15, default="least confident", choices=DATA_ORDERING_CHOICES
     )
     classifier = models.CharField(
         max_length=19,
@@ -160,6 +163,7 @@ class Data(models.Model):
     irr_ind = models.BooleanField(default=False)
     upload_id = models.CharField(max_length=128)
     upload_id_hash = models.CharField(max_length=128)
+    upload_date = models.DateField(null=True)
 
     def __str__(self):
         return self.text

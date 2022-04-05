@@ -40,7 +40,7 @@ class ProjectSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ("name", "labels", "learning_method", "classifier")
+        fields = ("name", "labels", "ordering_method", "classifier")
 
 
 class CoreModelSerializer(serializers.HyperlinkedModelSerializer):
@@ -67,6 +67,7 @@ class DataSerializer(serializers.ModelSerializer):
             "irr_ind",
             "hash",
             "upload_id_hash",
+            "upload_date",
             "metadata",
         )
 

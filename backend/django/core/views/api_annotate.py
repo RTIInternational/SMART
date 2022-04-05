@@ -68,6 +68,7 @@ def get_card_deck(request, project_pk):
     data = get_assignments(profile, project, coder_size)
 
     # shuffle so the irr is not all at the front
+    # NOTE: need to verify if this should be taken out
     random.shuffle(data)
     labels = Label.objects.all().filter(project=project)
 

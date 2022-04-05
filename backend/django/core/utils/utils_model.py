@@ -228,9 +228,8 @@ def check_and_trigger_model(datum, profile=None):
     elif labeled_data_count >= batch_size:
         if labels_count < project.labels.count() or project.classifier is None:
             queue = project.queue_set.get(type="normal")
-            print("Calling fill_queue with orderby random")
-            fill_queue(queue=queue, orderby="random", batch_size=batch_size)
-            return_str = "random"
+            fill_queue(queue=queue, batch_size=batch_size)
+            return_str = "queue filled"
         else:
             task_num = tasks.send_model_task.delay(project.pk)
             current_training_set.celery_task_id = task_num

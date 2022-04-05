@@ -61,7 +61,7 @@ def get_ordered_data(data_ids, orderby):
     Returns:
         Query set of ordered data objects
     """
-    ORDERBY_OPTIONS = ["random", "least confident", "margin sampling", "entropy"]
+    ORDERBY_OPTIONS = ["random","newest","oldest", "least confident", "margin sampling", "entropy"]
     if orderby not in ORDERBY_OPTIONS:
         raise ValueError(
             "orderby parameter must be one of the following: "
@@ -72,6 +72,10 @@ def get_ordered_data(data_ids, orderby):
 
     if orderby == "random":
         return data_objs.order_by("?")
+    elif orderby == "newest":
+        return data_objs.order_by("-upload_date")
+    elif orderby == "oldest":
+        return data_objs.order_by("upload_date")
     elif orderby == "least confident":
         return data_objs.annotate(
             max_least_confident=Max("datauncertainty__least_confident")
@@ -132,7 +136,7 @@ def init_redis():
 def sync_redis_objects(queue, orderby):
     """Given a DataQueue sync the redis set with the DataQueue and then update the redis
     queue with the appropriate new ordered data."""
-    ORDERBY_OPTIONS = ["random", "least confident", "margin sampling", "entropy"]
+    ORDERBY_OPTIONS = ["random","newest","oldest", "least confident", "margin sampling", "entropy"]
     if orderby not in ORDERBY_OPTIONS:
         raise ValueError(
             "orderby parameter must be one of the following: "

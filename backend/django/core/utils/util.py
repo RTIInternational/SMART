@@ -1,6 +1,7 @@
 import hashlib
 import os
 from io import StringIO
+from datetime import date
 from itertools import combinations
 
 import numpy as np
@@ -99,7 +100,6 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
         fill_queue(
             queue=queue,
             irr_queue=irr_queue,
-            orderby="random",
             irr_percent=project.percentage_irr,
             batch_size=batch_size,
         )
@@ -148,6 +148,8 @@ def create_data_from_csv(df, project):
         )
     )
 
+    df["upload_date"] = date.today()
+
     df.to_csv(stream, sep="\t", header=False, index=False, columns=columns)
     stream.seek(0)
 
@@ -164,6 +166,7 @@ def create_data_from_csv(df, project):
                 "upload_id",
                 "upload_id_hash",
                 "irr_ind",
+                "upload_date"
             ],
         )
 

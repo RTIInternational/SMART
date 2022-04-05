@@ -21,60 +21,52 @@
           {{ wizard.management_form }}
 
           <h1>Advanced Settings</h1>
+          <p>SMART has a number of optional features which can be turned on for each project. These features can be enabled, disabled, or changed using the options below.</p>
+          <i> WARNING: the settings on this page cannot be changed once a project is created.</i>
           <div class="form-group">
             <div class="panel panel-default">
               <div class="panel-heading">
                 <h5 class="panel-title">
                   <a data-toggle="collapse" href="#c-panel" class="accordion-toggle">
-                    Model Selection
+                    Model Selection and Data Ordering
                   </a>
                 </h5>
               </div>
               <div id="c-panel" class="panel-collapse collapse show">
                 <div class="panel-body">
+                  <p>For projects looking to build a training set to predict labels from text, SMART provides several types of built-in supervised learning algorithm options.</p>
                   <div id="choose_classifier_box">
                     <div id="use_model_div">
                       <p>Train and display results for a model: {{ wizard.form.use_model }}</p>
-                      <p>NOTE: This option must be checked to use Active Learning</p>
-                      <br />
                     </div>
                     <div id="classifier_radios">
-                      <p>Choose the classification algorithm used by active learning algorithms and for general prediction.</p>
+                      <p>Choose the classification algorithm.</p>
                       {% for radio2 in wizard.form.classifier %}
                       <div class="choose_classifier" name="classifier_choice" id="{{radio2.value}}">
                         {{radio2}}
                       </div>
                       {% endfor %}
                     </div>
-                    <p>{{ wizard.form.classifier.errors }}</p>
+                    <div class="error-messages">{{ wizard.form.classifier.errors }}</div>
+                    <hr/>
                   </div>
-                </div>
-              </div>
-            </div>
-            <div class="panel panel-default" id="al_tab">
-              <div class="panel-heading">
-                <h5 class="panel-title">
-                  <a data-toggle="collapse" href="#al-panel" class="accordion-toggle">
-                    Active Learning
-                  </a>
-                </h5>
-              </div>
-              <div id="al-panel" class="panel-collapse collapse show">
-                <div class="panel-body">
-                  <div>
-                  {{ wizard.form.use_active_learning }} Use Active Learning to select data to label
-                  </div>
+
                   <div id="choose_method_box">
-                    {% for radio in wizard.form.learning_method %}
-                    <div class="choose_method" name = "al_choice" id={{radio.value}}>
+                    <p>Choose what order the unlabeled data should be assigned to coders*</p>
+                    {% for radio in wizard.form.ordering_method %}
+                    <div class="choose_method" name = "ordering_choice" id={{radio.value}}>
                       {{radio}}
                     </div>
                     {% endfor %}
+                    <p>
+                      * Projects with a predictive model enabled may also use this model to identify what unlabeled data would be the most beneficial for model knowledge gain to assign to coders next, using
+                      a process called <b>Active Learning</b>.
+                    </p>
+                    <div class="error-messages">{{ wizard.form.ordering_method.errors }}</div>
                   </div>
                 </div>
               </div>
             </div>
-
             <div class="panel panel-default">
               <div class="panel-heading">
                 <h5 class="panel-title">
@@ -120,7 +112,7 @@
               </div>
             </div>
           </div>
-
+          <div class="error-messages">{{ wizard.form.non_field_errors }}</div>
           <div class="wizard_nav_bar">
             <button class="btn btn-info" name="wizard_goto_step" type="submit" value="project">1. Info</button>
             <button class="btn btn-info" name="wizard_goto_step" type="submit" value="labels">2. Labels</button>
@@ -140,65 +132,37 @@
 /*
  *  Custom code to handle what options are shown on page load and on option selection
  */
-var methods_box = $('div#choose_method_box');
 var irr_box = $('div#IRR_options');
-var batch_field = $('#choose_batch_size');
-var use_model = $('#use_model_div');
 var class_choice = $('#classifier_radios');
-var al_tab = $('#al_tab');
+
+var active_learning_options = [
+  "input#id_advanced-ordering_method_3",
+  "input#id_advanced-ordering_method_4",
+  "input#id_advanced-ordering_method_5"
+];
+
 
 if ($('input#id_advanced-use_irr').prop('checked') == true) {
   irr_box.show();
 } else {
   irr_box.hide();
 }
-if ($('input#id_advanced-use_active_learning').prop('checked') == true) {
-  methods_box.show();
-  use_model.hide();
-} else {
-  methods_box.hide();
-  use_model.show();
-}
-
-if ($('input#id_advanced-use_default_batch_size').prop('checked') == true) {
-  batch_field.hide();
-} else {
-  batch_field.show();
-}
 
 if ($('input#id_advanced-use_model').prop('checked') == true) {
+  active_learning_options.forEach(item => $(item).attr("disabled",false))
   class_choice.show();
-  al_tab.show();
 } else {
+  active_learning_options.forEach(item => $(item).attr("disabled",true))
   class_choice.hide();
-  al_tab.hide();
 }
-
-$('input#id_advanced-use_active_learning').change(function() {
-  if ($(this).prop('checked') == true) {
-    methods_box.show();
-    use_model.hide();
-  } else {
-    methods_box.hide();
-    use_model.show();
-  }
-});
-
-$('input#id_advanced-use_default_batch_size').change(function() {
-  if ($(this).prop('checked') == true) {
-    batch_field.hide();
-  } else {
-    batch_field.show();
-  }
-});
 
 $('input#id_advanced-use_model').change(function() {
   if ($(this).prop('checked') == true) {
+    active_learning_options.forEach(item => $(item).attr("disabled",false))
     class_choice.show();
-    al_tab.show();
   } else {
+    active_learning_options.forEach(item => $(item).attr("disabled",true))
     class_choice.hide();
-    al_tab.hide();
   }
 });
 
@@ -209,5 +173,9 @@ $('input#id_advanced-use_irr').change(function() {
     irr_box.hide();
   }
 });
+
+
+
+
 </script>
 {% endblock %}

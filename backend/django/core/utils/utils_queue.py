@@ -48,24 +48,26 @@ def add_queue(project, length, type="normal", profile=None):
     )
 
 
-def fill_queue(queue, orderby, irr_queue=None, irr_percent=10, batch_size=30):
+def fill_queue(queue, orderby=None, irr_queue=None, irr_percent=10, batch_size=30):
     """Fill a queue with unlabeled, unassigned data randomly selected from the queue's
     project. The queue doesn't need to be empty.
 
     If there isn't enough data left to fill the queue, use all the
     data available.
 
-    Takes an orderby arguement to fill the qeuue based on uncertainty sampling if
-    the project has a trained model
+    Fills the queue based on the method assigned by the project
 
     Fill the IRR queue with the given percentage of values
     """
-
+    if orderby is None:
+        orderby = queue.project.ordering_method
     ORDERBY_VALUE = {
         "random": "random()",
         "least confident": "uncertainty.least_confident DESC",
         "margin sampling": "uncertainty.margin_sampling ASC",
         "entropy": "uncertainty.entropy DESC",
+        "newest": "upload_date DESC",
+        "oldest": "upload_date ASC",
     }
     if orderby not in ORDERBY_VALUE.keys():
         raise ValueError(
@@ -176,7 +178,7 @@ def generate_sql_for_fill_queue(queue, orderby_value, join_clause, cte_sql, size
 
 def get_join_clause(orderby, queue):
     """This function generates the join clause used to fill queues."""
-    if orderby == "random":
+    if orderby in ["random","newest","oldest"]:
         join_clause = ""
     else:
         join_clause = """
@@ -385,21 +387,9 @@ def handle_empty_queue(profile, project):
     )
 
     if queue_count - assigned_toOthers_count == 0 and irr_count == irr_labeled_count:
-        # if there is a model, use the orderby of the project, otherwise random
-        if len(Model.objects.filter(project=project)) > 0:
-            fill_queue(
-                queue=queue,
-                orderby=project.learning_method,
-                irr_queue=irr_queue,
-                irr_percent=project.percentage_irr,
-                batch_size=project.batch_size,
-            )
-        else:
-            print("in handle_empty_queue calling fill_queue with orderby random")
-            fill_queue(
-                queue=queue,
-                orderby="random",
-                irr_queue=irr_queue,
-                irr_percent=project.percentage_irr,
-                batch_size=project.batch_size,
-            )
+        fill_queue(
+            queue=queue,
+            irr_queue=irr_queue,
+            irr_percent=project.percentage_irr,
+            batch_size=project.batch_size,
+        )

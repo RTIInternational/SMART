@@ -289,19 +289,8 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
                     project=proj_obj, env_file="", database_type="none"
                 )
 
-            if advanced_data["batch_size"] == 0:
-                batch_size = 10 * len(
-                    [
-                        x
-                        for x in labels
-                        if x.cleaned_data != {} and not x.cleaned_data["DELETE"]
-                    ]
-                )
-            else:
-                batch_size = advanced_data["batch_size"]
-
-            proj_obj.batch_size = batch_size
-            proj_obj.learning_method = advanced_data["learning_method"]
+            proj_obj.batch_size = advanced_data["batch_size"]
+            proj_obj.ordering_method = advanced_data["ordering_method"]
             proj_obj.percentage_irr = advanced_data["percentage_irr"]
             proj_obj.num_users_irr = advanced_data["num_users_irr"]
             proj_obj.classifier = advanced_data["classifier"]
@@ -335,7 +324,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
                 )
                 + 1
             )
-            q_length = find_queue_length(batch_size, num_coders)
+            q_length = find_queue_length(advanced_data["batch_size"], num_coders)
 
             queue = add_queue(project=proj_obj, length=q_length)
 
@@ -369,7 +358,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
             add_queue(project=proj_obj, length=2000000, type="admin")
             irr_queue = add_queue(project=proj_obj, length=2000000, type="irr")
-            upload_data(f_data, proj_obj, queue, irr_queue, batch_size)
+            upload_data(f_data, proj_obj, queue, irr_queue, advanced_data["batch_size"])
 
         return HttpResponseRedirect(proj_obj.get_absolute_url())
 

@@ -322,27 +322,22 @@ class AdvancedWizardForm(forms.ModelForm):
     class Meta:
         model = Project
         fields = [
-            "learning_method",
+            "ordering_method",
             "percentage_irr",
             "num_users_irr",
             "batch_size",
             "classifier",
         ]
 
-    use_active_learning = forms.BooleanField(initial=False, required=False)
-    active_l_choices = copy.deepcopy(Project.ACTIVE_L_CHOICES)
-    # remove random from the options
-    active_l_choices.remove(("random", "Randomly (No Active Learning)"))
-    learning_method = forms.ChoiceField(
+    ordering_method = forms.ChoiceField(
         widget=RadioSelect(),
-        choices=active_l_choices,
-        initial="least confident",
+        choices=Project.DATA_ORDERING_CHOICES,
+        initial="random",
         required=False,
     )
     use_irr = forms.BooleanField(initial=False, required=False)
     percentage_irr = forms.FloatField(initial=10.0, min_value=0.0, max_value=100.0)
     num_users_irr = forms.IntegerField(initial=2, min_value=2)
-    use_default_batch_size = forms.BooleanField(initial=True, required=False)
     batch_size = forms.IntegerField(initial=30, min_value=10, max_value=10000)
 
     use_model = forms.BooleanField(initial=False, required=False)
@@ -354,24 +349,29 @@ class AdvancedWizardForm(forms.ModelForm):
     )
 
     def clean(self):
-        use_active_learning = self.cleaned_data.get("use_active_learning")
-        use_default_batch_size = self.cleaned_data.get("use_default_batch_size")
+        ordering_method = self.cleaned_data.get("ordering_method")
         use_irr = self.cleaned_data.get("use_irr")
         use_model = self.cleaned_data.get("use_model")
 
-        # if they are not using active learning, the selection method is random
-        if not use_active_learning:
-            self.cleaned_data["learning_method"] = "random"
-
-        # if they are not using a model, they cannot use active learning
-        if not use_model:
-            self.cleaned_data["classifier"] = None
-            self.cleaned_data["learning_method"] = "random"
-
-        if use_default_batch_size:
-            self.cleaned_data["batch_size"] = 0
+        if ordering_method in ["random", "newest", "oldest"]:
+            use_active_learning = False
+        else:
+            use_active_learning = True
+            if not use_model:
+                self._errors["ordering_method"] = self.error_class(
+                    [
+                        "ERROR: Model is disabled. Must choose an "
+                        "ordering method which does not use active learning."
+                    ]
+                )
         if not use_irr:
             self.cleaned_data["percentage_irr"] = 0
+
+        if not use_model:
+            self.cleaned_data["classifier"] = None
+
+        print(self.cleaned_data)
+
         return self.cleaned_data
 
 
