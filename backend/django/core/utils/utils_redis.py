@@ -61,7 +61,14 @@ def get_ordered_data(data_ids, orderby):
     Returns:
         Query set of ordered data objects
     """
-    ORDERBY_OPTIONS = ["random","newest","oldest", "least confident", "margin sampling", "entropy"]
+    ORDERBY_OPTIONS = [
+        "random",
+        "newest",
+        "oldest",
+        "least confident",
+        "margin sampling",
+        "entropy",
+    ]
     if orderby not in ORDERBY_OPTIONS:
         raise ValueError(
             "orderby parameter must be one of the following: "
@@ -136,7 +143,14 @@ def init_redis():
 def sync_redis_objects(queue, orderby):
     """Given a DataQueue sync the redis set with the DataQueue and then update the redis
     queue with the appropriate new ordered data."""
-    ORDERBY_OPTIONS = ["random","newest","oldest", "least confident", "margin sampling", "entropy"]
+    ORDERBY_OPTIONS = [
+        "random",
+        "newest",
+        "oldest",
+        "least confident",
+        "margin sampling",
+        "entropy",
+    ]
     if orderby not in ORDERBY_OPTIONS:
         raise ValueError(
             "orderby parameter must be one of the following: "

@@ -1,4 +1,3 @@
-import copy
 from io import StringIO
 
 import numpy as np
@@ -353,24 +352,18 @@ class AdvancedWizardForm(forms.ModelForm):
         use_irr = self.cleaned_data.get("use_irr")
         use_model = self.cleaned_data.get("use_model")
 
-        if ordering_method in ["random", "newest", "oldest"]:
-            use_active_learning = False
-        else:
-            use_active_learning = True
-            if not use_model:
-                self._errors["ordering_method"] = self.error_class(
-                    [
-                        "ERROR: Model is disabled. Must choose an "
-                        "ordering method which does not use active learning."
-                    ]
-                )
+        if (not use_model) and (ordering_method not in ["random", "newest", "oldest"]):
+            self._errors["ordering_method"] = self.error_class(
+                [
+                    "ERROR: Model is disabled. Must choose an "
+                    "ordering method which does not use active learning."
+                ]
+            )
         if not use_irr:
             self.cleaned_data["percentage_irr"] = 0
 
         if not use_model:
             self.cleaned_data["classifier"] = None
-
-        print(self.cleaned_data)
 
         return self.cleaned_data
 

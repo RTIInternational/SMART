@@ -22,7 +22,7 @@ def send_model_task(project_pk):
     batch_size = project.batch_size
 
     model = train_and_save_model(project)
-    if ordering_method not in ["random","newest","oldest"]:
+    if ordering_method not in ["random", "newest", "oldest"]:
         predict_data(project, model)
     TrainingSet.objects.create(
         project=project, set_number=project.get_current_training_set().set_number + 1

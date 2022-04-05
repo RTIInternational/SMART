@@ -178,7 +178,7 @@ def generate_sql_for_fill_queue(queue, orderby_value, join_clause, cte_sql, size
 
 def get_join_clause(orderby, queue):
     """This function generates the join clause used to fill queues."""
-    if orderby in ["random","newest","oldest"]:
+    if orderby in ["random", "newest", "oldest"]:
         join_clause = ""
     else:
         join_clause = """

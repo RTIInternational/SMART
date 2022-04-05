@@ -1,7 +1,7 @@
 import hashlib
 import os
-from io import StringIO
 from datetime import date
+from io import StringIO
 from itertools import combinations
 
 import numpy as np
@@ -166,7 +166,7 @@ def create_data_from_csv(df, project):
                 "upload_id",
                 "upload_id_hash",
                 "irr_ind",
-                "upload_date"
+                "upload_date",
             ],
         )
 
