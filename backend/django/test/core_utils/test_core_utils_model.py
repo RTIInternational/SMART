@@ -337,9 +337,10 @@ def test_check_and_trigger_batched_success(
 
 
 def test_check_and_trigger_batched_onlyone_label(
-    setup_celery, test_project_data, test_labels, test_queue, test_profile
+    setup_celery, test_project_data_random, test_labels, test_queue, test_profile
 ):
-    initial_training_set = test_project_data.get_current_training_set()
+    project = test_project_data_random
+    initial_training_set = project.get_current_training_set()
 
     fill_queue(test_queue, orderby="random")
 
@@ -349,12 +350,12 @@ def test_check_and_trigger_batched_onlyone_label(
         label_data(test_label, datum, test_profile, 3)
 
     check = check_and_trigger_model(datum)
-    assert check == "random"
+    assert check == "queue filled"
 
-    assert test_project_data.get_current_training_set() == initial_training_set
-    assert test_project_data.model_set.count() == 0
-    assert DataPrediction.objects.filter(data__project=test_project_data).count() == 0
-    assert DataUncertainty.objects.filter(data__project=test_project_data).count() == 0
+    assert project.get_current_training_set() == initial_training_set
+    assert project.model_set.count() == 0
+    assert DataPrediction.objects.filter(data__project=project).count() == 0
+    assert DataUncertainty.objects.filter(data__project=project).count() == 0
     assert DataQueue.objects.filter(queue=test_queue).count() == TEST_QUEUE_LEN
 
 
@@ -452,7 +453,7 @@ def test_svm_classifier(
     labels = test_svm_labels
     project = test_project_svm_data_tfidf
 
-    active_l = project.learning_method
+    active_l = project.ordering_method
     batch_size = project.batch_size
     initial_training_set = project.get_current_training_set()
     model_path_temp = tmpdir.listdir()[0].mkdir("model_pickles")
@@ -510,7 +511,7 @@ def test_randomforest_classifier(
     labels = test_randomforest_labels
     project = test_project_randomforest_data_tfidf
 
-    active_l = project.learning_method
+    active_l = project.ordering_method
     batch_size = project.batch_size
     initial_training_set = project.get_current_training_set()
     model_path_temp = tmpdir.listdir()[0].mkdir("model_pickles")
@@ -568,7 +569,7 @@ def test_g_naivebayes_classifier(
     labels = test_gnb_labels
     project = test_project_gnb_data_tfidf
 
-    active_l = project.learning_method
+    active_l = project.ordering_method
     batch_size = project.batch_size
     initial_training_set = project.get_current_training_set()
     model_path_temp = tmpdir.listdir()[0].mkdir("model_pickles")

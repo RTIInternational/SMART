@@ -171,7 +171,7 @@ def test_skip_irr(
 
 def test_queue_refill(
     setup_celery,
-    test_project_data,
+    test_project_data_random,
     test_all_queues,
     test_profile,
     test_labels,
@@ -183,10 +183,10 @@ def test_queue_refill(
 
     Have one person label everything in a batch. Check that the queue refills but the irr queue now has twice the irr% * batch amount
     """
-    project = test_project_data
+    project = test_project_data_random
     normal_queue, admin_queue, irr_queue = test_all_queues
     fill_queue(
-        normal_queue, "random", irr_queue, project.percentage_irr, project.batch_size
+        normal_queue, None, irr_queue, project.percentage_irr, project.batch_size
     )
 
     irr_count = math.ceil((project.percentage_irr / 100) * project.batch_size)

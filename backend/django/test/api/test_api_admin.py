@@ -459,7 +459,7 @@ def test_model_metrics(
         for temp_dict in response:
             assert len(temp_dict["values"]) == 1
     # do this again and check that a new metric is generated
-    fill_queue(test_queue, project.learning_method)
+    fill_queue(test_queue, project.ordering_method)
 
     data = get_assignments(client_profile, project, 30)
     for i in range(30):
@@ -468,7 +468,7 @@ def test_model_metrics(
             {"labelID": test_labels[i % 3].pk, "labeling_time": 1},
         )
 
-    fill_queue(test_queue, project.learning_method)
+    fill_queue(test_queue, project.ordering_method)
 
     data = get_assignments(client_profile, project, 10)
     for i in range(10):

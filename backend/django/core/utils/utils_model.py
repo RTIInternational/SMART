@@ -225,9 +225,14 @@ def check_and_trigger_model(datum, profile=None):
     if current_training_set.celery_task_id != "":
         return_str = "task already running"
     elif labeled_data_count >= batch_size:
-        if labels_count < project.labels.count() or project.classifier is None:
+        if project.classifier is None:
             queue = project.queue_set.get(type="normal")
             fill_queue(queue=queue, batch_size=batch_size)
+            return_str = "queue filled"
+        elif labels_count < project.labels.count():
+            queue = project.queue_set.get(type="normal")
+            # the model usually orders things but right now there's not enough data
+            fill_queue(queue=queue, orderby="random", batch_size=batch_size)
             return_str = "queue filled"
         else:
             task_num = tasks.send_model_task.delay(project.pk)

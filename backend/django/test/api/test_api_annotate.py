@@ -643,14 +643,14 @@ def test_discard_data(
     seeded_database,
     client,
     admin_client,
-    test_project_data,
+    test_project_data_random,
     test_queue,
     test_irr_queue,
     test_labels,
     test_admin_queue,
 ):
     """This tests that data can be discarded."""
-    project = test_project_data
+    project = test_project_data_random
     fill_queue(
         test_queue, "random", test_irr_queue, project.percentage_irr, project.batch_size
     )
@@ -723,14 +723,14 @@ def test_restore_data(
     seeded_database,
     client,
     admin_client,
-    test_project_data,
+    test_project_data_random,
     test_queue,
     test_irr_queue,
     test_labels,
     test_admin_queue,
 ):
     """This tests that data can be restored after it is discarded."""
-    project = test_project_data
+    project = test_project_data_random
     fill_queue(
         test_queue, "random", test_irr_queue, project.percentage_irr, project.batch_size
     )
@@ -783,14 +783,14 @@ def test_recycle_bin_table(
     seeded_database,
     client,
     admin_client,
-    test_project_data,
+    test_project_data_random,
     test_queue,
     test_irr_queue,
     test_labels,
     test_admin_queue,
 ):
     """This tests that the recycle bin table is populated correctly."""
-    project = test_project_data
+    project = test_project_data_random
     fill_queue(
         test_queue, "random", test_irr_queue, project.percentage_irr, project.batch_size
     )
@@ -874,17 +874,17 @@ def test_admin_counts(
     seeded_database,
     client,
     admin_client,
-    test_project_data,
+    test_project_data_random,
     test_queue,
     test_irr_queue,
     test_labels,
     test_admin_queue,
-    test_project_no_irr_data,
+    test_project_no_irr_data_random,
     test_no_irr_all_queues,
     test_labels_no_irr,
 ):
     """This tests the admin counts api."""
-    projects = [test_project_data, test_project_no_irr_data]
+    projects = [test_project_data_random, test_project_no_irr_data_random]
     normal_queues = [test_queue, test_no_irr_all_queues[0]]
     irr_queues = [test_irr_queue, test_no_irr_all_queues[2]]
 

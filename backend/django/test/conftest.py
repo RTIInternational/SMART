@@ -82,6 +82,14 @@ def test_project_data(db, test_project):
 
 
 @pytest.fixture
+def test_project_data_random(test_project_data):
+    """Takes the test project and sets data ordering to random."""
+    test_project_data.ordering_method = "random"
+    test_project_data.save()
+    return test_project_data
+
+
+@pytest.fixture
 def test_profile(db):
     """Creates a test profile with associated auth_user."""
     return create_profile("test_profile", "password", "test_profile@rti.org")
@@ -300,6 +308,14 @@ def test_project_no_irr_data(db, test_project_no_irr):
     test_data = read_test_data_backend(file="./core/data/test_files/test_no_labels.csv")
     add_data(test_project_no_irr, test_data)
     return test_project_no_irr
+
+
+@pytest.fixture
+def test_project_no_irr_data_random(test_project_no_irr_data):
+    """Takes the test project and sets data ordering to random."""
+    test_project_no_irr_data.ordering_method = "random"
+    test_project_no_irr_data.save()
+    return test_project_no_irr_data
 
 
 @pytest.fixture
