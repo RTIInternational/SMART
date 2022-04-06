@@ -7,6 +7,7 @@ export default function CardData({ card }) {
             <div className="card-data">
                 <h4>Text to Label</h4>
                 <p>{card.text["text"] || card.text["data"]}</p>
+                <i>Date uploaded:{card.text["upload_date"]}</i>
             </div>
             {extractMetadata(card)}
         </div>

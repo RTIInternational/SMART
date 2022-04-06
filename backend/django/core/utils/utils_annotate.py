@@ -37,6 +37,31 @@ def assign_datum(profile, project, type="normal"):
                 return None
 
 
+def format_date_time(timestamp):
+    """Take a Django datetime object and return a formatted date time string."""
+    if timestamp is None:
+        return "None"
+    else:
+        if timestamp.minute < 10:
+            minute = "0" + str(timestamp.minute)
+        else:
+            minute = str(timestamp.minute)
+        if timestamp.second < 10:
+            second = "0" + str(timestamp.second)
+        else:
+            second = str(timestamp.second)
+        new_timestamp = (
+            str(timestamp.date())
+            + ", "
+            + str(timestamp.hour)
+            + ":"
+            + minute
+            + "."
+            + second
+        )
+        return new_timestamp
+
+
 def move_skipped_to_admin_queue(datum, profile, project):
     """Remove the data from AssignedData and redis.
 

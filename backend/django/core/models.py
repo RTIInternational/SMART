@@ -163,7 +163,7 @@ class Data(models.Model):
     irr_ind = models.BooleanField(default=False)
     upload_id = models.CharField(max_length=128)
     upload_id_hash = models.CharField(max_length=128)
-    upload_date = models.DateField(null=True)
+    upload_date = models.DateTimeField(null=True)
 
     def __str__(self):
         return self.text

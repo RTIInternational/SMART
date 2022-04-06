@@ -1,6 +1,6 @@
 import hashlib
 import os
-from datetime import date
+from datetime import datetime as dt
 from io import StringIO
 from itertools import combinations
 
@@ -129,7 +129,7 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
 def create_data_from_csv(df, project):
     """Insert data objects into database using cursor.copy_from by creating an in-memory
     tsv representation of the data."""
-    columns = ["Text", "project", "hash", "ID", "id_hash", "irr_ind"]
+    columns = ["Text", "project", "hash", "ID", "id_hash", "irr_ind", "upload_date"]
     stream = StringIO()
 
     df["project"] = project.pk
@@ -148,7 +148,7 @@ def create_data_from_csv(df, project):
         )
     )
 
-    df["upload_date"] = date.today()
+    df["upload_date"] = dt.now()
 
     df.to_csv(stream, sep="\t", header=False, index=False, columns=columns)
     stream.seek(0)

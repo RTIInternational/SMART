@@ -57,6 +57,7 @@ class LabelSerializer(serializers.ModelSerializer):
 
 class DataSerializer(serializers.ModelSerializer):
     metadata = serializers.StringRelatedField(many=True, read_only=True)
+    upload_date = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S")
 
     class Meta:
         model = Data

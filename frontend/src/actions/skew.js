@@ -35,6 +35,7 @@ export const getUnlabeled = (projectID) => {
                         id: response.data[i].ID,
                         metadata: response.data[i].metadata,
                         data: response.data[i].Text,
+                        upload_date: response.data[i].upload_date,
                         project: projectID
                     };
                     all_data.push(row);

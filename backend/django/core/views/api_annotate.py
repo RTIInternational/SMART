@@ -1,5 +1,4 @@
 import math
-import random
 
 from django.conf import settings
 from django.db import transaction
@@ -27,6 +26,7 @@ from core.permissions import IsAdminOrCreator, IsCoder
 from core.serializers import DataSerializer, LabelSerializer
 from core.templatetags import project_extras
 from core.utils.utils_annotate import (
+    format_date_time,
     get_assignments,
     get_unlabeled_data,
     label_data,
@@ -69,7 +69,7 @@ def get_card_deck(request, project_pk):
 
     # shuffle so the irr is not all at the front
     # NOTE: need to verify if this should be taken out
-    random.shuffle(data)
+    # random.shuffle(data)
     labels = Label.objects.all().filter(project=project)
 
     return Response(
@@ -438,6 +438,7 @@ def data_unlabeled_table(request, project_pk):
         {
             "Text": d["text"],
             "metadata": d["metadata"],
+            "upload_date": d["upload_date"],
             "ID": d["pk"],
         }
         for d in serialized_data
@@ -465,6 +466,7 @@ def search_data_unlabeled_table(request, project_pk):
         {
             "data": d["text"],
             "metadata": d["metadata"],
+            "upload_date": d["upload_date"],
             "id": d["pk"],
             "project": project_pk,
         }
@@ -550,6 +552,7 @@ def data_admin_table(request, project_pk):
         serialized_data = DataSerializer(d.data, many=False).data
         temp = {
             "Text": serialized_data["text"],
+            "upload_date": serialized_data["upload_date"],
             "metadata": serialized_data["metadata"],
             "ID": d.data.id,
             "Reason": reason,
@@ -601,6 +604,7 @@ def recycle_bin_table(request, project_pk):
         serialized_data = DataSerializer(d.data, many=False).data
         temp = {
             "Text": serialized_data["text"],
+            "upload_date": serialized_data["upload_date"],
             "metadata": serialized_data["metadata"],
             "ID": d.data.id,
         }
@@ -721,35 +725,15 @@ def get_label_history(request, project_pk):
             continue
 
         data_list.append(d.data.id)
-        if d.timestamp:
-            if d.timestamp.minute < 10:
-                minute = "0" + str(d.timestamp.minute)
-            else:
-                minute = str(d.timestamp.minute)
-            if d.timestamp.second < 10:
-                second = "0" + str(d.timestamp.second)
-            else:
-                second = str(d.timestamp.second)
-            new_timestamp = (
-                str(d.timestamp.date())
-                + ", "
-                + str(d.timestamp.hour)
-                + ":"
-                + minute
-                + "."
-                + second
-            )
-        else:
-            new_timestamp = "None"
-
         serialized_data = DataSerializer(d.data, many=False).data
         temp_dict = {
             "data": serialized_data["text"],
+            "upload_date": serialized_data["upload_date"],
             "metadata": serialized_data["metadata"],
             "id": d.data.id,
             "label": d.label.name,
             "labelID": d.label.id,
-            "timestamp": new_timestamp,
+            "timestamp": format_date_time(d.timestamp),
             "edit": "yes",
         }
         results.append(temp_dict)
@@ -764,32 +748,13 @@ def get_label_history(request, project_pk):
         if d.data.id in data_list:
             continue
 
-        if d.timestamp:
-            if d.timestamp.minute < 10:
-                minute = "0" + str(d.timestamp.minute)
-            else:
-                minute = str(d.timestamp.minute)
-            if d.timestamp.second < 10:
-                second = "0" + str(d.timestamp.second)
-            else:
-                second = str(d.timestamp.second)
-            new_timestamp = (
-                str(d.timestamp.date())
-                + ", "
-                + str(d.timestamp.hour)
-                + ":"
-                + minute
-                + "."
-                + second
-            )
-        else:
-            new_timestamp = "None"
         temp_dict = {
             "data": d.data.text,
+            "upload_date": d.data.upload_date,
             "id": d.data.id,
             "label": d.label.name,
             "labelID": d.label.id,
-            "timestamp": new_timestamp,
+            "timestamp": format_date_time(d.timestamp),
             "edit": "no",
         }
         results.append(temp_dict)
