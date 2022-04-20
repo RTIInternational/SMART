@@ -253,7 +253,7 @@ def generate_label_embeddings(project):
         # See: https://github.com/huggingface/transformers/issues/7516
 
         embeddings_request = requests.post(
-            "http://backend:8000/api/embeddings",
+            "https://smart-coding.rti.org/api/embeddings",
             json={"strings": project_labels_descriptions},
         )
         embeddings = embeddings_request.json()
@@ -282,7 +282,7 @@ def update_label_embeddings(project):
         # See: https://github.com/huggingface/transformers/issues/7516
 
         embeddings_request = requests.post(
-            "http://backend:8000/api/embeddings",
+            "https://smart-coding.rti.org/api/embeddings",
             json={"strings": project_labels_descriptions},
         )
         embeddings = embeddings_request.json()

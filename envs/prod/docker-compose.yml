@@ -11,10 +11,10 @@ services:
       file: ../docker-common.yml
       service: redis
 
-  smart_backend:
+  backend:
     extends:
       file: ../docker-common.yml
-      service: smart_backend
+      service: backend
     build:
       context: ../../backend/
       dockerfile: docker/Dockerfile.prod
