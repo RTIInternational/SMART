@@ -110,11 +110,14 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
             irr_percent=project.percentage_irr,
             batch_size=batch_size,
         )
-    transaction.on_commit(
-        lambda: tasks.send_label_embeddings_task.apply_async(
-            kwargs={"project_pk": project.pk}
-        )
-    )
+
+    # Celery and emebeddings wasn't working well together...
+    # transaction.on_commit(
+    #     lambda: tasks.send_label_embeddings_task.apply_async(
+    #         kwargs={"project_pk": project.pk}
+    #     )
+    # )
+    tasks.send_label_embeddings_task(project.pk)
 
     # Since User can upload Labeled Data and this data is added to current training_set
     # we need to check_and_trigger model.  However since training model requires
