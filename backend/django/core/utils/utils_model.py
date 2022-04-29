@@ -231,8 +231,17 @@ def check_and_trigger_model(datum, profile=None):
             return_str = "queue filled"
         elif labels_count < project.labels.count():
             queue = project.queue_set.get(type="normal")
-            # the model usually orders things but right now there's not enough data
-            fill_queue(queue=queue, orderby="random", batch_size=batch_size)
+
+            if project.ordering_method in [
+                "least confident",
+                "margin sampling",
+                "entropy",
+            ]:
+                # the model usually orders things but right now there's not enough data
+                fill_queue(queue=queue, orderby="random", batch_size=batch_size)
+            else:
+                fill_queue(queue=queue, batch_size=batch_size)
+
             return_str = "queue filled"
         else:
             task_num = tasks.send_model_task.delay(project.pk)
