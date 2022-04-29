@@ -6,11 +6,20 @@ tags:
 - sentence-similarity
 ---
 
-# {MODEL_NAME}
+# Smart Embeddings Model
 
 This is a [sentence-transformers](https://www.SBERT.net) model: It maps sentences & paragraphs to a 384 dimensional dense vector space and can be used for tasks like clustering or semantic search.
 
-<!--- Describe your model here -->
+## Purpose for Making the Model
+
+The purpose of this model is to blacklist some specific matches and create mappings to certain abbreviations needed for the project.
+
+## Building the Model
+
+- The model was built with: https://github.com/dsteedRTI/csv-to-embeddings-model
+- Sbert Model can be found here: https://www.sbert.net/docs/pretrained_models.html
+- Sbert Model Card: https://huggingface.co/sentence-transformers/multi-qa-mpnet-base-dot-v1
+
 
 ## Usage (Sentence-Transformers)
 
@@ -26,7 +35,9 @@ Then you can use the model like this:
 from sentence_transformers import SentenceTransformer
 sentences = ["This is an example sentence", "Each sentence is converted"]
 
-model = SentenceTransformer('{MODEL_NAME}')
+# Use path to model
+model_path = "core/views/smart_embeddings_model"
+embeddings_model = SentenceTransformer(model_path)
 embeddings = model.encode(sentences)
 print(embeddings)
 ```
@@ -35,9 +46,7 @@ print(embeddings)
 
 ## Evaluation Results
 
-<!--- Describe how your model was evaluated -->
-
-For an automated evaluation of this model, see the *Sentence Embeddings Benchmark*: [https://seb.sbert.net](https://seb.sbert.net?model_name={MODEL_NAME})
+The model was evaluated on top of the [multi-qa-mpnet-base-dot-v1](https://huggingface.co/sentence-transformers/multi-qa-mpnet-base-dot-v1) model. Specific blacklists and abbreviations were then loaded into the model to create a more accurate model for this particular project.
 
 
 ## Training
@@ -84,4 +93,5 @@ SentenceTransformer(
 
 ## Citing & Authors
 
-<!--- Describe where people can find more information -->
+- [dsteedRTI](https://github.com/dsteedRTI)
+- [peridoteagle](https://github.com/peridoteagle)
