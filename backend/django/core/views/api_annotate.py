@@ -66,6 +66,10 @@ def get_card_deck(request, project_pk):
     coder_size = math.ceil(batch_size / num_coders)
 
     data = get_assignments(profile, project, coder_size)
+    # check if we need to refill queue
+    if len(data) == 0:
+        check_and_trigger_model(datum=None, profile=profile, project=project)
+        data = get_assignments(profile, project, coder_size)
 
     # shuffle so the irr is not all at the front
     # NOTE: need to verify if this should be taken out

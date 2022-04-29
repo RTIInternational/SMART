@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import statsmodels.stats.inter_rater as raters
 from django.conf import settings
+from django.db.models import Count
 from scipy import sparse
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -203,17 +204,24 @@ def entropy(probs):
     return -total
 
 
-def check_and_trigger_model(datum, profile=None):
+def check_and_trigger_model(datum, profile=None, project=None):
     """Given a recently assigned datum check if the project it belong to needs its model
     ran.  It the model needs to be run, start the model run and create a new project
     current_training_set.
 
+    UPDATE: may also be run given a project and no datum
+
     Args:
         datum: Data object (may or may not be labeled)
+        profile: the account who is making the request
+        project: the project, may be provided instead of datum
     Returns:
         return_str: String to represent which path the function took
     """
-    project = datum.project
+    if datum is None:
+        project = project
+    else:
+        project = datum.project
     current_training_set = project.get_current_training_set()
     batch_size = project.batch_size
     labeled_data = DataLabel.objects.filter(
@@ -221,6 +229,9 @@ def check_and_trigger_model(datum, profile=None):
     )
     labeled_data_count = labeled_data.count()
     labels_count = labeled_data.distinct("label").count()
+    min_label_occurance_count = pd.DataFrame(
+        labeled_data.values("label").annotate(Count("label"))
+    )["label__count"].min()
 
     if current_training_set.celery_task_id != "":
         return_str = "task already running"
@@ -229,7 +240,8 @@ def check_and_trigger_model(datum, profile=None):
             queue = project.queue_set.get(type="normal")
             fill_queue(queue=queue, batch_size=batch_size)
             return_str = "queue filled"
-        elif labels_count < project.labels.count():
+        elif (labels_count < project.labels.count()) or (min_label_occurance_count < 5):
+            # we either haven't seen all of the labels or we haven't seen enough of them
             queue = project.queue_set.get(type="normal")
 
             if project.ordering_method in [
