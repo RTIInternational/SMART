@@ -141,6 +141,12 @@ main {
     }
 }
 
+.card-title {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+}
+
 .cardface-datacard {
     display: flex;
     flex-wrap: wrap;

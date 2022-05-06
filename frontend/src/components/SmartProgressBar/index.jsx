@@ -22,12 +22,13 @@ class SmartProgressBar extends React.Component {
         }
 
         return (
-            <ProgressBar>
-                <ProgressBar
-                    style={{ minWidth: 60 }}
-                    label={label}
-                    now={progress}/>
-            </ProgressBar>
+            // <ProgressBar>
+            //     <ProgressBar
+            //         style={{ minWidth: 60 }}
+            //         label={label}
+            //         now={progress}/>
+            // </ProgressBar>
+            <React.Fragment></React.Fragment>
         );
     }
 }
