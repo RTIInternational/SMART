@@ -48,7 +48,7 @@ function drawEditOptions(card, labels, onSelectLabel, onSkip, onDiscard) {
 function drawLabelSelect(card, labelsOptions, onSelectLabel) {
     return (
         <Select
-            className="align-items-center flex py-1 px-2"
+            className="align-items-center flex py-1 px-2 annotate-select"
             dropdownHandle={false}
             labelField="dropdownLabel"
             onChange={(value) => {

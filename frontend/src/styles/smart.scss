@@ -245,6 +245,10 @@ main {
         text-overflow: ellipsis;
     }
 
+    .annotate-select .react-dropdown-select-item:hover {
+        text-decoration: underline;
+    }
+
     .ajucate-button {
         flex: 0 0 auto;
     }
