@@ -554,3 +554,14 @@ li.disabled {
     margin-bottom: 8px;
     margin-top: 8px;
 }
+
+.adjudicate-message {
+    display: flex;
+    flex-direction: column;
+    margin: 16px 36px;
+
+    h4 {
+        border-bottom: 1px solid #DDDDDD;
+        font-size: 18px;
+    }
+}

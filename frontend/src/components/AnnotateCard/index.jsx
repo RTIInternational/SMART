@@ -88,13 +88,18 @@ function drawSkipButton(card, onSkip) {
         >
             <Button
                 className="ajucate-button"
-                onClick={() => onSkip(card)}
+                onClick={() => promptAdjudicate(card, onSkip)}
                 variant="info"
             >
                 Adjudicate
             </Button>
         </OverlayTrigger>
     );
+}
+
+function promptAdjudicate(card, onSkip) {
+    let message = prompt("Please enter the reasons for skipping this card:");
+    if (message !== null) onSkip(card, message);
 }
 
 function drawDiscardButton(card, onDiscard) {

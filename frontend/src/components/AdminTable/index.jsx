@@ -48,16 +48,25 @@ class AdminTable extends React.Component {
             {
                 Header: "Unlabeled Data",
                 accessor: "data",
-                Cell: row => (
-                    <div className="sub-row">
-                        <AnnotateCard
-                            card={buildCard(row.row.id, null, row.original)}
-                            labels={labels}
-                            onSelectLabel={(card, label) => adminLabel(card.id, label)}
-                            onDiscard={(id) => discardData(id)}
-                        />
-                    </div>
-                )
+                Cell: row => {
+                    const potentialReasonMessage = admin_data.messages.find((message) => message["data_id"] === row.row.id);
+                    return (
+                        <div className="sub-row">
+                            {potentialReasonMessage && (
+                                <div className="adjudicate-message">
+                                    <h4>Reason:</h4>
+                                    <p>{potentialReasonMessage.message}</p>
+                                </div>
+                            )}
+                            <AnnotateCard
+                                card={buildCard(row.row.id, null, row.original)}
+                                labels={labels}
+                                onSelectLabel={(card, label) => adminLabel(card.id, label)}
+                                onDiscard={(id) => discardData(id)}
+                            />
+                        </div>
+                    );
+                }
             }
         ];
 
@@ -77,7 +86,7 @@ class AdminTable extends React.Component {
                 </p>
                 <CodebookLabelMenuContainer />
                 <ReactTable
-                    data={admin_data}
+                    data={admin_data.data}
                     columns={columns}
                     pageSizeOptions={page_sizes}
                     defaultPageSize={1}
