@@ -36,7 +36,7 @@ from sentence_transformers import SentenceTransformer
 sentences = ["This is an example sentence", "Each sentence is converted"]
 
 # Use path to model
-model_path = "core/views/smart_embeddings_model"
+model_path = "core/smart_embeddings_model"
 embeddings_model = SentenceTransformer(model_path)
 embeddings = model.encode(sentences)
 print(embeddings)

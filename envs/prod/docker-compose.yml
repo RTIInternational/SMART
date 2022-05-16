@@ -20,6 +20,8 @@ services:
       dockerfile: docker/Dockerfile.prod
     image: rti/smart-backend-prod:R_0_0_1
     restart: always
+    ports:
+      - "80:8000"
     depends_on:
       - postgres
       - redis
@@ -28,13 +30,10 @@ services:
     extends:
       file: ../docker-common.yml
       service: smart_frontend
-    build:
-      context: ../../frontend/
-      dockerfile: Dockerfile.prod
-    image: rti/smart-frontend-prod:R_0_0_1
-    ports:
-      - "${EXTERNAL_FRONTEND_PORT:-8080}:8080"
-    command: nginx -c /code/nginx.conf -g "daemon off;"
+    build: ../../frontend/
+    image: rti/smart-frontend:R_0_0_1
+    command: node_modules/.bin/webpack --watch
+
 
 volumes:
   smart_pgdata:
