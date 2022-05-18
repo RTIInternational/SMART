@@ -297,7 +297,7 @@ LabelFormSet = forms.inlineformset_factory(
     validate_min=True,
     extra=0,
     can_delete=True,
-    absolute_max=10000,
+    absolute_max=55000,
 )
 LabelDescriptionFormSet = forms.inlineformset_factory(
     Project,
@@ -305,7 +305,7 @@ LabelDescriptionFormSet = forms.inlineformset_factory(
     form=LabelDescriptionForm,
     can_delete=False,
     extra=0,
-    absolute_max=10000,
+    absolute_max=55000,
 )
 PermissionsFormSet = forms.inlineformset_factory(
     Project, ProjectPermissions, form=ProjectPermissionsForm, extra=1, can_delete=True
@@ -343,7 +343,7 @@ class AdvancedWizardForm(forms.ModelForm):
     percentage_irr = forms.FloatField(initial=10.0, min_value=0.0, max_value=100.0)
     num_users_irr = forms.IntegerField(initial=2, min_value=2)
     use_default_batch_size = forms.BooleanField(initial=True, required=False)
-    batch_size = forms.IntegerField(initial=30, min_value=10, max_value=10000)
+    batch_size = forms.IntegerField(initial=30, min_value=10, max_value=55000)
 
     use_model = forms.BooleanField(initial=False, required=False)
     classifier = forms.ChoiceField(
