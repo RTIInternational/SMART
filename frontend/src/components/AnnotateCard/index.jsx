@@ -33,7 +33,6 @@ function drawEditOptions(card, labels, onSelectLabel, onSkip, onDiscard) {
 
     return (
         <ButtonToolbar className="btn-toolbar">
-            {/* { onSkip != null && drawSkipButton(card, onSkip)} */}
             <div className="toolbar-gap" />
             {labels.length > 5 ? (
                 drawLabelSelect(card, labelsOptions, onSelectLabel)

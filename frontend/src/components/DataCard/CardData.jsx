@@ -9,7 +9,6 @@ export default function CardData({ card, onSkip }) {
     return (
         <div className="cardface-info">
             <div className="card-title">
-                <h2>Card {card.id + 1}</h2>
                 {drawSkipButton(card, onSkip)}
             </div>
             <div className="card-data">
