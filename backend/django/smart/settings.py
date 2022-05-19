@@ -28,7 +28,7 @@ class Dev(Configuration):
     # SECURITY WARNING: don't run with debug turned on in production!
     DEBUG = True
 
-    ALLOWED_HOSTS = ["0.0.0.0", "localhost", "backend"]
+    ALLOWED_HOSTS = ["0.0.0.0", "localhost", "backend", "smart-coding.rti.org"]
 
     # Application definition
 
