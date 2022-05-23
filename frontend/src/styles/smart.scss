@@ -554,3 +554,18 @@ li.disabled {
     margin-bottom: 8px;
     margin-top: 8px;
 }
+
+.fixed-wiz {
+    display: none;
+    height: fit-content;
+    position: sticky;
+    top: 0;
+    margin: 0 -8px;
+    padding: 8px;
+    background-color: white;
+}
+
+.fixed-wiz .wizard_nav_bar {
+    width: 100%;
+    margin-bottom: 0px !important;
+}
