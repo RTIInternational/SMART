@@ -2,16 +2,15 @@ import hashlib
 import os
 from io import StringIO
 from itertools import combinations
-from sentence_transformers import SentenceTransformer, util
 
 import numpy as np
 import pandas as pd
-import requests
 from celery import chord
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import connection, transaction
 from django.utils import timezone
+from sentence_transformers import SentenceTransformer
 
 from core import tasks
 from core.models import (
@@ -43,8 +42,9 @@ pd.options.mode.chained_assignment = None  # default='warn'
 # How this model was built: https://github.com/dsteedRTI/csv-to-embeddings-model
 # Sbert Model can be found here: https://www.sbert.net/docs/pretrained_models.html
 # Sbert Model Card: https://huggingface.co/sentence-transformers/multi-qa-mpnet-base-dot-v1
-model_path = "core/views/smart_embeddings_model"
+model_path = "core/smart_embeddings_model"
 embeddings_model = SentenceTransformer(model_path)
+
 
 def md5_hash(obj):
     """Return MD5 hash hexdigest of obj; returns None if obj is None."""
@@ -258,18 +258,7 @@ def generate_label_embeddings(project):
             project_labels.values_list("description", flat=True)
         )
 
-        # This calls backend API because the SentenceTransformer model evaluation
-        # clashes with the Celery container:
-        # See: https://github.com/huggingface/transformers/issues/7516
-
-        # Prod didn't like this...
-        # embeddings_request = requests.post(
-        #     "http://backend:8000/api/embeddings",
-        #     json={"strings": project_labels_descriptions},
-        # )
-        # embeddings = embeddings_request.json()
-
-        # Making manual embeddings instead
+        # Make manual embeddings. Prod settings made calling the api from the backend infeasible
         embeddings = embeddings_model.encode(project_labels_descriptions)
 
         label_embeddings = []
@@ -277,7 +266,9 @@ def generate_label_embeddings(project):
         # We have to use tolist() since not calling API now to handle numpy arrays
         # (JSON response from API originally handled this for us)
         for embedding, label in zip(embeddings, project_labels):
-            label_embeddings.append(LabelEmbeddings(embedding=embedding.tolist(), label=label))
+            label_embeddings.append(
+                LabelEmbeddings(embedding=embedding.tolist(), label=label)
+            )
 
         LabelEmbeddings.objects.bulk_create(label_embeddings, ignore_conflicts=True)
 
@@ -293,18 +284,7 @@ def update_label_embeddings(project):
         )
         project_labels_ids = list(project_labels.values_list("id", flat=True))
 
-        # This calls backend API because the SentenceTransformer model evaluation
-        # clashes with the Celery container:
-        # See: https://github.com/huggingface/transformers/issues/7516
-
-        # Prod didn't like this...
-        # embeddings_request = requests.post(
-        #     "http://backend:8000/api/embeddings",
-        #     json={"strings": project_labels_descriptions},
-        # )
-        # embeddings = embeddings_request.json()
-
-        # Making manual embeddings instead
+        # Make manual embeddings. Prod settings made calling the api from the backend infeasible
         embeddings = embeddings_model.encode(project_labels_descriptions)
 
         project_labels_embeddings = LabelEmbeddings.objects.filter(
