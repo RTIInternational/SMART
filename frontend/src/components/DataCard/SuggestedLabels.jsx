@@ -32,7 +32,7 @@ export default function SuggestedLabels({ card, labels, onSelectLabel }) {
             <h4>Suggested Labels</h4>
             {suggestions.suggestions.map((suggestion, index) => (
                 <button key={index + 1} onClick={() => onSelectLabel(card, suggestion.pk)}>
-                    {index + 1}. {`${suggestion.name}: ${suggestion.description}`}
+                    {`${suggestion.name}: ${suggestion.description}`}
                 </button>
             ))}
         </div>
