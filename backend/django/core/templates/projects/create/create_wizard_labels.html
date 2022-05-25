@@ -132,6 +132,7 @@
                 </td>
                 <td>
                   <div class="error-messages"></div>
+                  ${index < 2 ? `<input type="hidden" name="label_set-${index}-DELETE" id="id_label_set-${index}-DELETE" value="off">` : ""}
                   <p class="delete-row delete-label" onClick="deleteLabel(${index})" style="">remove label</p></td>
               </tr>
             `).join("");
@@ -156,8 +157,12 @@
     }
   }
   function deleteLabel(index) {
-    $(`.uploaded-label-row-${index}`).remove();
-    $('#id_label_set-TOTAL_FORMS').val((parseInt($('#id_label_set-TOTAL_FORMS').val()) - 1).toString());
+    if (index >= 2) {
+      $(`.uploaded-label-row-${index}`).remove();
+    } else {
+      $(`#id_label_set-${index}-DELETE`).val("on");
+      $(`.uploaded-label-row-${index}`).css({ 'display': 'none' });
+    }
   }
   $('.formset_row_label').formset({
     addText: 'add label',
