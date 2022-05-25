@@ -569,3 +569,17 @@ li.disabled {
     width: 100%;
     margin-bottom: 0px !important;
 }
+
+.delete-label {
+    color: #568595;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.delete-label:hover {
+    text-decoration: underline;
+}
+
+.dynamic-form-add {
+    background-color: #F9F9F9;
+}

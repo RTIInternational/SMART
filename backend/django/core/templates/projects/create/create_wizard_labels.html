@@ -113,8 +113,13 @@
           var data = $.csv.toArrays(csv);
           if(data[0][0] === 'Label' && data[0][1] === 'Description') {
             data.shift();
+
+            // remove existing labels (keep add button)
+            document.querySelectorAll('.formset-row-label').forEach(e => e.remove());
+
+            // add new labels
             let appendHTML = data.map((label, index) =>
-              `<tr class="formset_row_label dynamic-form">
+              `<tr class="formset_row_label dynamic-form uploaded-label-row-${index}">
                 <td>
                   <input type="hidden" name="label_set-${index}-project" id="id_label_set-${index}-project" value=""/></input>
                   <input type="hidden" name="label_set-${index}-id" id="id_label_set-${index}-id" value=""></input>
@@ -127,10 +132,10 @@
                 </td>
                 <td>
                   <div class="error-messages"></div>
-                  <a class="delete-row" href="javascript:void(0)" style="">remove label</a></td>
+                  <p class="delete-row delete-label" onClick="deleteLabel(${index})" style="">remove label</p></td>
               </tr>
             `).join("");
-            $('#form-table > tbody').html(appendHTML);
+            $('#form-table > tbody').prepend(appendHTML);
             $('#id_label_set-TOTAL_FORMS').val(`${data.length}`);
             if(data.length > 100) {
               $('.fixed-wiz').css({ 'display': 'flex' });
@@ -149,6 +154,10 @@
     } else {
       $('.error-messages').eq(1).append('<ul class="error-list"><li>There was an error processing your label file. Please make sure your file is a .csv and has a Label and Description column.</li></ul>');
     }
+  }
+  function deleteLabel(index) {
+    $(`.uploaded-label-row-${index}`).remove();
+    $('#id_label_set-TOTAL_FORMS').val((parseInt($('#id_label_set-TOTAL_FORMS').val()) - 1).toString());
   }
   $('.formset_row_label').formset({
     addText: 'add label',
