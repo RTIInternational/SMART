@@ -6,6 +6,8 @@ services:
       file: ../docker-common.yml
       service: postgres
     restart: always
+    volumes:
+      - ./backup:/backups
 
   redis:
     restart: always
@@ -37,6 +39,28 @@ services:
     image: rti/smart-frontend:R_0_0_1
     command: node_modules/.bin/webpack --watch
 
+  pgbackups:
+    container_name: backup
+    image: prodrigestivill/postgres-backup-local
+    restart: always
+    user: postgres:postgres
+    volumes:
+      - ./backup:/backups
+    links:
+      - postgres
+    depends_on:
+      - postgres
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=${DB_NAME} 
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_EXTRA_OPTS=-Z9 --schema=public --blobs
+      - SCHEDULE=@every 0h03m00s
+      - BACKUP_KEEP_DAYS=7
+      - BACKUP_KEEP_WEEKS=4
+      - BACKUP_KEEP_MONTHS=6
+      - HEALTHCHECK_PORT=81
 
 volumes:
   smart_pgdata:
