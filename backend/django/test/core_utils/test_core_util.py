@@ -10,6 +10,7 @@ from core.models import (
     Data,
     DataLabel,
     Label,
+    MetaData,
     Profile,
     Project,
     ProjectPermissions,
@@ -118,6 +119,38 @@ def test_add_data_with_labels(db, test_project_labels):
                     "label__name": row["Label"],
                 },
             )
+
+
+def test_add_metadata(db, test_project_meta):
+    """Tests to see if meta data is loaded to MetaData db."""
+    test_data = read_test_data_backend(
+        file="./core/data/test_files/test_no_labels_with_metadata.csv"
+    )
+    df = add_data(test_project_meta, test_data)
+    META_FIELDS = ["Score", "Num Comments", "Subreddit"]
+
+    for row_i, row in df.iterrows():
+        for label_i, label in enumerate(META_FIELDS):
+            assert_obj_exists(
+                MetaData,
+                {
+                    "data__hash": row["hash"],
+                    "metadata_field__id": label_i + 1,
+                    "value": row[label],
+                },
+            )
+
+
+def test_add_metadata_dedup_text(db, test_project_meta):
+    pass
+
+
+def test_add_metadata_dedup_text_meta(db, test_project_meta):
+    pass
+
+
+def test_add_metadata_dedup_sel_meta(db, test_project_meta):
+    pass
 
 
 def test_save_data_file_no_labels_csv(test_project, tmpdir, settings):
