@@ -117,27 +117,58 @@
             // remove existing labels (keep add button)
             document.querySelectorAll('.formset-row-label').forEach(e => e.remove());
 
+            const tbody = $('#form-table > tbody');
+
+            $('#id_label_set-TOTAL_FORMS').val(`${data.length + 2}`);
+
+            // add 3 unecessary labels (Django keeps removing the last three inserted rows)
+
+            for (const index in [0, 1, 2]) {
+              data.push(["abc", "to be removed"]);
+            };
+
             // add new labels
-            let appendHTML = data.map((label, index) =>
-              `<tr class="formset_row_label dynamic-form uploaded-label-row-${index}">
+            const appendHTML = data.map((label, index) => `<tr class="formset_row_label dynamic-form uploaded-label-row-${index + 2}">
+              <td>
+                <input type="hidden" name="label_set-${index + 2}-project" id="id_label_set-${index + 2}-project" value=""/></input>
+                <input type="hidden" name="label_set-${index + 2}-id" id="id_label_set-${index + 2}-id" value=""></input>
+                <div class="error-messages"></div>
+                <input type="text" name="label_set-${index + 2}-name" class="form-control" id="id_label_set-${index + 2}-name" value="${label[0]}"></input>
+              </td>
+              <td>
+                <div class="error-messages"></div>
+                <textarea name="label_set-${index + 2}-description" cols="40" rows="5" class="form-control" id="id_label_set-${index + 2}-description" value="${label[1]}">${label[1]}</textarea>
+              </td>
+              <td>
+                <div class="error-messages"></div>
+                <p class="delete-row delete-label" onClick="deleteLabel(${index + 2})" style="">remove label</p>
+              </td>
+            </tr>`);
+
+            // add two "dummy" labels at top
+            let dummyHTML = [0, 1].map((index) => 
+              `
+              <tr class="formset_row_label dynamic-form" style="display: none;">
                 <td>
-                  <input type="hidden" name="label_set-${index}-project" id="id_label_set-${index}-project" value=""/></input>
-                  <input type="hidden" name="label_set-${index}-id" id="id_label_set-${index}-id" value=""></input>
+                  <input type="hidden" name="label_set-${index}-project" id="id_label_set-${index}-project">
+                  <input type="hidden" name="label_set-${index}-id" id="id_label_set-${index}-id">
                   <div class="error-messages"></div>
-                  <input type="text" name="label_set-${index}-name" class="form-control" id="id_label_set-${index}-name" value="${label[0]}"></input>
+                  <input type="text" name="label_set-${index}-name" class="form-control" id="id_label_set-${index}-name" value="hidden-${index}">
                 </td>
                 <td>
                   <div class="error-messages"></div>
-                  <textarea name="label_set-${index}-description" cols="40" rows="5" class="form-control" id="id_label_set-${index}-description" value="${label[1]}">${label[1]}</textarea>
+                  <textarea name="label_set-${index}-description" cols="40" rows="5" class="form-control" id="id_label_set-${index}-description"></textarea>
                 </td>
                 <td>
                   <div class="error-messages"></div>
-                  ${index < 2 ? `<input type="hidden" name="label_set-${index}-DELETE" id="id_label_set-${index}-DELETE" value="off">` : ""}
-                  <p class="delete-row delete-label" onClick="deleteLabel(${index})" style="">remove label</p></td>
+                  <input type="hidden" name="label_set-${index}-DELETE" id="id_label_set-${index}-DELETE" value="on">
+                </td>
               </tr>
-            `).join("");
-            $('#form-table > tbody').prepend(appendHTML);
-            $('#id_label_set-TOTAL_FORMS').val(`${data.length}`);
+              `
+            ).join("");
+
+            $('#form-table > tbody').prepend(dummyHTML + appendHTML);
+
             if(data.length > 100) {
               $('.fixed-wiz').css({ 'display': 'flex' });
             }
@@ -157,12 +188,7 @@
     }
   }
   function deleteLabel(index) {
-    if (index >= 2) {
-      $(`.uploaded-label-row-${index}`).remove();
-    } else {
-      $(`#id_label_set-${index}-DELETE`).val("on");
-      $(`.uploaded-label-row-${index}`).css({ 'display': 'none' });
-    }
+    $(`.uploaded-label-row-${index}`).remove();
   }
   $('.formset_row_label').formset({
     addText: 'add label',
