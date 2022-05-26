@@ -8,7 +8,7 @@ import {
 export default function CardData({ card, onSkip }) {
     return (
         <div className="cardface-info">
-            <div className="card-title">
+            <div className="card-title" style={{ display: "flex", justifyContent: 'flex-end' }}>
                 {drawSkipButton(card, onSkip)}
             </div>
             <div className="card-data">
