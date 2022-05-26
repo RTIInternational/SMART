@@ -141,6 +141,12 @@ main {
     }
 }
 
+.card-title {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+}
+
 .cardface-datacard {
     display: flex;
     flex-wrap: wrap;
@@ -237,6 +243,10 @@ main {
 
     .react-dropdown-select-input::placeholder {
         text-overflow: ellipsis;
+    }
+
+    .annotate-select .react-dropdown-select-item:hover {
+        text-decoration: underline;
     }
 
     .ajucate-button {
