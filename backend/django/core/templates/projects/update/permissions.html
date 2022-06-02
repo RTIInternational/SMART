@@ -28,7 +28,7 @@
             <li class="list-group-item">You can update permissions after creating a project</li>
           </ul>
           {{ form.errors.as_ul }}
-          <table class="table table-striped">
+          <table class="table table-striped" id="permSelect">
             {{ permissions.management_form }}
             <div class="error-messages">{{ permissions.non_form_errors }}</div>
             {% for form in permissions %}
@@ -81,5 +81,37 @@ $('.formset_row_perm').formset({
     $('tr.formset_row_perm').last().children().eq(1).find('ul.errorlist li').empty();
   }
 });
+
+// Deduplication of profiles on permission page
+function dedupPermProfiles() {
+  var selected = [];
+  $("select[id$='profile']").each(function() {
+      if (this.value != "") selected.push(this.value);
+  })
+  $("select[id$='profile']").each(function() {
+      $(this).find("option:not(:selected)").each(function() {
+        // previously unselected option is now selected
+        if ($.inArray(this.value, selected) > -1) {
+          $(this).attr("disabled", "disabled");
+        } else {
+          $(this).removeAttr("disabled");
+        }
+    })
+  })
+}
+
+$("#permSelect").ready(function() {
+  dedupPermProfiles();
+})
+
+// New profile-permission row is added
+$("#permSelect").on("DOMNodeInserted", "tr", function() {
+  dedupPermProfiles();
+})
+
+// Any other change to permission form
+$("#permSelect").on("change", function() {
+  dedupPermProfiles();
+})
 </script>
 {% endblock %}
