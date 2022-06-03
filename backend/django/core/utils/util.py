@@ -270,7 +270,7 @@ def generate_label_embeddings(project):
                 LabelEmbeddings(embedding=embedding.tolist(), label=label)
             )
 
-        LabelEmbeddings.objects.bulk_create(label_embeddings, ignore_conflicts=True)
+        LabelEmbeddings.objects.bulk_create(label_embeddings, ignore_conflicts=True, batch_size=8000)
 
 
 def update_label_embeddings(project):
