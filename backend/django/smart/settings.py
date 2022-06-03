@@ -215,7 +215,7 @@ class Dev(Configuration):
     }
 
     DATA_UPLOAD_MAX_NUMBER_FIELDS = None
-
+    DATA_UPLOAD_MAX_MEMORY_SIZE = None
 
 class Prod(Dev):
     DEBUG = False
