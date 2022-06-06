@@ -389,8 +389,34 @@ li.disabled {
     visibility: hidden;
 }
 
+.modal-open .modal {
+    display: flex !important;
+}
+
 .modal-content {
     z-index: auto;
+}
+
+.modal-backdrop.show {
+    opacity: 0.5 !important
+}
+
+.modal-dialog {
+    display: flex;
+    justify-content: center;
+    -webkit-transform: translate(0, 0%) !important;
+    -ms-transform: translate(0, 0%) !important;
+    -o-transform: translate(0, 0%) !important;
+    transform: translate(0, 0%) !important;
+}
+
+.mdoal-header {
+    display: flex;
+    align-items: center;
+}
+
+.modal-header .close {
+    margin: -1rem -1rem -1rem auto;
 }
 
 .overlay {
