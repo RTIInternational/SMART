@@ -14,7 +14,7 @@ export default function AnnotateCard({ card, labels, onSelectLabel, readonly = f
     return (
         <div className="cardface clearfix">
             <div className="cardface-datacard">
-                <CardData card={card} />
+                <CardData card={card} onSkip={onSkip} />
                 {suggestions && labels.length > 5 && (
                     <SuggestedLabels card={card} labels={labels} onSelectLabel={onSelectLabel} />
                 )}
@@ -33,12 +33,12 @@ function drawEditOptions(card, labels, onSelectLabel, onSkip, onDiscard) {
 
     return (
         <ButtonToolbar className="btn-toolbar">
+            <div className="toolbar-gap" />
             {labels.length > 5 ? (
                 drawLabelSelect(card, labelsOptions, onSelectLabel)
             ) : (
                 drawLabelButtons(card, labels, onSelectLabel)
             )}
-            { onSkip != null && drawSkipButton(card, onSkip) }
             { onDiscard != null && drawDiscardButton(card, onDiscard) }
         </ButtonToolbar>
     );
@@ -47,7 +47,7 @@ function drawEditOptions(card, labels, onSelectLabel, onSkip, onDiscard) {
 function drawLabelSelect(card, labelsOptions, onSelectLabel) {
     return (
         <Select
-            className="align-items-center flex py-1 px-2"
+            className="align-items-center flex py-1 px-2 annotate-select"
             dropdownHandle={false}
             labelField="dropdownLabel"
             onChange={(value) => {

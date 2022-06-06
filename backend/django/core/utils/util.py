@@ -5,12 +5,12 @@ from itertools import combinations
 
 import numpy as np
 import pandas as pd
-import requests
 from celery import chord
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import connection, transaction
 from django.utils import timezone
+from sentence_transformers import SentenceTransformer
 
 from core import tasks
 from core.models import (
@@ -37,6 +37,13 @@ from core.utils.utils_queue import fill_queue
 # https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
 # Disable warning for false positive warning that should only trigger on chained assignment
 pd.options.mode.chained_assignment = None  # default='warn'
+
+# Using a prebuilt model
+# How this model was built: https://github.com/dsteedRTI/csv-to-embeddings-model
+# Sbert Model can be found here: https://www.sbert.net/docs/pretrained_models.html
+# Sbert Model Card: https://huggingface.co/sentence-transformers/multi-qa-mpnet-base-dot-v1
+model_path = "core/smart_embeddings_model"
+embeddings_model = SentenceTransformer(model_path)
 
 
 def md5_hash(obj):
@@ -103,11 +110,14 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
             irr_percent=project.percentage_irr,
             batch_size=batch_size,
         )
-    transaction.on_commit(
-        lambda: tasks.send_label_embeddings_task.apply_async(
-            kwargs={"project_pk": project.pk}
-        )
-    )
+
+    # Celery and emebeddings wasn't working well together...
+    # transaction.on_commit(
+    #     lambda: tasks.send_label_embeddings_task.apply_async(
+    #         kwargs={"project_pk": project.pk}
+    #     )
+    # )
+    tasks.send_label_embeddings_task(project.pk)
 
     # Since User can upload Labeled Data and this data is added to current training_set
     # we need to check_and_trigger model.  However since training model requires
@@ -248,22 +258,21 @@ def generate_label_embeddings(project):
             project_labels.values_list("description", flat=True)
         )
 
-        # This calls backend API because the SentenceTransformer model evaluation
-        # clashes with the Celery container:
-        # See: https://github.com/huggingface/transformers/issues/7516
-
-        embeddings_request = requests.post(
-            "http://backend:8000/api/embeddings",
-            json={"strings": project_labels_descriptions},
-        )
-        embeddings = embeddings_request.json()
+        # Make manual embeddings. Prod settings made calling the api from the backend infeasible
+        embeddings = embeddings_model.encode(project_labels_descriptions)
 
         label_embeddings = []
 
+        # We have to use tolist() since not calling API now to handle numpy arrays
+        # (JSON response from API originally handled this for us)
         for embedding, label in zip(embeddings, project_labels):
-            label_embeddings.append(LabelEmbeddings(embedding=embedding, label=label))
+            label_embeddings.append(
+                LabelEmbeddings(embedding=embedding.tolist(), label=label)
+            )
 
-        LabelEmbeddings.objects.bulk_create(label_embeddings, ignore_conflicts=True)
+        LabelEmbeddings.objects.bulk_create(
+            label_embeddings, ignore_conflicts=True, batch_size=8000
+        )
 
 
 def update_label_embeddings(project):
@@ -277,22 +286,17 @@ def update_label_embeddings(project):
         )
         project_labels_ids = list(project_labels.values_list("id", flat=True))
 
-        # This calls backend API because the SentenceTransformer model evaluation
-        # clashes with the Celery container:
-        # See: https://github.com/huggingface/transformers/issues/7516
-
-        embeddings_request = requests.post(
-            "http://backend:8000/api/embeddings",
-            json={"strings": project_labels_descriptions},
-        )
-        embeddings = embeddings_request.json()
+        # Make manual embeddings. Prod settings made calling the api from the backend infeasible
+        embeddings = embeddings_model.encode(project_labels_descriptions)
 
         project_labels_embeddings = LabelEmbeddings.objects.filter(
             label_id__in=project_labels_ids
         )
 
+        # We have to use tolist() since not calling API now to handle numpy arrays
+        # (JSON response from API originally handled this for us)
         for embedding, label_embedding in zip(embeddings, project_labels_embeddings):
-            label_embedding.embedding = embedding
+            label_embedding.embedding = embedding.tolist()
 
         LabelEmbeddings.objects.bulk_update(project_labels_embeddings, ["embedding"])
 
