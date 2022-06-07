@@ -180,7 +180,7 @@ class Dev(Configuration):
     # This is temporary until we can get an email server setup
     # for registration emails
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-    EMAIL_HOST = 'rtismtp.rti.org'
+    EMAIL_HOST = "rtismtp.rti.org"
     EMAIL_PORT = 25
 
     REDIS_URL = "redis://redis:6379/0"
@@ -216,6 +216,7 @@ class Dev(Configuration):
 
     DATA_UPLOAD_MAX_NUMBER_FIELDS = None
     DATA_UPLOAD_MAX_MEMORY_SIZE = None
+
 
 class Prod(Dev):
     DEBUG = False
