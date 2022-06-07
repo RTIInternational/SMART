@@ -600,6 +600,8 @@ li.disabled {
         border-bottom: 1px solid #DDDDDD;
         font-size: 18px;
     }
+}
+
 .fixed-wiz {
     display: none;
     height: fit-content;
@@ -627,4 +629,13 @@ li.disabled {
 
 .dynamic-form-add {
     background-color: #F9F9F9;
+}
+
+.adjudicate-message-textarea {
+    padding: 0.5rem;
+    width: 100%;
+    margin: 0.75rem 0 1rem;
+    min-height: 6rem;
+    border: 1px solid #CCCCCC;
+    border-radius: 2px;
 }

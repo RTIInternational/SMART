@@ -1,6 +1,7 @@
-import React from "react";
+import React, { Fragment, useState } from "react";
 import {
     Button,
+    Modal,
     Tooltip,
     OverlayTrigger
 } from "react-bootstrap";
@@ -21,24 +22,48 @@ export default function CardData({ card, onSkip }) {
 }
 
 function drawSkipButton(card, onSkip) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [message, setMessage] = useState("");
+
+    const handleSkip = (event) => {
+        event.preventDefault();
+        onSkip(card, message);
+    };
+
     return (
-        <OverlayTrigger
-            placement="top"
-            overlay={
-                <Tooltip id="skip_tooltip">
-                    Clicking this button will send this
-                    document to an administrator for review
-                </Tooltip>
-            }
-        >
-            <Button
-                className="ajucate-button"
-                onClick={() => onSkip(card)}
-                variant="info"
+        <Fragment>
+            <OverlayTrigger
+                placement="top"
+                overlay={
+                    <Tooltip id="skip_tooltip">
+                        Clicking this button will send this
+                        card to an administrator for review
+                    </Tooltip>
+                }
             >
-                Adjudicate
-            </Button>
-        </OverlayTrigger>
+                
+                <Button
+                    className="ajucate-button"
+                    onClick={() => setIsOpen(true)}
+                    variant="info"
+                >
+                    Adjudicate
+                </Button>
+            </OverlayTrigger>
+            
+            <Modal style={{ opacity: 1 }} show={isOpen} onHide={() => setIsOpen(false)}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Adjudicate</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <p>Please enter the reasons for skipping this card:</p>
+                    <form onSubmit={handleSkip}>
+                        <textarea className="adjudicate-message-textarea" onChange={(event) => setMessage(event.target.value)} placeholder="Reasons for skipping..." required />
+                        <Button variant="primary" type="submit">Adjudicate</Button>
+                    </form>
+                </Modal.Body>
+            </Modal>
+        </Fragment>
     );
 }
 
