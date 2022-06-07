@@ -28,8 +28,10 @@ from core.permissions import IsAdminOrCreator, IsCoder
 from core.serializers import DataSerializer, LabelSerializer
 from core.templatetags import project_extras
 from core.utils.utils_annotate import (
+    cache_embeddings,
     createUnresolvedAdjudicateMessage,
     get_assignments,
+    get_embeddings,
     get_unlabeled_data,
     label_data,
     move_skipped_to_admin_queue,
@@ -510,11 +512,18 @@ def embeddings_comparison(request, project_pk):
     """
     project = Project.objects.get(pk=project_pk)
     project_labels = Label.objects.filter(project=project)
-    project_labels_embeddings = list(
-        LabelEmbeddings.objects.filter(label_id__in=project_labels).values_list(
-            "embedding", flat=True
+
+    # Request and cache label embeddings
+    cached_embeddings = get_embeddings(project_pk)
+    if cached_embeddings:
+        project_labels_embeddings = cached_embeddings
+    else:
+        project_labels_embeddings = list(
+            LabelEmbeddings.objects.filter(label_id__in=project_labels).values_list(
+                "embedding", flat=True
+            )
         )
-    )
+        cache_embeddings(project_pk, project_labels_embeddings)
 
     text = request.GET.get("text")
     text_embedding = embeddings_model.encode(text)
