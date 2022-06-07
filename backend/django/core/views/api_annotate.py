@@ -540,6 +540,12 @@ def data_admin_table(request, project_pk):
     project = Project.objects.get(pk=project_pk)
     queue = Queue.objects.get(project=project, type="admin")
 
+    messages = list(
+        AdjudicateDescription.objects.filter(
+            project_id=project_pk, isResolved=False
+        ).values("data_id", "message")
+    )
+
     data_objs = DataQueue.objects.filter(queue=queue)
 
     data = []
@@ -555,14 +561,9 @@ def data_admin_table(request, project_pk):
             "metadata": serialized_data["metadata"],
             "ID": d.data.id,
             "Reason": reason,
+            "message": [x for x in messages if x["data_id"] == d.data.id][0]["message"],
         }
         data.append(temp)
-
-    messages = list(
-        AdjudicateDescription.objects.filter(
-            project_id=project_pk, isResolved=False
-        ).values("data_id", "message")
-    )
 
     return Response({"data": data, "messages": messages})
 

@@ -49,15 +49,12 @@ class AdminTable extends React.Component {
                 Header: "Unlabeled Data",
                 accessor: "data",
                 Cell: row => {
-                    const potentialReasonMessage = admin_data.messages.find((message) => message["data_id"] === row.row.id);
                     return (
                         <div className="sub-row">
-                            {potentialReasonMessage && (
-                                <div className="adjudicate-message">
-                                    <h4>Reason:</h4>
-                                    <p>{potentialReasonMessage.message}</p>
-                                </div>
-                            )}
+                            <div className="adjudicate-message">
+                                <h4>Reason for skipping:</h4>
+                                <p>{row.original.message}</p>
+                            </div>
                             <AnnotateCard
                                 card={buildCard(row.row.id, null, row.original)}
                                 labels={labels}
