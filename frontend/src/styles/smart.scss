@@ -410,7 +410,17 @@ li.disabled {
     transform: translate(0, 0%) !important;
 }
 
-.mdoal-header {
+.history-modal {
+    width: auto;
+    height: 200px;
+}
+
+.codebook-modal .modal-content{
+    height: 700px;
+    width: 900px;
+}
+
+.modal-header {
     display: flex;
     align-items: center;
 }
@@ -471,9 +481,9 @@ li.disabled {
     overflow: scroll;
 }
 
-.modal-content {
-    height: 700px;
-    width: 900px;
+#history_annotate{
+    height: auto;
+    width: auto;
 }
 
 #pdf_document {
