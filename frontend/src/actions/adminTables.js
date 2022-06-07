@@ -44,7 +44,7 @@ export const getAdmin = (projectID) => {
                     };
                     all_data.push(row);
                 }
-                dispatch(set_admin_data({ data: all_data, messages: response.messages }));
+                dispatch(set_admin_data(all_data));
             })
             .catch(err => console.log("Error: ", err));
     };

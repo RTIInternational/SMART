@@ -57,9 +57,11 @@ class AdminTable extends React.Component {
                             </div>
                             <AnnotateCard
                                 card={buildCard(row.row.id, null, row.original)}
+                                hideAdjudicate={true}
                                 labels={labels}
                                 onSelectLabel={(card, label) => adminLabel(card.id, label)}
                                 onDiscard={(id) => discardData(id)}
+                                showAdjudicate={false}
                             />
                         </div>
                     );
@@ -83,7 +85,7 @@ class AdminTable extends React.Component {
                 </p>
                 <CodebookLabelMenuContainer />
                 <ReactTable
-                    data={admin_data.data}
+                    data={admin_data}
                     columns={columns}
                     pageSizeOptions={page_sizes}
                     defaultPageSize={1}

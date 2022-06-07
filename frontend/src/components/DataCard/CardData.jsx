@@ -6,12 +6,14 @@ import {
     OverlayTrigger
 } from "react-bootstrap";
 
-export default function CardData({ card, onSkip }) {
+export default function CardData({ card, onSkip, showAdjudicate = true }) {
     return (
         <div className="cardface-info">
-            <div className="card-title" style={{ display: "flex", justifyContent: 'flex-end' }}>
-                {drawSkipButton(card, onSkip)}
-            </div>
+            {showAdjudicate && (
+                <div className="card-title" style={{ display: "flex", justifyContent: 'flex-end' }}>
+                    {drawSkipButton(card, onSkip)}
+                </div>
+            )}
             <div className="card-data">
                 <h4>Text to Label</h4>
                 <p>{card.text["text"] || card.text["data"]}</p>

@@ -245,6 +245,9 @@ def discard_data(request, data_pk):
         irr_records = IRRLog.objects.filter(data=data)
         irr_records.delete()
 
+        # set any adjudication message to resolved
+        AdjudicateDescription.objects.filter(data_id=data_pk).update(isResolved=True)
+
     else:
         response["error"] = "Invalid credentials. Must be an admin."
 
@@ -565,7 +568,7 @@ def data_admin_table(request, project_pk):
         }
         data.append(temp)
 
-    return Response({"data": data, "messages": messages})
+    return Response({"data": data})
 
 
 @api_view(["GET"])

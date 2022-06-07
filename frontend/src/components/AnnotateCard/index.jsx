@@ -1,8 +1,7 @@
-import React, { Fragment, useState } from 'react';
+import React from 'react';
 import {
     Button,
     ButtonToolbar,
-    Modal,
     Tooltip,
     OverlayTrigger
 } from "react-bootstrap";
@@ -11,11 +10,11 @@ import Select from "react-dropdown-select";
 import CardData from '../DataCard/CardData';
 import SuggestedLabels from '../DataCard/SuggestedLabels';
 
-export default function AnnotateCard({ card, labels, onSelectLabel, readonly = false, onSkip = null, onDiscard = null, suggestions = true }) {
+export default function AnnotateCard({ card, labels, onSelectLabel, readonly = false, onSkip = null, onDiscard = null, showAdjudicate = true, suggestions = true }) {
     return (
         <div className="cardface clearfix">
             <div className="cardface-datacard">
-                <CardData card={card} onSkip={onSkip} />
+                <CardData card={card} onSkip={onSkip} showAdjudicate={showAdjudicate} />
                 {suggestions && labels.length > 5 && (
                     <SuggestedLabels card={card} labels={labels} onSelectLabel={onSelectLabel} />
                 )}
@@ -73,52 +72,6 @@ function drawLabelButtons(card, labels, onSelectLabel) {
                 {opt["name"]}
             </Button>
         ))
-    );
-}
-
-function drawSkipButton(card, onSkip) {
-    const [isOpen, setIsOpen] = useState(false);
-    const [message, setMessage] = useState("");
-
-    const handleSkip = (event) => {
-        event.preventDefault();
-        onSkip(card, message);
-    };
-
-    return (
-        <Fragment>
-            <OverlayTrigger
-                placement="top"
-                overlay={
-                    <Tooltip id="skip_tooltip">
-                        Clicking this button will send this
-                        card to an administrator for review
-                    </Tooltip>
-                }
-            >
-                
-                <Button
-                    className="ajucate-button"
-                    onClick={() => setIsOpen(true)}
-                    variant="info"
-                >
-                    Adjudicate
-                </Button>
-            </OverlayTrigger>
-            
-            <Modal style={{ opacity: 1 }} show={isOpen} onHide={() => setIsOpen(false)}>
-                <Modal.Header closeButton>
-                    <Modal.Title>Adjudicate</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <p>Please enter the reasons for skipping this card:</p>
-                    <form onSubmit={handleSkip}>
-                        <textarea className="adjudicate-message-textarea" onChange={(event) => setMessage(event.target.value)} placeholder="Reasons for skipping..." required />
-                        <Button variant="primary" type="submit">Adjudicate</Button>
-                    </form>
-                </Modal.Body>
-            </Modal>
-        </Fragment>
     );
 }
 
