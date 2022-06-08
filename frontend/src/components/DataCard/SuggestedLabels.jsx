@@ -35,7 +35,7 @@ export default function SuggestedLabels({ card, labels, onSelectLabel }) {
                 <div>
                     <Spinner animation="border" role="status"/>
                 </div>
-                <span className="visually-hidden">Loading...</span>
+                <span className="visually-hidden">Loading labels...</span>
             </div> :
             <div className="suggestions">
                 <h4>Suggested Labels</h4>
