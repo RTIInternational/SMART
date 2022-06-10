@@ -495,8 +495,8 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
     )
     ingest_table_name = forms.CharField(initial="", required=False, max_length=50)
     ingest_schema = forms.CharField(initial="", required=False, max_length=50)
-    export_table_name = forms.CharField(initial="", required=False, max_length=50)
-    export_schema = forms.CharField(initial="", required=False, max_length=50)
+    export_table_name = forms.CharField(initial="", required=False, max_length=1024)
+    export_schema = forms.CharField(initial="", required=False, max_length=1024)
     username = forms.CharField(initial="", required=False, max_length=50)
     password = forms.CharField(
         initial="", required=False, max_length=200, widget=forms.PasswordInput()
