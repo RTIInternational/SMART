@@ -568,12 +568,13 @@ def data_admin_table(request, project_pk):
             reason = "Skipped"
 
         serialized_data = DataSerializer(d.data, many=False).data
+        potentialMessage = [x for x in messages if x["data_id"] == d.data.id]
         temp = {
             "Text": serialized_data["text"],
             "metadata": serialized_data["metadata"],
             "ID": d.data.id,
             "Reason": reason,
-            "message": [x for x in messages if x["data_id"] == d.data.id][0]["message"],
+            "message": None if not potentialMessage else potentialMessage[0]["message"],
         }
         data.append(temp)
 

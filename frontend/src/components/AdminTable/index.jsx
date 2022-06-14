@@ -51,10 +51,12 @@ class AdminTable extends React.Component {
                 Cell: row => {
                     return (
                         <div className="sub-row">
-                            <div className="adjudicate-message">
-                                <h4>Reason for skipping:</h4>
-                                <p>{row.original.message}</p>
-                            </div>
+                            {row.original.message && (
+                                <div className="adjudicate-message">
+                                    <h4>Reason for skipping:</h4>
+                                    <p>{row.original.message}</p>
+                                </div>
+                            )}
                             <AnnotateCard
                                 card={buildCard(row.row.id, null, row.original)}
                                 hideAdjudicate={true}
