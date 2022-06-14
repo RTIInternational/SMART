@@ -102,7 +102,7 @@ class Smart extends React.Component {
 
         if (adminTabsAvailable) {
             adminTabRecycle = (
-                <Tab eventKey={5} transition={false} title={<div><span className="glyphicon glyphicon-trash" aria-hidden="true"></span> Discarded Data</div>} className="full card">
+                <Tab eventKey={5} transition={false} title={<div><span id="trashCan" className="glyphicon glyphicon-trash" aria-hidden="true"></span> Discarded Data</div>} className="full card">
                     <div className="cardContent">
                         <RecycleBinContainer />
                     </div>
@@ -110,7 +110,7 @@ class Smart extends React.Component {
             );
         } else {
             adminTabRecycle = (
-                <Tab eventKey={5} transition={false} title={<div><span className="glyphicon glyphicon-trash" aria-hidden="true"></span> Discarded Data</div>} className="full card">
+                <Tab eventKey={5} transition={false} title={<div><span id="trashCan" className="glyphicon glyphicon-trash" aria-hidden="true"></span> Discarded Data</div>} className="full card">
                     <div className="cardContent">
                         <h2>Another admin is currently using this page. Please check back later.</h2>
                     </div>
