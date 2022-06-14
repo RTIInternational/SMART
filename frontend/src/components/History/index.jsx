@@ -192,7 +192,7 @@ class History extends React.Component {
                 show={this.state.showConfirm} 
                 onHide={this.toggleConfirm} animation={false}>
                 <Modal.Header closeButton>
-                    <Modal.Title>WARNING</Modal.Title>
+                    <Modal.Title>Confirmation</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>Are you sure you want to change labels?</Modal.Body>
                 <Modal.Footer>
