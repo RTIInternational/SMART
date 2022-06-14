@@ -27,11 +27,10 @@ docker exec -t prod_postgres_1 pg_dumpall -c -U postgres > /home/applications/SM
 
 ### Restore from Backup
 
-If want to restore the database, you must first empty the existing database and then restore from 
+If want to restore the database, run the following:
 
 ```
-
-cat /home/applications/SMART/envs/prod/backups/postgres_backup.sql| docker exec -i prod_postgres_1 psql -U myuser
+./rebuild.sh
 ```
 
 ## Development
