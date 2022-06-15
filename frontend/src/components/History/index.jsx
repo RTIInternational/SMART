@@ -188,7 +188,6 @@ class History extends React.Component {
         let confirm_message = (
             <Modal
                 centered
-                dialogClassName="history-modal"
                 show={this.state.showConfirm} 
                 onHide={this.toggleConfirm} animation={false}>
                 <Modal.Header closeButton>
