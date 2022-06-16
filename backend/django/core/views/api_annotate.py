@@ -339,6 +339,7 @@ def modify_label_to_skip(request, data_pk):
     project = data.project
     old_label = Label.objects.get(pk=request.data["oldLabelID"])
     queue = Queue.objects.get(project=project, type="admin")
+    createUnresolvedAdjudicateMessage(project, data, request.data["message"])
 
     with transaction.atomic():
         DataLabel.objects.filter(data=data, label=old_label).delete()
