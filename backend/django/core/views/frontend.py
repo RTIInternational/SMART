@@ -249,12 +249,15 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         with transaction.atomic():
             # Project
             proj_obj = proj.save(commit=False)
+            print(proj_obj)
             advanced_data = advanced.cleaned_data
 
             proj_obj.creator = self.request.user.profile
             # Advanced Options
             proj_obj.save()
+            print(proj_obj)
             proj_pk = proj_obj.pk
+            print(proj_pk)
             # Save the codebook file
 
             cb_data = codebook_data.cleaned_data["data"]
