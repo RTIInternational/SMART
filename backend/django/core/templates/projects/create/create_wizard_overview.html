@@ -31,9 +31,15 @@
             <textarea class="form-control" id="{{ wizard.form.description.id_for_label }}" name="{{ wizard.form.description.html_name }}">{{ form.description.value|default_if_none:'' }}</textarea>
             <div class="error-messages">{{ wizard.form.description.errors }}</div>
           </div>
+          <datalist id="umbrella_choices">
+            {% for item in umbrella_choices %}
+              <option value="{{ item }}">
+            {% endfor %}
+          </datalist>
           <div class="form-group">
             <label class="control-label" for="{{ wizard.form.umbrella_string.id_for_label }}">Folder</label>
-            <input class="form-control" id="{{ wizard.form.umbrella_string.id_for_label }}" maxlength="30" name="{{ wizard.form.umbrella_string.html_name }}" pattern="^.*[a-zA-Z0-9]+.*$" type="text" value="{{ form.umbrella_string.value|default_if_none:'' }}"/>
+            <input class="form-control" placeholder="Folder Name" id="{{ wizard.form.umbrella_string.id_for_label }}" maxlength="30" name="{{ wizard.form.umbrella_string.html_name }}" pattern="^.*[a-zA-Z0-9]+.*$" type="text" value="{{ form.umbrella_string.value|default_if_none:'' }}" list = "umbrella_choices" autocomplete="off"/>
+            <p style="margin-top: 4px;">Type a new folder name or select an already created folder</p>
             <p style="margin-top: 4px;">Folder names must include at least one alphanumerical character.</p>
             <div class="error-messages">{{ wizard.form.umbrella_string.errors }}</div>
           </div>

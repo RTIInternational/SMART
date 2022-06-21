@@ -10,19 +10,25 @@
        <div class="cardface">
          {{ form.media.css }}
          <form action="." method="post" enctype="multipart/form-data">
-           {% csrf_token %}
-           <h1>Add Project To Folder</h1>
-           <h3>Description</h3>
-           <p>To help organize your projects, you can assign projects to folders displayed on the project page.</p>
-           <h3>Instructions</h3>
-           <p>Type the name of the folder in the input field you wish to categorize your project under. Projects with the same folder name will be automatically grouped together on the projects page.</p>
-           {{ form.errors.as_ul }}
-           <input class="form-control" name="umbrella" placeholder="Folder Name" pattern="^.*[a-zA-Z0-9]+.*$" type="text" />
-           <p style="margin-top: 4px;">Folder names must include at least one alphanumerical character.</p>
-           <br />
-           <div class="form-group">
-               <button class="btn btn-primary" type="submit">Submit</button>
-           </div>
+            {% csrf_token %}
+            <h1>Add Project To Folder</h1>
+            <h3>Description</h3>
+            <p>To help organize your projects, you can assign projects to folders displayed on the project page.</p>
+            <h3>Instructions</h3>
+            <p>Type the name of the folder in the input field you wish to categorize your project under. Projects with the same folder name will be automatically grouped together on the projects page.</p>
+            {{ form.errors.as_ul }}
+            <datalist id="umbrella_choices">
+              {% for item in umbrella_choices %}
+                <option value="{{ item }}">
+              {% endfor %}
+            </datalist>
+            <input class="form-control" name="umbrella" placeholder="Folder Name" pattern="^.*[a-zA-Z0-9]+.*$" list="umbrella_choices" autocomplete="off"/>
+            <p style="margin-top: 4px;">Type a new folder name or select an already created folder</p>
+            <p style="margin-top: 4px;">Folder names must include at least one alphanumerical character.</p>
+            <br />
+            <div class="form-group">
+                <button class="btn btn-primary" type="submit">Submit</button>
+            </div>
          </form>
        </div>
      </div>

@@ -29,6 +29,7 @@ from core.models import (
     Label,
     MetaDataField,
     Project,
+    ProjectPermissions,
     TrainingSet,
 )
 from core.templatetags import project_extras
@@ -199,6 +200,31 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             prefix = "advanced"
 
         return prefix
+
+    def get_context_data(self, form, step=None, **kwargs):
+        context = super(ProjectCreateWizard, self).get_context_data(form=form, **kwargs)
+
+        if self.steps.current == "project":
+            user = self.request.user.profile
+
+            if str(user) == "root":
+                possible_umbrellas = (
+                    Project.objects.order_by("umbrella_string")
+                    .values_list("umbrella_string", flat=True)
+                    .distinct()
+                )
+            else:
+                possible_umbrellas = (
+                    ProjectPermissions.objects.filter(profile=user)
+                    .values_list("project__umbrella_string", flat=True)
+                    .distinct()
+                    .order_by("project__umbrella_string")
+                )
+
+            umbrella_choices = list(possible_umbrellas)
+            context["umbrella_choices"] = umbrella_choices
+
+        return context
 
     def get_form(self, step=None, data=None, files=None):
         """Overriding get_form.
@@ -630,6 +656,25 @@ class ProjectUpdateUmbrella(LoginRequiredMixin, UserPassesTestMixin, View):
         context = {}
         project = Project.objects.get(pk=self.kwargs["pk"])
         context["project"] = project
+
+        user = self.request.user.profile
+
+        if str(user) == "root":
+            possible_umbrellas = (
+                Project.objects.order_by("umbrella_string")
+                .values_list("umbrella_string", flat=True)
+                .distinct()
+            )
+        else:
+            possible_umbrellas = (
+                ProjectPermissions.objects.filter(profile=user)
+                .values_list("project__umbrella_string", flat=True)
+                .distinct()
+                .order_by("project__umbrella_string")
+            )
+
+        umbrella_choices = list(possible_umbrellas)
+        context["umbrella_choices"] = umbrella_choices
 
         return context
 
