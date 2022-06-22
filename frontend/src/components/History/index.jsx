@@ -138,10 +138,11 @@ class History extends React.Component {
                             this.rowID = row.row.old_label_id;
                             this.label = label;
                         }}
-                        onSkip={(card) => {
+                        onSkip={(card, message) => {
                             changeToSkip(
                                 card.id,
-                                row.row.old_label_id
+                                row.row.old_label_id,
+                                message
                             );
                         }}
                     />

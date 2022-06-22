@@ -4,6 +4,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from core.models import (
+    AdjudicateDescription,
     AssignedData,
     Data,
     DataLabel,
@@ -253,6 +254,10 @@ def get_unlabeled_data(project_pk):
     )
 
     return unlabeled_data
+
+
+def createUnresolvedAdjudicateMessage(project, data, message):
+    AdjudicateDescription.objects.create(project=project, data=data, message=message)
 
 
 def cache_embeddings(project_pk, embeddings):

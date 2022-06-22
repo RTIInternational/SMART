@@ -89,10 +89,10 @@ export const annotateCard = (card, labelID, num_cards_left, projectID, is_admin)
 };
 
 //skip a card and put it in the admin table
-export const passCard = (card, num_cards_left, is_admin, projectID ) => {
+export const passCard = (card, num_cards_left, is_admin, projectID, message) => {
     let apiURL = `/api/skip_data/${card.text.pk}/`;
     return dispatch => {
-        return fetch(apiURL, postConfig())
+        return fetch(apiURL, postConfig({ message: message }))
             .then(response => {
                 if (response.ok) {
                     return response.json();

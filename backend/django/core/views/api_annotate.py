@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from sentence_transformers import SentenceTransformer, util
 
 from core.models import (
+    AdjudicateDescription,
     AdminProgress,
     AssignedData,
     Data,
@@ -28,6 +29,7 @@ from core.serializers import DataSerializer, LabelSerializer
 from core.templatetags import project_extras
 from core.utils.utils_annotate import (
     cache_embeddings,
+    createUnresolvedAdjudicateMessage,
     get_assignments,
     get_embeddings,
     get_unlabeled_data,
@@ -156,6 +158,7 @@ def skip_data(request, data_pk):
     else:
         # the data is not IRR so treat it as normal
         move_skipped_to_admin_queue(data, profile, project)
+        createUnresolvedAdjudicateMessage(project, data, request.data["message"])
 
     # for all data, check if we need to refill queue
     check_and_trigger_model(data, profile)
@@ -243,6 +246,9 @@ def discard_data(request, data_pk):
         # remove any IRR log data
         irr_records = IRRLog.objects.filter(data=data)
         irr_records.delete()
+
+        # set any adjudication message to resolved
+        AdjudicateDescription.objects.filter(data_id=data_pk).update(isResolved=True)
 
     else:
         response["error"] = "Invalid credentials. Must be an admin."
@@ -333,6 +339,7 @@ def modify_label_to_skip(request, data_pk):
     project = data.project
     old_label = Label.objects.get(pk=request.data["oldLabelID"])
     queue = Queue.objects.get(project=project, type="admin")
+    createUnresolvedAdjudicateMessage(project, data, request.data["message"])
 
     with transaction.atomic():
         DataLabel.objects.filter(data=data, label=old_label).delete()
@@ -546,6 +553,12 @@ def data_admin_table(request, project_pk):
     project = Project.objects.get(pk=project_pk)
     queue = Queue.objects.get(project=project, type="admin")
 
+    messages = list(
+        AdjudicateDescription.objects.filter(
+            project_id=project_pk, isResolved=False
+        ).values("data_id", "message")
+    )
+
     data_objs = DataQueue.objects.filter(queue=queue)
 
     data = []
@@ -556,11 +569,13 @@ def data_admin_table(request, project_pk):
             reason = "Skipped"
 
         serialized_data = DataSerializer(d.data, many=False).data
+        potentialMessage = [x for x in messages if x["data_id"] == d.data.id]
         temp = {
             "Text": serialized_data["text"],
             "metadata": serialized_data["metadata"],
             "ID": d.data.id,
             "Reason": reason,
+            "message": None if not potentialMessage else potentialMessage[0]["message"],
         }
         data.append(temp)
 
@@ -693,6 +708,8 @@ def label_admin_label(request, data_pk):
         # make sure the data is no longer irr
         if datum.irr_ind:
             Data.objects.filter(pk=datum.pk).update(irr_ind=False)
+
+        AdjudicateDescription.objects.filter(data_id=data_pk).update(isResolved=True)
 
     # NOTE: this checks if the model needs to be triggered, but not if the
     # queues need to be refilled. This is because for something to be in the
