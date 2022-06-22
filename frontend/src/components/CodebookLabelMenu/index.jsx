@@ -52,7 +52,7 @@ class CodebookLabelMenu extends React.Component {
 
         if (CODEBOOK_URL != "") {
             codebook_module = (
-                <Modal style={{ opacity: 1 }} show={this.state.codebook_open} onHide={this.toggleCodebook}>
+                <Modal dialogClassName="codebook-modal" style={{ opacity: 1 }} show={this.state.codebook_open} onHide={this.toggleCodebook}>
                     <Modal.Header closeButton>
                         <Modal.Title>Codebook</Modal.Title>
                     </Modal.Header>
