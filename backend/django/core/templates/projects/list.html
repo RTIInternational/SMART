@@ -9,15 +9,15 @@
     <div class="list-group">
       {% for potential_umbrella_project in object_list %}
         {% if potential_umbrella_project.umbrella_string  %}
-        <div id="umbrella-{{potential_umbrella_project.umbrella_string}}" class="panel panel-default">
+        <div id="umbrella-{{potential_umbrella_project.umbrella_string|slugify}}" class="panel panel-default">
           <div class="panel-heading">
             <h5 class="panel-title">
-              <a data-toggle="collapse" href="#{{potential_umbrella_project.umbrella_string.split|join:"-"}}" class="accordion-toggle collapsed collapsed">
+              <a data-toggle="collapse" href="#{{potential_umbrella_project.umbrella_string|slugify}}" class="accordion-toggle collapsed collapsed">
                 {{ potential_umbrella_project.umbrella_string }}
               </a>
             </h5>
           </div>
-          <div id="{{potential_umbrella_project.umbrella_string.split|join:"-"}}" class="panel-collapse collapse">
+          <div id="{{potential_umbrella_project.umbrella_string|slugify}}" class="panel-collapse collapse">
             <div class="panel-body">
               <table class="table table-striped" style="border: 0;">
                 <tbody>

@@ -3,7 +3,8 @@ import PropTypes from "prop-types";
 import ReactTable from "react-table-6";
 import {
     Button,
-    Alert
+    Alert,
+    Modal
 } from "react-bootstrap";
 import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
 import AnnotateCard, { buildCard } from "../AnnotateCard";
@@ -58,6 +59,20 @@ const COLUMNS = [
 ];
 
 class History extends React.Component {
+    constructor() {
+        super();
+        this.toggleConfirm = this.toggleConfirm.bind(this);
+        this.historyChangeLabel = this.historyChangeLabel.bind(this);
+        this.state = {
+            showConfirm : false
+        };
+        this.cardID, this.rowID, this.label;
+    }
+
+    toggleConfirm() {
+        this.setState({ showConfirm : !this.state.showConfirm });
+    }
+
     componentDidMount() {
         this.props.getHistory();
     }
@@ -108,7 +123,7 @@ class History extends React.Component {
 
     getSubComponent(row) {
         let subComponent;
-        const { labels, changeLabel, changeToSkip } = this.props;
+        const { labels, changeToSkip } = this.props;
         const card = buildCard(row.row.id, null, row.original);
 
         if (row.row.edit === "yes") {
@@ -118,11 +133,10 @@ class History extends React.Component {
                         card={card}
                         labels={labels}
                         onSelectLabel={(card, label) => {
-                            changeLabel(
-                                card.id,
-                                row.row.old_label_id,
-                                label
-                            );
+                            this.toggleConfirm();
+                            this.cardID = card.id;
+                            this.rowID = row.row.old_label_id;
+                            this.label = label;
                         }}
                         onSkip={(card, message) => {
                             changeToSkip(
@@ -150,6 +164,16 @@ class History extends React.Component {
         return subComponent;
     }
 
+    historyChangeLabel() {
+        const { changeLabel } = this.props;
+        this.toggleConfirm();                 
+        changeLabel(
+            this.cardID,
+            this.rowID,
+            this.label
+        );
+    }
+
     render() {
         const { history_data } = this.props;
 
@@ -161,8 +185,29 @@ class History extends React.Component {
         }
         page_sizes.push(history_data.length);
 
+        //Confirmation button
+        let confirm_message = (
+            <Modal
+                centered
+                show={this.state.showConfirm} 
+                onHide={this.toggleConfirm} animation={false}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Confirmation</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>Are you sure you want to change labels?</Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={this.toggleConfirm}>
+                        Cancel
+                    </Button>
+                    <Button variant="primary" onClick={ this.historyChangeLabel }>
+                        Confirm change
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+        );
+
         return (
-            <div>
+            <div className="history">
                 <h3>Instructions</h3>
                 <p>This page allows a coder to change past labels.</p>
                 <p>
@@ -193,6 +238,7 @@ class History extends React.Component {
                         }
                     ]}
                 />
+                {confirm_message}
             </div>
         );
     }

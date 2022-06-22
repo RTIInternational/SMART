@@ -410,7 +410,12 @@ li.disabled {
     transform: translate(0, 0%) !important;
 }
 
-.mdoal-header {
+.codebook-modal .modal-content{
+    height: 700px;
+    width: 900px;
+}
+
+.modal-header {
     display: flex;
     align-items: center;
 }
@@ -471,9 +476,9 @@ li.disabled {
     overflow: scroll;
 }
 
-.modal-content {
-    height: 700px;
-    width: 900px;
+#history_annotate{
+    height: auto;
+    width: auto;
 }
 
 #pdf_document {
@@ -638,4 +643,8 @@ li.disabled {
     min-height: 6rem;
     border: 1px solid #CCCCCC;
     border-radius: 2px;
+}
+
+#trashCan {
+    padding-right: 2px;
 }

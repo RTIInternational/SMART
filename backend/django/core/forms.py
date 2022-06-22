@@ -287,6 +287,9 @@ class ProjectPermissionsForm(forms.ModelForm):
                     user__profile=self.profile
                 )
             )
+        self.fields["profile"]._set_queryset(
+            self.fields["profile"].choices.queryset.order_by("user__username")
+        )
 
 
 LabelFormSet = forms.inlineformset_factory(

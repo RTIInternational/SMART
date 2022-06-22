@@ -3,8 +3,8 @@ from test.util import read_test_data_backend
 import pytest
 from django.conf import settings
 
-from core.management.commands.seed import SEED_LABELS, seed_database
-from core.models import Data, Label, TrainingSet
+from core.management.commands.seed import SEED_LABELS, SEED_META_FIELDS, seed_database
+from core.models import Data, Label, MetaDataField, TrainingSet
 from core.utils.util import add_data, create_profile, create_project
 from core.utils.utils_model import (
     create_tfidf_matrix,
@@ -78,6 +78,38 @@ def test_project_data(db, test_project):
     """Creates the test project and adds test data to it."""
     test_data = read_test_data_backend(file="./core/data/test_files/test_no_labels.csv")
     add_data(test_project, test_data)
+    return test_project
+
+
+@pytest.fixture
+def test_project_meta(db, test_project):
+    """Creates a test project with MetaDataFields, dedups on all fields."""
+    for field in SEED_META_FIELDS:
+        MetaDataField.objects.create(project=test_project, field_name=field)
+    return test_project
+
+
+@pytest.fixture
+def test_project_meta_dedup_text(db, test_project):
+    """Creates a test project with MetaDataFields, dedups on text."""
+    for field in SEED_META_FIELDS:
+        MetaDataField.objects.create(
+            project=test_project, field_name=field, use_with_dedup=False
+        )
+    return test_project
+
+
+@pytest.fixture
+def test_project_meta_dedup_sub(db, test_project):
+    """Creates a test project with MetaDataFields, dedups on Subreddit metadata
+    field."""
+    dedup_field = SEED_META_FIELDS[-1]
+    reg_fields = SEED_META_FIELDS[:-1]
+    for field in reg_fields:
+        MetaDataField.objects.create(
+            project=test_project, field_name=field, use_with_dedup=False
+        )
+    MetaDataField.objects.create(project=test_project, field_name=dedup_field)
     return test_project
 
 

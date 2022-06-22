@@ -16,6 +16,7 @@ SEED_EMAIL = "dummy@smart.org"
 SEED_PROJECT = "seed-data"
 SEED_FILE_PATH = "./core/data/reddit_sample_awww/test-awww.csv"
 SEED_LABELS = ["about cats", "not about cats", "unclear"]
+SEED_META_FIELDS = ["Score", "Num Comments", "Subreddit"]
 
 
 def seed_database(noprofile=False, nodata=False):

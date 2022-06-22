@@ -36,7 +36,7 @@
             <li class="list-group-item">Each row must be completely filled in with both a profile and permission.</li>
             <li class="list-group-item">You can update permissions after creating a project</li>
           </ul>
-          <table class="table table-striped">
+          <table class="table table-striped" id="permSelect">
             {{ wizard.form.management_form }}
             <div class="error-messages">{{ wizard.form.non_form_errors }}</div>
             {% for form in wizard.form %}
@@ -58,8 +58,8 @@
                         {{ hidden }}
                       {% endfor %}
                     {% endif %}
-                    <div class="error-messages">{{ field.errors.as_ul }}</div>
                     {{ field }}
+                    <div class="error-messages">{{ field.errors.as_ul }}</div>
                   </td>
                 {% endfor %}
               </tr>
@@ -93,4 +93,6 @@ $('.formset_row_perm').formset({
   }
 });
 </script>
+
+<script type="text/javascript" src="{% static 'dedup_perms.js' %}"></script>
 {% endblock %}
