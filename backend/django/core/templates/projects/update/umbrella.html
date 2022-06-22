@@ -17,14 +17,13 @@
             <h3>Instructions</h3>
             <p>Type the name of the folder in the input field you wish to categorize your project under. Projects with the same folder name will be automatically grouped together on the projects page.</p>
             {{ form.errors.as_ul }}
-            <datalist id="umbrella_choices">
-              {% for item in umbrella_choices %}
-                <option value="{{ item }}">
+            <select class="form-control" name="umbrella">
+              <option value=""></option>
+              {% for umbrella_choice in umbrella_choices %}
+                <option {% ifequal umbrella umbrella_choice %}selected="selected"{% endifequal %} value="{{ umbrella_choice }}">{{ umbrella_choice }}</option>
               {% endfor %}
-            </datalist>
-            <input class="form-control" name="umbrella" placeholder="Folder Name" pattern="^.*[a-zA-Z0-9]+.*$" list="umbrella_choices" autocomplete="off"/>
-            <p style="margin-top: 4px;">Type a new folder name or select an already created folder</p>
-            <p style="margin-top: 4px;">Folder names must include at least one alphanumerical character.</p>
+            </select>
+            <p style="margin-top: 4px;">Select a folder or leave this option blank.</p>
             <br />
             <div class="form-group">
                 <button class="btn btn-primary" type="submit">Submit</button>

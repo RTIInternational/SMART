@@ -222,7 +222,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
                 )
 
             umbrella_choices = list(possible_umbrellas)
-            context["umbrella_choices"] = umbrella_choices
+            context["umbrella_choices"] = [umbrella_choice for umbrella_choice in umbrella_choices if umbrella_choice]
 
         return context
 
@@ -674,7 +674,8 @@ class ProjectUpdateUmbrella(LoginRequiredMixin, UserPassesTestMixin, View):
             )
 
         umbrella_choices = list(possible_umbrellas)
-        context["umbrella_choices"] = umbrella_choices
+        context["umbrella_choices"] = [umbrella_choice for umbrella_choice in umbrella_choices if umbrella_choice]
+        context["umbrella"] = project.umbrella_string
 
         return context
 
