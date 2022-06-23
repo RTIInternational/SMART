@@ -19,7 +19,7 @@
           {% csrf_token %}
           <div class="form-group">
             <label class="control-label" for="{{ form.data.id_for_label }}">Code Book File</label>
-            <input class="form-control" id="{{ form.data.id_for_label }}" maxlength="30" name="{{ form.data.html_name }}" type="file"  placeholder="{{ form.cb_data.label }}"/>
+            <input class="form-control" id="{{ form.data.id_for_label }}" maxlength="30" name="{{ form.data.html_name }}" type="file"  placeholder="{{ form.cb_data.label }}" style="text-align-last: center;"/>
             <p class="delete-row delete-label" id="rmFileBtn">remove codebook</p>
             <div class="error-messages">{{ form.data.errors }}</div>
           </div>
