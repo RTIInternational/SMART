@@ -45,6 +45,7 @@
             <p>An example dataset can be downloaded from <a href="{% static 'example-labels.csv' %}">here</a>.</p>
             <hr>
             <input class="form-control" id="{{ wizard.form.data.id_for_label }}" maxlength="30" name="{{ wizard.form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" onChange="handleUpload(event)" onclick="this.value = null;" />
+            <p class="delete-row delete-label" id="rmFileBtn">remove uploaded labels</p>
           </div>
           <br />
           <div class="fixed-wiz">
@@ -199,5 +200,34 @@
       $('tr.formset_row_label').last().children(':first').find('ul.errorlist li').empty();
     }
   });
+  $("#rmFileBtn").click(function() {
+    // Remove uploaded file
+    $("input[type='file']").val("");
+
+    // Remove uploaded label fields
+    $('.formset_row_label').remove();
+    
+    // Reset form back to original state
+    let dummyHTML = [0, 1].map((index) => 
+      `
+      <tr class="formset_row_label dynamic-form">
+        <td>
+          <input type="hidden" name="label_set-0-project" id="id_label_set-${index}-project">
+          <input type="hidden" name="label_set-0-id" id="id_label_set-${index}-id">
+          <div class="error-messages"></div>
+          <input type="text" name="label_set-${index}-name" class="form-control" id="id_label_set-${index}-name">
+        </td>
+        <td>
+          <div class="error-messages"></div>
+          <textarea name="label_set-${index}-description" cols="40" rows="5" class="form-control" id="id_label_set-${index}-description"></textarea>
+        </td>
+        <td>
+          <div class="error-messages"></div>
+          <input type="hidden" name="label_set-${index}-DELETE" id="id_label_set-${index}-DELETE">
+        <a class="delete-row" href="javascript:void(0)" style="display: none;">remove label</a></td>
+      </tr>
+      `).join("");
+    $('#form-table > tbody').prepend(dummyHTML);
+  })
 </script>
 {% endblock %}
