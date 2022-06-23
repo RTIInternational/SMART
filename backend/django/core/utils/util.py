@@ -647,3 +647,26 @@ def project_status(project):
         "unlabeled": len(unlabeled_data_objs),
         "badge": f"{len(final_data_objs)}/{len(total_data_objs) - len(recycle_ids)}",
     }
+
+
+def get_projects(self, order_by_folders):
+    """Get all projects for a user.
+    
+    Args:
+        self: from get_context_data/queryset
+    Returns:
+        projects: a list of projects
+    """
+    # Projects profile created
+    qs1 = Project.objects.filter(creator=self.request.user.profile)
+
+    # Projects profile has permissions for
+    qs2 = Project.objects.filter(
+        projectpermissions__profile=self.request.user.profile
+    )
+
+    qs = qs1 | qs2
+    projects = qs.distinct()
+    if order_by_folders:
+        projects = projects.order_by(self.ordering).reverse()
+    return projects

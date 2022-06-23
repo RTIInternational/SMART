@@ -1,4 +1,6 @@
+from numpy import False_
 import pandas as pd
+from core.utils.util import get_projects
 from django import forms
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -105,17 +107,7 @@ class ProjectList(LoginRequiredMixin, ListView):
     ordering = "name"
 
     def get_queryset(self):
-        # Projects profile created
-        qs1 = Project.objects.filter(creator=self.request.user.profile)
-
-        # Projects profile has permissions for
-        qs2 = Project.objects.filter(
-            projectpermissions__profile=self.request.user.profile
-        )
-
-        qs = qs1 | qs2
-
-        projects = qs.distinct().order_by(self.ordering).reverse()
+        projects = get_projects(self, True)
         for project in projects:
             project_details = project_status(project)
             project.project_details = project_details
@@ -840,3 +832,37 @@ class ProjectDelete(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
             project_extras.proj_permission_level(project, self.request.user.profile)
             >= 2
         )
+
+
+class CreateFolder(LoginRequiredMixin, ListView):
+    model = Project
+    template_name = "projects/folder.html"
+
+    def get_context_data(self, **kwargs):
+        context = {}
+        admin_or_created_projects = []
+
+        # Only allow user to change folders of project they are the creator/have admin permissions
+        for project in get_projects(self, False):
+            if project_extras.proj_permission_level(project, self.request.user.profile) >= 2:
+                admin_or_created_projects.append(project)
+        admin_or_created_projects.sort(key=lambda x: x.name)
+        context["projects"] = admin_or_created_projects
+
+        if self.request.POST:
+            context["project"] = self.request.POST["project"]
+            context["umbrella"] = self.request.POST["umbrella"]
+
+        return context
+
+    def get(self, request, *args, **kwargs):
+        return render(request, self.template_name, context=self.get_context_data())
+
+    def post(self, request, *args, **kwargs):
+        context = self.get_context_data()
+
+        Project.objects.filter(id=context["project"]).update(
+            umbrella_string=request.POST.get("umbrella")
+        )
+
+        return redirect("/projects")

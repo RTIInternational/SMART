@@ -15,7 +15,7 @@
             <h3>Description</h3>
             <p>To help organize your projects, you can assign projects to folders displayed on the project page.</p>
             <h3>Instructions</h3>
-            <p>Type the name of the folder in the input field you wish to categorize your project under. Projects with the same folder name will be automatically grouped together on the projects page.</p>
+            <p>Select a folder or leave this option blank.</p>
             {{ form.errors.as_ul }}
             <select class="form-control" name="umbrella">
               <option value=""></option>
@@ -23,7 +23,6 @@
                 <option {% ifequal umbrella umbrella_choice %}selected="selected"{% endifequal %} value="{{ umbrella_choice }}">{{ umbrella_choice }}</option>
               {% endfor %}
             </select>
-            <p style="margin-top: 4px;">Select a folder or leave this option blank.</p>
             <br />
             <div class="form-group">
                 <button class="btn btn-primary" type="submit">Submit</button>
