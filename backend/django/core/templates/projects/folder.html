@@ -17,17 +17,21 @@
              <p>Type the name of the folder in the input field you wish to create and select an existing project below to add to the folder.</p>
              <p>Folder names must include at least one alphanumerical character.</p>
              {{ form.errors.as_ul }}
-             <input class="form-control" name="umbrella" placeholder="Folder Name" pattern="^.*[a-zA-Z0-9]+.*$" list="umbrella_choices" autocomplete="off" required/>
-             <br />
-             <select class="form-control" name="project">
-                {% for project in projects %}
-                    <option value="{{ project.id }}">{{ project.name }}</option>
-                {% endfor %}
-             </select>
-             <br />
-             <div class="form-group">
-                 <button class="btn btn-primary" type="submit">Submit</button>
-             </div>
+             {% if projects|length > 0  %}
+                <input class="form-control" name="umbrella" placeholder="Folder Name" pattern="^.*[a-zA-Z0-9]+.*$" list="umbrella_choices" autocomplete="off" required/>
+                <br />
+                <select class="form-control" name="project">
+                    {% for project in projects %}
+                        <option value="{{ project.id }}">{{ project.name }}</option>
+                    {% endfor %}
+                </select>
+                <br />
+                <div class="form-group">
+                    <button class="btn btn-primary" type="submit">Submit</button>
+                </div>
+            {% else %}
+                <p>You do not have any existing projects to add to a new folder. Please <a href="/projects/add">create a project</a> first.</p>
+            {% endif %}
           </form>
         </div>
       </div>
