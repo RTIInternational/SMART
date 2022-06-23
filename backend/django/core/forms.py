@@ -4,7 +4,6 @@ from io import StringIO
 import numpy as np
 import pandas as pd
 from django import forms
-from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.forms.widgets import RadioSelect, Select, Textarea, TextInput
 from pandas.errors import ParserError
@@ -387,9 +386,7 @@ class DataWizardForm(forms.ModelForm):
             ("File_Upload", "File Upload"),
             ("Database_Ingest", "Connect to Database and Import Table"),
         ),
-        initial="File_Upload"
-        if cache.get("ext_db") != "microsoft"
-        else "Database_Ingest",
+        initial="File_Upload",
         required=True,
     )
 
@@ -546,9 +543,6 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
                         field_error = True
             if field_error:
                 raise ValidationError("Please fix field errors before resubmitting.")
-
-            # Cache database type for update data view
-            cache.set("ext_db", db_type)
 
             engine_database = get_connection(db_type, self.cleaned_data)
 
