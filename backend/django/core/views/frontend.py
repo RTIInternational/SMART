@@ -1,6 +1,4 @@
-from numpy import False_
 import pandas as pd
-from core.utils.util import get_projects
 from django import forms
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -36,6 +34,7 @@ from core.models import (
 )
 from core.templatetags import project_extras
 from core.utils.util import (
+    get_projects,
     project_status,
     save_codebook_file,
     update_label_embeddings,
@@ -214,7 +213,11 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
                 )
 
             umbrella_choices = list(possible_umbrellas)
-            context["umbrella_choices"] = [umbrella_choice for umbrella_choice in umbrella_choices if umbrella_choice]
+            context["umbrella_choices"] = [
+                umbrella_choice
+                for umbrella_choice in umbrella_choices
+                if umbrella_choice
+            ]
 
         return context
 
@@ -666,7 +669,9 @@ class ProjectUpdateUmbrella(LoginRequiredMixin, UserPassesTestMixin, View):
             )
 
         umbrella_choices = list(possible_umbrellas)
-        context["umbrella_choices"] = [umbrella_choice for umbrella_choice in umbrella_choices if umbrella_choice]
+        context["umbrella_choices"] = [
+            umbrella_choice for umbrella_choice in umbrella_choices if umbrella_choice
+        ]
         context["umbrella"] = project.umbrella_string
 
         return context
@@ -844,7 +849,10 @@ class CreateFolder(LoginRequiredMixin, ListView):
 
         # Only allow user to change folders of project they are the creator/have admin permissions
         for project in get_projects(self, False):
-            if project_extras.proj_permission_level(project, self.request.user.profile) >= 2:
+            if (
+                project_extras.proj_permission_level(project, self.request.user.profile)
+                >= 2
+            ):
                 admin_or_created_projects.append(project)
         admin_or_created_projects.sort(key=lambda x: x.name)
         context["projects"] = admin_or_created_projects

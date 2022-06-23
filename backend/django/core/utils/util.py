@@ -651,7 +651,7 @@ def project_status(project):
 
 def get_projects(self, order_by_folders):
     """Get all projects for a user.
-    
+
     Args:
         self: from get_context_data/queryset
     Returns:
@@ -661,9 +661,7 @@ def get_projects(self, order_by_folders):
     qs1 = Project.objects.filter(creator=self.request.user.profile)
 
     # Projects profile has permissions for
-    qs2 = Project.objects.filter(
-        projectpermissions__profile=self.request.user.profile
-    )
+    qs2 = Project.objects.filter(projectpermissions__profile=self.request.user.profile)
 
     qs = qs1 | qs2
     projects = qs.distinct()
