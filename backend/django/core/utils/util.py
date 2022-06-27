@@ -298,7 +298,9 @@ def update_label_embeddings(project):
         for embedding, label_embedding in zip(embeddings, project_labels_embeddings):
             label_embedding.embedding = embedding.tolist()
 
-        LabelEmbeddings.objects.bulk_update(project_labels_embeddings, ["embedding"], batch_size=8000)
+        LabelEmbeddings.objects.bulk_update(
+            project_labels_embeddings, ["embedding"], batch_size=8000
+        )
 
 
 def add_data(project, df):
