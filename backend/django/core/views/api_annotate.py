@@ -499,7 +499,7 @@ def embeddings_calculations(request):
 
 
 @api_view(["GET"])
-@permission_classes((IsAdminOrCreator,))
+@permission_classes((IsCoder,))
 def embeddings_comparison(request, project_pk):
     """This finds the highest scoring labels when comparing cosine similarity scores of
     their embeddingsfor a given input string.
