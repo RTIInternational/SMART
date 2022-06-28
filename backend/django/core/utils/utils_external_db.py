@@ -6,6 +6,10 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from sqlalchemy import create_engine
 
+from core.models import ExternalDatabase, Label, MetaDataField
+from core.utils.util import upload_data
+from core.utils.utils_form import clean_data_helper
+
 
 def get_connection(db_type, connection_dict):
     """Connect to a database given connection information."""
@@ -100,3 +104,54 @@ def delete_external_db_file(project_pk):
     file_name = "project_" + str(project_pk) + "_db_connection.json"
     fpath = os.path.join(settings.ENV_FILE_PATH, file_name)
     os.remove(fpath)
+
+
+def load_ingest_table(project, response):
+    """This function imports all data from an existing database connection."""
+    if not project.has_database_connection():
+        response["error"] = "Project does not have a database connection."
+    else:
+        # check that the project has a database connection and ingest tables
+        connection_dict = load_external_db_file(project.pk)
+        external_db = ExternalDatabase.objects.get(project=project)
+
+        if not external_db.has_ingest:
+            response["error"] = "Project does not have ingest connections set up."
+        else:
+            # pull the ingest table
+            try:
+                engine_database = get_connection(
+                    external_db.database_type, connection_dict
+                )
+
+                # pull the full database table
+                data = get_full_table(
+                    engine_database,
+                    external_db.ingest_schema,
+                    external_db.ingest_table_name,
+                )
+                # clean it using the form validation tool
+                cleaned_data = clean_data_helper(
+                    data,
+                    Label.objects.filter(project=project).values_list(
+                        "name", flat=True
+                    ),
+                    project.dedup_on,
+                    project.dedup_fields,
+                    MetaDataField.objects.filter(project=project).values_list(
+                        "field_name", flat=True
+                    ),
+                )
+                # add the data to the project
+                num_added = upload_data(
+                    cleaned_data,
+                    project,
+                    project.queue_set.get(type="normal"),
+                    project.queue_set.get(type="irr"),
+                    batch_size=project.batch_size,
+                )
+                response["num_added"] = num_added
+            except Exception as e:
+                # return errors in the validation tool
+                response["error"] = str(e)
+    return response

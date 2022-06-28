@@ -11,16 +11,15 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
-from core.forms import clean_data_helper
-from core.models import ExternalDatabase, Label, MetaDataField, Project
+from core.models import ExternalDatabase, Project
 from core.permissions import IsAdminOrCreator
 from core.templatetags import project_extras
-from core.utils.util import get_labeled_data, upload_data
+from core.utils.util import get_labeled_data
 from core.utils.utils_external_db import (
     check_if_table_exists,
     get_connection,
-    get_full_table,
     load_external_db_file,
+    load_ingest_table,
 )
 
 
@@ -160,53 +159,7 @@ def import_database_table(request, project_pk):
 
     # Make sure coder is an admin
     if project_extras.proj_permission_level(project, profile) > 1:
-
-        if not project.has_database_connection():
-            response["error"] = "Project does not have a database connection."
-        else:
-            # check that the project has a database connection and ingest tables
-            connection_dict = load_external_db_file(project_pk)
-            external_db = ExternalDatabase.objects.get(project=project)
-
-            if not external_db.has_ingest:
-                response["error"] = "Project does not have ingest connections set up."
-            else:
-                # pull the ingest table
-                try:
-                    engine_database = get_connection(
-                        external_db.database_type, connection_dict
-                    )
-
-                    # pull the full database table
-                    data = get_full_table(
-                        engine_database,
-                        external_db.ingest_schema,
-                        external_db.ingest_table_name,
-                    )
-                    # clean it using the form validation tool
-                    cleaned_data = clean_data_helper(
-                        data,
-                        Label.objects.filter(project=project).values_list(
-                            "name", flat=True
-                        ),
-                        project.dedup_on,
-                        project.dedup_fields,
-                        MetaDataField.objects.filter(project=project).values_list(
-                            "field_name", flat=True
-                        ),
-                    )
-                    # add the data to the project
-                    num_added = upload_data(
-                        cleaned_data,
-                        project,
-                        project.queue_set.get(type="normal"),
-                        project.queue_set.get(type="irr"),
-                        batch_size=project.batch_size,
-                    )
-                    response["num_added"] = num_added
-                except Exception as e:
-                    # return errors in the validation tool
-                    response["error"] = str(e)
+        response = load_ingest_table(project, response)
     else:
         response["error"] = "Invalid credentials. Must be an admin."
 
