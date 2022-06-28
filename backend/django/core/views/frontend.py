@@ -29,12 +29,12 @@ from core.models import (
     Label,
     MetaDataField,
     Project,
-    ProjectPermissions,
     TrainingSet,
 )
 from core.templatetags import project_extras
 from core.utils.util import (
     get_projects,
+    get_projects_umbrellas,
     project_status,
     save_codebook_file,
     update_label_embeddings,
@@ -196,26 +196,10 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         context = super(ProjectCreateWizard, self).get_context_data(form=form, **kwargs)
 
         if self.steps.current == "project":
-            user = self.request.user.profile
-
-            if str(user) == "root":
-                possible_umbrellas = (
-                    Project.objects.order_by("umbrella_string")
-                    .values_list("umbrella_string", flat=True)
-                    .distinct()
-                )
-            else:
-                possible_umbrellas = (
-                    ProjectPermissions.objects.filter(profile=user)
-                    .values_list("project__umbrella_string", flat=True)
-                    .distinct()
-                    .order_by("project__umbrella_string")
-                )
-
-            umbrella_choices = list(possible_umbrellas)
+            projects_umbrellas = get_projects_umbrellas(self)
             context["umbrella_choices"] = [
                 umbrella_choice
-                for umbrella_choice in umbrella_choices
+                for umbrella_choice in projects_umbrellas
                 if umbrella_choice
             ]
 
@@ -652,26 +636,11 @@ class ProjectUpdateUmbrella(LoginRequiredMixin, UserPassesTestMixin, View):
         project = Project.objects.get(pk=self.kwargs["pk"])
         context["project"] = project
 
-        user = self.request.user.profile
-
-        if str(user) == "root":
-            possible_umbrellas = (
-                Project.objects.order_by("umbrella_string")
-                .values_list("umbrella_string", flat=True)
-                .distinct()
-            )
-        else:
-            possible_umbrellas = (
-                ProjectPermissions.objects.filter(profile=user)
-                .values_list("project__umbrella_string", flat=True)
-                .distinct()
-                .order_by("project__umbrella_string")
-            )
-
-        umbrella_choices = list(possible_umbrellas)
+        projects_umbrellas = get_projects_umbrellas(self)
         context["umbrella_choices"] = [
-            umbrella_choice for umbrella_choice in umbrella_choices if umbrella_choice
+            umbrella_choice for umbrella_choice in projects_umbrellas if umbrella_choice
         ]
+
         context["umbrella"] = project.umbrella_string
 
         return context

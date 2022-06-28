@@ -654,6 +654,7 @@ def get_projects(self, order_by_folders):
 
     Args:
         self: from get_context_data/queryset
+        order_by_folders: sort projects into folders
     Returns:
         projects: a list of projects
     """
@@ -668,3 +669,21 @@ def get_projects(self, order_by_folders):
     if order_by_folders:
         projects = projects.order_by(self.ordering).reverse()
     return projects
+
+
+def get_projects_umbrellas(self):
+    """Get all projects' folders for a user (sorted alphabetically.)
+
+    Args:
+        self: from get_context_data
+    Returns:
+        projects_umbrellas: a list of projects' folders
+    """
+
+    projects = get_projects(self, False)
+    projects_umbrellas = (
+        projects.values_list("umbrella_string", flat=True)
+        .distinct()
+        .order_by("umbrella_string")
+    )
+    return projects_umbrellas
