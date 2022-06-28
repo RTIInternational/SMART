@@ -1,5 +1,5 @@
 import os
-from test.util import assert_obj_exists, read_test_data_backend
+from test.util import assert_num_obj, assert_obj_exists, read_test_data_backend
 
 import numpy as np
 import pandas as pd
@@ -10,6 +10,7 @@ from core.models import (
     Data,
     DataLabel,
     Label,
+    MetaData,
     Profile,
     Project,
     ProjectPermissions,
@@ -118,6 +119,78 @@ def test_add_data_with_labels(db, test_project_labels):
                     "label__name": row["Label"],
                 },
             )
+
+
+def test_add_metadata(db, test_project_meta):
+    """Tests to see if metadata is loaded to MetaData db."""
+    test_data = read_test_data_backend(
+        file="./core/data/test_files/test_no_labels_with_metadata.csv"
+    )
+    df = add_data(test_project_meta, test_data)
+    META_FIELDS = ["Score", "Num Comments", "Subreddit"]
+
+    for row_i, row in df.iterrows():
+        for label_i, label in enumerate(META_FIELDS):
+            assert_obj_exists(
+                MetaData,
+                {
+                    "data__hash": row["hash"],
+                    "metadata_field__id": label_i + 1,
+                    "value": row[label],
+                },
+            )
+
+
+def test_add_data_dedup_text(db, test_project_meta_dedup_text):
+    """Tests deduplication based on text."""
+    test_data = read_test_data_backend(
+        file="./core/data/test_files/test_small_metadata_duplicates.csv"
+    )
+    df = add_data(test_project_meta_dedup_text, test_data)
+
+    for row_i, row in df.iterrows():
+        assert_num_obj(
+            Data, {"project": test_project_meta_dedup_text, "text": row["Text"]}, 1
+        )
+
+
+def test_add_data_dedup_all_meta(db, test_project_meta):
+    """Tests deduplication of data on all metadata fields."""
+    test_data = read_test_data_backend(
+        file="./core/data/test_files/test_small_metadata_duplicates.csv"
+    )
+    add_data(test_project_meta, test_data)
+
+    assert_num_obj(
+        Data, {"project": test_project_meta, "text": "<TEST> Casual super cat."}, 3
+    )
+
+
+def test_add_data_dedup_sel_meta(db, test_project_meta_dedup_sub):
+    """Tests deduplication on a singular metadata field."""
+    test_data = read_test_data_backend(
+        file="./core/data/test_files/test_small_metadata_duplicates.csv"
+    )
+    add_data(test_project_meta_dedup_sub, test_data)
+
+    assert_num_obj(
+        Data,
+        {"project": test_project_meta_dedup_sub, "text": "<TEST> Casual super cat."},
+        2,
+    )
+
+
+def test_add_data_dedup_data_exists(db, test_project_meta):
+    """Tests deduplication after dupe data has been ingested previously."""
+    test_data = read_test_data_backend(
+        file="./core/data/test_files/test_small_metadata_duplicates.csv"
+    )
+    add_data(test_project_meta, test_data)
+    add_data(test_project_meta, test_data)
+
+    assert_num_obj(
+        Data, {"project": test_project_meta, "text": "<TEST> Casual super cat."}, 3
+    )
 
 
 def test_save_data_file_no_labels_csv(test_project, tmpdir, settings):

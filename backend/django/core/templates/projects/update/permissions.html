@@ -28,7 +28,7 @@
             <li class="list-group-item">You can update permissions after creating a project</li>
           </ul>
           {{ form.errors.as_ul }}
-          <table class="table table-striped">
+          <table class="table table-striped" id="permSelect">
             {{ permissions.management_form }}
             <div class="error-messages">{{ permissions.non_form_errors }}</div>
             {% for form in permissions %}
@@ -50,8 +50,8 @@
                         {{ hidden }}
                       {% endfor %}
                     {% endif %}
-                    <div class="error-messages">{{ field.errors.as_ul }}</div>
                     {{ field }}
+                    <div class="error-messages">{{ field.errors.as_ul }}</div>
                   </td>
                 {% endfor %}
               </tr>
@@ -82,4 +82,6 @@ $('.formset_row_perm').formset({
   }
 });
 </script>
+
+<script type="text/javascript" src="{% static 'dedup_perms.js' %}"></script>
 {% endblock %}

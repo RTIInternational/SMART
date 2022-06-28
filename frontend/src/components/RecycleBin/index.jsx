@@ -69,6 +69,7 @@ class RecycleBin extends React.Component {
                 <AnnotateCard
                     card={buildCard(row.row.id, null, { data: row.row.data, metadata: row.row.metadata })}
                     readonly={true}
+                    showAdjudicate={false}
                     suggestions={false}
                 />
                 <div id="disc_buttons">

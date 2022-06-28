@@ -717,7 +717,7 @@ class ProjectUpdatePermissions(LoginRequiredMixin, UserPassesTestMixin, View):
 
                 return redirect(self.get_success_url())
         else:
-            return self.render_to_response(context)
+            return self.get(request)
 
 
 class ProjectUpdateLabel(LoginRequiredMixin, UserPassesTestMixin, View):

@@ -333,3 +333,10 @@ class AdminProgress(models.Model):
     project = models.ForeignKey("Project", on_delete=models.CASCADE)
     profile = models.ForeignKey("Profile", on_delete=models.CASCADE)
     timestamp = models.DateTimeField(default=timezone.now)
+
+
+class AdjudicateDescription(models.Model):
+    project = models.ForeignKey("Project", on_delete=models.CASCADE)
+    data = models.ForeignKey("Data", on_delete=models.CASCADE)
+    message = models.TextField()
+    isResolved = models.BooleanField(default=False)

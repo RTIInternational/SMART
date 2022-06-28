@@ -23,8 +23,8 @@ const mapDispatchToProps = (dispatch) => {
         changeLabel: (dataID, oldLabelID, labelID) => {
             dispatch(changeLabel(dataID, oldLabelID, labelID, PROJECT_ID));
         },
-        changeToSkip: (dataID, oldLabelID) => {
-            dispatch(changeToSkip(dataID, oldLabelID, PROJECT_ID));
+        changeToSkip: (dataID, oldLabelID, message) => {
+            dispatch(changeToSkip(dataID, oldLabelID, PROJECT_ID, message));
         }
     };
 };

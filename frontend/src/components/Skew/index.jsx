@@ -163,6 +163,7 @@ class Skew extends React.Component {
                                         }
                                     }}
                                     onSkip={null}
+                                    showAdjudicate={false}
                                 />
                             </div>
                         );

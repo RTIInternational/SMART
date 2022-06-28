@@ -3,6 +3,7 @@ from django.contrib.auth.models import User as AuthUser
 from rest_framework import serializers
 
 from core.models import (
+    AdjudicateDescription,
     AssignedData,
     Data,
     DataLabel,
@@ -114,3 +115,9 @@ class AssignedDataSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = AssignedData
         fields = ("profile", "data", "queue", "assigned_timestamp")
+
+
+class AdjudicateDescriptionSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = AdjudicateDescription
+        fields = ("project", "data", "message", "isResolved")
