@@ -245,6 +245,11 @@ main {
         text-overflow: ellipsis;
     }
 
+    .react-dropdown-select-item {
+        max-width: 400px;
+        white-space: pre-wrap;
+    }
+
     .annotate-select .react-dropdown-select-item:hover {
         text-decoration: underline;
     }
