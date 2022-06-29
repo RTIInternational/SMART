@@ -57,7 +57,7 @@
                         <p>The following fields are the table name and schema for the database table you wish SMART to read new data from.
                             At minimum the table must have a column "Text" with the text that needs to be labeled.</p>
                         <div id="ingest_schema_fields">
-                            Pull from Ingest Table Daily (12pm): {{ form.daily_ingest }}
+                            Enable scheduled ingest: {{ form.cron_ingest }}
                         </div>
                         <div id="ingest_table_fields_update">
                             Ingest Table Name: {{ form.ingest_table_name }}

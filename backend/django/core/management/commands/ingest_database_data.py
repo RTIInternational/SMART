@@ -8,11 +8,11 @@ class Command(BaseCommand):
     help = "Pulls any new data from the ingest database table."
 
     def handle(self, *args, **kwargs):
-        ingest_projects = ExternalDatabase.objects.filter(
-            daily_ingest=True
-        ).values_list(flat=True)
+        ingest_projects = ExternalDatabase.objects.filter(cron_ingest=True).values_list(
+            flat=True
+        )
         if len(ingest_projects) == 0:
-            print("No projects have daily_ingest set to True.")
+            print("No projects have cron_ingest set to True.")
         for pk in ingest_projects:
             print("Ingesting project", pk)
             project = Project.objects.get(pk=pk)

@@ -386,7 +386,7 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
         model = ExternalDatabase
         fields = [
             "database_type",
-            "daily_ingest",
+            "cron_ingest",
             "ingest_schema",
             "ingest_table_name",
             "export_schema",
@@ -399,7 +399,7 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
         initial="none",
         required=True,
     )
-    daily_ingest = forms.BooleanField(initial=False, required=False)
+    cron_ingest = forms.BooleanField(initial=False, required=False)
     ingest_table_name = forms.CharField(initial="", required=False, max_length=50)
     ingest_schema = forms.CharField(initial="", required=False, max_length=50)
     export_table_name = forms.CharField(initial="", required=False, max_length=50)
@@ -422,7 +422,7 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
         required_for_all_db = [
             "ingest_table_name",
             "ingest_schema",
-            "daily_ingest",
+            "cron_ingest",
             "export_table_name",
             "export_schema",
             "username",
