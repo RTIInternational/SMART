@@ -1,1 +1,0 @@
-*/1 * * * * /code/daily_database_pull.sh >> /var/log/cron.log 2>&1

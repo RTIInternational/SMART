@@ -6,23 +6,7 @@ RUN curl https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/so
 
 RUN apt-get update && apt-get install -y netcat-traditional && \
     ACCEPT_EULA=Y apt-get install -y msodbcsql17 && \
-    apt-get install -y unixodbc-dev && apt-get install -y cron
-
-# Copy cron-template file to the cron.d directory
-COPY ./django/daily-database-cron /etc/cron.d/daily-database-cron
-
-# Give execution rights on the cron job
-RUN chmod 0644 /etc/cron.d/daily-database-cron
-
-# Apply cron job
-RUN crontab /etc/cron.d/daily-database-cron
-
-# Create the log file to be able to run tail
-RUN touch /var/log/cron.log
-
-# Run the command on container startup
-CMD cron && tail -f /var/log/cron.log
-
+    apt-get install -y unixodbc-dev
 
 WORKDIR /code
 ADD ./docker/requirements.txt /code/requirements.txt

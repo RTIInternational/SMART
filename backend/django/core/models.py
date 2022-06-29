@@ -205,6 +205,7 @@ class ExternalDatabase(models.Model):
     )
 
     has_ingest = models.BooleanField(default=False)
+    daily_ingest = models.BooleanField(default=False)
     ingest_schema = models.CharField(max_length=50, null=True)
     ingest_table_name = models.CharField(max_length=50, null=True)
     has_export = models.BooleanField(default=False)
