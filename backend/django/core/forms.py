@@ -9,7 +9,7 @@ from django.core.exceptions import ValidationError
 from django.forms.widgets import RadioSelect, Select, Textarea, TextInput
 from pandas.errors import ParserError
 
-from core.utils.util import md5_hash
+from core.utils.util import calculate_hash, md5_hash
 from core.utils.utils_external_db import (
     get_connection,
     get_full_table,
@@ -17,7 +17,7 @@ from core.utils.utils_external_db import (
     test_schema_exists,
 )
 
-from .models import ExternalDatabase, Label, Project, ProjectPermissions
+from .models import Data, ExternalDatabase, Label, Project, ProjectPermissions
 
 
 def read_data_file(data_file):
@@ -449,6 +449,7 @@ class DataUpdateWizardForm(forms.Form):
     data = forms.FileField()
 
     def __init__(self, *args, **kwargs):
+        self.project = kwargs.pop("project", None)
         self.supplied_labels = kwargs.pop("labels", None)
         self.supplied_metadata = kwargs.pop("metadata", None)
         self.dedup_on = kwargs.pop("dedup_on", None)
@@ -465,7 +466,43 @@ class DataUpdateWizardForm(forms.Form):
         labels = self.supplied_labels
         metadata = self.supplied_metadata
 
-        return clean_data_helper(data_df, labels, dedup_on, dedup_fields, metadata)
+        project = self.project
+
+        return self.clean_update_data_helper(
+            project, data_df, labels, dedup_on, dedup_fields, metadata
+        )
+
+    def clean_update_data_helper(
+        self,
+        project,
+        data,
+        supplied_labels,
+        dedup_on,
+        dedup_fields,
+        metadata_fields=None,
+    ):
+        # Validate using default data cleaner
+        data = clean_data_helper(
+            data, supplied_labels, dedup_on, dedup_fields, metadata_fields
+        )
+
+        # Check which hashes are already in the db
+        data_hashes = calculate_hash(project, data)
+        exiting_hashes = list(
+            Data.objects.filter(project=project).values_list("hash", flat=True)
+        )
+        dup_data = data.loc[data_hashes.isin(exiting_hashes)]
+
+        if not dup_data.empty:
+            # Find rows where Label is not none
+            overwrite_data = dup_data.loc[~dup_data["Label"].isnull()]
+
+            # Throw error containing rows which are going to overwritten
+            if not overwrite_data.empty:
+                error_str = "The following rows are already in the database and the labels will be overwritten:\n\n"
+                df_str = overwrite_data.to_csv(header=False, index=False) + "\n"
+                hint_str = "Please delete the labels or remove the rows before uploading the data"
+                raise ValidationError(error_str + df_str + hint_str)
 
 
 class CodeBookWizardForm(forms.Form):

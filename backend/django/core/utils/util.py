@@ -303,6 +303,37 @@ def update_label_embeddings(project):
         )
 
 
+def calculate_hash(project, df):
+    """Calculate text + metadata (if field is deduped) md5 hashes for each row in
+    dataframe.
+
+    Parameters:
+        project (core.models.Project): project object data belongs to
+        df (pandas.DataFrame): dataframe containing ingested data, must contain "text" column
+    Returns:
+        hashed_data (pandas.Series): a new mx1 series containing the hash
+    """
+
+    # Get meta fields to deduplicate on
+    dedup_on_fields = MetaDataField.objects.filter(
+        project=project, use_with_dedup=True
+    ).values_list("field_name", flat=True)
+
+    # Create empty series to store hashes
+    m = df.shape[0]
+    hashed_data = pd.Series("", index=range(m))
+
+    # Concatenate meta fields + text field
+    for f in dedup_on_fields:
+        hashed_data += df[f].astype(str) + "_"
+    hashed_data += df["Text"].astype(str)
+
+    # Apply md5 hash
+    hashed_data = hashed_data.apply(md5_hash)
+
+    return hashed_data
+
+
 def add_data(project, df):
     """Add data to an existing project.
 
@@ -311,16 +342,8 @@ def add_data(project, df):
     DataLabel
     """
     # Create hash of (text + dedup fields). So each unique combination should have a different hash
-    dedup_on_fields = MetaDataField.objects.filter(
-        project=project, use_with_dedup=True
-    ).values_list("field_name", flat=True)
-
-    df["hash"] = ""
-    for f in dedup_on_fields:
-        df["hash"] += df[f].astype(str) + "_"
-
-    df["hash"] += df["Text"].astype(str)
-    df["hash"] = df["hash"].apply(md5_hash)
+    hashed_data = calculate_hash(project, df)
+    df["hash"] = hashed_data
 
     df.drop_duplicates(subset=["hash"], keep="first", inplace=True)
 

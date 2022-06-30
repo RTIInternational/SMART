@@ -449,6 +449,8 @@ class ProjectUpdateData(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     def get_form_kwargs(self):
         form_kwargs = super(ProjectUpdateData, self).get_form_kwargs()
 
+        form_kwargs["project"] = Project.objects.get(pk=self.kwargs["pk"])
+
         form_kwargs["labels"] = list(
             Label.objects.filter(project=form_kwargs["instance"]).values_list(
                 "name", flat=True

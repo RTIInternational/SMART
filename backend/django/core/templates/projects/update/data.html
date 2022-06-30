@@ -33,7 +33,7 @@
           <div class="form-group">
             <label class="control-label" for="{{ form.data.id_for_label }}">{{ form.data.label }}</label>
             <input class="form-control" id="{{ form.data.id_for_label }}" maxlength="30" name="{{ form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" />
-            <div class="error-messages">{{ form.data.errors }}</div>
+            <div class="error-messages">{{ form.data.errors|linebreaks }}</div>
           </div>
           {% else %}
           <div>
