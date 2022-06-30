@@ -308,7 +308,7 @@ def modify_label(request, data_pk):
     old_label = Label.objects.get(pk=request.data["oldLabelID"])
     with transaction.atomic():
         DataLabel.objects.filter(data=data, label=old_label).update(
-            label=label, time_to_label=0, timestamp=timezone.now()
+            label=label, time_to_label=0, timestamp=timezone.now(), profile=profile
         )
 
         LabelChangeLog.objects.create(
