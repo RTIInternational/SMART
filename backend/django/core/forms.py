@@ -500,7 +500,7 @@ class DataUpdateWizardForm(forms.Form):
             # Throw error containing rows which are going to overwritten
             if not overwrite_data.empty:
                 error_str = "The following rows are already in the database and the labels will be overwritten:\n\n"
-                df_str = overwrite_data.to_csv(header=False, index=False) + "\n"
+                df_str = overwrite_data.to_csv(index=False) + "\n"
                 hint_str = "Please delete the labels or remove the rows before uploading the data"
                 raise ValidationError(error_str + df_str + hint_str)
 
