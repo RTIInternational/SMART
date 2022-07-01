@@ -46,6 +46,11 @@ const COLUMNS = [
         width: 100
     },
     {
+        Header: "User",
+        accessor: "profile",
+        width: 100
+    },
+    {
         Header: "Old Label ID",
         accessor: "old_label_id",
         show: false
