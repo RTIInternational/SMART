@@ -36,7 +36,7 @@ class DataCard extends React.Component {
                                 cards.length,
                                 ADMIN
                             )}
-                        onSkip={(card, message = null) => passCard(card, cards.length, ADMIN, message)}
+                        onSkip={(card, addToAdminQueue, message = null) => passCard(card, cards.length, ADMIN, addToAdminQueue, message)}
                     />
                 </div>
             );

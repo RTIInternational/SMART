@@ -159,8 +159,9 @@ def skip_data(request, data_pk):
             process_irr_label(data, None)
     else:
         # the data is not IRR so treat it as normal
-        move_skipped_to_admin_queue(data, profile, project)
-        createUnresolvedAdjudicateMessage(project, data, request.data["message"])
+        if request.data["addToAdminQueue"]:
+            move_skipped_to_admin_queue(data, profile, project)
+            createUnresolvedAdjudicateMessage(project, data, request.data["message"])
 
     # for all data, check if we need to refill queue
     check_and_trigger_model(data, profile)

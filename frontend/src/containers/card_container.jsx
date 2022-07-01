@@ -24,8 +24,8 @@ const mapDispatchToProps = (dispatch) => {
         annotateCard: (dataID, labelID, num_cards_left, is_admin) => {
             dispatch(annotateCard(dataID, labelID, num_cards_left, PROJECT_ID, is_admin));
         },
-        passCard: (dataID, num_cards_left, is_admin, message) => {
-            dispatch(passCard(dataID, num_cards_left, is_admin, PROJECT_ID, message));
+        passCard: (dataID, num_cards_left, is_admin, addToAdminQueue, message) => {
+            dispatch(passCard(dataID, num_cards_left, is_admin, PROJECT_ID, addToAdminQueue, message));
         }
     };
 };

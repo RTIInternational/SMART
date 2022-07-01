@@ -11,6 +11,7 @@ export default function CardData({ card, onSkip, showAdjudicate = true }) {
         <div className="cardface-info">
             {showAdjudicate && (
                 <div className="card-title" style={{ display: "flex", justifyContent: 'flex-end' }}>
+                    {drawSkipQueueButton(card, onSkip)}
                     {drawSkipButton(card, onSkip)}
                 </div>
             )}
@@ -29,7 +30,7 @@ function drawSkipButton(card, onSkip) {
 
     const handleSkip = (event) => {
         event.preventDefault();
-        onSkip(card, message);
+        onSkip(card, true, message);
     };
 
     return (
@@ -65,6 +66,31 @@ function drawSkipButton(card, onSkip) {
                     </form>
                 </Modal.Body>
             </Modal>
+        </Fragment>
+    );
+}
+
+function drawSkipQueueButton(card, onSkip) {
+    return (
+        <Fragment>
+            <OverlayTrigger
+                placement="top"
+                overlay={
+                    <Tooltip id="skip_tooltip">
+                        Clicking this button will skip this card for later.
+                    </Tooltip>
+                }
+            >
+                
+                <Button
+                    className="ajucate-button"
+                    onClick={() => onSkip(card, false)}
+                    style={{ marginRight: "0.25rem" }}
+                    variant="info"
+                >
+                    Skip
+                </Button>
+            </OverlayTrigger>
         </Fragment>
     );
 }
