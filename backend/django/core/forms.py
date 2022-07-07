@@ -499,10 +499,14 @@ class DataUpdateWizardForm(forms.Form):
 
             # Throw error containing rows which are going to overwritten
             if not overwrite_data.empty:
-                error_str = "The following rows are already in the database and the labels will be overwritten:\n\n"
-                df_str = overwrite_data.to_csv(index=False) + "\n"
+                error_str = "The following uploaded text + metadata combinations are already in the database and the uploaded labels will not be reflected in the database:\n\n"
+                df_str = overwrite_data.head(10).to_csv(index=False)
+                size = overwrite_data.shape[0]
+                remaining_str = (
+                    f"----{size-10} rows remaining----\n\n" if size > 10 else "\n\n"
+                )
                 hint_str = "Please delete the labels or remove the rows before uploading the data"
-                raise ValidationError(error_str + df_str + hint_str)
+                raise ValidationError(error_str + df_str + remaining_str + hint_str)
 
 
 class CodeBookWizardForm(forms.Form):
