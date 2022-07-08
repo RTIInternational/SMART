@@ -45,7 +45,7 @@
             <p>An example dataset can be downloaded from <a href="{% static 'example-labels.csv' %}">here</a>.</p>
             <hr>
             <input class="form-control" id="{{ wizard.form.data.id_for_label }}" maxlength="30" name="{{ wizard.form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" onChange="handleUpload(event)" onclick="this.value = null;" />
-            <p class="delete-row delete-label" id="rmFileBtn">remove uploaded labels</p>
+            <button id="rmFileBtn">remove uploaded labels</button>
           </div>
           <br />
           <div class="fixed-wiz">
