@@ -48,16 +48,26 @@ class AdminTable extends React.Component {
             {
                 Header: "Unlabeled Data",
                 accessor: "data",
-                Cell: row => (
-                    <div className="sub-row">
-                        <AnnotateCard
-                            card={buildCard(row.row.id, null, row.original)}
-                            labels={labels}
-                            onSelectLabel={(card, label) => adminLabel(card.id, label)}
-                            onDiscard={(id) => discardData(id)}
-                        />
-                    </div>
-                )
+                Cell: row => {
+                    return (
+                        <div className="sub-row">
+                            {row.original.message && (
+                                <div className="adjudicate-message">
+                                    <h4>Reason for skipping:</h4>
+                                    <p>{row.original.message}</p>
+                                </div>
+                            )}
+                            <AnnotateCard
+                                card={buildCard(row.row.id, null, row.original)}
+                                hideAdjudicate={true}
+                                labels={labels}
+                                onSelectLabel={(card, label) => adminLabel(card.id, label)}
+                                onDiscard={(id) => discardData(id)}
+                                showAdjudicate={false}
+                            />
+                        </div>
+                    );
+                }
             }
         ];
 
@@ -90,7 +100,10 @@ class AdminTable extends React.Component {
                         min-width: 200px;\
                         width: fit-content;\
                     }\
-                "
+                    .rt-td {\
+                        overflow-y: auto !important;\
+                    }\
+                " 
                     }
                 </style>
             </div>

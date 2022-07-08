@@ -245,6 +245,11 @@ main {
         text-overflow: ellipsis;
     }
 
+    .react-dropdown-select-item {
+        max-width: 400px;
+        white-space: pre-wrap;
+    }
+
     .annotate-select .react-dropdown-select-item:hover {
         text-decoration: underline;
     }
@@ -410,7 +415,12 @@ li.disabled {
     transform: translate(0, 0%) !important;
 }
 
-.mdoal-header {
+.codebook-modal .modal-content{
+    height: 700px;
+    width: 900px;
+}
+
+.modal-header {
     display: flex;
     align-items: center;
 }
@@ -471,9 +481,9 @@ li.disabled {
     overflow: scroll;
 }
 
-.modal-content {
-    height: 700px;
-    width: 900px;
+#history_annotate{
+    height: auto;
+    width: auto;
 }
 
 #pdf_document {
@@ -591,6 +601,17 @@ li.disabled {
     margin-top: 8px;
 }
 
+.adjudicate-message {
+    display: flex;
+    flex-direction: column;
+    margin: 16px 36px;
+
+    h4 {
+        border-bottom: 1px solid #DDDDDD;
+        font-size: 18px;
+    }
+}
+
 .fixed-wiz {
     display: none;
     height: fit-content;
@@ -630,3 +651,17 @@ li.disabled {
 .inline-btn:hover {
     text-decoration: underline;
 }
+
+.adjudicate-message-textarea {
+    padding: 0.5rem;
+    width: 100%;
+    margin: 0.75rem 0 1rem;
+    min-height: 6rem;
+    border: 1px solid #CCCCCC;
+    border-radius: 2px;
+}
+
+#trashCan {
+    padding-right: 2px;
+}
+

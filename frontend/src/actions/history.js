@@ -36,7 +36,8 @@ export const getHistory = (projectID) => {
                         old_label_id: response.data[i].labelID,
                         timestamp: response.data[i].timestamp,
                         edit: response.data[i].edit,
-                        project: projectID
+                        project: projectID,
+                        profile: response.data[i].profile
                     };
                     all_data.push(row);
                 }
@@ -72,9 +73,10 @@ export const changeLabel = (dataID, oldLabelID, labelID, projectID) => {
     };
 };
 
-export const changeToSkip = (dataID, oldLabelID, projectID) => {
+export const changeToSkip = (dataID, oldLabelID, projectID, message) => {
     let payload = {
         dataID: dataID,
+        message,
         oldLabelID: oldLabelID,
     };
     let apiURL = `/api/modify_label_to_skip/${dataID}/`;

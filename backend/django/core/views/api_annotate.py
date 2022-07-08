@@ -2,6 +2,7 @@ import math
 import random
 
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.db import transaction
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
@@ -10,6 +11,7 @@ from rest_framework.response import Response
 from sentence_transformers import SentenceTransformer, util
 
 from core.models import (
+    AdjudicateDescription,
     AdminProgress,
     AssignedData,
     Data,
@@ -19,6 +21,7 @@ from core.models import (
     Label,
     LabelChangeLog,
     LabelEmbeddings,
+    Profile,
     Project,
     Queue,
     RecycleBin,
@@ -28,6 +31,7 @@ from core.serializers import DataSerializer, LabelSerializer
 from core.templatetags import project_extras
 from core.utils.utils_annotate import (
     cache_embeddings,
+    createUnresolvedAdjudicateMessage,
     get_assignments,
     get_embeddings,
     get_unlabeled_data,
@@ -156,6 +160,7 @@ def skip_data(request, data_pk):
     else:
         # the data is not IRR so treat it as normal
         move_skipped_to_admin_queue(data, profile, project)
+        createUnresolvedAdjudicateMessage(project, data, request.data["message"])
 
     # for all data, check if we need to refill queue
     check_and_trigger_model(data, profile)
@@ -244,6 +249,9 @@ def discard_data(request, data_pk):
         irr_records = IRRLog.objects.filter(data=data)
         irr_records.delete()
 
+        # set any adjudication message to resolved
+        AdjudicateDescription.objects.filter(data_id=data_pk).update(isResolved=True)
+
     else:
         response["error"] = "Invalid credentials. Must be an admin."
 
@@ -300,7 +308,7 @@ def modify_label(request, data_pk):
     old_label = Label.objects.get(pk=request.data["oldLabelID"])
     with transaction.atomic():
         DataLabel.objects.filter(data=data, label=old_label).update(
-            label=label, time_to_label=0, timestamp=timezone.now()
+            label=label, time_to_label=0, timestamp=timezone.now(), profile=profile
         )
 
         LabelChangeLog.objects.create(
@@ -333,6 +341,7 @@ def modify_label_to_skip(request, data_pk):
     project = data.project
     old_label = Label.objects.get(pk=request.data["oldLabelID"])
     queue = Queue.objects.get(project=project, type="admin")
+    createUnresolvedAdjudicateMessage(project, data, request.data["message"])
 
     with transaction.atomic():
         DataLabel.objects.filter(data=data, label=old_label).delete()
@@ -492,7 +501,7 @@ def embeddings_calculations(request):
 
 
 @api_view(["GET"])
-@permission_classes((IsAdminOrCreator,))
+@permission_classes((IsCoder,))
 def embeddings_comparison(request, project_pk):
     """This finds the highest scoring labels when comparing cosine similarity scores of
     their embeddingsfor a given input string.
@@ -546,6 +555,12 @@ def data_admin_table(request, project_pk):
     project = Project.objects.get(pk=project_pk)
     queue = Queue.objects.get(project=project, type="admin")
 
+    messages = list(
+        AdjudicateDescription.objects.filter(
+            project_id=project_pk, isResolved=False
+        ).values("data_id", "message")
+    )
+
     data_objs = DataQueue.objects.filter(queue=queue)
 
     data = []
@@ -556,11 +571,13 @@ def data_admin_table(request, project_pk):
             reason = "Skipped"
 
         serialized_data = DataSerializer(d.data, many=False).data
+        potentialMessage = [x for x in messages if x["data_id"] == d.data.id]
         temp = {
             "Text": serialized_data["text"],
             "metadata": serialized_data["metadata"],
             "ID": d.data.id,
             "Reason": reason,
+            "message": None if not potentialMessage else potentialMessage[0]["message"],
         }
         data.append(temp)
 
@@ -694,6 +711,8 @@ def label_admin_label(request, data_pk):
         if datum.irr_ind:
             Data.objects.filter(pk=datum.pk).update(irr_ind=False)
 
+        AdjudicateDescription.objects.filter(data_id=data_pk).update(isResolved=True)
+
     # NOTE: this checks if the model needs to be triggered, but not if the
     # queues need to be refilled. This is because for something to be in the
     # admin queue, annotate or skip would have already checked for an empty queue
@@ -705,6 +724,7 @@ def label_admin_label(request, data_pk):
 @permission_classes((IsCoder,))
 def get_label_history(request, project_pk):
     """Grab items previously labeled by this user and send it to the frontend react app.
+    If this user is the project creator or an admin, get all items previously labeled.
 
     Args:
         request: The request to the endpoint
@@ -717,9 +737,12 @@ def get_label_history(request, project_pk):
     project = Project.objects.get(pk=project_pk)
 
     labels = Label.objects.all().filter(project=project)
-    data = DataLabel.objects.filter(
-        profile=profile, data__project=project_pk, label__in=labels
-    )
+    if project_extras.proj_permission_level(project, profile) >= 2:
+        data = DataLabel.objects.filter(data__project=project_pk, label__in=labels)
+    else:
+        data = DataLabel.objects.filter(
+            profile=profile, data__project=project_pk, label__in=labels
+        )
 
     data_list = []
     results = []
@@ -759,6 +782,9 @@ def get_label_history(request, project_pk):
             "labelID": d.label.id,
             "timestamp": new_timestamp,
             "edit": "yes",
+            "profile": User.objects.get(
+                id=Profile.objects.get(id=d.profile_id).user_id
+            ).username,
         }
         results.append(temp_dict)
 
@@ -799,6 +825,9 @@ def get_label_history(request, project_pk):
             "labelID": d.label.id,
             "timestamp": new_timestamp,
             "edit": "no",
+            "profile": User.objects.get(
+                id=Profile.objects.get(id=d.profile_id).user_id
+            ).username,
         }
         results.append(temp_dict)
 
