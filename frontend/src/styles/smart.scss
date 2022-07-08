@@ -619,3 +619,14 @@ li.disabled {
 .dynamic-form-add {
     background-color: #F9F9F9;
 }
+
+.inline-btn {
+    border: none;
+    outline: none;
+    background-color: transparent;
+    color: $brand-primary;
+}
+
+.inline-btn:hover {
+    text-decoration: underline;
+}

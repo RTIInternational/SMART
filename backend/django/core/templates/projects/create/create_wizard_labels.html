@@ -45,7 +45,7 @@
             <p>An example dataset can be downloaded from <a href="{% static 'example-labels.csv' %}">here</a>.</p>
             <hr>
             <input class="form-control" id="{{ wizard.form.data.id_for_label }}" maxlength="30" name="{{ wizard.form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" onChange="handleUpload(event)" onclick="this.value = null;" />
-            <button id="rmFileBtn">remove uploaded labels</button>
+            <button id="rmFileBtn" class="inline-btn">remove uploaded labels</button>
           </div>
           <br />
           <div class="fixed-wiz">
@@ -200,7 +200,8 @@
       $('tr.formset_row_label').last().children(':first').find('ul.errorlist li').empty();
     }
   });
-  $("#rmFileBtn").click(function() {
+  $("#rmFileBtn").click(function(event) {
+    event.preventDefault();
     // Remove uploaded file
     $("input[type='file']").val("");
 
