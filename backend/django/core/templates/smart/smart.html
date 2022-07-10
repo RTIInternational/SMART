@@ -15,13 +15,6 @@ window.PROJECT_ID = {{ pk }};
   window.CODEBOOK_URL = "{% static project.codebook_file %}"
 {% endif %}
 window.ADMIN = {{admin}};
-window.onbeforeunload = function (e) {
-  $.ajax({
-    type: 'GET',
-    async: false,
-    url: '/api/leave_coding_page/'+{{ pk }}+'/',
-  });
-};
 window.onload = function (e) {
   $.ajax({
     type: 'GET',

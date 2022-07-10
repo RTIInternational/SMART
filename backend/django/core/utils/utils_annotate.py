@@ -5,6 +5,7 @@ from django.utils import timezone
 
 from core.models import (
     AdjudicateDescription,
+    AdminProgress,
     AssignedData,
     Data,
     DataLabel,
@@ -21,6 +22,19 @@ from core.utils.utils_redis import (
     redis_serialize_queue,
     redis_serialize_set,
 )
+
+
+def leave_coding_page(profile, project):
+    """unnasign data and remove any admin locks for a specific user and project."""
+    assigned_data = AssignedData.objects.filter(profile=profile)
+
+    for assignment in assigned_data:
+        unassign_datum(assignment.data, profile)
+
+    if project_extras.proj_permission_level(project, profile) > 1:
+        if AdminProgress.objects.filter(project=project, profile=profile).count() > 0:
+            prog = AdminProgress.objects.get(project=project, profile=profile)
+            prog.delete()
 
 
 def assign_datum(profile, project, type="normal"):
