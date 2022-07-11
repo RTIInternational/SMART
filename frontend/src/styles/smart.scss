@@ -245,6 +245,11 @@ main {
         text-overflow: ellipsis;
     }
 
+    .react-dropdown-select-item {
+        max-width: 400px;
+        white-space: pre-wrap;
+    }
+
     .annotate-select .react-dropdown-select-item:hover {
         text-decoration: underline;
     }
@@ -636,6 +641,17 @@ li.disabled {
     background-color: #F9F9F9;
 }
 
+.inline-btn {
+    border: none;
+    outline: none;
+    background-color: transparent;
+    color: $brand-primary;
+}
+
+.inline-btn:hover {
+    text-decoration: underline;
+}
+
 .adjudicate-message-textarea {
     padding: 0.5rem;
     width: 100%;
@@ -648,3 +664,4 @@ li.disabled {
 #trashCan {
     padding-right: 2px;
 }
+

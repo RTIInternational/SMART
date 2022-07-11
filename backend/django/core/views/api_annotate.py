@@ -2,6 +2,7 @@ import math
 import random
 
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.db import transaction
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
@@ -20,6 +21,7 @@ from core.models import (
     Label,
     LabelChangeLog,
     LabelEmbeddings,
+    Profile,
     Project,
     Queue,
     RecycleBin,
@@ -306,7 +308,7 @@ def modify_label(request, data_pk):
     old_label = Label.objects.get(pk=request.data["oldLabelID"])
     with transaction.atomic():
         DataLabel.objects.filter(data=data, label=old_label).update(
-            label=label, time_to_label=0, timestamp=timezone.now()
+            label=label, time_to_label=0, timestamp=timezone.now(), profile=profile
         )
 
         LabelChangeLog.objects.create(
@@ -499,7 +501,7 @@ def embeddings_calculations(request):
 
 
 @api_view(["GET"])
-@permission_classes((IsAdminOrCreator,))
+@permission_classes((IsCoder,))
 def embeddings_comparison(request, project_pk):
     """This finds the highest scoring labels when comparing cosine similarity scores of
     their embeddingsfor a given input string.
@@ -722,6 +724,7 @@ def label_admin_label(request, data_pk):
 @permission_classes((IsCoder,))
 def get_label_history(request, project_pk):
     """Grab items previously labeled by this user and send it to the frontend react app.
+    If this user is the project creator or an admin, get all items previously labeled.
 
     Args:
         request: The request to the endpoint
@@ -734,9 +737,12 @@ def get_label_history(request, project_pk):
     project = Project.objects.get(pk=project_pk)
 
     labels = Label.objects.all().filter(project=project)
-    data = DataLabel.objects.filter(
-        profile=profile, data__project=project_pk, label__in=labels
-    )
+    if project_extras.proj_permission_level(project, profile) >= 2:
+        data = DataLabel.objects.filter(data__project=project_pk, label__in=labels)
+    else:
+        data = DataLabel.objects.filter(
+            profile=profile, data__project=project_pk, label__in=labels
+        )
 
     data_list = []
     results = []
@@ -776,6 +782,9 @@ def get_label_history(request, project_pk):
             "labelID": d.label.id,
             "timestamp": new_timestamp,
             "edit": "yes",
+            "profile": User.objects.get(
+                id=Profile.objects.get(id=d.profile_id).user_id
+            ).username,
         }
         results.append(temp_dict)
 
@@ -816,6 +825,9 @@ def get_label_history(request, project_pk):
             "labelID": d.label.id,
             "timestamp": new_timestamp,
             "edit": "no",
+            "profile": User.objects.get(
+                id=Profile.objects.get(id=d.profile_id).user_id
+            ).username,
         }
         results.append(temp_dict)
 

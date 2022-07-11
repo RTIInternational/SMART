@@ -100,7 +100,10 @@ class AdminTable extends React.Component {
                         min-width: 200px;\
                         width: fit-content;\
                     }\
-                "
+                    .rt-td {\
+                        overflow-y: auto !important;\
+                    }\
+                " 
                     }
                 </style>
             </div>
