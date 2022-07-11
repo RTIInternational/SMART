@@ -1,17 +1,17 @@
 from allauth.account.signals import user_logged_out
+from django.db.models import Q
 from django.dispatch import receiver
 
-from core.models import Project
+from core.models import Profile, Project
 from core.utils.utils_annotate import leave_coding_page
 
 
 @receiver(user_logged_out)
 def on_user_logout(sender, **kwargs):
-    profile = kwargs["user"].pk
-    qs = Project.objects.filter(creator=profile) | Project.objects.filter(
-        projectpermissions__profile=profile
-    )
-    profile_projects = qs.distinct()
+    profile = Profile.objects.get(pk=kwargs["user"].pk)
+    profile_projects = Project.objects.filter(
+        Q(creator=profile) | Q(projectpermissions__profile=profile)
+    ).distinct()
+
     for project in profile_projects:
-        print("Removing user", profile, "from coding page for project", project)
         leave_coding_page(profile, project)

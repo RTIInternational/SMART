@@ -4,6 +4,7 @@ import random
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -397,7 +398,6 @@ def enter_coding_page(request, project_pk):
     """
     profile = request.user.profile
     project = Project.objects.get(pk=project_pk)
-    print("Profile", profile, "is entering coding page for", project)
     # check that no other admin is using it. If they are not, give this admin permission
     if project_extras.proj_permission_level(project, profile) > 1:
         if AdminProgress.objects.filter(project=project).count() == 0:
@@ -407,15 +407,13 @@ def enter_coding_page(request, project_pk):
 
     # NEW leave the coding page for all other projects so they're only in one
     # project at a time
-    qs = Project.objects.filter(creator=profile) | Project.objects.filter(
-        projectpermissions__profile=profile
-    )
-    projects = qs.distinct()
+    profile_projects = Project.objects.filter(
+        Q(creator=profile) | Q(projectpermissions__profile=profile)
+    ).distinct()
 
-    profile_projects = [p for p in projects if p != project]
+    profile_projects = [p for p in profile_projects if p != project]
     for project in profile_projects:
-        print("Profile", profile, "is leaving coding page for other project", project)
-        leave_coding_page(profile, projects)
+        leave_coding_page(profile, project)
 
     return Response({})
 
