@@ -24,6 +24,7 @@
           <p>The (optional) <code>ID</code> column should contain a <b>unique</b> identifier for your data. The identifiers should be no more than 128 characters.</p>
           <p>The <code>Text</code> column should contain the text you wish users to label. For example, if you are building a sentiment analysis model to predict whether a tweet is positive, negative, or neutral, the <code>Text</code> column would contain the tweets.</p>
           <p>The (optional) <code>Label</code> column should contain any pre-exisiting labels for the corresponding text. If none of your data contains existing labels, then this column can be left blank. Extending our sentiment analysis example, if a lead coder has already annotated some tweets as positive, negative, or neutral, this column would contain those labeled records.</p>
+          <p>The labels in the database uploaded now or annotated using SMART are given priority. Any duplicate text uploaded later with new labels will not update labels already in the database</p>
           <p><i>Data Upload Notes:</i></p>
           <ul class="list-group">
             <li class="list-group-item">SMART restricts your project to having two million unique records.</li>

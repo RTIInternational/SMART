@@ -35,6 +35,7 @@
                         column would contain the tweets.</p>
                     <p>The (optional) <code>Label</code> column should contain any pre-exisiting labels for the corresponding text. If none of your data contains existing labels, then this column can be left blank. Extending our sentiment analysis example, if a
                         lead coder has already annotated some tweets as positive, negative, or neutral, this column would contain those labeled records.</p>
+                    <p>The labels in the database uploaded now or annotated using SMART are given priority. Any duplicate text uploaded later with new labels will not update labels already in the database</p>
                     <p><b>All additional columns in the data file or table will be saved as metadata and the values will be displayed along with the text for labeling. These fields can be empty for some or all data. Currently SMART does not support using metadata values in its models.</b></p>
 
 
