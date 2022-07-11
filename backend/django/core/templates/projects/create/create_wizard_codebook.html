@@ -27,8 +27,9 @@
           </ul>
           <div class="form-group">
             <label class="control-label" for="{{ wizard.form.data.id_for_label }}">{{ wizard.form.data.label }}</label>
-            <input class="form-control" id="{{ wizard.form.data.id_for_label }}" maxlength="30" name="{{ wizard.form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" />
+            <input class="form-control" id="{{ wizard.form.data.id_for_label }}" maxlength="30" name="{{ wizard.form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" style="text-align-last: center;"/>
             <div class="error-messages">{{ wizard.form.data.errors }}</div>
+            <button id="rmFileBtn" class="inline-btn">remove codebook</button>
           </div>
           <div class="wizard_nav_bar">
             <button class="btn btn-info" name="wizard_goto_step" type="submit" value="project">1. Info</button>
@@ -43,4 +44,11 @@
     </div>
   </div>
 </div>
+
+<script type="text/javascript">
+  $("#rmFileBtn").click(function(event) {
+    event.preventDefault();
+    $("input[type='file']").val("");
+  })
+</script>
 {% endblock %}

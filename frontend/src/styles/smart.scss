@@ -641,6 +641,17 @@ li.disabled {
     background-color: #F9F9F9;
 }
 
+.inline-btn {
+    border: none;
+    outline: none;
+    background-color: transparent;
+    color: $brand-primary;
+}
+
+.inline-btn:hover {
+    text-decoration: underline;
+}
+
 .adjudicate-message-textarea {
     padding: 0.5rem;
     width: 100%;
@@ -653,3 +664,4 @@ li.disabled {
 #trashCan {
     padding-right: 2px;
 }
+
