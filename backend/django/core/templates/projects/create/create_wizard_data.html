@@ -65,7 +65,7 @@
                                 <li class="list-group-item">The file requires the data to have one column named <code>Text</code>. It can also contain a unique id column named <code>ID</code> and a label column named and <code>Label</code>.</li>
                                 <li class="list-group-item">The largest file size supported is 500MBs.</li>
                                 <li class="list-group-item">SMART restricts your project to having two million unique records.</li>
-                                <li class="list-group-item">If there are multiple rows with the same text, only one of the records will be saved.</li>
+                                <li class="list-group-item">If there are multiple rows with the same text, only one of the records will be saved, and the first label, if given, will be saved</li>
                                 <li class="list-group-item">SMART will keep up to two million unique records per data set.</li>
                             </ul>
                             <div>
@@ -73,7 +73,7 @@
                                 <input class="form-control" id="{{ wizard.form.data.id_for_label }}" maxlength="30" name="{{ wizard.form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" />
                                 <div class="error-messages">{{ wizard.form.data.errors }}</div>
                             </div>
-                            <p>An example dataset can be downloaded from <a href="{% static 'example.csv' %}">here</a>.</p>
+                            <p><a href="{% static 'example.csv' %}">An example dataset can be downloaded from here</a>.</p>
                           </div>
                         </div>
                       </div>
