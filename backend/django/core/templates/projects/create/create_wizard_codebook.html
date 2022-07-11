@@ -27,7 +27,7 @@
           </ul>
           <div class="form-group">
             <label class="control-label" for="{{ wizard.form.data.id_for_label }}">{{ wizard.form.data.label }}</label>
-            <input class="form-control" id="{{ wizard.form.data.id_for_label }}" maxlength="30" name="{{ wizard.form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" style="text-align-last: center;"/>
+            <input class="form-control" id="{{ wizard.form.data.id_for_label }}" maxlength="30" name="{{ wizard.form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" />
             <div class="error-messages">{{ wizard.form.data.errors }}</div>
             <button id="rmFileBtn" class="inline-btn">remove codebook</button>
           </div>
@@ -35,7 +35,6 @@
             <button class="btn btn-info" name="wizard_goto_step" type="submit" value="project">1. Info</button>
             <button class="btn btn-info" name="wizard_goto_step" type="submit" value="labels">2. Labels</button>
             <button class="btn btn-info" name="wizard_goto_step" type="submit" value="permissions">3. Permissions</button>
-            <button class="btn btn-info" name="wizard_goto_step" type="submit" value="advanced">4. Advanced</button>
             <input class="btn btn-primary" type="submit" value="Next Step"/>
             <p class="pull-right">Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
           </div>
