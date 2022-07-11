@@ -93,14 +93,22 @@ p, a, label, input, button, li, th, textarea, dt, dd, select, text, .progress-ba
 
 .messages {
     position: absolute;
-    top: 0;
+    top: 0.5rem;
     right: 0;
     box-shadow: $box-shadow;
     z-index: 10;
 
     .alert {
+        display: flex;
+        flex-direction: row-reverse;
+        align-items: center;
         margin-bottom: 0;
+        color: #000000;
     }
+}
+
+.alert-dismissible {
+    padding: 0.25rem 1rem !important;
 }
 
 main {
@@ -195,6 +203,10 @@ main {
 
     .btn, & > div {
         margin-top: 4px;
+    }
+
+    .btn, {
+        margin-left: 0.5rem;
     }
 
     & > div {
@@ -529,6 +541,16 @@ li.disabled {
 
 .wizard_nav_bar {
     margin-bottom: 40px;
+    margin-top: -0.35rem;
+
+    .btn {
+        margin-left: calc(0.35rem - 4px);
+        margin-top: 0.35rem;
+    }
+
+    :first-child {
+        margin-left: 0 !important;
+    }
 }
 
 #label_group_buttons {
@@ -625,6 +647,12 @@ li.disabled {
 .fixed-wiz .wizard_nav_bar {
     width: 100%;
     margin-bottom: 0px !important;
+    margin-top: -0.35rem;
+
+    .btn {
+        margin-left: calc(0.35rem - 4px);
+        margin-top: 0.35rem;
+    }
 }
 
 .delete-label {

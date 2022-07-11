@@ -116,7 +116,7 @@ class History extends React.Component {
         } else {
             return (
                 <div>
-                    <u>Background Data</u>
+                    <u>Respondent Data</u>
                     {row.row["metadata"].map(val => (
                         <p key={val}>{val}</p>
                     ))}
@@ -215,12 +215,12 @@ class History extends React.Component {
             <div className="history">
                 <h3>Instructions</h3>
                 <p>This page allows a coder to change past labels.</p>
-                <p>
+                <p style={{ maxWidth: "75ch" }}>
                     To annotate, click on a data entry below and select the
                     label from the expanded list of labels. The chart will then
                     update with the new label and current timestamp{" "}
                 </p>
-                <p>
+                <p style={{ maxWidth: "75ch" }}>
                     <strong>NOTE:</strong> Data labels that are changed on this
                     page will not effect past model accuracy or data selected by
                     active learning in the past. The training data will only be
