@@ -22,7 +22,7 @@
 
           <h1>Project Info</h1>
           <div class="form-group">
-            <label class="control-label" for="{{ wizard.form.name.id_for_label }}">{{ wizard.form.name.label }}</label>
+            <label class="control-label" for="{{ wizard.form.name.id_for_label }}">{{ wizard.form.name.label }} (required)</label>
             <input class="form-control" id="{{ wizard.form.name.id_for_label }}" maxlength="30" name="{{ wizard.form.name.html_name }}" type="text" placeholder="{{ form.name.label }}" value="{{ form.name.value|default_if_none:'' }}"/>
             <div class="error-messages">{{ wizard.form.name.errors }}</div>
           </div>

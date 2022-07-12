@@ -134,19 +134,19 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         ("project", ProjectWizardForm),
         ("labels", LabelFormSet),
         ("permissions", PermissionsFormSet),
-        ("advanced", AdvancedWizardForm),
         ("codebook", CodeBookWizardForm),
         ("external", ExternalDatabaseWizardForm),
         ("data", DataWizardForm),
+        ("advanced", AdvancedWizardForm),
     ]
     template_list = {
         "project": "projects/create/create_wizard_overview.html",
         "labels": "projects/create/create_wizard_labels.html",
         "permissions": "projects/create/create_wizard_permissions.html",
-        "advanced": "projects/create/create_wizard_advanced.html",
         "codebook": "projects/create/create_wizard_codebook.html",
         "external": "projects/create/create_wizard_external_db.html",
         "data": "projects/create/create_wizard_data.html",
+        "advanced": "projects/create/create_wizard_advanced.html",
     }
 
     def get_template_names(self):
