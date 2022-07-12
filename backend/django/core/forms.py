@@ -13,6 +13,7 @@ from core.utils.utils_external_db import (
     get_connection,
     get_full_table,
     test_connection,
+    test_login,
     test_schema_exists,
 )
 
@@ -552,6 +553,9 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
                 raise ValidationError("Please fix field errors before resubmitting.")
 
             engine_database = get_connection(db_type, self.cleaned_data)
+
+            # Test if login credentials to db are valid
+            test_login(db_type, engine_database)
 
             self.cleaned_data["has_ingest"] = False
             self.cleaned_data["has_export"] = False
