@@ -162,6 +162,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             kwargs["labels"] = temp
             external_data = self.get_cleaned_data_for_step("external")
             if "engine_database" in external_data:
+                kwargs["database_type"] = external_data["database_type"]
                 kwargs["engine_database"] = external_data["engine_database"]
                 kwargs["ingest_table_name"] = external_data["ingest_table_name"]
                 kwargs["ingest_schema"] = external_data["ingest_schema"]
