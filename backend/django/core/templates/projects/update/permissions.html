@@ -84,4 +84,32 @@ $('.formset_row_perm').formset({
 </script>
 
 <script type="text/javascript" src="{% static 'dedup_perms.js' %}"></script>
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@ttskch/select2-bootstrap4-theme@x.x.x/dist/select2-bootstrap4.min.css">
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+  $("#permSelect").ready(function(){
+    $("select[id$='profile']").each(function() {
+      $(this).addClass("js-example-basic-single");
+      $(this).select2({
+        width: "100%"
+      });
+    })
+  })
+
+  $("#permSelect").on("DOMNodeInserted", "tr", function() {
+    $("select[id$='profile']").each(function() {
+      if (!$(this).hasClass("js-example-basic-single")) {
+        $(this).addClass("js-example-basic-single");
+        $(this).select2({
+        width: "100%"
+      });
+      }
+    })
+  })
+
+  $(document).ready().select2()
+</script>
 {% endblock %}
