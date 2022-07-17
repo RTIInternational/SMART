@@ -668,6 +668,7 @@ def get_projects(self, order_by_folders):
     projects = qs.distinct()
     if order_by_folders:
         projects = projects.order_by(self.ordering).reverse()
+
     return projects
 
 
