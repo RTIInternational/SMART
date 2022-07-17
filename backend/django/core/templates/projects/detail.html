@@ -227,8 +227,8 @@
       </div>
     </div>
     <div class="row">
-      <div class="col-md-12">
-        <div class="btn-group" role="group" aria-label="Project Controls">
+      <div class="col-md-12" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+        <div class="btn-toolbar" style="flex: none; margin-left: -0.5rem;" role="group" aria-label="Project Controls">
           <a class="btn btn-primary" href="{% url 'projects:project_list' %}" role="button">
             Return to Projects
           </a>
@@ -242,7 +242,7 @@
           {% endif %}
         </div>
 
-        <div class="btn-group pull-right" role="group" aria-label="Admin Controls">
+        <div class="btn-toolbar pull-right" style="flex: none;" role="group" aria-label="Admin Controls">
           {% if project.codebook_file != "" %}
           <a class="btn btn-primary" href = "{% static project.codebook_file %}" target = "_blank" id="download_cb_btn">View CodeBook</a>
           {% endif %}
