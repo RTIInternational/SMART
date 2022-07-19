@@ -6,7 +6,6 @@ $("#permSelect").ready(function(){
 
 $("#permSelect").on("DOMNodeInserted", "tr", function() {
     setTimeout( function() {
-    console.log("clicked")
     $("select[id$='profile']").each(function() {
         if (!$(this).hasClass("searchSelect")) {
         $(this).addClass("searchSelect").select2({
