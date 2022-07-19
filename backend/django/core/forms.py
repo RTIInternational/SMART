@@ -555,7 +555,12 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
             engine_database = get_connection(db_type, self.cleaned_data)
 
             # Test if login credentials to db are valid
-            test_login(db_type, engine_database)
+            test_login(
+                db_type,
+                engine_database,
+                self.cleaned_data["ingest_schema"],
+                self.cleaned_data["ingest_table_name"],
+            )
 
             self.cleaned_data["has_ingest"] = False
             self.cleaned_data["has_export"] = False

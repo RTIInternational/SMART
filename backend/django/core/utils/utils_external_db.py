@@ -26,11 +26,11 @@ def get_connection(db_type, connection_dict):
         raise ValueError(f"ERROR: database type {db_type} is invalid")
 
 
-def test_login(db_type, engine_database):
+def test_login(db_type, engine_database, schema, table):
     """Attempts to login with given connection."""
     try:
         # Perform a no-op
-        pd.read_sql("NULL", con=engine_database)
+        pd.read_sql(f"SELECT NULL FROM {schema}.{table}", con=engine_database)
     except InterfaceError as e:
         # Catch login fail, may need to handle specific connection errors per database type in the future
         if db_type == "microsoft":
