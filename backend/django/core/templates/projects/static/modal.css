@@ -13,7 +13,6 @@
     display: none;
     background: rgba(0,0,0,0.5);;
     z-index: 3;
-    padding: 25% 25%;
 }
 .permModal {
     display: flex;
@@ -28,6 +27,13 @@
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
     z-index: auto;
 }
+
+.centerModal {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
 
 .permModal-header {
     border-bottom: 1px solid #e5e5e5;
