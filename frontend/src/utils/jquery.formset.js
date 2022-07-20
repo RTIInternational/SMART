@@ -76,8 +76,8 @@
 
                 row.find('a.' + delCssSelector).click(function(event) {
                     event.preventDefault();
-                    dialogue.style.display = "block";
                     handleOpen(event);
+                    
                     let thisRow = $(this);
                     confirmBtn.onclick = function(event) {
                         event.preventDefault();
