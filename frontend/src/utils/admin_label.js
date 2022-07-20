@@ -71,6 +71,29 @@ $.ajax({
                 .tickFormat(d3.format(','))
             ;
             chart.noData("Insufficient labeled data -- please code more documents");
+            chart.tooltip.contentGenerator(function (d) {
+                let target = d.e.target.getAttribute("class");
+                
+                let html = "";
+                if (target.includes("nv-boxplot-high")) {
+                    d.series.forEach(function(elem){
+                        html += "<b style='color:" + elem.color + "'>"
+                            + "Q4</b> : " + elem.key + "s";
+                    });
+                } else if (target.includes("nv-boxplot-box")) {
+                    d.series.forEach(function(elem){
+                        html += "<b style='color:" + elem.color + "'>"
+                            + elem.key + "</b> : " + elem.value + "s<br>";
+                    });
+                } else if (target.includes("nv-boxplot-low")) {
+                    d.series.forEach(function(elem){
+                        html += "<b style='color:" + elem.color + "'>"
+                            + "Q0</b> : " + elem.key + "s";
+                    });
+                }
+
+                return html;
+            });
             d3.select('#timer_chart svg')
                 .datum(response.data)
                 .call(chart);
