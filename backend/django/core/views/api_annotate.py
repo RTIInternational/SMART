@@ -123,6 +123,28 @@ def label_distribution_inverted(request, project_pk):
 
 @api_view(["POST"])
 @permission_classes((IsCoder,))
+def unassign_data(request, data_pk):
+    """Take a datum that is in the assigneddata queue for that user and remove it from
+    the assignedData queue.
+
+    Args:
+        request: The POST request
+        data_pk: Primary key of the data
+    Returns:
+        {}
+    """
+    data = Data.objects.get(pk=data_pk)
+    profile = request.user.profile
+    response = {}
+
+    assignment = AssignedData.objects.get(data=data, profile=profile)
+    assignment.delete()
+
+    return Response(response)
+
+
+@api_view(["POST"])
+@permission_classes((IsCoder,))
 def skip_data(request, data_pk):
     """Take a datum that is in the assigneddata queue for that user and place it in the
     admin queue. Remove it from the assignedData queue.
@@ -159,9 +181,8 @@ def skip_data(request, data_pk):
             process_irr_label(data, None)
     else:
         # the data is not IRR so treat it as normal
-        if request.data["addToAdminQueue"]:
-            move_skipped_to_admin_queue(data, profile, project)
-            createUnresolvedAdjudicateMessage(project, data, request.data["message"])
+        move_skipped_to_admin_queue(data, profile, project)
+        createUnresolvedAdjudicateMessage(project, data, request.data["message"])
 
     # for all data, check if we need to refill queue
     check_and_trigger_model(data, profile)

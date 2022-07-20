@@ -88,11 +88,37 @@ export const annotateCard = (card, labelID, num_cards_left, projectID, is_admin)
     };
 };
 
+//unassign a card
+export const unassignCard = (card, num_cards_left, is_admin, projectID) => {
+    let apiURL = `/api/unassign_data/${card.text.pk}/`;
+    return dispatch => {
+        return fetch(apiURL, postConfig())
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    const error = new Error(response.statusText);
+                    error.response = response;
+                    throw error;
+                }
+            })
+            .then(response => {
+                if ('error' in response) {
+                    dispatch(clearDeck());
+                    return dispatch(setMessage(response.error));
+                } else {
+                    dispatch(popCard());
+                    if (num_cards_left <= 1) dispatch(fetchCards(projectID));
+                }
+            });
+    };
+};
+
 //skip a card and put it in the admin table
-export const passCard = (card, num_cards_left, is_admin, projectID, addToAdminQueue, message) => {
+export const passCard = (card, num_cards_left, is_admin, projectID, message) => {
     let apiURL = `/api/skip_data/${card.text.pk}/`;
     return dispatch => {
-        return fetch(apiURL, postConfig({ addToAdminQueue, message }))
+        return fetch(apiURL, postConfig({ message }))
             .then(response => {
                 if (response.ok) {
                     return response.json();

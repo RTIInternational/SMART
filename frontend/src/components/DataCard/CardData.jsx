@@ -6,12 +6,12 @@ import {
     OverlayTrigger
 } from "react-bootstrap";
 
-export default function CardData({ card, onSkip, showAdjudicate = true }) {
+export default function CardData({ card, onSkip, onUnassign, showAdjudicate = true }) {
     return (
         <div className="cardface-info">
             {showAdjudicate && (
                 <div className="card-title" style={{ display: "flex", justifyContent: 'flex-end' }}>
-                    {drawSkipQueueButton(card, onSkip)}
+                    {drawSkipQueueButton(card, onUnassign)}
                     {drawSkipButton(card, onSkip)}
                 </div>
             )}
@@ -30,7 +30,7 @@ function drawSkipButton(card, onSkip) {
 
     const handleSkip = (event) => {
         event.preventDefault();
-        onSkip(card, true, message);
+        onSkip(card, message);
     };
 
     return (
@@ -70,7 +70,9 @@ function drawSkipButton(card, onSkip) {
     );
 }
 
-function drawSkipQueueButton(card, onSkip) {
+function drawSkipQueueButton(card, onUnassign) {
+    if (!onUnassign) return null;
+
     return (
         <Fragment>
             <OverlayTrigger
@@ -84,7 +86,7 @@ function drawSkipQueueButton(card, onSkip) {
                 
                 <Button
                     className="ajucate-button"
-                    onClick={() => onSkip(card, false)}
+                    onClick={() => onUnassign(card)}
                     style={{ marginRight: "0.25rem" }}
                     variant="info"
                 >
