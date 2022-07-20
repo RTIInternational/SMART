@@ -25,3 +25,36 @@ span>.select2-selection.select2-selection--single {
 span>.select2-selection__arrow {
     height: 29px !important;
 }
+
+.select2-container--default .select2-selection--single .select2-selection__arrow b  {
+    height: 6px;
+    margin-left: -2px;
+    margin-top: -3px;
+    margin-right: 4px;
+    top: 50%;
+    display: block;
+    width: 6px;
+    border: none;
+    border-left: 2px solid #555555;
+    border-bottom: 2px solid #555555;
+    transform: translateY(-25%) rotate(-45deg);
+}
+
+.select2-container--default.select2-container--open .select2-selection--single .select2-selection__arrow b {
+    height: 6px;
+    margin-left: -2px;
+    margin-top: -3px;
+    margin-right: 4px;
+    top: 50%;
+    display: block;
+    width: 6px;
+    border: none;
+    border-left: 2px solid #555555;
+    border-bottom: 2px solid #555555;
+    transform: translateY(-25%) rotate(-45deg);
+}
+
+.select2-selection {
+    border: none !important;
+    outline: none !important;
+}
