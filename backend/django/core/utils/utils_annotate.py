@@ -5,6 +5,7 @@ from django.utils import timezone
 
 from core.models import (
     AdjudicateDescription,
+    AdminProgress,
     AssignedData,
     Data,
     DataLabel,
@@ -266,3 +267,33 @@ def cache_embeddings(project_pk, embeddings):
 
 def get_embeddings(project_pk):
     return cache.get(project_pk)
+
+
+def leave_coding_page(profile, project):
+    """API request meant to be sent when a user navigates away from the coding page
+    captured with 'beforeunload' event.  This should use assign_data to remove any data
+    currently assigned to the user and re-add it to redis.
+
+    Args:
+        request: The GET request
+    Returns:
+        {}
+    """
+    assigned_data = AssignedData.objects.filter(profile=profile)
+
+    for assignment in assigned_data:
+        unassign_datum(assignment.data, profile)
+
+
+def leave_admin_page(profile, project):
+    admin_qs = AdminProgress.objects.filter(project=project, profile=profile)
+    if admin_qs.exists():
+        admin = admin_qs[0]
+        admin.delete()
+
+
+def update_last_action(profile, project):
+    admin_qs = AdminProgress.objects.filter(project=project, profile=profile)
+    if admin_qs.exists():
+        admin = admin_qs[0]
+        admin.save()

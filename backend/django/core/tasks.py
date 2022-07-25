@@ -74,3 +74,33 @@ def send_check_and_trigger_model_task(project_pk):
 
     datum = Data.objects.filter(project=project_pk).first()
     check_and_trigger_model(datum)
+
+
+@shared_task
+def send_annotate_timeout():
+    """Timeout coders if they have not coded anything and timeout admins if they have
+    not done any action on the annotate page for five minutes."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from core.models import AdminProgress, AssignedData
+    from core.utils.utils_annotate import leave_admin_page, leave_coding_page
+
+    timeout_admins = AdminProgress.objects.filter(
+        last_action__lte=timezone.now() - timedelta(minutes=5)
+    )
+    timeout_admins = {(user.profile, user.project) for user in timeout_admins}
+    for profile, project in timeout_admins:
+        # DEBUG
+        # print(f"Purging timeout admins: {profile}, {project}")
+        leave_admin_page(profile, project)
+
+    timeout_coders = AssignedData.objects.filter(
+        assigned_timestamp__lte=timezone.now() - timedelta(minutes=5)
+    )
+    timeout_coders = {(user.profile, user.data.project) for user in timeout_coders}
+    for profile, project in timeout_coders:
+        # DEBUG
+        # print(f"Purging timeout users: {profile}, {project}")
+        leave_coding_page(profile, project)

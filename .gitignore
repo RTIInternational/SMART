@@ -22,3 +22,6 @@ docs/node_modules/
 
 # Backups
 backup/*
+
+# Celery schedule manifest
+backend/django/celerybeat-schedule
