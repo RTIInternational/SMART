@@ -94,5 +94,22 @@ $('.formset_row_perm').formset({
 });
 </script>
 
+<!-- Permission Deduplication -->
 <script type="text/javascript" src="{% static 'dedup_perms.js' %}"></script>
+
+<!-- Searchable dropdowns -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<link rel="stylesheet" href="{% static 'select2.css' %}"/>
+<script type="text/javascript" src="{% static 'search_dropdown.js' %}"></script>
+
+<!-- Permission removal confirmation -->
+<link rel="stylesheet" href="{% static 'modal.css' %}"/>
+<script>
+  $(function(){
+    $(document.body).append('<div id="modalDialogue"></div>');
+    $("#modalDialogue").load("{% static 'perm_modal.html' %}");
+  });
+</script>
+
 {% endblock %}

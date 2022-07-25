@@ -1,0 +1,39 @@
+<div id="permModalDialogue" class="permModalDialogue">
+    <div id="modal" class="permModal centerModal" >
+        <div class="permModal-header">
+            <span class="permModal-title">Remove Confirmation</span>
+            <button id= "closeBtn" class="closeHeadBtn" onClick="closeModal()">&times;</button>
+        </div>
+        <div class="permModal-body">
+            <p>Are you sure you want to remove this user from the project?</p>
+        </div>
+        <div class="permModal-footer">
+            <button id="cancelBtn" class="btn btn-secondary" onClick="closeModal()">Cancel</button>
+            <button id="confirmBtn" class="btn btn-primary">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let dialogue = document.getElementById("permModalDialogue");
+    let closeHeadBtn = document.getElementById("closeBtn");
+    let cancelBtn = document.getElementById("cancelBtn");
+    let confirmBtn = document.getElementById("confirmBtn");
+    function handleOpen(event) {
+        dialogue.style.display = "block";
+        $("body").addClass("no-scroll");
+    }
+    function handleClose(event) {
+        dialogue.style.display = "none";
+        $("body").removeClass("no-scroll");
+    }
+    closeHeadBtn.onclick = function(event) {
+        handleClose(event);
+    };
+    cancelBtn.onclick = function(event) {
+        handleClose(event);
+    };
+    dialogue.onclick = function(event) {
+        handleClose(event);
+    }
+</script>
