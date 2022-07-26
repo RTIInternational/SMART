@@ -35,7 +35,7 @@ class Smart extends React.Component {
             adminTabSkew = (
                 <Tab eventKey={3} transition={false} title="Fix Skew" className="full card">
                     <div className="cardContent">
-                        <h2>Another admin is currently using this page. This page will become available when the admin returns to the project list page, changes projects, or logs out.</h2>
+                        <h2>Another admin is currently using this page. This page will become available when the admin returns to the project list page, details page, changes projects, or logs out.</h2>
                     </div>
                 </Tab>
             );
@@ -87,7 +87,7 @@ class Smart extends React.Component {
             adminTabAdminTable = (
                 <Tab eventKey={4} transition={false} title="Skipped Cards" className="full card">
                     <div className="cardContent">
-                        <h2>Another admin is currently using this page. This page will become available when the admin returns to the project list page, changes projects, or logs out.</h2>
+                        <h2>Another admin is currently using this page. This page will become available when the admin returns to the project list page, details page, changes projects, or logs out.</h2>
                     </div>
                 </Tab>
             );
@@ -112,7 +112,7 @@ class Smart extends React.Component {
             adminTabRecycle = (
                 <Tab eventKey={5} transition={false} title={<div><span id="trashCan" className="glyphicon glyphicon-trash" aria-hidden="true"></span> Discarded Data</div>} className="full card">
                     <div className="cardContent">
-                        <h2>Another admin is currently using this page. This page will become available when the admin returns to the project list page, changes projects, or logs out.</h2>
+                        <h2>Another admin is currently using this page. This page will become available when the admin returns to the project list page, details page, changes projects, or logs out.</h2>
                     </div>
                 </Tab>
             );
