@@ -403,7 +403,8 @@ def enter_coding_page(request, project_pk):
             AdminProgress.objects.create(
                 project=project, profile=profile, timestamp=timezone.now()
             )
-    return Response({})
+            return Response({"initial_admin_access": True})
+    return Response({"initial_admin_access": False})
 
 
 @api_view(["GET"])
@@ -832,3 +833,26 @@ def get_label_history(request, project_pk):
         results.append(temp_dict)
 
     return Response({"data": results})
+
+
+@api_view(["GET"])
+@permission_classes((IsCoder,))
+def check_coding_status(request, project_pk):
+    """Checks if coder still has access to coding page by seeing if they have assigned
+    data with the corresponding project."""
+    profile = request.user.profile
+    project = Project.objects.get(pk=project_pk)
+
+    coding_access = AssignedData.objects.filter(
+        profile=profile, data__project=project
+    ).exists()
+    admin_access = AdminProgress.objects.filter(
+        profile=profile, project=project
+    ).exists()
+
+    return Response(
+        {
+            "coding_access": coding_access,
+            "admin_access": admin_access,
+        }
+    )

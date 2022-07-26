@@ -199,8 +199,8 @@ class Dev(Configuration):
     CELERY_RESULT_SERIALIZER = "json"
     CELERY_BEAT_SCHEDULE = {
         "task-annotate_timeout": {
-            "task": "core.tasks.send_annotate_timeout",
-            "schedule": schedule(timedelta(minutes=5)),
+            "task": "core.tasks.annotate_timeout",
+            "schedule": schedule(timedelta(minutes=10)),
         }
     }
 
