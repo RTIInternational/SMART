@@ -40,7 +40,7 @@ from core.utils.util import (
     update_label_embeddings,
     upload_data,
 )
-from core.utils.utils_annotate import batch_unassign
+from core.utils.utils_annotate import batch_unassign, leave_coding_page
 from core.utils.utils_external_db import delete_external_db_file, save_external_db_file
 from core.utils.utils_queue import add_queue, find_queue_length
 
@@ -109,6 +109,7 @@ class ProjectList(LoginRequiredMixin, ListView):
         projects = get_projects(self, True)
         for project in projects:
             project_details = project_status(project)
+            leave_coding_page(self.request.user.profile, project)
             project.project_details = project_details
 
         return projects

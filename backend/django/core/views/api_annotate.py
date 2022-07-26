@@ -4,6 +4,7 @@ import random
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -36,9 +37,9 @@ from core.utils.utils_annotate import (
     get_embeddings,
     get_unlabeled_data,
     label_data,
+    leave_coding_page,
     move_skipped_to_admin_queue,
     process_irr_label,
-    unassign_datum,
 )
 from core.utils.utils_model import check_and_trigger_model
 from core.utils.utils_redis import redis_serialize_data, redis_serialize_set
@@ -403,31 +404,17 @@ def enter_coding_page(request, project_pk):
             AdminProgress.objects.create(
                 project=project, profile=profile, timestamp=timezone.now()
             )
-    return Response({})
 
+    # NEW leave the coding page for all other projects so they're only in one
+    # project at a time
+    profile_projects = Project.objects.filter(
+        Q(creator=profile) | Q(projectpermissions__profile=profile)
+    ).distinct()
 
-@api_view(["GET"])
-def leave_coding_page(request, project_pk):
-    """API request meant to be sent when a user navigates away from the coding page
-    captured with 'beforeunload' event.  This should use assign_data to remove any data
-    currently assigned to the user and re-add it to redis.
+    profile_projects = [p for p in profile_projects if p != project]
+    for project in profile_projects:
+        leave_coding_page(profile, project)
 
-    Args:
-        request: The GET request
-    Returns:
-        {}
-    """
-    profile = request.user.profile
-    project = Project.objects.get(pk=project_pk)
-    assigned_data = AssignedData.objects.filter(profile=profile)
-
-    for assignment in assigned_data:
-        unassign_datum(assignment.data, profile)
-
-    if project_extras.proj_permission_level(project, profile) > 1:
-        if AdminProgress.objects.filter(project=project, profile=profile).count() > 0:
-            prog = AdminProgress.objects.get(project=project, profile=profile)
-            prog.delete()
     return Response({})
 
 
