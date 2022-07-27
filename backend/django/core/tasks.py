@@ -77,7 +77,7 @@ def send_check_and_trigger_model_task(project_pk):
 
 
 @shared_task
-def send_annotate_timeout():
+def annotate_timeout():
     """Timeout coders if they have not coded anything and timeout admins if they have
     not done any action on the annotate page for five minutes."""
     from datetime import timedelta
@@ -99,7 +99,11 @@ def send_annotate_timeout():
     timeout_coders = AssignedData.objects.filter(
         assigned_timestamp__lte=timezone.now() - timedelta(minutes=5)
     )
-    timeout_coders = {(user.profile, user.data.project) for user in timeout_coders}
+    # Coders who have timed out, but not admins who have just timed out
+    # Admins will be timed out on next poll
+    timeout_coders = {
+        (user.profile, user.data.project) for user in timeout_coders
+    } - timeout_admins
     for profile, project in timeout_coders:
         # DEBUG
         # print(f"Purging timeout users: {profile}, {project}")

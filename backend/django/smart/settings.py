@@ -200,7 +200,7 @@ class Dev(Configuration):
     CELERY_BEAT_SCHEDULE = {
         "task-annotate_timeout": {
             "task": "core.tasks.annotate_timeout",
-            "schedule": schedule(timedelta(minutes=10)),
+            "schedule": schedule(timedelta(minutes=5)),
         }
     }
 
