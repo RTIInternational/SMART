@@ -140,6 +140,9 @@ def unassign_data(request, data_pk):
     assignment = AssignedData.objects.get(data=data, profile=profile)
     assignment.delete()
 
+    # for all data, check if we need to refill queue
+    check_and_trigger_model(data, profile)
+
     return Response(response)
 
 
