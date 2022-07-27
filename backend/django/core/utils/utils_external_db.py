@@ -5,6 +5,7 @@ import pandas as pd
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from sqlalchemy import create_engine
+from sqlalchemy.exc import InterfaceError
 
 from core.models import ExternalDatabase, Label, MetaDataField
 from core.utils.util import upload_data
@@ -27,6 +28,24 @@ def get_connection(db_type, connection_dict):
             )
     else:
         raise ValueError(f"ERROR: database type {db_type} is invalid")
+
+
+def test_login(db_type, engine_database, schema, table):
+    """Attempts to login with given connection."""
+    try:
+        # Perform a no-op
+        pd.read_sql(f"SELECT NULL FROM {schema}.{table}", con=engine_database)
+    except InterfaceError as e:
+        # Catch login fail, may need to handle specific connection errors per database type in the future
+        if db_type == "microsoft":
+            error_code = e.__context__.args[0]
+            if error_code == "28000":
+                # Msft login failure
+                raise ValidationError("Login to database failed")
+            else:
+                raise ValidationError(
+                    f"ERROR: database connection failed with the following error - {str(e)}"
+                )
 
 
 def test_connection(engine_database, schema, table):

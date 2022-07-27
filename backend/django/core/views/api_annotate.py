@@ -2,7 +2,9 @@ import math
 import random
 
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -20,6 +22,7 @@ from core.models import (
     Label,
     LabelChangeLog,
     LabelEmbeddings,
+    Profile,
     Project,
     Queue,
     RecycleBin,
@@ -34,9 +37,9 @@ from core.utils.utils_annotate import (
     get_embeddings,
     get_unlabeled_data,
     label_data,
+    leave_coding_page,
     move_skipped_to_admin_queue,
     process_irr_label,
-    unassign_datum,
 )
 from core.utils.utils_model import check_and_trigger_model
 from core.utils.utils_redis import redis_serialize_data, redis_serialize_set
@@ -306,7 +309,7 @@ def modify_label(request, data_pk):
     old_label = Label.objects.get(pk=request.data["oldLabelID"])
     with transaction.atomic():
         DataLabel.objects.filter(data=data, label=old_label).update(
-            label=label, time_to_label=0, timestamp=timezone.now()
+            label=label, time_to_label=0, timestamp=timezone.now(), profile=profile
         )
 
         LabelChangeLog.objects.create(
@@ -401,31 +404,17 @@ def enter_coding_page(request, project_pk):
             AdminProgress.objects.create(
                 project=project, profile=profile, timestamp=timezone.now()
             )
-    return Response({})
 
+    # NEW leave the coding page for all other projects so they're only in one
+    # project at a time
+    profile_projects = Project.objects.filter(
+        Q(creator=profile) | Q(projectpermissions__profile=profile)
+    ).distinct()
 
-@api_view(["GET"])
-def leave_coding_page(request, project_pk):
-    """API request meant to be sent when a user navigates away from the coding page
-    captured with 'beforeunload' event.  This should use assign_data to remove any data
-    currently assigned to the user and re-add it to redis.
+    profile_projects = [p for p in profile_projects if p != project]
+    for project in profile_projects:
+        leave_coding_page(profile, project)
 
-    Args:
-        request: The GET request
-    Returns:
-        {}
-    """
-    profile = request.user.profile
-    project = Project.objects.get(pk=project_pk)
-    assigned_data = AssignedData.objects.filter(profile=profile)
-
-    for assignment in assigned_data:
-        unassign_datum(assignment.data, profile)
-
-    if project_extras.proj_permission_level(project, profile) > 1:
-        if AdminProgress.objects.filter(project=project, profile=profile).count() > 0:
-            prog = AdminProgress.objects.get(project=project, profile=profile)
-            prog.delete()
     return Response({})
 
 
@@ -499,7 +488,7 @@ def embeddings_calculations(request):
 
 
 @api_view(["GET"])
-@permission_classes((IsAdminOrCreator,))
+@permission_classes((IsCoder,))
 def embeddings_comparison(request, project_pk):
     """This finds the highest scoring labels when comparing cosine similarity scores of
     their embeddingsfor a given input string.
@@ -722,6 +711,7 @@ def label_admin_label(request, data_pk):
 @permission_classes((IsCoder,))
 def get_label_history(request, project_pk):
     """Grab items previously labeled by this user and send it to the frontend react app.
+    If this user is the project creator or an admin, get all items previously labeled.
 
     Args:
         request: The request to the endpoint
@@ -734,9 +724,12 @@ def get_label_history(request, project_pk):
     project = Project.objects.get(pk=project_pk)
 
     labels = Label.objects.all().filter(project=project)
-    data = DataLabel.objects.filter(
-        profile=profile, data__project=project_pk, label__in=labels
-    )
+    if project_extras.proj_permission_level(project, profile) >= 2:
+        data = DataLabel.objects.filter(data__project=project_pk, label__in=labels)
+    else:
+        data = DataLabel.objects.filter(
+            profile=profile, data__project=project_pk, label__in=labels
+        )
 
     data_list = []
     results = []
@@ -776,6 +769,9 @@ def get_label_history(request, project_pk):
             "labelID": d.label.id,
             "timestamp": new_timestamp,
             "edit": "yes",
+            "profile": User.objects.get(
+                id=Profile.objects.get(id=d.profile_id).user_id
+            ).username,
         }
         results.append(temp_dict)
 
@@ -816,6 +812,9 @@ def get_label_history(request, project_pk):
             "labelID": d.label.id,
             "timestamp": new_timestamp,
             "edit": "no",
+            "profile": User.objects.get(
+                id=Profile.objects.get(id=d.profile_id).user_id
+            ).username,
         }
         results.append(temp_dict)
 

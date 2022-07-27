@@ -19,6 +19,7 @@ from core.models import (
 )
 from core.permissions import IsAdminOrCreator, IsCoder
 from core.utils.util import irr_heatmap_data, perc_agreement_table_data, project_status
+from core.utils.utils_annotate import leave_coding_page
 from core.utils.utils_model import cohens_kappa, fleiss_kappa
 
 
@@ -323,6 +324,7 @@ def get_project_status(request, project_pk):
     """
 
     project = Project.objects.get(pk=project_pk)
+    leave_coding_page(request.user.profile, project)
     project_details = project_status(project)
 
     return Response(project_details)

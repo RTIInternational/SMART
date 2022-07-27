@@ -22,7 +22,7 @@
 
           <h1>Project Info</h1>
           <div class="form-group">
-            <label class="control-label" for="{{ wizard.form.name.id_for_label }}">{{ wizard.form.name.label }}</label>
+            <label class="control-label" for="{{ wizard.form.name.id_for_label }}">{{ wizard.form.name.label }} (required)</label>
             <input class="form-control" id="{{ wizard.form.name.id_for_label }}" maxlength="30" name="{{ wizard.form.name.html_name }}" type="text" placeholder="{{ form.name.label }}" value="{{ form.name.value|default_if_none:'' }}"/>
             <div class="error-messages">{{ wizard.form.name.errors }}</div>
           </div>
@@ -33,8 +33,13 @@
           </div>
           <div class="form-group">
             <label class="control-label" for="{{ wizard.form.umbrella_string.id_for_label }}">Folder</label>
-            <input class="form-control" id="{{ wizard.form.umbrella_string.id_for_label }}" maxlength="30" name="{{ wizard.form.umbrella_string.html_name }}" pattern="^.*[a-zA-Z0-9]+.*$" type="text" value="{{ form.umbrella_string.value|default_if_none:'' }}"/>
-            <p style="margin-top: 4px;">Folder names must include at least one alphanumerical character.</p>
+            <select class="form-control" name="{{ wizard.form.umbrella_string.html_name }}" value="{{ form.umbrella_string.value|default_if_none:'' }}">
+              <option value=""></option>
+              {% for umbrella in umbrella_choices %}
+                <option>{{ umbrella }}</option>
+              {% endfor %}
+            </select>
+            <p style="margin-top: 4px;">Select a folder or leave this option blank.</p>
             <div class="error-messages">{{ wizard.form.umbrella_string.errors }}</div>
           </div>
           <div class="wizard_nav_bar">

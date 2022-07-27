@@ -43,7 +43,7 @@ class DataCard extends React.Component {
         } else {
             let blankDeckMessage = message
                 ? message
-                : "No more data to label at this time. Please check back later";
+                : "No more data to label at this time. There may be no data left to label, or all data may be assigned to other coders who are logged into the project. Please check back later.";
             card = <Card body>{blankDeckMessage}</Card>;
         }
 

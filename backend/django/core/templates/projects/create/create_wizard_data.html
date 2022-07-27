@@ -62,10 +62,10 @@
                             <p>Time to upload your data! Please upload a data file that contains text (and optionally labels) for your project. To upload, the file <strong>must pass the following checks:</strong></p>
                             <ul class="list-group">
                                 <li class="list-group-item">The file needs to have either a <code>.csv</code>, <code>.tsv</code>, or <code>.xlsx</code> file extension.</li>
-                                <li class="list-group-item">The file requires the data to have at least two columns, with header names <code>Text</code> and <code>Label</code>. It can also contain a unique id column named <code>ID</code>.</li>
+                                <li class="list-group-item">The file requires the data to have one column named <code>Text</code>. It can also contain a unique id column named <code>ID</code> and a label column named and <code>Label</code>.</li>
                                 <li class="list-group-item">The largest file size supported is 500MBs.</li>
                                 <li class="list-group-item">SMART restricts your project to having two million unique records.</li>
-                                <li class="list-group-item">If there are multiple rows with the same text, only one of the records will be saved.</li>
+                                <li class="list-group-item">If there are multiple rows with the same text, only one of the records will be saved, and the first label, if given, will be saved</li>
                                 <li class="list-group-item">SMART will keep up to two million unique records per data set.</li>
                             </ul>
                             <div>
@@ -73,7 +73,7 @@
                                 <input class="form-control" id="{{ wizard.form.data.id_for_label }}" maxlength="30" name="{{ wizard.form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" />
                                 <div class="error-messages">{{ wizard.form.data.errors }}</div>
                             </div>
-                            <p>An example dataset can be downloaded from <a href="{% static 'example.csv' %}">here</a>.</p>
+                            <p><a href="{% static 'example.csv' %}">An example dataset can be downloaded from here</a>.</p>
                           </div>
                         </div>
                       </div>
@@ -111,10 +111,9 @@
                         <button class="btn btn-info" name="wizard_goto_step" type="submit" value="project">1. Info</button>
                         <button class="btn btn-info" name="wizard_goto_step" type="submit" value="labels">2. Labels</button>
                         <button class="btn btn-info" name="wizard_goto_step" type="submit" value="permissions">3. Permissions</button>
-                        <button class="btn btn-info" name="wizard_goto_step" type="submit" value="advanced">4. Advanced</button>
-                        <button class="btn btn-info" name="wizard_goto_step" type="submit" value="codebook">5. CodeBook</button>
-                        <button class="btn btn-info" name="wizard_goto_step" type="submit" value="external">6. External Database Connection</button>
-                        <input class="btn btn-primary" type="submit" value="Submit" />
+                        <button class="btn btn-info" name="wizard_goto_step" type="submit" value="codebook">4. CodeBook</button>
+                        <button class="btn btn-info" name="wizard_goto_step" type="submit" value="external">5. External Database Connection</button>
+                        <input class="btn btn-primary" type="submit" value="Next Step"/>
                         <p class="pull-right">Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
                     </div>
                 </form>

@@ -75,7 +75,7 @@ function extractMetadata(card) {
     } else {
         return (
             <div className="card-metadata">
-                <h4>Background Data</h4>
+                <h4>Respondent Data</h4>
                 {card.text["metadata"].map(val => (
                     <p key={val}>{val}</p>
                 ))}

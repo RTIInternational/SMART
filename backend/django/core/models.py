@@ -209,8 +209,8 @@ class ExternalDatabase(models.Model):
     ingest_schema = models.CharField(max_length=50, null=True)
     ingest_table_name = models.CharField(max_length=50, null=True)
     has_export = models.BooleanField(default=False)
-    export_schema = models.CharField(max_length=50, null=True)
-    export_table_name = models.CharField(max_length=50, null=True)
+    export_schema = models.CharField(max_length=1024, null=True)
+    export_table_name = models.CharField(max_length=1024, null=True)
 
 
 class LabelEmbeddings(models.Model):

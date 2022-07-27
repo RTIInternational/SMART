@@ -15,7 +15,7 @@ class AdminTable extends React.Component {
         } else {
             return (
                 <div>
-                    <u>Background Data</u>
+                    <u>Respondent Data</u>
                     {row.row["metadata"].map(val => (
                         <p key={val}>{val}</p>
                     ))}
@@ -100,7 +100,10 @@ class AdminTable extends React.Component {
                         min-width: 200px;\
                         width: fit-content;\
                     }\
-                "
+                    .rt-td {\
+                        overflow-y: auto !important;\
+                    }\
+                " 
                     }
                 </style>
             </div>

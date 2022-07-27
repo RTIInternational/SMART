@@ -11,6 +11,7 @@ from core.utils.utils_external_db import (
     get_connection,
     get_full_table,
     test_connection,
+    test_login,
     test_schema_exists,
 )
 from core.utils.utils_form import clean_data_helper
@@ -311,7 +312,11 @@ class DataWizardForm(forms.ModelForm):
         self.engine_database = kwargs.pop("engine_database", None)
         self.ingest_schema = kwargs.pop("ingest_schema", None)
         self.ingest_table_name = kwargs.pop("ingest_table_name", None)
+        database_type = kwargs.pop("database_type", None)
         super(DataWizardForm, self).__init__(*args, **kwargs)
+
+        if database_type == "microsoft":
+            self.fields["data_source"].initial = "Database_Ingest"
 
     def clean(self):
         data_source = self.cleaned_data.get("data_source", False)
@@ -402,8 +407,8 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
     cron_ingest = forms.BooleanField(initial=False, required=False)
     ingest_table_name = forms.CharField(initial="", required=False, max_length=50)
     ingest_schema = forms.CharField(initial="", required=False, max_length=50)
-    export_table_name = forms.CharField(initial="", required=False, max_length=50)
-    export_schema = forms.CharField(initial="", required=False, max_length=50)
+    export_table_name = forms.CharField(initial="", required=False, max_length=1024)
+    export_schema = forms.CharField(initial="", required=False, max_length=1024)
     username = forms.CharField(initial="", required=False, max_length=50)
     password = forms.CharField(
         initial="", required=False, max_length=200, widget=forms.PasswordInput()
@@ -453,6 +458,14 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
                 raise ValidationError("Please fix field errors before resubmitting.")
 
             engine_database = get_connection(db_type, self.cleaned_data)
+
+            # Test if login credentials to db are valid
+            test_login(
+                db_type,
+                engine_database,
+                self.cleaned_data["ingest_schema"],
+                self.cleaned_data["ingest_table_name"],
+            )
 
             self.cleaned_data["has_ingest"] = False
             self.cleaned_data["has_export"] = False

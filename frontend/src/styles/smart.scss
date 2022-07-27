@@ -93,14 +93,22 @@ p, a, label, input, button, li, th, textarea, dt, dd, select, text, .progress-ba
 
 .messages {
     position: absolute;
-    top: 0;
+    top: 0.5rem;
     right: 0;
     box-shadow: $box-shadow;
     z-index: 10;
 
     .alert {
+        display: flex;
+        flex-direction: row-reverse;
+        align-items: center;
         margin-bottom: 0;
+        color: #000000;
     }
+}
+
+.alert-dismissible {
+    padding: 0.25rem 1rem !important;
 }
 
 main {
@@ -197,6 +205,10 @@ main {
         margin-top: 4px;
     }
 
+    .btn, {
+        margin-left: 0.5rem;
+    }
+
     & > div {
         flex: 1 1 auto;
 
@@ -243,6 +255,11 @@ main {
 
     .react-dropdown-select-input::placeholder {
         text-overflow: ellipsis;
+    }
+
+    .react-dropdown-select-item {
+        max-width: 400px;
+        white-space: pre-wrap;
     }
 
     .annotate-select .react-dropdown-select-item:hover {
@@ -524,6 +541,16 @@ li.disabled {
 
 .wizard_nav_bar {
     margin-bottom: 40px;
+    margin-top: -0.35rem;
+
+    .btn {
+        margin-left: calc(0.35rem - 4px);
+        margin-top: 0.35rem;
+    }
+
+    :first-child {
+        margin-left: 0 !important;
+    }
 }
 
 #label_group_buttons {
@@ -620,6 +647,12 @@ li.disabled {
 .fixed-wiz .wizard_nav_bar {
     width: 100%;
     margin-bottom: 0px !important;
+    margin-top: -0.35rem;
+
+    .btn {
+        margin-left: calc(0.35rem - 4px);
+        margin-top: 0.35rem;
+    }
 }
 
 .delete-label {
@@ -636,6 +669,17 @@ li.disabled {
     background-color: #F9F9F9;
 }
 
+.inline-btn {
+    border: none;
+    outline: none;
+    background-color: transparent;
+    color: $brand-primary;
+}
+
+.inline-btn:hover {
+    text-decoration: underline;
+}
+
 .adjudicate-message-textarea {
     padding: 0.5rem;
     width: 100%;
@@ -648,3 +692,4 @@ li.disabled {
 #trashCan {
     padding-right: 2px;
 }
+
