@@ -40,6 +40,7 @@ from core.utils.utils_annotate import (
     leave_coding_page,
     move_skipped_to_admin_queue,
     process_irr_label,
+    update_last_action,
 )
 from core.utils.utils_model import check_and_trigger_model
 from core.utils.utils_redis import redis_serialize_data, redis_serialize_set
@@ -271,6 +272,8 @@ def restore_data(request, data_pk):
     """
     data = Data.objects.get(pk=data_pk)
     profile = request.user.profile
+    project = data.project
+    update_last_action(project)
     response = {}
 
     # Make sure coder is an admin
@@ -457,6 +460,8 @@ def search_data_unlabeled_table(request, project_pk):
     Returns:
         data: a filtered list of data information
     """
+    project = Project.objects.get(pk=project_pk)
+    update_last_action(project)
     unlabeled_data = get_unlabeled_data(project_pk)
     text = request.GET.get("text")
     unlabeled_data = unlabeled_data.filter(text__icontains=text.lower())
@@ -543,6 +548,7 @@ def data_admin_table(request, project_pk):
         data: a list of data information
     """
     project = Project.objects.get(pk=project_pk)
+    update_last_action(project)
     queue = Queue.objects.get(project=project, type="admin")
 
     messages = list(
@@ -609,6 +615,7 @@ def recycle_bin_table(request, project_pk):
         data: a list of data information
     """
     project = Project.objects.get(pk=project_pk)
+    update_last_action(project)
     data_objs = RecycleBin.objects.filter(data__project=project)
 
     data = []
@@ -639,6 +646,7 @@ def label_skew_label(request, data_pk):
 
     datum = Data.objects.get(pk=data_pk)
     project = datum.project
+    update_last_action(project)
     label = Label.objects.get(pk=request.data["labelID"])
     profile = request.user.profile
     response = {}
@@ -675,6 +683,7 @@ def label_admin_label(request, data_pk):
     """
     datum = Data.objects.get(pk=data_pk)
     project = datum.project
+    update_last_action(project)
     label = Label.objects.get(pk=request.data["labelID"])
     profile = request.user.profile
     response = {}
