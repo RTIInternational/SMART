@@ -26,7 +26,7 @@ from core.utils.utils_redis import (
 
 def leave_coding_page(profile, project):
     """unnasign data and remove any admin locks for a specific user and project."""
-    assigned_data = AssignedData.objects.filter(profile=profile)
+    assigned_data = AssignedData.objects.filter(profile=profile, data__project=project)
 
     for assignment in assigned_data:
         unassign_datum(assignment.data, profile)
