@@ -101,6 +101,7 @@ def annotate_timeout():
     )
     # Coders who have timed out, but not admins who have just timed out
     # Admins will be timed out on next poll
+    # This is done in case admins are coding, but not actively using the admin pages
     timeout_coders = {
         (user.profile, user.data.project) for user in timeout_coders
     } - timeout_admins
