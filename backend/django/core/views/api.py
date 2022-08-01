@@ -231,6 +231,8 @@ def export_database_table(request, project_pk):
     profile = request.user.profile
     project = Project.objects.get(pk=project_pk)
 
+    print("??? INSIDE export_database_table")
+
     # Make sure coder is an admin
     if project_extras.proj_permission_level(project, profile) > 1:
 
@@ -254,6 +256,12 @@ def export_database_table(request, project_pk):
 
                     # pull all labeled data
                     data, labels = get_labeled_data(project)
+                    text_to_look_for = [
+                    "TEC","ACCESS","BAND DIRECTOR"
+                    ]
+
+                    print("??? Got ",len(data),"data from get_labeled_data")
+                    print(data.loc[data["Text"].isin(text_to_look_for)])
                     if len(data) > 0:
 
                         # pull the export table
@@ -272,7 +280,10 @@ def export_database_table(request, project_pk):
                                 sql=f"SELECT DISTINCT ID FROM {table_name_string}",
                                 con=engine_database,
                             )["ID"].tolist()
+                            print("??? About to filter out existing IDs in the database")
                             data = data.loc[~data["ID"].isin(existing_ids)]
+                            print("??? Now let's check again for that data we want")
+                            print(data.loc[data["Text"].isin(text_to_look_for)])
                             if len(data) > 0:
                                 data.to_sql(
                                     name=external_db.export_table_name,
@@ -300,6 +311,7 @@ def export_database_table(request, project_pk):
 
                 except Exception as e:
                     # return errors in the validation tool
+                    print("??? THERE WAS AN ERROR ACTUALLY SO NO DATA WAS UPLOADED")
                     response["error"] = str(e)
     else:
         response["error"] = "Invalid credentials. Must be an admin."

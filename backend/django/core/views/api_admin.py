@@ -163,8 +163,8 @@ def data_coded_table(request, project_pk):
 
     data = []
     for d in data_objs:
-        if temp["Text"] in text_to_look_for:
-            print("!!! FOUND ITEM OF INTEREST INSIDE LABEL FOR LOOP",temp["Text"])
+        if d.data.text in text_to_look_for:
+            print("!!! FOUND ITEM OF INTEREST INSIDE LABEL FOR LOOP",d.data.text)
         temp = {
             "Text": escape(d.data.text),
             "Label": d.label.name,
