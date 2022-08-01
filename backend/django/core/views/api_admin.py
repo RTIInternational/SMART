@@ -153,12 +153,18 @@ def data_coded_table(request, project_pk):
     Returns:
         data: a list of data information
     """
+    print("!!! INSIDE data_coded_table (used by admin labeled data table)")
+    text_to_look_for = [
+    "TEC","ACCESS","BAND DIRECTOR"
+    ]
     project = Project.objects.get(pk=project_pk)
 
     data_objs = DataLabel.objects.filter(data__project=project, data__irr_ind=False)
 
     data = []
     for d in data_objs:
+        if temp["Text"] in text_to_look_for:
+            print("!!! FOUND ITEM OF INTEREST INSIDE LABEL FOR LOOP",temp["Text"])
         temp = {
             "Text": escape(d.data.text),
             "Label": d.label.name,
