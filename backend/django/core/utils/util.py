@@ -584,9 +584,7 @@ def get_labeled_data(project):
     """
     print("%%% INSIDE get_labeled_data (used by export data)")
 
-    text_to_look_for = [
-    "TEC","ACCESS","BAND DIRECTOR"
-    ]
+    text_to_look_for = ["TEC", "ACCESS", "BAND DIRECTOR"]
     project_labels = Label.objects.filter(project=project)
     # get the data labels
     data = []
@@ -599,13 +597,18 @@ def get_labeled_data(project):
             temp["ID"] = d.data.upload_id
             temp["Text"] = d.data.text
             if temp["Text"] in text_to_look_for:
-                print("%%% FOUND ITEM OF INTEREST INSIDE LABEL FOR LOOP",temp["Text"])
+                print("%%% FOUND ITEM OF INTEREST INSIDE LABEL FOR LOOP", temp["Text"])
             metadata = MetaData.objects.filter(data=d.data)
             for m in metadata:
                 temp[m.metadata_field.field_name] = m.value
             temp["Label"] = label.name
             data.append(temp)
-        print("%%% GETTING DATA FOR LABEL",label,"NUMBER OF ITEMS FOUND SO FAR:",len(data))
+        print(
+            "%%% GETTING DATA FOR LABEL",
+            label,
+            "NUMBER OF ITEMS FOUND SO FAR:",
+            len(data),
+        )
     labeled_data_frame = pd.DataFrame(data)
     print(labeled_data_frame.loc[labeled_data_frame["Text"].isin(text_to_look_for)])
     label_frame = pd.DataFrame(labels)

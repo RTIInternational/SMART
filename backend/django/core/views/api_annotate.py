@@ -720,6 +720,8 @@ def get_label_history(request, project_pk):
         labels: The project labels
         data: DataLabel objects where that user was the one to label them
     """
+    print("!!! INSIDE history table (used by users on annotate page under history tab")
+    text_to_look_for = ["TEC", "ACCESS", "BAND DIRECTOR"]
     profile = request.user.profile
     project = Project.objects.get(pk=project_pk)
 
@@ -734,6 +736,8 @@ def get_label_history(request, project_pk):
     data_list = []
     results = []
     for d in data:
+        if d.data.text in text_to_look_for:
+            print("!!! FOUND ITEM OF INTEREST INSIDE LABEL FOR LOOP", d.data.text)
         # if it is not labeled irr but is in the log, the data is resolved IRR,
         if not d.data.irr_ind and len(IRRLog.objects.filter(data=d.data)) > 0:
             continue

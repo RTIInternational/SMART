@@ -256,11 +256,9 @@ def export_database_table(request, project_pk):
 
                     # pull all labeled data
                     data, labels = get_labeled_data(project)
-                    text_to_look_for = [
-                    "TEC","ACCESS","BAND DIRECTOR"
-                    ]
+                    text_to_look_for = ["TEC", "ACCESS", "BAND DIRECTOR"]
 
-                    print("??? Got ",len(data),"data from get_labeled_data")
+                    print("??? Got ", len(data), "data from get_labeled_data")
                     print(data.loc[data["Text"].isin(text_to_look_for)])
                     if len(data) > 0:
 
@@ -280,7 +278,9 @@ def export_database_table(request, project_pk):
                                 sql=f"SELECT DISTINCT ID FROM {table_name_string}",
                                 con=engine_database,
                             )["ID"].tolist()
-                            print("??? About to filter out existing IDs in the database")
+                            print(
+                                "??? About to filter out existing IDs in the database"
+                            )
                             data = data.loc[~data["ID"].isin(existing_ids)]
                             print("??? Now let's check again for that data we want")
                             print(data.loc[data["Text"].isin(text_to_look_for)])
