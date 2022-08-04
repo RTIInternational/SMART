@@ -24,6 +24,9 @@
           <a data-toggle="tab" href="#irr_tab" class="nav-link">IRR</a>
         </li>
         {% endif %}
+        <li class="nav-item" id="unassign_tab_navitem">
+          <a data-toggle="tab" href="#unassign_tab" class="nav-link">Unassign Coder</a>
+        </li>
       </ul>
     </div>
     <div class="tab-content">
@@ -36,6 +39,8 @@
       {% if project.percentage_irr > 0 %}
         {% include "projects/admin/admin_irr.html" %}
       {% endif %}
+
+      {% include "projects/admin/admin_unassign.html" %}
     </div>
   </div>
 </div>
