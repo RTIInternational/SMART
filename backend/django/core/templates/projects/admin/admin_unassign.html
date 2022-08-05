@@ -41,7 +41,13 @@
             async: false,
             url: '/api/unassign_coder/'+{{ pk }}+'/'+ profile +'/',
         });
-        $("option[value=" + profile + "]").remove()
+        $("option[value=" + profile + "]").remove();
+
+        if (!$("#coderSelect option").length) {
+            $("#unassignBtn").remove();
+            $("#coderSelect").select2("destroy")
+            $("#coderSelect").replaceWith("<b>No data assigned to coders</b>")
+        }
     })
 </script>
 {% endblock %}
