@@ -597,6 +597,8 @@ def get_labeled_data(project):
             for m in metadata:
                 temp[m.metadata_field.field_name] = m.value
             temp["Label"] = label.name
+            temp["Profile"] = d.profile.user
+            temp["Timestamp"] = d.timestamp
             data.append(temp)
     labeled_data_frame = pd.DataFrame(data)
     label_frame = pd.DataFrame(labels)
