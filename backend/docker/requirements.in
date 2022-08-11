@@ -1,5 +1,6 @@
 # main dependencies for the backend application
 celery
+channels
 Django
 django-allauth
 django-configurations
