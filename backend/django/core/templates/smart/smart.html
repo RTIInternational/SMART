@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block scripts_body %}
-<script type="text/javascript">
+<script>
   window.PROJECT_ID = {{ pk }};
   {% if project.codebook_file == '' %}
     window.CODEBOOK_URL = ""
@@ -16,75 +16,55 @@
   {% endif %}
   window.ADMIN = {{admin}};
 
-  let pollingActive = true;
-  let init_access = false;
-
   window.onload = function (e) {
     $.ajax({
       type: 'GET',
       async: false,
       url: '/api/enter_coding_page/'+{{ pk }}+'/',
-      success: function (result) {
-        init_access = result["initial_admin_access"];
-      }
     });
   };
 
-  /**
-   * Checks if user has coding/admin status every minute
-   */
-  function checkStatus() {
-    if (pollingActive) {
-      console.log("polling")
-      $.ajax({
-        type: "GET",
-        async: false,
-        url: '/api/check_coding_status/'+{{ pk }}+'/',
-        dataType: 'json',
-        success: function (result) {
-          // remove access to cards
-          if (!init_access && !result["coding_access"]) {
-            pollingActive = false;
+  // Create Websocket to project channel
+  const chatSocket = new WebSocket(
+      'ws://'
+      + window.location.host
+      + '/projects/'
+      + {{pk}}
+      + '/code/'
+  );
 
-            let content = $("#mount")
+  chatSocket.onmessage = function(e) {
+      const data = JSON.parse(e.data);
+
+      // Admin timeout message targetted at this user
+      if (data.message.admin == {{user.id}}) {
+        init_access= false;
+
+        let activeTabs = false;
+        let adminTabSelector = "[id$=tab-3], [id$=tab-4], [id$=tab-5]"
+
+        //admin tabs are active
+        $(adminTabSelector).each(function() {
+          if ($(this).hasClass("active")) {
+            let content = $(".cardContent")
             content.empty()
-            content.append("<p>Your coding session has expired. Please refresh the page to retrieve cards<p>");
-          };
-
-          // Add message that says message has expired, *but does not remove ability to annotate cards*
-          if (init_access && !result["admin_access"]) {
-            init_access= false;
-
-            let activeTabs = false;
-            let adminTabSelector = "[id$=tab-3], [id$=tab-4], [id$=tab-5]"
-
-            //admin tabs are active
-            $(adminTabSelector).each(function() {
-              if ($(this).hasClass("active")) {
-                let content = $(".cardContent")
-                content.empty()
-                content.append("<p>Your admin session has expired. Please refresh the page to attempt to regain access<p>");
-                activeTabs = true;
-              }
-            })
-            
-            if (!activeTabs) {
-              let content = $("#mount");
-              content.append("<p>Your admin session has expired. Please refresh the page to attempt to regain access<p>");
-            }
-            $(adminTabSelector).remove();
-          };
+            content.append("<p>Your admin session has expired. Please refresh the page to attempt to regain access<p>");
+            activeTabs = true;
+          }
+        })
+        
+        if (!activeTabs) {
+          let content = $("#mount");
+          content.append("<p>Your admin session has expired. Please refresh the page to attempt to regain access<p>");
         }
-      })
-      setTimeout(checkStatus, 60000);
-    }
-  }
+        $(adminTabSelector).remove();
+      }
+  };
 
-  $().ready(function() {
-    setTimeout(function(){
-      checkStatus();
-    }, 60000);
-  })
+  chatSocket.onclose = function(e) {
+      console.error('Chat socket closed unexpectedly');
+  };
+
 </script>
 {% render_bundle 'smart' 'js' %}
 {% endblock %}

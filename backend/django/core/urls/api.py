@@ -39,9 +39,6 @@ annotate_patterns = [
         r"^enter_coding_page/(?P<project_pk>\d+)/$", api_annotate.enter_coding_page
     ),
     re_path(
-        r"^check_coding_status/(?P<project_pk>\d+)/$", api_annotate.check_coding_status
-    ),
-    re_path(
         r"^data_unlabeled_table/(?P<project_pk>\d+)/$",
         api_annotate.data_unlabeled_table,
     ),

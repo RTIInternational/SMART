@@ -1,6 +1,9 @@
 import math
 import random
+from datetime import timedelta
 
+import channels.layers
+from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import transaction
@@ -378,14 +381,32 @@ def modify_label_to_skip(request, data_pk):
 def check_admin_in_progress(request, project_pk):
     """This api is called by the admin tabs on the annotate page to check if it is
     alright to show the data."""
-    profile = request.user.profile
     project = Project.objects.get(pk=project_pk)
 
-    # if nobody ELSE is there yet, return True
-    if AdminProgress.objects.filter(project=project).count() == 0:
-        return Response({"available": 1})
-    if AdminProgress.objects.filter(project=project, profile=profile).count() == 0:
-        return Response({"available": 0})
+    project_admins = AdminProgress.objects.filter(project=project)
+
+    if AdminProgress.objects.filter(project=project).exists():
+        # Admin reached timeout threshold
+        if project_admins.filter(
+            project=project, last_action__lte=timezone.now() - timedelta(seconds=10)
+        ).exists():
+
+            # Send message to users on project channel, potentially including timeout admin
+            timeout_admin = project_admins.get(project=project)
+            channel_layer = channels.layers.get_channel_layer()
+
+            # Broadcast to all users on channel with timeout admin ID
+            async_to_sync(channel_layer.group_send)(
+                f"{project_pk}",
+                {
+                    "type": "timeout_message",
+                    "message": {"admin": timeout_admin.profile.pk},
+                },
+            )
+            timeout_admin.delete()
+            return Response({"available": 1})
+        else:
+            return Response({"available": 0})
     else:
         return Response({"available": 1})
 
@@ -401,7 +422,6 @@ def enter_coding_page(request, project_pk):
     """
     profile = request.user.profile
     project = Project.objects.get(pk=project_pk)
-    admin_access = False
 
     # check that no other admin is using it. If they are not, give this admin permission
     if project_extras.proj_permission_level(project, profile) > 1:
@@ -409,7 +429,6 @@ def enter_coding_page(request, project_pk):
             AdminProgress.objects.create(
                 project=project, profile=profile, timestamp=timezone.now()
             )
-            admin_access = True
 
     # NEW leave the coding page for all other projects so they're only in one
     # project at a time
@@ -421,7 +440,7 @@ def enter_coding_page(request, project_pk):
     for project in profile_projects:
         leave_coding_page(profile, project)
 
-    return Response({"initial_admin_access": admin_access})
+    return Response({})
 
 
 @api_view(["GET"])
@@ -831,26 +850,3 @@ def get_label_history(request, project_pk):
         results.append(temp_dict)
 
     return Response({"data": results})
-
-
-@api_view(["GET"])
-@permission_classes((IsCoder,))
-def check_coding_status(request, project_pk):
-    """Checks if coder still has access to coding page by seeing if they have assigned
-    data with the corresponding project."""
-    profile = request.user.profile
-    project = Project.objects.get(pk=project_pk)
-
-    coding_access = AssignedData.objects.filter(
-        profile=profile, data__project=project
-    ).exists()
-    admin_access = AdminProgress.objects.filter(
-        profile=profile, project=project
-    ).exists()
-
-    return Response(
-        {
-            "coding_access": coding_access,
-            "admin_access": admin_access,
-        }
-    )
