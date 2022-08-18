@@ -9,7 +9,7 @@
     <div class="col-md-8 col-md-offset-2">
         <div class="card">
             <div class="cardface">
-              {{ form.media.css }}
+                {{ form.media.css }}
                 <form action="." method="post" enctype="multipart/form-data" id="formObject">
                     {% csrf_token %}
                     <h1>External Database Connection</h1>
@@ -66,7 +66,7 @@
                         <div class="error-messages">{{ form.ingest_schema.errors }}</div>
                         <hr />
                         <p>The following fields are the table name and schema for the database table you wish SMART to export labeled data to.
-                          The output table will be created if it doesn't already exist when data is exported for the first time.</p>
+                            <b>WARNING:</b> The export table cannot already exist in the database.</p>
                         <div id="export_table_fields_update">
                             Export Table Name: {{ form.export_table_name }}
                         </div>
@@ -124,15 +124,12 @@
         }
     });
 
-    $('#submitButton').click(function (e) {
-      if($('input#id_database_type_0').prop('checked') == true){
-        if(! confirm('WARNING: submitting with the option "no database" will remove any existing data base connection. Are you sure you want to submit?'))
-        {
-            e.preventDefault()
+    $('#submitButton').click(function(e) {
+        if ($('input#id_database_type_0').prop('checked') == true) {
+            if (!confirm('WARNING: submitting with the option "no database" will remove any existing data base connection. Are you sure you want to submit?')) {
+                e.preventDefault()
+            }
         }
-      }
     });
-
-
 </script>
 {% endblock %}

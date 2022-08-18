@@ -73,7 +73,7 @@
                         <div class="error-messages">{{ wizard.form.ingest_schema.errors }}</div>
                         <hr />
                         <p>The following fields are the table name and schema for the database table you wish SMART to export labeled data to.
-                          The output table will be created if it doesn't already exist when data is exported for the first time.  </p>
+                            <b>WARNING:</b> The export table cannot already exist in the database.</p>
                         <div id="export_table_fields">
                             Export Table Name: {{ wizard.form.export_table_name }}
                         </div>
