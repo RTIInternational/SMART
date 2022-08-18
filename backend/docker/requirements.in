@@ -1,6 +1,6 @@
 # main dependencies for the backend application
 celery
-Django
+Django==3.2.15
 django-allauth
 django-configurations
 django-extensions
