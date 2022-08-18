@@ -10,11 +10,11 @@ import Select from "react-dropdown-select";
 import CardData from '../DataCard/CardData';
 import SuggestedLabels from '../DataCard/SuggestedLabels';
 
-export default function AnnotateCard({ card, labels, onSelectLabel, readonly = false, onSkip = null, onDiscard = null, showAdjudicate = true, suggestions = true }) {
+export default function AnnotateCard({ card, labels, onSelectLabel, readonly = false, onSkip = null, onDiscard = null, onUnassign = null, showAdjudicate = true, suggestions = true }) {
     return (
         <div className="cardface clearfix">
             <div className="cardface-datacard">
-                <CardData card={card} onSkip={onSkip} showAdjudicate={showAdjudicate} />
+                <CardData card={card} onSkip={onSkip} onUnassign={onUnassign} showAdjudicate={showAdjudicate} />
                 {suggestions && labels.length > 5 && (
                     <SuggestedLabels card={card} labels={labels} onSelectLabel={onSelectLabel} />
                 )}
