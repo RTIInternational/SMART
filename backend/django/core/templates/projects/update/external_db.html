@@ -66,7 +66,7 @@
                         <div class="error-messages">{{ form.ingest_schema.errors }}</div>
                         <hr />
                         <p>The following fields are the table name and schema for the database table you wish SMART to export labeled data to.
-                            <b>WARNING:</b> The export table cannot already exist in the database.</p>
+                            <b>WARNING:</b> The export table cannot already exist in the database. Please note that SMART will completely drop and rewrite this table each time you export.</p>
                         <div id="export_table_fields_update">
                             Export Table Name: {{ form.export_table_name }}
                         </div>
