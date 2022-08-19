@@ -139,6 +139,14 @@ def skip_data(request, data_pk):
     project = data.project
     response = {}
 
+    # if the coder has been un-assigned from the data
+    if not AssignedData.objects.filter(data=data, profile=profile).exists():
+        response["error"] = (
+            "ERROR: Your cards were un-assigned by an administrator. "
+            "Please refresh the page to get new assigned items to annotate."
+        )
+        return Response(response)
+
     # if the data is IRR or processed IRR, dont add to admin queue yet
     num_history = IRRLog.objects.filter(data=data).count()
 
@@ -189,6 +197,14 @@ def annotate_data(request, data_pk):
     response = {}
     label = Label.objects.get(pk=request.data["labelID"])
     labeling_time = request.data["labeling_time"]
+
+    # if the coder has been un-assigned from the data
+    if not AssignedData.objects.filter(data=data, profile=profile).exists():
+        response["error"] = (
+            "ERROR: Your cards were un-assigned by an administrator. "
+            "Please refresh the page to get new assigned items to annotate."
+        )
+        return Response(response)
 
     num_history = IRRLog.objects.filter(data=data).count()
 

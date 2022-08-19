@@ -333,6 +333,7 @@ def get_project_status(request, project_pk):
 
 
 @api_view(["GET"])
+@permission_classes((IsAdminOrCreator,))
 def unassign_coders(request, project_pk, profile_id):
     """Unassigns all data from user for project."""
     project = Project.objects.get(pk=project_pk)
