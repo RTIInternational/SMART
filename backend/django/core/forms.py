@@ -10,11 +10,12 @@ from pandas.errors import ParserError
 
 from core.utils.util import md5_hash
 from core.utils.utils_external_db import (
+    check_if_schema_exists,
+    check_if_table_exists,
     get_connection,
     get_full_table,
     test_connection,
     test_login,
-    test_schema_exists,
 )
 
 from .models import ExternalDatabase, Label, Project, ProjectPermissions
@@ -549,8 +550,6 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
                             ["This field is required for a MS SQL database connection."]
                         )
                         field_error = True
-            if field_error:
-                raise ValidationError("Please fix field errors before resubmitting.")
 
             engine_database = get_connection(db_type, self.cleaned_data)
 
@@ -571,18 +570,26 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
                 or len(self.cleaned_data["ingest_table_name"]) > 0
             ):
                 if len(self.cleaned_data["ingest_table_name"]) == 0:
-                    raise ValueError(
-                        "ERROR: need to specify ingest table if schema is set."
+                    self._errors["ingest_table_name"] = self.error_class(
+                        ["ERROR: need to specify ingest table if schema is set."]
                     )
+                    field_error = True
                 if len(self.cleaned_data["ingest_schema"]) == 0:
-                    raise ValueError(
-                        "ERROR: need to specify ingest schema if table name is set."
+                    self._errors["ingest_schema"] = self.error_class(
+                        ["ERROR: need to specify ingest schema if table name is set."]
                     )
+                    field_error = True
 
                 self.cleaned_data["has_ingest"] = True
 
                 # for ingest, schema and table should exist and table should have fields needed
-                test_schema_exists(engine_database, self.cleaned_data["ingest_schema"])
+                if not check_if_schema_exists(
+                    engine_database, self.cleaned_data["ingest_schema"]
+                ):
+                    self._errors["ingest_schema"] = self.error_class(
+                        ["ERROR: export schema doesn't exist in the database."]
+                    )
+                    field_error = True
                 test_connection(
                     engine_database,
                     self.cleaned_data["ingest_schema"],
@@ -594,17 +601,38 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
                 or len(self.cleaned_data["export_table_name"]) > 0
             ):
                 if len(self.cleaned_data["export_table_name"]) == 0:
-                    raise ValueError(
-                        "ERROR: need to specify export table if schema is set."
+                    self._errors["export_table_name"] = self.error_class(
+                        ["ERROR: need to specify export table if schema is set."]
                     )
+                    field_error = True
                 if len(self.cleaned_data["export_schema"]) == 0:
-                    raise ValueError(
-                        "ERROR: need to specify export schema if table name is set."
+                    self._errors["export_schema"] = self.error_class(
+                        ["ERROR: need to specify export schema if table name is set."]
                     )
+                    field_error = True
 
                 self.cleaned_data["has_export"] = True
 
                 # for export, table may not exist but schema should exist
-                test_schema_exists(engine_database, self.cleaned_data["export_schema"])
+                if not check_if_schema_exists(
+                    engine_database, self.cleaned_data["export_schema"]
+                ):
+                    self._errors["export_schema"] = self.error_class(
+                        ["ERROR: export schema doesn't exist in the database."]
+                    )
+                    field_error = True
+
+                if check_if_table_exists(
+                    engine_database,
+                    self.cleaned_data["export_schema"],
+                    self.cleaned_data["export_table_name"],
+                ):
+                    self._errors["export_table_name"] = self.error_class(
+                        ["ERROR: export table already exists."]
+                    )
+                    field_error = True
+
+            if field_error:
+                raise ValidationError("Please fix field errors before resubmitting.")
 
             self.cleaned_data["engine_database"] = engine_database
