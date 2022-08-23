@@ -137,6 +137,28 @@ def label_distribution_inverted(request, project_pk):
 
 @api_view(["POST"])
 @permission_classes((IsCoder,))
+def unassign_data(request, data_pk):
+    """Take a datum that is in the assigneddata queue for that user and remove it from
+    the assignedData queue.
+
+    Args:
+        request: The POST request
+        data_pk: Primary key of the data
+    Returns:
+        {}
+    """
+    data = Data.objects.get(pk=data_pk)
+    profile = request.user.profile
+    response = {}
+
+    assignment = AssignedData.objects.get(data=data, profile=profile)
+    assignment.delete()
+
+    return Response(response)
+
+
+@api_view(["POST"])
+@permission_classes((IsCoder,))
 def skip_data(request, data_pk):
     """Take a datum that is in the assigneddata queue for that user and place it in the
     admin queue. Remove it from the assignedData queue.

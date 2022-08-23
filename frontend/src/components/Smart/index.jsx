@@ -56,7 +56,7 @@ class Smart extends React.Component {
                         <Badge className="tab-badge">
                             {admin_counts["IRR"]}
                         </Badge>
-                        | Skipped
+                        | Requires Adjudication
                         <Badge className="tab-badge">
                             {admin_counts["SKIP"]}
                         </Badge>
@@ -65,7 +65,7 @@ class Smart extends React.Component {
             } else {
                 badges = (
                     <div>
-                        Skipped
+                        Requires Adjudication
                         <Badge className="tab-badge">
                             {admin_counts["SKIP"]}
                         </Badge>
@@ -85,7 +85,7 @@ class Smart extends React.Component {
             );
         } else {
             adminTabAdminTable = (
-                <Tab eventKey={4} transition={false} title="Skipped Cards" className="full card">
+                <Tab eventKey={4} transition={false} title="Requires Adjudication" className="full card">
                     <div className="cardContent">
                         <h2>Another admin is currently using this page. This page will become available when the admin returns to the project list page, details page, changes projects, or logs out.</h2>
                     </div>
