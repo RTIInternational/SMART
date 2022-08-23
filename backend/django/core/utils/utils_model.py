@@ -226,9 +226,16 @@ def check_and_trigger_model(datum, profile=None):
         return_str = "task already running"
     elif labeled_data_count >= batch_size:
         if labels_count < project.labels.count() or project.classifier is None:
-            queue = project.queue_set.get(type="normal")
-
-            fill_queue(queue=queue, orderby="random", batch_size=batch_size)
+            if project.queue_set.filter(type="irr").exists():
+                irr_queue = project.queue_set.get(type="irr")
+            else:
+                irr_queue = None
+            fill_queue(
+                queue=project.queue_set.get(type="normal"),
+                irr_queue=irr_queue,
+                orderby="random",
+                batch_size=batch_size,
+            )
             return_str = "random"
         else:
             task_num = tasks.send_model_task.delay(project.pk)
