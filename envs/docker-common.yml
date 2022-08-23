@@ -7,6 +7,7 @@ services:
       - POSTGRES_PASSWORD=my-secret-password
       - POSTGRES_USER=smart
       - POSTGRES_DB=smart
+      - TZ=EST
     ports:
       - "${EXTERNAL_POSTGRES_PORT:-5432}:5432"
     volumes:
@@ -27,15 +28,21 @@ services:
     ports:
       - "${EXTERNAL_BACKEND_PORT:-8000}:8000"
     command: ./runserver.sh
+    environment:
+      - TZ=EST
 
   smart_frontend:
     container_name: smart_frontend
     volumes:
       - ../frontend/:/code
       - /code/node_modules
+    environment:
+      - TZ=EST
 
   celery_worker:
     volumes:
       - ../backend/django:/code
       - smart_data:/data/
     command: ./runcelery.sh
+    environment:
+      - TZ=EST

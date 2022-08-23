@@ -1,6 +1,7 @@
 import math
 import random
 
+import pytz
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import transaction
@@ -762,22 +763,17 @@ def get_label_history(request, project_pk):
 
         data_list.append(d.data.id)
         if d.timestamp:
-            if d.timestamp.minute < 10:
-                minute = "0" + str(d.timestamp.minute)
+            time = pytz.timezone("US/Eastern").normalize(d.timestamp)
+            if time.minute < 10:
+                minute = "0" + str(time.minute)
             else:
-                minute = str(d.timestamp.minute)
-            if d.timestamp.second < 10:
-                second = "0" + str(d.timestamp.second)
+                minute = str(time.minute)
+            if time.second < 10:
+                second = "0" + str(time.second)
             else:
-                second = str(d.timestamp.second)
+                second = str(time.second)
             new_timestamp = (
-                str(d.timestamp.date())
-                + ", "
-                + str(d.timestamp.hour)
-                + ":"
-                + minute
-                + "."
-                + second
+                str(time.date()) + ", " + str(time.hour) + ":" + minute + "." + second
             )
         else:
             new_timestamp = "None"
@@ -808,22 +804,17 @@ def get_label_history(request, project_pk):
             continue
 
         if d.timestamp:
-            if d.timestamp.minute < 10:
-                minute = "0" + str(d.timestamp.minute)
+            time = pytz.timezone("US/Eastern").normalize(d.timestamp)
+            if time.minute < 10:
+                minute = "0" + str(time.minute)
             else:
-                minute = str(d.timestamp.minute)
-            if d.timestamp.second < 10:
-                second = "0" + str(d.timestamp.second)
+                minute = str(time.minute)
+            if time.second < 10:
+                second = "0" + str(time.second)
             else:
-                second = str(d.timestamp.second)
+                second = str(time.second)
             new_timestamp = (
-                str(d.timestamp.date())
-                + ", "
-                + str(d.timestamp.hour)
-                + ":"
-                + minute
-                + "."
-                + second
+                str(time.date()) + ", " + str(time.hour) + ":" + minute + "." + second
             )
         else:
             new_timestamp = "None"
