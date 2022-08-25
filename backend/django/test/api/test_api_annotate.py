@@ -17,7 +17,7 @@ from core.models import (
     ProjectPermissions,
     RecycleBin,
 )
-from core.utils.utils_annotate import get_assignments
+from core.utils.utils_annotate import get_assignments, leave_coding_page
 from core.utils.utils_queue import fill_queue
 
 
@@ -45,7 +45,9 @@ def test_get_label_history(
     data = get_assignments(client_profile, project, 2)
     datum = data[0]
     assert datum is not None
-    response = client.post("/api/skip_data/" + str(datum.pk) + "/")
+    response = client.post(
+        "/api/skip_data/" + str(datum.pk) + "/", {"message": "skipped for test"}
+    )
     assert "error" not in response.json() and "detail" not in response.json()
 
     response = client.get("/api/get_label_history/" + str(project.pk) + "/")
@@ -60,8 +62,9 @@ def test_get_label_history(
     response_client = client.get("/api/get_label_history/" + str(project.pk) + "/")
     assert response_client.json()["data"] != []
 
+    # update: the admin should see non-admin history
     response_admin = admin_client.get("/api/get_label_history/" + str(project.pk) + "/")
-    assert response_admin.json()["data"] == []
+    assert response_admin.json()["data"] == response_client.json()["data"]
 
     # the label should be in the correct person's history
     response_data = response_client.json()["data"][0]
@@ -132,7 +135,9 @@ def test_skip_data(
     client_profile = Profile.objects.get(user__username=SEED_USERNAME)
 
     data = get_assignments(client_profile, project, 1)
-    response = client.post("/api/skip_data/" + str(data[0].pk) + "/")
+    response = client.post(
+        "/api/skip_data/" + str(data[0].pk) + "/", {"message": "skipped for test"}
+    )
     assert (
         "detail" in response.json() and permission_message in response.json()["detail"]
     )
@@ -145,7 +150,9 @@ def test_skip_data(
 
     # have someone skip something with permission. Should
     # be in admin queue, not in normal queue, not in datalabel
-    response = client.post("/api/skip_data/" + str(data[0].pk) + "/")
+    response = client.post(
+        "/api/skip_data/" + str(data[0].pk) + "/", {"message": "skipped for test"}
+    )
     assert "error" not in response.json() and "detail" not in response.json()
 
     assert DataQueue.objects.filter(data=data[0], queue=test_queue).count() == 0
@@ -210,7 +217,11 @@ def test_modify_label_to_skip(
 
     # Call the change to skip function. Should now be in admin table, not be
     # in history table.
-    change_info = {"dataID": data.pk, "oldLabelID": test_labels[0].pk}
+    change_info = {
+        "dataID": data.pk,
+        "oldLabelID": test_labels[0].pk,
+        "message": "skipped for test",
+    }
     response = client.post(
         "/api/modify_label_to_skip/" + str(data.pk) + "/", change_info
     )
@@ -291,7 +302,9 @@ def test_skip_data_api(
 
     # for each card in the deck, skip it
     for card in response["data"]:
-        response = client.post("/api/skip_data/" + str(card["pk"]) + "/")
+        response = client.post(
+            "/api/skip_data/" + str(card["pk"]) + "/", {"message": "skipped for test"}
+        )
         if card["irr_ind"]:
             # if it was irr data, check that it is not in admin queue
             assert (
@@ -346,7 +359,9 @@ def test_admin_label(
     # have a normal client skip something and try to admin label. Should not
     # be allowed
     data = get_assignments(client_profile, project, 1)[0]
-    response = client.post("/api/skip_data/" + str(data.pk) + "/")
+    response = client.post(
+        "/api/skip_data/" + str(data.pk) + "/", {"message": "skipped for test"}
+    )
     assert "error" not in response.json() and "detail" not in response.json()
 
     payload = {"labelID": test_labels[0].pk}
@@ -494,11 +509,8 @@ def test_unlabeled_table(
         "/api/data_unlabeled_table/" + str(project.pk) + "/"
     ).json()
     assert "data" in response
-    assert (
-        len(response["data"])
-        == Data.objects.filter(project=project).count()
-        - DataQueue.objects.filter(data__project=project).count()
-    )
+    # updates skew table returns 50 items max
+    assert len(response["data"]) == 50
 
     # label something. Check it is not in the table.
     data = get_assignments(client_profile, project, 2)
@@ -507,15 +519,19 @@ def test_unlabeled_table(
         {"labelID": test_labels[0].pk, "labeling_time": 1},
     )
     response = admin_client.get(
-        "/api/data_unlabeled_table/" + str(project.pk) + "/"
+        "/api/search_data_unlabeled_table/" + str(project.pk) + "/",
+        {"text": data[0].text},
     ).json()
     data_ids = [d["ID"] for d in response["data"]]
     assert data[0].pk not in data_ids
 
     # skip something. Check it is not in the table.
-    response = client.post("/api/skip_data/" + str(data[1].pk) + "/")
+    response = client.post(
+        "/api/skip_data/" + str(data[1].pk) + "/", {"message": "skipped for test"}
+    )
     response = admin_client.get(
-        "/api/data_unlabeled_table/" + str(project.pk) + "/"
+        "/api/search_data_unlabeled_table/" + str(project.pk) + "/",
+        {"text": data[1].text},
     ).json()
     data_ids = [d["ID"] for d in response["data"]]
     assert data[1].pk not in data_ids
@@ -557,7 +573,9 @@ def test_admin_table(
     assert len(response["data"]) == 0
 
     # skip something. Should be in the table.
-    response = client.post("/api/skip_data/" + str(data[1].pk) + "/")
+    response = client.post(
+        "/api/skip_data/" + str(data[1].pk) + "/", {"message": "skipped for test"}
+    )
     response = admin_client.get("/api/data_admin_table/" + str(project.pk) + "/").json()
     assert len(response["data"]) == 1
     assert response["data"][0]["ID"] == data[1].pk
@@ -616,11 +634,8 @@ def test_multiple_admin_on_admin_annotation(
     assert response2["available"] == 0
 
     # have the first admin leave the page, and the second leave then enter
-    response = client.get("/api/leave_coding_page/" + str(project.pk) + "/").json()
-
-    response2 = admin_client.get(
-        "/api/leave_coding_page/" + str(project.pk) + "/"
-    ).json()
+    leave_coding_page(a1_prof, project)
+    leave_coding_page(a2_prof, project)
     response2 = admin_client.get(
         "/api/enter_coding_page/" + str(project.pk) + "/"
     ).json()
@@ -675,7 +690,9 @@ def test_discard_data(
 
     # call skip data on a full batch of data
     for i in range(30):
-        response = client.post("/api/skip_data/" + str(data[i].pk) + "/")
+        response = client.post(
+            "/api/skip_data/" + str(data[i].pk) + "/", {"message": "skipped for test"}
+        )
 
     # have the admin also get a batch and call skip on everything
     data = get_assignments(admin_profile, project, 30)
@@ -684,7 +701,9 @@ def test_discard_data(
 
     # call skip data on a full batch of data
     for i in range(30):
-        response = admin_client.post("/api/skip_data/" + str(data[i].pk) + "/")
+        response = admin_client.post(
+            "/api/skip_data/" + str(data[i].pk) + "/", {"message": "skipped for test"}
+        )
 
     admin_data = DataQueue.objects.filter(data__project=project, queue=test_admin_queue)
     assert not all(not datum.data.irr_ind for datum in admin_data)
@@ -751,12 +770,16 @@ def test_restore_data(
     # assign a batch of data. Should be IRR and non-IRR
     data = get_assignments(client_profile, project, 30)
     for i in range(30):
-        response = client.post("/api/skip_data/" + str(data[i].pk) + "/")
+        response = client.post(
+            "/api/skip_data/" + str(data[i].pk) + "/", {"message": "skipped for test"}
+        )
 
     # have the admin also get a batch and call skip on everything
     data = get_assignments(admin_profile, project, 30)
     for i in range(30):
-        response = admin_client.post("/api/skip_data/" + str(data[i].pk) + "/")
+        response = admin_client.post(
+            "/api/skip_data/" + str(data[i].pk) + "/", {"message": "skipped for test"}
+        )
 
     admin_data = DataQueue.objects.filter(data__project=project, queue=test_admin_queue)
     # discard all data
@@ -831,14 +854,18 @@ def test_recycle_bin_table(
             irr_count += 1
         else:
             non_irr_count += 1
-        response = client.post("/api/skip_data/" + str(data[i].pk) + "/")
+        response = client.post(
+            "/api/skip_data/" + str(data[i].pk) + "/", {"message": "skipped for test"}
+        )
 
     # have the admin also get a batch and call skip on everything
     data = get_assignments(admin_profile, project, 30)
     for i in range(30):
         if not data[i].irr_ind:
             non_irr_count += 1
-        response = admin_client.post("/api/skip_data/" + str(data[i].pk) + "/")
+        response = admin_client.post(
+            "/api/skip_data/" + str(data[i].pk) + "/", {"message": "skipped for test"}
+        )
 
     admin_data = DataQueue.objects.filter(data__project=project, queue=test_admin_queue)
     # discard all data
@@ -938,12 +965,16 @@ def test_admin_counts(
             irr_count += 1
         else:
             non_irr_count += 1
-        response = client.post("/api/skip_data/" + str(data[i].pk) + "/")
+        response = client.post(
+            "/api/skip_data/" + str(data[i].pk) + "/", {"message": "skipped for test"}
+        )
     data = get_assignments(admin_profile, projects[0], 30)
     for i in range(30):
         if not data[i].irr_ind:
             non_irr_count += 1
-        response = admin_client.post("/api/skip_data/" + str(data[i].pk) + "/")
+        response = admin_client.post(
+            "/api/skip_data/" + str(data[i].pk) + "/", {"message": "skipped for test"}
+        )
 
     response = admin_client.get(
         "/api/data_admin_counts/" + str(projects[0].pk) + "/"
@@ -955,10 +986,14 @@ def test_admin_counts(
     # the counts should be split with the non-irr project
     data = get_assignments(client_profile, projects[1], 30)
     for i in range(30):
-        response = client.post("/api/skip_data/" + str(data[i].pk) + "/")
+        response = client.post(
+            "/api/skip_data/" + str(data[i].pk) + "/", {"message": "skipped for test"}
+        )
     data = get_assignments(admin_profile, projects[1], 30)
     for i in range(30):
-        response = admin_client.post("/api/skip_data/" + str(data[i].pk) + "/")
+        response = admin_client.post(
+            "/api/skip_data/" + str(data[i].pk) + "/", {"message": "skipped for test"}
+        )
 
     response = admin_client.get(
         "/api/data_admin_counts/" + str(projects[1].pk) + "/"
