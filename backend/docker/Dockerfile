@@ -14,7 +14,4 @@ ADD ./docker/requirements.txt /code/requirements.txt
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 RUN mkdir -p /data/data_files /data/tf_idf /data/model_pickles /data/code_books /data/external_db
-RUN rm -rf /etc/localtime
-RUN ln -s /usr/share/zoneinfo/America/New_York /etc/localtime
-RUN date
 EXPOSE 8000
