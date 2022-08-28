@@ -34,6 +34,7 @@ annotate_patterns = [
     re_path(
         r"^modify_label_to_skip/(?P<data_pk>\d+)/$", api_annotate.modify_label_to_skip
     ),
+    re_path(r"^unassign_data/(?P<data_pk>\d+)/$", api_annotate.unassign_data),
     re_path(r"^skip_data/(?P<data_pk>\d+)/$", api_annotate.skip_data),
     re_path(
         r"^enter_coding_page/(?P<project_pk>\d+)/$", api_annotate.enter_coding_page

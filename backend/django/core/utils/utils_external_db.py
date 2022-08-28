@@ -57,14 +57,16 @@ def test_connection(engine_database, schema, table):
         )
 
 
-def test_schema_exists(engine_database, schema):
+def check_if_schema_exists(engine_database, schema):
     """Check if the given schema exists in the database."""
     schema_set = pd.read_sql(
         sql=f"SELECT schema_name FROM information_schema.schemata WHERE schema_name = '{schema}'",
         con=engine_database,
     )
     if len(schema_set) == 0:
-        raise ValidationError(f"ERROR: schema {schema} not found in the database.")
+        return False
+    else:
+        return True
 
 
 def check_if_table_exists(engine_database, schema, table):
