@@ -5,6 +5,7 @@ from itertools import combinations
 
 import numpy as np
 import pandas as pd
+import pytz
 from celery import chord
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -598,7 +599,7 @@ def get_labeled_data(project):
                 temp[m.metadata_field.field_name] = m.value
             temp["Label"] = label.name
             temp["Profile"] = str(d.profile.user)
-            temp["Timestamp"] = d.timestamp
+            temp["Timestamp"] = pytz.timezone("US/Eastern").normalize(d.timestamp)
             data.append(temp)
     labeled_data_frame = pd.DataFrame(data)
     label_frame = pd.DataFrame(labels)
