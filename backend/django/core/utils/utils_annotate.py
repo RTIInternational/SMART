@@ -289,8 +289,8 @@ def leave_admin_page(profile, project):
         admin.delete()
 
 
-def update_last_action(project):
-    admin_qs = AdminProgress.objects.filter(project=project)
+def update_last_action(project, profile):
+    admin_qs = AdminProgress.objects.filter(project=project, profile=profile)
     if admin_qs.exists():
         admin = admin_qs[0]
         admin.save()

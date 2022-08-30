@@ -73,7 +73,14 @@ class Skew extends React.Component {
     }
 
     render() {
-        const { unlabeled_data, labels, skewLabel, label_counts } = this.props;
+        const { unlabeled_data, labels, skewLabel, label_counts, message } = this.props;
+
+        if (message.length > 0){
+            let message_new = message[0];
+            if (message_new.includes("ERROR")){
+                return (<div>{message_new}</div>);
+            }
+        }
 
         return (
             <div>
@@ -184,7 +191,8 @@ Skew.propTypes = {
     labels: PropTypes.arrayOf(PropTypes.object),
     skewLabel: PropTypes.func.isRequired,
     getLabelCounts: PropTypes.func.isRequired,
-    label_counts: PropTypes.arrayOf(PropTypes.object)
+    label_counts: PropTypes.arrayOf(PropTypes.object),
+    message: PropTypes.string
 };
 
 export default Skew;

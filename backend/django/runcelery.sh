@@ -9,4 +9,4 @@ while [ $n -ne 0 ]; do
     n=$?
 done
 
-celery -A smart worker --beat -l info -n default@%h 
+celery -A smart worker -l info -n default@%h

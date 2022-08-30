@@ -26,7 +26,7 @@ class AdminTable extends React.Component {
     }
 
     render() {
-        const { admin_data, labels, adminLabel, discardData } = this.props;
+        const { admin_data, labels, message, adminLabel, discardData } = this.props;
 
         const columns = [
             {
@@ -77,6 +77,13 @@ class AdminTable extends React.Component {
         }
         page_sizes.push(admin_data.length);
 
+        if (message.length > 0){
+            let message_new = message[0];
+            if (message_new.includes("ERROR")){
+                return (<div>{message_new}</div>);
+            }
+        }
+
         return (
             <div>
                 <h3>Instructions</h3>
@@ -103,7 +110,7 @@ class AdminTable extends React.Component {
                     .rt-td {\
                         overflow-y: auto !important;\
                     }\
-                " 
+                "
                     }
                 </style>
             </div>
@@ -115,6 +122,7 @@ AdminTable.propTypes = {
     getAdmin: PropTypes.func.isRequired,
     admin_data: PropTypes.arrayOf(PropTypes.object),
     labels: PropTypes.arrayOf(PropTypes.object),
+    message: PropTypes.string,
     adminLabel: PropTypes.func.isRequired,
     discardData: PropTypes.func.isRequired
 };
