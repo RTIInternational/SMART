@@ -42,6 +42,7 @@ from core.utils.utils_annotate import (
     process_irr_label,
 )
 from core.utils.utils_model import check_and_trigger_model
+from core.utils.utils_queue import fill_queue
 from core.utils.utils_redis import redis_serialize_data, redis_serialize_set
 
 # Using a prebuilt model
@@ -73,6 +74,18 @@ def get_card_deck(request, project_pk):
     coder_size = math.ceil(batch_size / num_coders)
 
     data = get_assignments(profile, project, coder_size)
+    if len(data) == 0:
+        if project.queue_set.filter(type="irr").exists():
+            irr_queue = project.queue_set.get(type="irr")
+        else:
+            irr_queue = None
+        fill_queue(
+            queue=project.queue_set.get(type="normal"),
+            orderby=project.learning_method,
+            irr_queue=irr_queue,
+            batch_size=batch_size,
+        )
+        data = get_assignments(profile, project, coder_size)
 
     # shuffle so the irr is not all at the front
     random.shuffle(data)
