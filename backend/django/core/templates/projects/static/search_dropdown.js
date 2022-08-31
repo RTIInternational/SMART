@@ -1,7 +1,9 @@
-$("#permSelect").ready(function(){
-    $("select[id$='profile']").addClass("searchSelect").select2({
-        width: "100%"
-    })
+$().ready(function(){
+    setTimeout( function() {
+        $("select[id='coderSelect']").addClass("searchSelect").select2({
+            width: "100%"
+        })
+    }, 0.1)
 })
 
 $("#permSelect").on("DOMNodeInserted", "tr", function() {
