@@ -1,6 +1,9 @@
 import math
 import random
+from datetime import timedelta
 
+import channels.layers
+from asgiref.sync import async_to_sync
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import transaction
@@ -40,6 +43,7 @@ from core.utils.utils_annotate import (
     leave_coding_page,
     move_skipped_to_admin_queue,
     process_irr_label,
+    update_last_action,
 )
 from core.utils.utils_model import check_and_trigger_model
 from core.utils.utils_queue import fill_queue
@@ -322,6 +326,8 @@ def restore_data(request, data_pk):
     """
     data = Data.objects.get(pk=data_pk)
     profile = request.user.profile
+    project = data.project
+    update_last_action(project)
     response = {}
 
     # Make sure coder is an admin
@@ -426,14 +432,32 @@ def modify_label_to_skip(request, data_pk):
 def check_admin_in_progress(request, project_pk):
     """This api is called by the admin tabs on the annotate page to check if it is
     alright to show the data."""
-    profile = request.user.profile
     project = Project.objects.get(pk=project_pk)
 
-    # if nobody ELSE is there yet, return True
-    if AdminProgress.objects.filter(project=project).count() == 0:
-        return Response({"available": 1})
-    if AdminProgress.objects.filter(project=project, profile=profile).count() == 0:
-        return Response({"available": 0})
+    project_admins = AdminProgress.objects.filter(project=project)
+
+    if AdminProgress.objects.filter(project=project).exists():
+        # Admin reached timeout threshold
+        if project_admins.filter(
+            project=project, last_action__lte=timezone.now() - timedelta(seconds=10)
+        ).exists():
+
+            # Send message to users on project channel, potentially including timeout admin
+            timeout_admin = project_admins.get(project=project)
+            channel_layer = channels.layers.get_channel_layer()
+
+            # Broadcast to all users on channel with timeout admin ID
+            async_to_sync(channel_layer.group_send)(
+                f"{project_pk}",
+                {
+                    "type": "timeout_message",
+                    "message": {"admin": timeout_admin.profile.pk},
+                },
+            )
+            timeout_admin.delete()
+            return Response({"available": 1})
+        else:
+            return Response({"available": 0})
     else:
         return Response({"available": 1})
 
@@ -449,6 +473,7 @@ def enter_coding_page(request, project_pk):
     """
     profile = request.user.profile
     project = Project.objects.get(pk=project_pk)
+
     # check that no other admin is using it. If they are not, give this admin permission
     if project_extras.proj_permission_level(project, profile) > 1:
         if AdminProgress.objects.filter(project=project).count() == 0:
@@ -505,6 +530,8 @@ def search_data_unlabeled_table(request, project_pk):
     Returns:
         data: a filtered list of data information
     """
+    project = Project.objects.get(pk=project_pk)
+    update_last_action(project)
     unlabeled_data = get_unlabeled_data(project_pk)
     text = request.GET.get("text")
     unlabeled_data = unlabeled_data.filter(text__icontains=text.lower())
@@ -591,6 +618,7 @@ def data_admin_table(request, project_pk):
         data: a list of data information
     """
     project = Project.objects.get(pk=project_pk)
+    update_last_action(project)
     queue = Queue.objects.get(project=project, type="admin")
 
     messages = list(
@@ -657,6 +685,7 @@ def recycle_bin_table(request, project_pk):
         data: a list of data information
     """
     project = Project.objects.get(pk=project_pk)
+    update_last_action(project)
     data_objs = RecycleBin.objects.filter(data__project=project)
 
     data = []
@@ -687,6 +716,7 @@ def label_skew_label(request, data_pk):
 
     datum = Data.objects.get(pk=data_pk)
     project = datum.project
+    update_last_action(project)
     label = Label.objects.get(pk=request.data["labelID"])
     profile = request.user.profile
     response = {}
@@ -723,6 +753,7 @@ def label_admin_label(request, data_pk):
     """
     datum = Data.objects.get(pk=data_pk)
     project = datum.project
+    update_last_action(project)
     label = Label.objects.get(pk=request.data["labelID"])
     profile = request.user.profile
     response = {}

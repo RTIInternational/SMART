@@ -333,6 +333,7 @@ class AdminProgress(models.Model):
     project = models.ForeignKey("Project", on_delete=models.CASCADE)
     profile = models.ForeignKey("Profile", on_delete=models.CASCADE)
     timestamp = models.DateTimeField(default=timezone.now)
+    last_action = models.DateTimeField(auto_now=True)
 
 
 class AdjudicateDescription(models.Model):

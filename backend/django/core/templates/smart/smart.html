@@ -7,21 +7,65 @@
 {% endblock %}
 
 {% block scripts_body %}
-<script type="text/javascript">
-window.PROJECT_ID = {{ pk }};
-{% if project.codebook_file == '' %}
-  window.CODEBOOK_URL = ""
-{% else %}
-  window.CODEBOOK_URL = "{% static project.codebook_file %}"
-{% endif %}
-window.ADMIN = {{admin}};
-window.onload = function (e) {
-  $.ajax({
-    type: 'GET',
-    async: false,
-    url: '/api/enter_coding_page/'+{{ pk }}+'/',
-  });
-};
+<script>
+  window.PROJECT_ID = {{ pk }};
+  {% if project.codebook_file == '' %}
+    window.CODEBOOK_URL = ""
+  {% else %}
+    window.CODEBOOK_URL = "{% static project.codebook_file %}"
+  {% endif %}
+  window.ADMIN = {{admin}};
+
+  window.onload = function (e) {
+    $.ajax({
+      type: 'GET',
+      async: false,
+      url: '/api/enter_coding_page/'+{{ pk }}+'/',
+    });
+  };
+
+  // Create Websocket to project channel
+  const chatSocket = new WebSocket(
+      'ws://'
+      + window.location.host
+      + '/projects/'
+      + {{pk}}
+      + '/code/'
+  );
+
+  chatSocket.onmessage = function(e) {
+      const data = JSON.parse(e.data);
+
+      // Admin timeout message targetted at this user
+      if (data.message.admin == {{user.id}}) {
+        init_access= false;
+
+        let activeTabs = false;
+        let adminTabSelector = "[id$=tab-3], [id$=tab-4], [id$=tab-5]"
+
+        //admin tabs are active
+        $(adminTabSelector).each(function() {
+          if ($(this).hasClass("active")) {
+            let content = $(".cardContent")
+            content.empty()
+            content.append("<p>Your admin session has expired. Please refresh the page to attempt to regain access<p>");
+            activeTabs = true;
+          }
+        })
+        
+        if (!activeTabs) {
+          let content = $("#mount");
+          content.append("<p>Your admin session has expired. Please refresh the page to attempt to regain access<p>");
+        }
+        $(adminTabSelector).remove();
+      }
+  };
+
+  chatSocket.onclose = function(e) {
+      console.error('Chat socket closed unexpectedly');
+  };
+
 </script>
 {% render_bundle 'smart' 'js' %}
 {% endblock %}
+

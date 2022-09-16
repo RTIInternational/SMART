@@ -53,6 +53,7 @@ class Dev(Configuration):
         "rest_auth.registration",
         "rest_framework_swagger",
         "webpack_loader",
+        "channels",
     ]
 
     MIDDLEWARE = [
@@ -97,7 +98,18 @@ class Dev(Configuration):
     )
     # PROGRESSBARUPLOAD_INCLUDE_JQUERY = True
 
-    WSGI_APPLICATION = "smart.wsgi.application"
+    # Channels. ASGI is built on top of WSGI
+    ASGI_APPLICATION = "core.routing.application"
+
+    # Redis is used as backing storage for channel
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [("redis", 6379)],
+            },
+        },
+    }
 
     # Database
     # https://docs.djangoproject.com/en/1.11/ref/settings/#databases

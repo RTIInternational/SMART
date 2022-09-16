@@ -4,12 +4,28 @@
 #
 #    pip-compile docker/requirements.in
 #
+aioredis==1.3.1
+    # via channels-redis
 amqp==5.0.6
     # via kombu
-asgiref==3.4.1
-    # via django
+asgiref==3.5.2
+    # via
+    #   channels
+    #   channels-redis
+    #   daphne
+    #   django
+async-timeout==4.0.2
+    # via aioredis
 attrs==21.2.0
-    # via pytest
+    # via
+    #   automat
+    #   pytest
+    #   service-identity
+    #   twisted
+autobahn==22.7.1
+    # via daphne
+automat==20.2.0
+    # via twisted
 backports-entry-points-selectable==1.1.1
     # via virtualenv
 billiard==3.6.4.0
@@ -26,6 +42,12 @@ cffi==1.15.0
     # via cryptography
 cfgv==3.3.1
     # via pre-commit
+channels==2.4.0
+    # via
+    #   -r docker/requirements.in
+    #   channels-redis
+channels-redis==2.4.2
+    # via -r docker/requirements.in
 charset-normalizer==2.0.7
     # via requests
 click==8.0.3
@@ -44,6 +66,8 @@ click-plugins==1.1.1
     # via celery
 click-repl==0.2.0
     # via celery
+constantly==15.1.0
+    # via twisted
 coreapi==2.3.3
     # via
     #   django-rest-swagger
@@ -53,7 +77,13 @@ coreschema==0.0.4
 coverage==6.1.2
     # via -r docker/requirements.in
 cryptography==35.0.0
-    # via pyjwt
+    # via
+    #   autobahn
+    #   pyjwt
+    #   pyopenssl
+    #   service-identity
+daphne==2.5.0
+    # via channels
 defusedxml==0.7.1
     # via python3-openid
 distlib==0.3.3
@@ -61,6 +91,7 @@ distlib==0.3.3
 django==3.2.9
     # via
     #   -r docker/requirements.in
+    #   channels
     #   django-allauth
     #   django-configurations
     #   django-extensions
@@ -105,14 +136,25 @@ flake8==4.0.1
     # via -r docker/requirements.in
 greenlet==1.1.2
     # via sqlalchemy
+hiredis==2.0.0
+    # via aioredis
 huggingface-hub==0.2.1
     # via
     #   sentence-transformers
     #   transformers
+hyperlink==21.0.0
+    # via
+    #   autobahn
+    #   twisted
 identify==2.3.6
     # via pre-commit
 idna==3.3
-    # via requests
+    # via
+    #   hyperlink
+    #   requests
+    #   twisted
+incremental==21.3.0
+    # via twisted
 iniconfig==1.1.1
     # via pytest
 isort==5.10.1
@@ -132,6 +174,8 @@ markupsafe==2.0.1
     # via jinja2
 mccabe==0.6.1
     # via flake8
+msgpack==0.6.2
+    # via channels-redis
 mypy-extensions==0.4.3
     # via black
 nltk==3.6.5
@@ -187,6 +231,12 @@ psycopg2==2.9.2
     # via django-postgres-stats
 py==1.11.0
     # via pytest
+pyasn1==0.4.8
+    # via
+    #   pyasn1-modules
+    #   service-identity
+pyasn1-modules==0.2.8
+    # via service-identity
 pycodestyle==2.8.0
     # via flake8
 pycparser==2.21
@@ -199,6 +249,8 @@ pyjwt[crypto]==1.7.1
     #   djangorestframework-jwt
 pyodbc==4.0.32
     # via -r docker/requirements.in
+pyopenssl==22.0.0
+    # via twisted
 pyparsing==2.4.7
     # via packaging
 pytest==6.2.5
@@ -252,15 +304,19 @@ sentence-transformers==2.1.0
     # via -r docker/requirements.in
 sentencepiece==0.1.96
     # via sentence-transformers
+service-identity==21.1.0
+    # via twisted
 simplejson==3.17.6
     # via django-rest-swagger
 six==1.16.0
     # via
+    #   automat
     #   click-repl
     #   django-rest-auth
     #   patsy
     #   python-dateutil
     #   sacremoses
+    #   service-identity
     #   virtualenv
 sqlalchemy==1.4.28
     # via -r docker/requirements.in
@@ -297,11 +353,16 @@ tqdm==4.62.3
     #   transformers
 transformers==4.14.1
     # via sentence-transformers
+twisted[tls]==22.4.0
+    # via daphne
+txaio==22.2.1
+    # via autobahn
 typing-extensions==4.0.0
     # via
     #   black
     #   huggingface-hub
     #   torch
+    #   twisted
 untokenize==0.1.1
     # via docformatter
 uritemplate==4.1.1
@@ -321,6 +382,8 @@ wheel==0.37.0
     # via pip-tools
 xlrd==2.0.1
     # via -r docker/requirements.in
+zope-interface==5.4.0
+    # via twisted
 
 # The following packages are considered to be unsafe in a requirements file:
 # pip
