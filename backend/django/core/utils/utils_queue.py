@@ -93,7 +93,10 @@ def fill_queue(queue, orderby, irr_queue=None, irr_percent=10, batch_size=30):
     if irr_queue:
         # if the irr queue is given, want to fill it with a given percent of
         # the batch size
-        num_irr = math.ceil(batch_size * (irr_percent / 100))
+        if irr_percent == 0:
+            num_irr = 0
+        else:
+            num_irr = math.ceil(batch_size * (irr_percent / 100))
         num_elements = len(DataQueue.objects.filter(queue=irr_queue))
         queue_size = irr_queue.length
 

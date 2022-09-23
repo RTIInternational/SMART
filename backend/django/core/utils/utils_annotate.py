@@ -1,3 +1,5 @@
+from random import randrange
+
 from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
@@ -89,21 +91,21 @@ def get_assignments(profile, project, num_assignments):
         ]
     else:
         data = []
-        more_irr = True
-        for i in range(num_assignments):
 
-            # first try to get any IRR data
-            if more_irr:
+        for i in range(num_assignments):
+            # if there is IRR, with some probability get an IRR item
+            rand_choice = randrange(0, 101)
+            if project.percentage_irr > 0 and rand_choice <= project.percentage_irr:
                 assigned_datum = assign_datum(profile, project, type="irr")
                 if assigned_datum is None:
                     # no irr data found
-                    more_irr = False
                     assigned_datum = assign_datum(profile, project)
             else:
                 # get normal data
                 assigned_datum = assign_datum(profile, project)
             if assigned_datum is None:
                 break
+
             data.append(assigned_datum)
         return data
 

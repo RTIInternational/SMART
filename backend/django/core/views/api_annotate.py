@@ -1,4 +1,3 @@
-import math
 import random
 
 from django.conf import settings
@@ -69,11 +68,7 @@ def get_card_deck(request, project_pk):
     project = Project.objects.get(pk=project_pk)
 
     # Calculate queue parameters
-    batch_size = project.batch_size
-    num_coders = len(project.projectpermissions_set.all()) + 1
-    coder_size = math.ceil(batch_size / num_coders)
-
-    data = get_assignments(profile, project, coder_size)
+    data = get_assignments(profile, project, project.batch_size)
     if len(data) == 0:
         if project.queue_set.filter(type="irr").exists():
             irr_queue = project.queue_set.get(type="irr")
@@ -83,9 +78,9 @@ def get_card_deck(request, project_pk):
             queue=project.queue_set.get(type="normal"),
             orderby=project.learning_method,
             irr_queue=irr_queue,
-            batch_size=batch_size,
+            batch_size=project.batch_size,
         )
-        data = get_assignments(profile, project, coder_size)
+        data = get_assignments(profile, project, project.batch_size)
 
     # shuffle so the irr is not all at the front
     random.shuffle(data)
