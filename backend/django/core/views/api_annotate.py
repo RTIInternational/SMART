@@ -1,6 +1,7 @@
 import math
 import random
 
+import pytz
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import transaction
@@ -44,6 +45,7 @@ from core.utils.utils_annotate import (
 from core.utils.utils_model import check_and_trigger_model
 from core.utils.utils_queue import fill_queue
 from core.utils.utils_redis import redis_serialize_data, redis_serialize_set
+from smart.settings import TIME_ZONE_FRONTEND
 
 # Using a prebuilt model
 # How this model was built: https://github.com/dsteedRTI/csv-to-embeddings-model
@@ -791,22 +793,17 @@ def get_label_history(request, project_pk):
 
         data_list.append(d.data.id)
         if d.timestamp:
-            if d.timestamp.minute < 10:
-                minute = "0" + str(d.timestamp.minute)
+            time = pytz.timezone(TIME_ZONE_FRONTEND).normalize(d.timestamp)
+            if time.minute < 10:
+                minute = "0" + str(time.minute)
             else:
-                minute = str(d.timestamp.minute)
-            if d.timestamp.second < 10:
-                second = "0" + str(d.timestamp.second)
+                minute = str(time.minute)
+            if time.second < 10:
+                second = "0" + str(time.second)
             else:
-                second = str(d.timestamp.second)
+                second = str(time.second)
             new_timestamp = (
-                str(d.timestamp.date())
-                + ", "
-                + str(d.timestamp.hour)
-                + ":"
-                + minute
-                + "."
-                + second
+                str(time.date()) + ", " + str(time.hour) + ":" + minute + "." + second
             )
         else:
             new_timestamp = "None"
@@ -837,22 +834,17 @@ def get_label_history(request, project_pk):
             continue
 
         if d.timestamp:
-            if d.timestamp.minute < 10:
-                minute = "0" + str(d.timestamp.minute)
+            time = pytz.timezone(TIME_ZONE_FRONTEND).normalize(d.timestamp)
+            if time.minute < 10:
+                minute = "0" + str(time.minute)
             else:
-                minute = str(d.timestamp.minute)
-            if d.timestamp.second < 10:
-                second = "0" + str(d.timestamp.second)
+                minute = str(time.minute)
+            if time.second < 10:
+                second = "0" + str(time.second)
             else:
-                second = str(d.timestamp.second)
+                second = str(time.second)
             new_timestamp = (
-                str(d.timestamp.date())
-                + ", "
-                + str(d.timestamp.hour)
-                + ":"
-                + minute
-                + "."
-                + second
+                str(time.date()) + ", " + str(time.hour) + ":" + minute + "." + second
             )
         else:
             new_timestamp = "None"
