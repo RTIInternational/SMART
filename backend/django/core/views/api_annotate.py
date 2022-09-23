@@ -145,9 +145,9 @@ def unassign_data(request, data_pk):
     data = Data.objects.get(pk=data_pk)
     profile = request.user.profile
     response = {}
-
-    assignment = AssignedData.objects.get(data=data, profile=profile)
-    assignment.delete()
+    if AssignedData.objects.filter(data=data, profile=profile).exists():
+        assignment = AssignedData.objects.get(data=data, profile=profile)
+        assignment.delete()
 
     return Response(response)
 
@@ -231,7 +231,8 @@ def annotate_data(request, data_pk):
     # if the coder has been un-assigned from the data
     if not AssignedData.objects.filter(data=data, profile=profile).exists():
         response["error"] = (
-            "ERROR: Your cards were un-assigned by an administrator. "
+            "ERROR: this card was no longer assigned. Either "
+            "your cards were un-assigned by an administrator or the label was clicked twice. "
             "Please refresh the page to get new assigned items to annotate."
         )
         return Response(response)
