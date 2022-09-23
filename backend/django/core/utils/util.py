@@ -31,6 +31,7 @@ from core.models import (
     TrainingSet,
 )
 from core.utils.utils_queue import fill_queue
+from smart.settings import TIME_ZONE_FRONTEND
 
 # from string_grouper import compute_pairwise_similarities
 
@@ -599,7 +600,12 @@ def get_labeled_data(project):
                 temp[m.metadata_field.field_name] = m.value
             temp["Label"] = label.name
             temp["Profile"] = str(d.profile.user)
-            temp["Timestamp"] = pytz.timezone("US/Eastern").normalize(d.timestamp)
+            if d.timestamp:
+                temp["Timestamp"] = pytz.timezone(TIME_ZONE_FRONTEND).normalize(
+                    d.timestamp
+                )
+            else:
+                temp["Timestamp"] = "None"
             data.append(temp)
     labeled_data_frame = pd.DataFrame(data)
     label_frame = pd.DataFrame(labels)

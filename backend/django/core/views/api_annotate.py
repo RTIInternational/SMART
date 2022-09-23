@@ -44,6 +44,7 @@ from core.utils.utils_annotate import (
 )
 from core.utils.utils_model import check_and_trigger_model
 from core.utils.utils_redis import redis_serialize_data, redis_serialize_set
+from smart.settings import TIME_ZONE_FRONTEND
 
 # Using a prebuilt model
 # How this model was built: https://github.com/dsteedRTI/csv-to-embeddings-model
@@ -763,7 +764,7 @@ def get_label_history(request, project_pk):
 
         data_list.append(d.data.id)
         if d.timestamp:
-            time = pytz.timezone("US/Eastern").normalize(d.timestamp)
+            time = pytz.timezone(TIME_ZONE_FRONTEND).normalize(d.timestamp)
             if time.minute < 10:
                 minute = "0" + str(time.minute)
             else:
@@ -804,7 +805,7 @@ def get_label_history(request, project_pk):
             continue
 
         if d.timestamp:
-            time = pytz.timezone("US/Eastern").normalize(d.timestamp)
+            time = pytz.timezone(TIME_ZONE_FRONTEND).normalize(d.timestamp)
             if time.minute < 10:
                 minute = "0" + str(time.minute)
             else:
