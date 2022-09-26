@@ -60,6 +60,14 @@ def fill_queue(queue, orderby, irr_queue=None, irr_percent=10, batch_size=30):
 
     Fill the IRR queue with the given percentage of values
     """
+    # Determine if queue size has changed (num_coders changed)
+    project = queue.project
+    num_coders = len(project.projectpermissions_set.all()) + 1
+    q_length = find_queue_length(project.batch_size, num_coders)
+    # only increase, since the queue might already have that many items
+    if q_length > queue.length:
+        queue.length = q_length
+        queue.save()
 
     ORDERBY_VALUE = {
         "random": "random()",
@@ -89,60 +97,82 @@ def fill_queue(queue, orderby, irr_queue=None, irr_percent=10, batch_size=30):
     # get the join clause that controls how the data is selected
     join_clause = get_join_clause(orderby, queue)
 
+    # get the remaining space in the normal queue
+    non_irr_batch_size = math.ceil(batch_size * ((100 - irr_percent) / 100))
+    if irr_percent < 100:
+
+        num_in_queue = DataQueue.objects.filter(queue=queue).count()
+        queue_size = queue.length
+        # if there is not much space or we are not filling the irr queue, just
+        # fill the normal queue to the top
+        sample_size_sql, sample_size_params = get_queue_size_params(
+            queue, queue_size, num_in_queue, non_irr_batch_size, irr_queue
+        )
+
+        sql = generate_sql_for_fill_queue(
+            queue, ORDERBY_VALUE[orderby], join_clause, cte_sql, sample_size_sql
+        )
+
+        with connection.cursor() as c:
+            c.execute(sql, (*cte_params, *sample_size_params))
+
+        sync_redis_objects(queue, orderby)
+
+        num_added_normal = DataQueue.objects.filter(queue=queue).count() - num_in_queue
+    else:
+        num_added_normal = 0
+
     # First process the IRR data
     if irr_queue:
         # if the irr queue is given, want to fill it with a given percent of
         # the batch size
         if irr_percent == 0:
+            # don't add any IRR as this project has none
             num_irr = 0
+        elif irr_percent == 100:
+            # fill the IRR queue with a batch. No normal queue used here
+            num_irr = batch_size
+        elif num_added_normal == 0:
+            # the normal queue was not added to (even though there is non-irr) so don't add irr
+            num_irr = 0
+        elif num_added_normal < non_irr_batch_size:
+            # the normal queue was partially full to begin with, so only add proportional IRR
+            num_irr = math.ceil(num_added_normal * (irr_percent / 100))
         else:
             num_irr = math.ceil(batch_size * (irr_percent / 100))
-        num_elements = len(DataQueue.objects.filter(queue=irr_queue))
-        queue_size = irr_queue.length
 
-        # get the number of elements to add to the irr queue
-        irr_sample_size_sql, irr_sample_size_params = get_queue_size_params(
-            irr_queue, queue_size, num_elements, num_irr, irr_queue
-        )
-        # get the sql for adding the elements
-        irr_sql = generate_sql_for_fill_queue(
-            irr_queue, ORDERBY_VALUE[orderby], join_clause, cte_sql, irr_sample_size_sql
-        )
+        if num_irr > 0:
+            num_elements = DataQueue.objects.filter(queue=irr_queue).count()
+            queue_size = irr_queue.length
 
-        with connection.cursor() as c:
-            c.execute(irr_sql, (*cte_params, *irr_sample_size_params))
+            # get the number of elements to add to the irr queue
+            irr_sample_size_sql, irr_sample_size_params = get_queue_size_params(
+                irr_queue, queue_size, num_elements, num_irr, irr_queue
+            )
+            # get the sql for adding the elements
+            irr_sql = generate_sql_for_fill_queue(
+                irr_queue,
+                ORDERBY_VALUE[orderby],
+                join_clause,
+                cte_sql,
+                irr_sample_size_sql,
+            )
 
-        data_ids = []
-        with transaction.atomic():
-            irr_data = DataQueue.objects.filter(queue=irr_queue.pk)
-            for d in irr_data:
-                data_ids.append(d.data.pk)
-            Data.objects.filter(pk__in=data_ids).update(irr_ind=True)
+            with connection.cursor() as c:
+                c.execute(irr_sql, (*cte_params, *irr_sample_size_params))
 
-        sync_redis_objects(irr_queue, orderby)
+            data_ids = []
+            with transaction.atomic():
+                irr_data = DataQueue.objects.filter(queue=irr_queue.pk)
+                for d in irr_data:
+                    data_ids.append(d.data.pk)
+                Data.objects.filter(pk__in=data_ids).update(irr_ind=True)
 
-        # get new eligible data by filtering out what was just chosen
-        eligible_data = eligible_data.exclude(pk__in=data_ids)
-        cte_sql, cte_params = eligible_data.query.sql_with_params()
+            sync_redis_objects(irr_queue, orderby)
 
-    # get the remaining space in the normal queue
-    non_irr_batch_size = math.ceil(batch_size * ((100 - irr_percent) / 100))
-    num_in_queue = len(DataQueue.objects.filter(queue=queue))
-    queue_size = queue.length
-    # if there is not much space or we are not filling the irr queue, just
-    # fill the normal queue to the top
-    sample_size_sql, sample_size_params = get_queue_size_params(
-        queue, queue_size, num_in_queue, non_irr_batch_size, irr_queue
-    )
-
-    sql = generate_sql_for_fill_queue(
-        queue, ORDERBY_VALUE[orderby], join_clause, cte_sql, sample_size_sql
-    )
-
-    with connection.cursor() as c:
-        c.execute(sql, (*cte_params, *sample_size_params))
-
-    sync_redis_objects(queue, orderby)
+            # get new eligible data by filtering out what was just chosen
+            eligible_data = eligible_data.exclude(pk__in=data_ids)
+            cte_sql, cte_params = eligible_data.query.sql_with_params()
 
 
 def generate_sql_for_fill_queue(queue, orderby_value, join_clause, cte_sql, size_sql):

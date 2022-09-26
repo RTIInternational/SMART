@@ -79,6 +79,7 @@ def get_card_deck(request, project_pk):
             orderby=project.learning_method,
             irr_queue=irr_queue,
             batch_size=project.batch_size,
+            irr_percent=project.percentage_irr,
         )
         data = get_assignments(profile, project, project.batch_size)
 
