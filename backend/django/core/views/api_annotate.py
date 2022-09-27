@@ -1,6 +1,6 @@
-import math
 import random
 
+import pytz
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import transaction
@@ -40,9 +40,12 @@ from core.utils.utils_annotate import (
     leave_coding_page,
     move_skipped_to_admin_queue,
     process_irr_label,
+    update_last_action,
 )
 from core.utils.utils_model import check_and_trigger_model
+from core.utils.utils_queue import fill_queue
 from core.utils.utils_redis import redis_serialize_data, redis_serialize_set
+from smart.settings import ADMIN_TIMEOUT_MINUTES, TIME_ZONE_FRONTEND
 
 # Using a prebuilt model
 # How this model was built: https://github.com/dsteedRTI/csv-to-embeddings-model
@@ -68,11 +71,20 @@ def get_card_deck(request, project_pk):
     project = Project.objects.get(pk=project_pk)
 
     # Calculate queue parameters
-    batch_size = project.batch_size
-    num_coders = len(project.projectpermissions_set.all()) + 1
-    coder_size = math.ceil(batch_size / num_coders)
-
-    data = get_assignments(profile, project, coder_size)
+    data = get_assignments(profile, project, project.batch_size)
+    if len(data) == 0:
+        if project.queue_set.filter(type="irr").exists():
+            irr_queue = project.queue_set.get(type="irr")
+        else:
+            irr_queue = None
+        fill_queue(
+            queue=project.queue_set.get(type="normal"),
+            orderby=project.learning_method,
+            irr_queue=irr_queue,
+            batch_size=project.batch_size,
+            irr_percent=project.percentage_irr,
+        )
+        data = get_assignments(profile, project, project.batch_size)
 
     # shuffle so the irr is not all at the front
     random.shuffle(data)
@@ -137,9 +149,9 @@ def unassign_data(request, data_pk):
     data = Data.objects.get(pk=data_pk)
     profile = request.user.profile
     response = {}
-
-    assignment = AssignedData.objects.get(data=data, profile=profile)
-    assignment.delete()
+    if AssignedData.objects.filter(data=data, profile=profile).exists():
+        assignment = AssignedData.objects.get(data=data, profile=profile)
+        assignment.delete()
 
     return Response(response)
 
@@ -160,6 +172,14 @@ def skip_data(request, data_pk):
     profile = request.user.profile
     project = data.project
     response = {}
+
+    # if the coder has been un-assigned from the data
+    if not AssignedData.objects.filter(data=data, profile=profile).exists():
+        response["error"] = (
+            "ERROR: Your cards were un-assigned by an administrator. "
+            "Please refresh the page to get new assigned items to annotate."
+        )
+        return Response(response)
 
     # if the data is IRR or processed IRR, dont add to admin queue yet
     num_history = IRRLog.objects.filter(data=data).count()
@@ -212,6 +232,15 @@ def annotate_data(request, data_pk):
     label = Label.objects.get(pk=request.data["labelID"])
     labeling_time = request.data["labeling_time"]
 
+    # if the coder has been un-assigned from the data
+    if not AssignedData.objects.filter(data=data, profile=profile).exists():
+        response["error"] = (
+            "ERROR: this card was no longer assigned. Either "
+            "your cards were un-assigned by an administrator or the label was clicked twice. "
+            "Please refresh the page to get new assigned items to annotate."
+        )
+        return Response(response)
+
     num_history = IRRLog.objects.filter(data=data).count()
 
     if RecycleBin.objects.filter(data=data).count() > 0:
@@ -255,6 +284,17 @@ def discard_data(request, data_pk):
     project = data.project
     response = {}
 
+    # check if they have the admin lock still.
+    # If they don't, then they can't complete the action
+    if not AdminProgress.objects.filter(project=project, profile=profile).exists():
+        response["error"] = (
+            "ERROR: Your access timed out due to inactivity."
+            " Another admin is currently using this page."
+            " This page will become available when the admin returns to the "
+            "project list page, details page, changes projects, or logs out."
+        )
+        return Response(response)
+
     # Make sure coder is an admin
     if project_extras.proj_permission_level(data.project, profile) > 1:
         # remove it from the admin queue
@@ -293,7 +333,18 @@ def restore_data(request, data_pk):
     """
     data = Data.objects.get(pk=data_pk)
     profile = request.user.profile
+    project = data.project
+    update_last_action(project, profile)
     response = {}
+
+    if not AdminProgress.objects.filter(project=project, profile=profile).exists():
+        response["error"] = (
+            "ERROR: Your access timed out due to inactivity."
+            " Another admin is currently using this page."
+            " This page will become available when the admin returns to the "
+            "project list page, details page, changes projects, or logs out."
+        )
+        return Response(response)
 
     # Make sure coder is an admin
     if project_extras.proj_permission_level(data.project, profile) > 1:
@@ -420,12 +471,25 @@ def enter_coding_page(request, project_pk):
     """
     profile = request.user.profile
     project = Project.objects.get(pk=project_pk)
+
     # check that no other admin is using it. If they are not, give this admin permission
     if project_extras.proj_permission_level(project, profile) > 1:
         if AdminProgress.objects.filter(project=project).count() == 0:
             AdminProgress.objects.create(
                 project=project, profile=profile, timestamp=timezone.now()
             )
+        else:
+            # figure out the time from the last time the other admin used the page
+            previous_admin_progress = AdminProgress.objects.filter(project=project)
+            if previous_admin_progress[0].profile != profile:
+                time_since_previous_admin = (
+                    timezone.now() - previous_admin_progress[0].last_action
+                )
+                if time_since_previous_admin.seconds / 60 > ADMIN_TIMEOUT_MINUTES:
+                    previous_admin_progress.delete()
+                    AdminProgress.objects.create(
+                        project=project, profile=profile, timestamp=timezone.now()
+                    )
 
     # NEW leave the coding page for all other projects so they're only in one
     # project at a time
@@ -467,7 +531,7 @@ def data_unlabeled_table(request, project_pk):
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))
 def search_data_unlabeled_table(request, project_pk):
-    """This returns the unlebeled data not in a queue for the skew table filtered for a
+    """This returns the unlabeled data not in a queue for the skew table filtered for a
     search input.
 
     Args:
@@ -476,6 +540,9 @@ def search_data_unlabeled_table(request, project_pk):
     Returns:
         data: a filtered list of data information
     """
+    project = Project.objects.get(pk=project_pk)
+    profile = request.user.profile
+    update_last_action(project, profile)
     unlabeled_data = get_unlabeled_data(project_pk)
     text = request.GET.get("text")
     unlabeled_data = unlabeled_data.filter(text__icontains=text.lower())
@@ -562,6 +629,8 @@ def data_admin_table(request, project_pk):
         data: a list of data information
     """
     project = Project.objects.get(pk=project_pk)
+    profile = request.user.profile
+    update_last_action(project, profile)
     queue = Queue.objects.get(project=project, type="admin")
 
     messages = list(
@@ -628,6 +697,8 @@ def recycle_bin_table(request, project_pk):
         data: a list of data information
     """
     project = Project.objects.get(pk=project_pk)
+    profile = request.user.profile
+    update_last_action(project, profile)
     data_objs = RecycleBin.objects.filter(data__project=project)
 
     data = []
@@ -660,7 +731,19 @@ def label_skew_label(request, data_pk):
     project = datum.project
     label = Label.objects.get(pk=request.data["labelID"])
     profile = request.user.profile
+    update_last_action(project, profile)
     response = {}
+
+    # check if they have the admin lock still.
+    # If they don't, then they can't complete the action
+    if not AdminProgress.objects.filter(project=project, profile=profile).exists():
+        response["error"] = (
+            "ERROR: Your access timed out due to inactivity."
+            " Another admin is currently using this page."
+            " This page will become available when the admin returns to the "
+            "project list page, details page, changes projects, or logs out."
+        )
+        return Response(response)
 
     current_training_set = project.get_current_training_set()
     if project_extras.proj_permission_level(datum.project, profile) >= 2:
@@ -696,7 +779,19 @@ def label_admin_label(request, data_pk):
     project = datum.project
     label = Label.objects.get(pk=request.data["labelID"])
     profile = request.user.profile
+    update_last_action(project, profile)
     response = {}
+
+    # check if they have the admin lock still.
+    # If they don't, then they can't complete the action
+    if not AdminProgress.objects.filter(project=project, profile=profile).exists():
+        response["error"] = (
+            "ERROR: Your access timed out due to inactivity."
+            " Another admin is currently using this page."
+            " This page will become available when the admin returns to the "
+            "project list page, details page, changes projects, or logs out."
+        )
+        return Response(response)
 
     current_training_set = project.get_current_training_set()
 
@@ -762,22 +857,17 @@ def get_label_history(request, project_pk):
 
         data_list.append(d.data.id)
         if d.timestamp:
-            if d.timestamp.minute < 10:
-                minute = "0" + str(d.timestamp.minute)
+            time = pytz.timezone(TIME_ZONE_FRONTEND).normalize(d.timestamp)
+            if time.minute < 10:
+                minute = "0" + str(time.minute)
             else:
-                minute = str(d.timestamp.minute)
-            if d.timestamp.second < 10:
-                second = "0" + str(d.timestamp.second)
+                minute = str(time.minute)
+            if time.second < 10:
+                second = "0" + str(time.second)
             else:
-                second = str(d.timestamp.second)
+                second = str(time.second)
             new_timestamp = (
-                str(d.timestamp.date())
-                + ", "
-                + str(d.timestamp.hour)
-                + ":"
-                + minute
-                + "."
-                + second
+                str(time.date()) + ", " + str(time.hour) + ":" + minute + "." + second
             )
         else:
             new_timestamp = "None"
@@ -808,22 +898,17 @@ def get_label_history(request, project_pk):
             continue
 
         if d.timestamp:
-            if d.timestamp.minute < 10:
-                minute = "0" + str(d.timestamp.minute)
+            time = pytz.timezone(TIME_ZONE_FRONTEND).normalize(d.timestamp)
+            if time.minute < 10:
+                minute = "0" + str(time.minute)
             else:
-                minute = str(d.timestamp.minute)
-            if d.timestamp.second < 10:
-                second = "0" + str(d.timestamp.second)
+                minute = str(time.minute)
+            if time.second < 10:
+                second = "0" + str(time.second)
             else:
-                second = str(d.timestamp.second)
+                second = str(time.second)
             new_timestamp = (
-                str(d.timestamp.date())
-                + ", "
-                + str(d.timestamp.hour)
-                + ":"
-                + minute
-                + "."
-                + second
+                str(time.date()) + ", " + str(time.hour) + ":" + minute + "." + second
             )
         else:
             new_timestamp = "None"

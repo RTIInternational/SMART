@@ -225,10 +225,21 @@ def check_and_trigger_model(datum, profile=None):
     if current_training_set.celery_task_id != "":
         return_str = "task already running"
     elif labeled_data_count >= batch_size:
-        if labels_count < project.labels.count() or project.classifier is None:
-            queue = project.queue_set.get(type="normal")
+        if project.classifier is None:
+            return_str = "no action"
+        elif labels_count < project.labels.count():
+            if project.queue_set.filter(type="irr").exists():
+                irr_queue = project.queue_set.get(type="irr")
+            else:
+                irr_queue = None
 
-            fill_queue(queue=queue, orderby="random", batch_size=batch_size)
+            fill_queue(
+                queue=project.queue_set.get(type="normal"),
+                irr_queue=irr_queue,
+                orderby="random",
+                batch_size=batch_size,
+                irr_percent=project.percentage_irr,
+            )
             return_str = "random"
         else:
             task_num = tasks.send_model_task.delay(project.pk)
