@@ -285,3 +285,10 @@ def cache_embeddings(project_pk, embeddings):
 
 def get_embeddings(project_pk):
     return cache.get(project_pk)
+
+
+def update_last_action(project, profile):
+    admin_qs = AdminProgress.objects.filter(project=project, profile=profile)
+    if admin_qs.exists():
+        admin = admin_qs[0]
+        admin.save()

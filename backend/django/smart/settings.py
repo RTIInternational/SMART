@@ -139,6 +139,7 @@ class Dev(Configuration):
     LANGUAGE_CODE = "en-us"
 
     TIME_ZONE = "UTC"
+    TIME_ZONE_FRONTEND = "US/Eastern"
 
     USE_I18N = True
 
@@ -217,6 +218,8 @@ class Dev(Configuration):
 
     DATA_UPLOAD_MAX_NUMBER_FIELDS = None
     DATA_UPLOAD_MAX_MEMORY_SIZE = None
+
+    ADMIN_TIMEOUT_MINUTES = 15
 
 
 class Prod(Dev):
