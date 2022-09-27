@@ -46,7 +46,7 @@ from core.utils.utils_annotate import (
 from core.utils.utils_model import check_and_trigger_model
 from core.utils.utils_queue import fill_queue
 from core.utils.utils_redis import redis_serialize_data, redis_serialize_set
-from smart.settings import TIME_ZONE_FRONTEND
+from smart.settings import TIME_ZONE_FRONTEND, ADMIN_TIMEOUT_MINUTES
 
 # Using a prebuilt model
 # How this model was built: https://github.com/dsteedRTI/csv-to-embeddings-model
@@ -291,8 +291,10 @@ def discard_data(request, data_pk):
     # If they don't, then they can't complete the action
     if not AdminProgress.objects.filter(project=project, profile=profile).exists():
         response["error"] = (
-            "ERROR: Your access timed out to inactivity."
+            "ERROR: Your access timed out due to inactivity."
             " Another admin is currently using this page."
+            " This page will become available when the admin returns to the "
+            "project list page, details page, changes projects, or logs out."
         )
         return Response(response)
 
@@ -340,8 +342,10 @@ def restore_data(request, data_pk):
 
     if not AdminProgress.objects.filter(project=project, profile=profile).exists():
         response["error"] = (
-            "ERROR: Your access timed out to inactivity."
+            "ERROR: Your access timed out due to inactivity."
             " Another admin is currently using this page."
+            " This page will become available when the admin returns to the "
+            "project list page, details page, changes projects, or logs out."
         )
         return Response(response)
 
@@ -480,21 +484,15 @@ def enter_coding_page(request, project_pk):
         else:
             # figure out the time from the last time the other admin used the page
             previous_admin_progress = AdminProgress.objects.filter(project=project)
-            if previous_admin_progress[0].profile == profile:
-                print("This admin currently has access")
-            else:
+            if previous_admin_progress[0].profile != profile:
                 time_since_previous_admin = (
                     timezone.now() - previous_admin_progress[0].last_action
                 )
-                print("Existing admin minutes:", time_since_previous_admin.seconds / 60)
-                if time_since_previous_admin.seconds / 60 > 3:
-                    print("Replacing admin lock with a new one for", profile)
+                if time_since_previous_admin.seconds / 60 > ADMIN_TIMEOUT_MINUTES:
                     previous_admin_progress.delete()
                     AdminProgress.objects.create(
                         project=project, profile=profile, timestamp=timezone.now()
                     )
-                else:
-                    print("Not enough time has passed so keeping current admin lock")
 
     # NEW leave the coding page for all other projects so they're only in one
     # project at a time
@@ -743,8 +741,10 @@ def label_skew_label(request, data_pk):
     # If they don't, then they can't complete the action
     if not AdminProgress.objects.filter(project=project, profile=profile).exists():
         response["error"] = (
-            "ERROR: Your access timed out to inactivity."
+            "ERROR: Your access timed out due to inactivity."
             " Another admin is currently using this page."
+            " This page will become available when the admin returns to the "
+            "project list page, details page, changes projects, or logs out."
         )
         return Response(response)
 
@@ -789,8 +789,10 @@ def label_admin_label(request, data_pk):
     # If they don't, then they can't complete the action
     if not AdminProgress.objects.filter(project=project, profile=profile).exists():
         response["error"] = (
-            "ERROR: Your access timed out to inactivity."
+            "ERROR: Your access timed out due to inactivity."
             " Another admin is currently using this page."
+            " This page will become available when the admin returns to the "
+            "project list page, details page, changes projects, or logs out."
         )
         return Response(response)
 
