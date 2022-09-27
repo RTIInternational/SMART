@@ -104,7 +104,14 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
     """
 
     new_df = add_data(project, form_data)
+
+    # only fill the queues if the queues are empty.
+    num_in_queues = 0
     if queue:
+        num_in_queues += DataQueue.objects.filter(queue_id=queue.id).count()
+    if irr_queue:
+        num_in_queues += DataQueue.objects.filter(queue_id=irr_queue.id).count()
+    if queue and num_in_queues == 0:
         fill_queue(
             queue=queue,
             irr_queue=irr_queue,

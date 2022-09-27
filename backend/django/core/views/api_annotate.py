@@ -1,4 +1,3 @@
-import math
 import random
 
 import pytz
@@ -72,11 +71,7 @@ def get_card_deck(request, project_pk):
     project = Project.objects.get(pk=project_pk)
 
     # Calculate queue parameters
-    batch_size = project.batch_size
-    num_coders = len(project.projectpermissions_set.all()) + 1
-    coder_size = math.ceil(batch_size / num_coders)
-
-    data = get_assignments(profile, project, coder_size)
+    data = get_assignments(profile, project, project.batch_size)
     if len(data) == 0:
         if project.queue_set.filter(type="irr").exists():
             irr_queue = project.queue_set.get(type="irr")
@@ -86,9 +81,10 @@ def get_card_deck(request, project_pk):
             queue=project.queue_set.get(type="normal"),
             orderby=project.learning_method,
             irr_queue=irr_queue,
-            batch_size=batch_size,
+            batch_size=project.batch_size,
+            irr_percent=project.percentage_irr,
         )
-        data = get_assignments(profile, project, coder_size)
+        data = get_assignments(profile, project, project.batch_size)
 
     # shuffle so the irr is not all at the front
     random.shuffle(data)
@@ -153,9 +149,9 @@ def unassign_data(request, data_pk):
     data = Data.objects.get(pk=data_pk)
     profile = request.user.profile
     response = {}
-
-    assignment = AssignedData.objects.get(data=data, profile=profile)
-    assignment.delete()
+    if AssignedData.objects.filter(data=data, profile=profile).exists():
+        assignment = AssignedData.objects.get(data=data, profile=profile)
+        assignment.delete()
 
     return Response(response)
 
@@ -239,7 +235,8 @@ def annotate_data(request, data_pk):
     # if the coder has been un-assigned from the data
     if not AssignedData.objects.filter(data=data, profile=profile).exists():
         response["error"] = (
-            "ERROR: Your cards were un-assigned by an administrator. "
+            "ERROR: this card was no longer assigned. Either "
+            "your cards were un-assigned by an administrator or the label was clicked twice. "
             "Please refresh the page to get new assigned items to annotate."
         )
         return Response(response)
