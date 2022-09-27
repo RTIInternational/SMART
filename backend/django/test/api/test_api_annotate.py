@@ -252,6 +252,7 @@ def test_skew_label(
     ProjectPermissions.objects.create(
         profile=admin_profile, project=project, permission="ADMIN"
     )
+    admin_client.get("/api/enter_coding_page/" + str(project.pk) + "/")
     client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
     client_profile = Profile.objects.get(user__username=SEED_USERNAME)
     ProjectPermissions.objects.create(
@@ -377,6 +378,7 @@ def test_admin_label(
     assert DataQueue.objects.filter(data=data, queue=test_queue).count() == 0
     assert DataLabel.objects.filter(data=data).count() == 0
 
+    admin_client.get("/api/enter_coding_page/" + str(project.pk) + "/")
     # Let admin label datum. Should work. Check it is now in proper places
     response = admin_client.post(
         "/api/label_admin_label/" + str(data.pk) + "/", payload
@@ -552,6 +554,7 @@ def test_admin_table(
     client_profile, admin_profile = sign_in_and_fill_queue(
         project, test_queue, client, admin_client
     )
+    admin_client.get("/api/enter_coding_page/" + str(project.pk) + "/")
     # check that a non-admin can't get the table
     response = client.get("/api/data_admin_table/" + str(project.pk) + "/").json()
     assert (
@@ -585,6 +588,7 @@ def test_admin_table(
         "/api/label_admin_label/" + str(data[1].pk) + "/",
         {"labelID": test_labels[0].pk},
     )
+    assert "error" not in response.json()
     response = admin_client.get("/api/data_admin_table/" + str(project.pk) + "/").json()
     assert len(response["data"]) == 0
 
@@ -675,6 +679,7 @@ def test_discard_data(
     ProjectPermissions.objects.create(
         profile=admin_profile, project=project, permission="ADMIN"
     )
+    admin_client.get("/api/enter_coding_page/" + str(project.pk) + "/")
 
     client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
     client_profile = Profile.objects.get(user__username=SEED_USERNAME)
@@ -722,7 +727,8 @@ def test_discard_data(
     irr_data = admin_data.filter(data__irr_ind=True)
     for datum in irr_data:
         assert IRRLog.objects.filter(data=datum.data).count() > 0
-        admin_client.post("/api/discard_data/" + str(datum.data.pk) + "/")
+        response = admin_client.post("/api/discard_data/" + str(datum.data.pk) + "/")
+        assert "error" not in response.json()
         assert IRRLog.objects.filter(data=datum.data).count() == 0
         assert DataQueue.objects.filter(data=datum.data).count() == 0
         assert AssignedData.objects.filter(data=datum.data).count() == 0
@@ -732,7 +738,8 @@ def test_discard_data(
     # get normal data and discard it. Check that the data is not in IRRLog, AssignedData DataQueue, in RecycleBin
     non_irr_data = admin_data.filter(data__irr_ind=False)
     for datum in non_irr_data:
-        admin_client.post("/api/discard_data/" + str(datum.data.pk) + "/")
+        response = admin_client.post("/api/discard_data/" + str(datum.data.pk) + "/")
+        assert "error" not in response.json()
         assert DataQueue.objects.filter(data=datum.data).count() == 0
         assert AssignedData.objects.filter(data=datum.data).count() == 0
         assert RecycleBin.objects.filter(data=datum.data).count() == 1
@@ -759,6 +766,7 @@ def test_restore_data(
     ProjectPermissions.objects.create(
         profile=admin_profile, project=project, permission="ADMIN"
     )
+    admin_client.get("/api/enter_coding_page/" + str(project.pk) + "/")
 
     client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
     client_profile = Profile.objects.get(user__username=SEED_USERNAME)
@@ -784,7 +792,8 @@ def test_restore_data(
     admin_data = DataQueue.objects.filter(data__project=project, queue=test_admin_queue)
     # discard all data
     for datum in admin_data:
-        admin_client.post("/api/discard_data/" + str(datum.data.pk) + "/")
+        response = admin_client.post("/api/discard_data/" + str(datum.data.pk) + "/")
+        assert "error" not in response.json()
 
     # check for admin privalidges
     response = client.post(
@@ -797,7 +806,8 @@ def test_restore_data(
 
     # restore all data. It should not be in recycle bin
     for datum in admin_data:
-        admin_client.post("/api/restore_data/" + str(datum.data.pk) + "/")
+        response = admin_client.post("/api/restore_data/" + str(datum.data.pk) + "/")
+        assert "error" not in response.json()
         assert RecycleBin.objects.filter(data=datum.data).count() == 0
         assert not Data.objects.get(pk=datum.data.pk).irr_ind
 
@@ -823,6 +833,7 @@ def test_recycle_bin_table(
     ProjectPermissions.objects.create(
         profile=admin_profile, project=project, permission="ADMIN"
     )
+    admin_client.get("/api/enter_coding_page/" + str(project.pk) + "/")
 
     client.login(username=SEED_USERNAME, password=SEED_PASSWORD)
     client_profile = Profile.objects.get(user__username=SEED_USERNAME)
@@ -870,7 +881,8 @@ def test_recycle_bin_table(
     admin_data = DataQueue.objects.filter(data__project=project, queue=test_admin_queue)
     # discard all data
     for datum in admin_data:
-        admin_client.post("/api/discard_data/" + str(datum.data.pk) + "/")
+        response = admin_client.post("/api/discard_data/" + str(datum.data.pk) + "/")
+        assert "error" not in response.json()
 
     # check that the table has 30 elements that match the discarded data
     response = admin_client.get(
@@ -934,6 +946,8 @@ def test_admin_counts(
         ProjectPermissions.objects.create(
             profile=client_profile, project=projects[i], permission="CODER"
         )
+        admin_client.get("/api/enter_coding_page/" + str(projects[i].pk) + "/")
+
         # check for admin priviledges
         response = client.get(
             "/api/data_admin_counts/" + str(projects[i].pk) + "/"

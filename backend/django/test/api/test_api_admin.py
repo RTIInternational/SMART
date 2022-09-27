@@ -71,19 +71,27 @@ def test_get_irr_metrics(
         and response["percent agreement"] == "No irr data processed"
     )
 
-    # have each person label three irr data
-    data = get_assignments(client_profile, project, 3)
-    data2 = get_assignments(admin_profile, project, 3)
-    for i in range(3):
+    # have each person label enough items to get all of the IRR data
+    data = get_assignments(client_profile, project, project.batch_size)
+    data2 = get_assignments(admin_profile, project, project.batch_size)
+    i = 0
+    for d in data:
         response = client.post(
-            "/api/annotate_data/" + str(data[i].pk) + "/",
+            "/api/annotate_data/" + str(d.pk) + "/",
             {"labelID": labels[i].pk, "labeling_time": 3},
         )
         assert "error" not in response.json() and "detail" not in response.json()
+        i += 1
+        if i > 2:
+            i = 0
+    for d in data2:
         response = admin_client.post(
-            "/api/annotate_data/" + str(data2[i].pk) + "/",
+            "/api/annotate_data/" + str(d.pk) + "/",
             {"labelID": labels[(i + 1) % 3].pk, "labeling_time": 3},
         )
+        i += 1
+        if i > 2:
+            i = 0
         assert "error" not in response.json()
 
     response = admin_client.get("/api/get_irr_metrics/" + str(project.pk) + "/").json()

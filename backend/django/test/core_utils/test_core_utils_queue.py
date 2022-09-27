@@ -95,7 +95,7 @@ def test_pop_empty_queue(db, test_project, test_redis):
 
 
 def test_pop_nonempty_queue(db, test_project_data, test_redis):
-    queue_len = 10
+    queue_len = 30
     queue = add_queue(test_project_data, queue_len)
     fill_queue(queue, orderby="random")
 
@@ -108,7 +108,7 @@ def test_pop_nonempty_queue(db, test_project_data, test_redis):
 
 
 def test_pop_only_affects_one_queue(db, test_project_data, test_redis):
-    queue_len = 10
+    queue_len = 30
     queue = add_queue(test_project_data, queue_len)
     queue2 = add_queue(test_project_data, queue_len)
     fill_queue(queue, orderby="random")
