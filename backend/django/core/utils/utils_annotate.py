@@ -282,13 +282,6 @@ def get_embeddings(project_pk):
     return cache.get(project_pk)
 
 
-def leave_admin_page(profile, project):
-    admin_qs = AdminProgress.objects.filter(project=project, profile=profile)
-    if admin_qs.exists():
-        admin = admin_qs[0]
-        admin.delete()
-
-
 def update_last_action(project, profile):
     admin_qs = AdminProgress.objects.filter(project=project, profile=profile)
     if admin_qs.exists():
