@@ -41,11 +41,12 @@ from core.utils.utils_annotate import (
     leave_coding_page,
     move_skipped_to_admin_queue,
     process_irr_label,
+    update_last_action,
 )
 from core.utils.utils_model import check_and_trigger_model
 from core.utils.utils_queue import fill_queue
 from core.utils.utils_redis import redis_serialize_data, redis_serialize_set
-from smart.settings import TIME_ZONE_FRONTEND
+from smart.settings import ADMIN_TIMEOUT_MINUTES, TIME_ZONE_FRONTEND
 
 # Using a prebuilt model
 # How this model was built: https://github.com/dsteedRTI/csv-to-embeddings-model
@@ -286,6 +287,17 @@ def discard_data(request, data_pk):
     project = data.project
     response = {}
 
+    # check if they have the admin lock still.
+    # If they don't, then they can't complete the action
+    if not AdminProgress.objects.filter(project=project, profile=profile).exists():
+        response["error"] = (
+            "ERROR: Your access timed out due to inactivity."
+            " Another admin is currently using this page."
+            " This page will become available when the admin returns to the "
+            "project list page, details page, changes projects, or logs out."
+        )
+        return Response(response)
+
     # Make sure coder is an admin
     if project_extras.proj_permission_level(data.project, profile) > 1:
         # remove it from the admin queue
@@ -324,7 +336,18 @@ def restore_data(request, data_pk):
     """
     data = Data.objects.get(pk=data_pk)
     profile = request.user.profile
+    project = data.project
+    update_last_action(project, profile)
     response = {}
+
+    if not AdminProgress.objects.filter(project=project, profile=profile).exists():
+        response["error"] = (
+            "ERROR: Your access timed out due to inactivity."
+            " Another admin is currently using this page."
+            " This page will become available when the admin returns to the "
+            "project list page, details page, changes projects, or logs out."
+        )
+        return Response(response)
 
     # Make sure coder is an admin
     if project_extras.proj_permission_level(data.project, profile) > 1:
@@ -451,12 +474,25 @@ def enter_coding_page(request, project_pk):
     """
     profile = request.user.profile
     project = Project.objects.get(pk=project_pk)
+
     # check that no other admin is using it. If they are not, give this admin permission
     if project_extras.proj_permission_level(project, profile) > 1:
         if AdminProgress.objects.filter(project=project).count() == 0:
             AdminProgress.objects.create(
                 project=project, profile=profile, timestamp=timezone.now()
             )
+        else:
+            # figure out the time from the last time the other admin used the page
+            previous_admin_progress = AdminProgress.objects.filter(project=project)
+            if previous_admin_progress[0].profile != profile:
+                time_since_previous_admin = (
+                    timezone.now() - previous_admin_progress[0].last_action
+                )
+                if time_since_previous_admin.seconds / 60 > ADMIN_TIMEOUT_MINUTES:
+                    previous_admin_progress.delete()
+                    AdminProgress.objects.create(
+                        project=project, profile=profile, timestamp=timezone.now()
+                    )
 
     # NEW leave the coding page for all other projects so they're only in one
     # project at a time
@@ -498,7 +534,7 @@ def data_unlabeled_table(request, project_pk):
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))
 def search_data_unlabeled_table(request, project_pk):
-    """This returns the unlebeled data not in a queue for the skew table filtered for a
+    """This returns the unlabeled data not in a queue for the skew table filtered for a
     search input.
 
     Args:
@@ -507,6 +543,9 @@ def search_data_unlabeled_table(request, project_pk):
     Returns:
         data: a filtered list of data information
     """
+    project = Project.objects.get(pk=project_pk)
+    profile = request.user.profile
+    update_last_action(project, profile)
     unlabeled_data = get_unlabeled_data(project_pk)
     text = request.GET.get("text")
     unlabeled_data = unlabeled_data.filter(text__icontains=text.lower())
@@ -593,6 +632,8 @@ def data_admin_table(request, project_pk):
         data: a list of data information
     """
     project = Project.objects.get(pk=project_pk)
+    profile = request.user.profile
+    update_last_action(project, profile)
     queue = Queue.objects.get(project=project, type="admin")
 
     messages = list(
@@ -659,6 +700,8 @@ def recycle_bin_table(request, project_pk):
         data: a list of data information
     """
     project = Project.objects.get(pk=project_pk)
+    profile = request.user.profile
+    update_last_action(project, profile)
     data_objs = RecycleBin.objects.filter(data__project=project)
 
     data = []
@@ -691,7 +734,19 @@ def label_skew_label(request, data_pk):
     project = datum.project
     label = Label.objects.get(pk=request.data["labelID"])
     profile = request.user.profile
+    update_last_action(project, profile)
     response = {}
+
+    # check if they have the admin lock still.
+    # If they don't, then they can't complete the action
+    if not AdminProgress.objects.filter(project=project, profile=profile).exists():
+        response["error"] = (
+            "ERROR: Your access timed out due to inactivity."
+            " Another admin is currently using this page."
+            " This page will become available when the admin returns to the "
+            "project list page, details page, changes projects, or logs out."
+        )
+        return Response(response)
 
     current_training_set = project.get_current_training_set()
     if project_extras.proj_permission_level(datum.project, profile) >= 2:
@@ -727,7 +782,19 @@ def label_admin_label(request, data_pk):
     project = datum.project
     label = Label.objects.get(pk=request.data["labelID"])
     profile = request.user.profile
+    update_last_action(project, profile)
     response = {}
+
+    # check if they have the admin lock still.
+    # If they don't, then they can't complete the action
+    if not AdminProgress.objects.filter(project=project, profile=profile).exists():
+        response["error"] = (
+            "ERROR: Your access timed out due to inactivity."
+            " Another admin is currently using this page."
+            " This page will become available when the admin returns to the "
+            "project list page, details page, changes projects, or logs out."
+        )
+        return Response(response)
 
     current_training_set = project.get_current_training_set()
 

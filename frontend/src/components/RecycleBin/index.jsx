@@ -97,7 +97,14 @@ class RecycleBin extends React.Component {
     }
 
     render() {
-        const { discarded_data } = this.props;
+        const { discarded_data, message } = this.props;
+
+        if (message.length > 0){
+            let message_new = message[0];
+            if (message_new.includes("ERROR")){
+                return (<div>{message_new}</div>);
+            }
+        }
 
         return (
             <div>
@@ -134,7 +141,8 @@ class RecycleBin extends React.Component {
 RecycleBin.propTypes = {
     getDiscarded: PropTypes.func.isRequired,
     discarded_data: PropTypes.arrayOf(PropTypes.object),
-    restoreData: PropTypes.func.isRequired
+    restoreData: PropTypes.func.isRequired,
+    message: PropTypes.string
 };
 
 export default RecycleBin;
