@@ -76,6 +76,10 @@ adminpage_patterns = [
     re_path(r"^heat_map_data/(?P<project_pk>\d+)/$", api_admin.heat_map_data),
     re_path(r"^perc_agree_table/(?P<project_pk>\d+)/$", api_admin.perc_agree_table),
     re_path(r"^project_status/(?P<project_pk>\d+)/$", api_admin.get_project_status),
+    re_path(
+        r"^unassign_coder/(?P<project_pk>\d+)/(?P<profile_id>\d+)/$",
+        api_admin.unassign_coders,
+    ),
 ]
 
 urlpatterns = [

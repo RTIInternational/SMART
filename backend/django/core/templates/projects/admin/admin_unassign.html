@@ -1,0 +1,53 @@
+{% block unassign_tab %}
+{% load static %}
+<div id="unassign_tab" class="tab-pane fade in">
+  <div class="row">
+    <div class="col-md-12 form-group">
+        <h3>Unassign Coder</h3>
+        <p>This page allows you to unassign data from a coder for this project. Please notify the coder before you unassign them.</p>
+            {% if coders|length > 0 %}
+                <select id="coderSelect" class="form-control">
+                {% for coder in coders %}
+                <option value="{{ coder.id }}">{{ coder.user.username }}</option>
+                {% endfor %}
+            {% else %}
+                <b>No data assigned to coders</b>
+            {% endif %}
+        </select>
+    </div>
+    <div class="col-md-12">
+        {% if coders|length > 0 %}
+            <button id="unassignBtn" class="btn btn-primary">Unassign</button>
+        {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts_body %}
+<!-- Searchable dropdowns -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" defer></script>
+<link rel="stylesheet" href="{% static 'select2.css' %}"/>
+<script type="text/javascript" src="{% static 'search_dropdown.js' %}"></script>
+
+<!-- Requests -->
+<script>
+    profile = document.getElementById("coderSelect").value;
+    $("#unassignBtn").click(function(event) {
+        event.preventDefault();
+        $.ajax({
+            type: 'GET',
+            async: false,
+            url: '/api/unassign_coder/'+{{ pk }}+'/'+ profile +'/',
+        });
+        $("option[value=" + profile + "]").remove();
+
+        if (!$("#coderSelect option").length) {
+            $("#unassignBtn").remove();
+            $("#coderSelect").select2("destroy")
+            $("#coderSelect").replaceWith("<b>No data assigned to coders</b>")
+        }
+    })
+</script>
+{% endblock %}

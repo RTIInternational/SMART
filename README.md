@@ -86,6 +86,11 @@ EXTERNAL_FRONTEND_PORT=3001
 
 The `.env` file is ignored by `.gitignore`.
 
+### Timezones
+
+All date-times in the SMART backend and database are set to UTC (Coordinated Universal Time) as reccomended by the [Django docs](https://docs.djangoproject.com/en/4.1/topics/i18n/timezones/). By default the history and download date-times are set to Eastern New York time. To change this, go to `SMART/backend/django/smart/settings.py` and update the `TIME_ZONE_FRONTEND` variable to the desired time-zone.
+
+
 ### Running tests
 
 Backend tests use [py.test](https://docs.pytest.org/en/latest/) and [flake8](http://flake8.pycqa.org/en/latest/).  To run them, use the following `docker-compose` command from the `env/dev` directory:
