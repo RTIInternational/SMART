@@ -46,7 +46,7 @@ from core.utils.utils_annotate import (
 from core.utils.utils_model import check_and_trigger_model
 from core.utils.utils_queue import fill_queue
 from core.utils.utils_redis import redis_serialize_data, redis_serialize_set
-from smart.settings import TIME_ZONE_FRONTEND, ADMIN_TIMEOUT_MINUTES
+from smart.settings import ADMIN_TIMEOUT_MINUTES, TIME_ZONE_FRONTEND
 
 # Using a prebuilt model
 # How this model was built: https://github.com/dsteedRTI/csv-to-embeddings-model
