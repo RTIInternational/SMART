@@ -103,6 +103,9 @@ def get_assignments(profile, project, num_assignments):
             else:
                 # get normal data
                 assigned_datum = assign_datum(profile, project)
+                if assigned_datum is None:
+                    # no non-irr data found so checking for irr
+                    assigned_datum = assign_datum(profile, project, type="irr")
             if assigned_datum is None:
                 break
 
