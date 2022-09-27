@@ -17,7 +17,7 @@ export default function CardData({ card, onSkip, onUnassign, showAdjudicate = tr
             )}
             <div className="card-data">
                 <h4>Text to Label</h4>
-                <p>{card.text["text"] || card.text["data"]}</p>
+                <p style={{ whiteSpace: "normal" }}>{card.text["text"] || card.text["data"]}</p>
             </div>
             {extractMetadata(card)}
         </div>

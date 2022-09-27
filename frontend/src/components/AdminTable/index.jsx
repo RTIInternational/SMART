@@ -54,7 +54,7 @@ class AdminTable extends React.Component {
                             {row.original.message && (
                                 <div className="adjudicate-message">
                                     <h4>Reason for skipping:</h4>
-                                    <p>{row.original.message}</p>
+                                    <p style={{ whiteSpace: "normal" }}>{row.original.message}</p>
                                 </div>
                             )}
                             <AnnotateCard
