@@ -35,7 +35,7 @@ Changes from 2.0.1
 
 * Metadata fields can now be provided with data and options have been added for deduplication based on this (see "Metadata [NEW]"[TODO link])
 * A database connection can now be set up for ingesting new data and exporting labeled data. Currently only supports Microsoft databases [TODO verify and link]
-* Labels can now be loaded in from files during project creation (see "Part 2: Creating a New Project" [TODO link])
+* Labels can now be loaded in from files during project creation (see :ref:`create-new-project`)
 * Projects can no be added to Groups which mainly just affects the project page (see "Project Grouping [NEW]")
 * For projects with more than 5 labels, the top 5 most likely labels are now provided when annotating using label embeddings (see "Most Likely Label Prediction [NEW]")
 * The production build has been updated to be more functional (see "Production Settings [NEW]")
@@ -55,6 +55,8 @@ Changes from 2.0.1
 **Bug Fixes**
 
 * The email functionality has been fixed so that users who set an email for their account can use this email to reset their password.
+  * NOTE: Please check spam and quarantine folders if unable to find the emails.
+  * NOTE: by default the password reset emails will say they are from "example.com." This can be changed in a deployed SMART instance through the Django admin interface `see instructions here <https://stackoverflow.com/questions/11372064/django-registration-how-do-i-change-example-com-in-the-email>`_
 * The annotate page can now refill itself when there are no cards assigned, instead of relying on other processes like the model build to call a refill. This helps in cases where those other processes fail to refill the queue for some reason.
 * The leave-coding-page functionality has been fixed for Chrome, after a recent update disabled it. When broken, Chrome users signing out of SMART would not free up admin tables or un-assign their cards for other users. 
 * Many small frontend bugs to do with getting long content to render properly have been fixed

@@ -50,3 +50,13 @@ Finally, create a profile to start your own new labelling projects or to be adde
 
 .. |login-screen| image:: ./nstatic/img/smart-login-screen.png
 .. |sign-up| image:: ./nstatic/img/smart-sign-up.png
+
+**Production Installation**
+
+SMART provides both development and production docker builds depening on user need. The production setup [EMILY differences?]. 
+See `envs/prod/README.md` for more information, including instructions on setting up regular backups of the production database.
+
+.. warning::
+	Please note that while we do plan to keep SMART up to date as exploits are found in packages, in cases where your project includes sensitive data, we reccomend running SMART inside a closed network. 
+
+

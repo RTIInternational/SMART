@@ -12,6 +12,15 @@ In the image below, the new user is an admin for all projects except for the ``P
 
 |lotsofprojects|
 
+
+.. _projectgroups:
+
+Adding a Project to a Group
+---------------------------
+
+TODO
+
+
 .. _details:
 
 Details Page
@@ -43,6 +52,8 @@ The Details page provides an overview of the information and settings for your p
 
 At the bottom of the Details page, there are buttons to delete the project, edit the project settings, or download the labeled data and (if applicable) trained model. These buttons are only visible to users with admin privileges for the project.
 |details-buttons|
+
+.. _update:
 
 Updating a Project
 ------------------
