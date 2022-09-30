@@ -135,7 +135,10 @@ To upload, the data must pass the following checks:
 The ``Text`` column should contain the text you wish users to label. For our "About Cats" projects, the ``Text`` column will contain the post text.
 The ``Label`` column should contain any pre-existing labels for the corresponding text. If none of your data contains existing labels, then this column can be left blank or removed. Extending our example, if a lead coder has already annotated some posts with their cat outcomes, this column would contain those labeled records.
 
+.. _projectmetadata:
+
 **Project Metadata \[NEW\]**
+----------------------------
 
 Any fields outside of ``Text``, ``Label``, or ``ID`` will be classified as "metadata," or additional data which you would like to be presented along with the text to aid in labeling. 
 
