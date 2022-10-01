@@ -18,8 +18,10 @@ Labeled Data Page
 
 The labeled data page is designed to provide a summary of how the coders are doing comparatively in terms of speed and label distribution. There are three main features of the page:
 
-* The bar chart on the top left permits project admin to compare at a glance how many items coders have labeled and the distribution of the labels for each coder. This lets admin see which users are labeling more and detect possible overuse or underuse of labels by particular users.
-* The box and whisker chart on the top right lets project admin see how long each coder is taking to annotate the data.  This helps admin detect coders who may be having trouble or coders who are simply clicking through their data.
+* The bar chart on the top permits project admin to compare at a glance how many items coders have labeled. This lets admin see which users are labeling more. NOTE: as of SMART 3.0.0, this table no longer stratefies by label, as this quickly becomes impracticle for many coders or labels.
+* The box and whisker chart on the bottom lets project admin see how long each coder is taking to annotate the data.  This helps admin detect coders who may be having trouble or coders who are simply clicking through their data.
+
+Below is the admin page for the "About Cats Classifier" project
 
 |annotate-admin-labeled-pagetop|
 
@@ -73,7 +75,24 @@ If you select two coders with no samples between them, the heat map will not dis
 Unassign Coders \[NEW\]
 -----------------------
 
-TODO
+SMART now provides a screen for Admin users to un-assign cards which have been assigned to coders. This can be useful for a number of reasons:
+
+* A Coder closed the browser without signing out, leaving their cards assigned.
+* A Coder has left the annotate tab open on their browser and do not intend to go back to it.
+* An admin coder had cards assigned to them when they went to the annotate page but they really just wanted the Admin tables.
+
+
+.. note::
+    Cards should be automatically un-assigned from users when they go to the project list page, the details page for their project, or sign out. So in most cases you will not need to manually un-assign them.
+
+
+To un-assign the cards assigned to user1, we will select them in the dropdown and click "Unassign."
+
+|annotate-admin-unassign|
+
+When user1 then goes back to try and annotate the card they were looking at (which may have been passed out to someone else now) they will see the following message:
+
+|annotate-admin-assignment-removed|
 
 
 .. |admin-sorting| image:: ./nstatic/img/smart-admin-sorting.png
@@ -87,3 +106,5 @@ TODO
 .. |annotate-admin-irr-pagetop| image:: ./nstatic/img/smart-admin-irr-pagetop.png
 .. |annotate-admin-irr-heatmap| image:: ./nstatic/img/smart-admin-irr-heatmap.png
 .. |annotate-admin-irr-heatmapnosamples| image:: ./nstatic/img/smart-admin-irr-heatmapnosamples.png
+.. |annotate-admin-unassign| image:: ./nstatic/img/smart-admin-unassign.png
+.. |annotate-admin-assignment-removed| image:: ./nstatic/img/smart-admin-assignment-removed.png
