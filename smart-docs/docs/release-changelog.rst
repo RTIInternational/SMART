@@ -40,7 +40,7 @@ Changes from 2.0.1
 * For projects with more than 5 labels, the top 5 most likely labels are now provided when annotating using label embeddings (see "Most Likely Label Prediction [NEW]")
 * The production build has been updated to be more functional (see "Production Settings [NEW]")
 * The history page is now searchable and project admin can see and edit the historic labels of all coders
-* The skew page is now searchable
+* The skew page is now searchable more directly and returns the top 50 items
 * Project admin can now un-assign coders on the admin page, to free up items for other coders to label. 
 * There is now a timeout in affect for the lock on the admin tables. If an admin has not done anything in the last 15 minutes in a project, and another admin requests the project page, the lock will be given to the new admin. 
 * The project page now lists counts for the data left to code. This excludes and items in the recycle bin.

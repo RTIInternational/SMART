@@ -25,11 +25,15 @@ Adding a Project to a Group
 
 To add a project to a group, we must first create the group and add one project to it by clicking the "New Folder" button, writing the name of the group, and adding a project.
 
+Below we add our "About Cats Classifier" project to a new group.
+
 |projects-group|
 
 
 You can add more projects to that group by clicking "New Folder" and typing the same group name,
 but you can also add projects to the list of existing groups through selecting that project in the project page and then going to ``Details``-> ``Update Project`` -> ``Add Project to Folder``.
+
+Below we add out "About Cats Labeling" project to the Group we made for the "About Cats Classifier" project.
 
 |projects-update-group|
 
@@ -39,6 +43,8 @@ Details Page
 ------------
 
 The Details page provides an overview of the information and settings for your project. Each project has its own Details page, which is created when you start a new project. You can navigate to any project Details page from the :ref:`Projects Page <projects>` or to a specific Details page by pressing the "Details" link on the top navigation bar when on a project :ref:`annotationpage` page or :ref:`Admin Dashboard <admindashboard>` page.
+
+(Examples in this section are from the "About Cats Classifier" project)
 
 **The Details page lets you review:**
 
@@ -52,8 +58,8 @@ The Details page provides an overview of the information and settings for your p
 |details-advanced-permissions|
 
 * The status of the data currently loaded in your project. This splits into:
-   * *Fully Labeled*: data which has been either labeled by one user (if not IRR data) or has received the required number of labels and they either agreed or the dissagreement was resolved (if IRR data).
-   * *Unlabeled and Unnassigned*: This data has not been touched since it was loaded into SMART 
+   * *Fully Labeled*: data which has been either labeled by one user (if not IRR data) or has received the required number of labels and they either agreed or the disagreement was resolved (if IRR data).
+   * *Unlabeled and Unassigned*: This data has not been touched since it was loaded into SMART
    * *Awaiting Adjudication*: This data is sitting in the :ref:`adminannotate` table waiting review by an administrator. It was either IRR data where the coders did not agree, or the data was sent to an administrator by a Coder.
    * *Recycle Bin*: This data was dropped from the project for some reason and is not included in the data totals. 
    * *Assigned/Partially Labeled IRR*: This data is in progress. Either it has been passed out to someone for coding, or it is IRR data which has received some labels but not enough to be either adjudicated or resolved.
@@ -70,10 +76,11 @@ The Details page provides an overview of the information and settings for your p
 
 At the bottom of the Details page, there are buttons to delete the project, edit the project settings, or download the labeled data and (if applicable) trained model. These buttons are only visible to users with admin privileges for the project.
 
+|details-buttons|
+
 .. note::
 	If you have set up a database connection, there will also be buttons for ingesting new data from the ingest table, and exporting labeled data to the export table. Note that the export will **completely drop and rewrite the export table every time.**
 
-|details-buttons|
 
 .. _update:
 

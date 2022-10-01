@@ -183,3 +183,50 @@ See :ref:`fixskew` for more information on using this feature.
 .. [#fleisswiki] https://en.wikipedia.org/wiki/Fleiss%27_kappa
 
 .. [#attenberg] Attenberg, J., & Provost, F. (2010). Why label when you can search?: Alternatives to active learning for applying human resources to build classification models under extreme class imbalance. In Proceedings of the 16th ACM SIGKDD international conference on Knowledge discovery and data mining (pp. 423-432). ACM.
+
+
+.. _label-embeddings:
+
+Label Embeddings
+----------------
+
+For projects with more than 5 labels, SMART automatically generates embeddings of the labels and their descriptions. 
+When a user then goes to code items, SMART will present the top five labels with the closest embeddings to the text embeddings.
+
+|annotate-cards|
+
+
+.. _embeddings-define:
+
+What are Text Embeddings?
+*************************
+
+Loosely, text embedding is a broad group of methods used to take pieces of text and turn it into vectors which can then be compared mathematically for similarity. 
+At its most basic, a text embedding could be a vector of length N where each dimension is the number of times a specific word appeared in the text. 
+However, more advanced deep learning methods are able to capture the underlying meaning of two pieces of text in vector form, so two sentences with completely different words may be close together in space if they mean the same things.
+
+For example, here is a guide to one text embedding algorithm "`FastText <https://amitness.com/2020/06/fasttext-embeddings/>`_."
+
+Specifically, SMART uses a `sentence-transformers <https://www.SBERT.net>`_ model. It maps sentences and paragraphs to a 384 dimensional dense vector space. 
+
+
+.. _embeddings-faq:
+
+Is this the Same as the Classifier Model SMART Trains?
+******************************************************
+
+No, while the embeddings also use a model, they are static, and explicitly do not update and improve as more items are labeled. 
+
+
+.. _embeddings-customize:
+
+Can I Customize the Embeddings?
+*******************************
+
+Yes you can! SMART saves the embeddings model it uses in the `smart_embeddings_model folder <https://github.com/RTIInternational/SMART/tree/master/backend/django/core/smart_embeddings_model>`_. 
+Depending on the domain of your data, you might have some phrases which you want the model to know are similar, or some which you don't want the model to think are close. 
+
+You can update the SMART model using the `csv to embeddings model repository <https://github.com/dsteedRTI/csv-to-embeddings-model>`_.
+
+
+.. |annotate-cards| image:: ./nstatic/img/smart-annotate-annotatedata-cards.png

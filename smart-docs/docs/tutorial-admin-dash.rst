@@ -68,6 +68,14 @@ If you select two coders with no samples between them, the heat map will not dis
 |annotate-admin-irr-heatmapnosamples|
 
 
+.. _unassigncoders:
+
+Unassign Coders \[NEW\]
+-----------------------
+
+TODO
+
+
 .. |admin-sorting| image:: ./nstatic/img/smart-admin-sorting.png
 
 .. |annotate-admin-labeled-pagetop| image:: ./nstatic/img/smart-admin-labeled-pagetop.png
