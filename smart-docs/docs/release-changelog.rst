@@ -23,10 +23,10 @@ Release v.3.0.0
 ***************
 
 This version has a ton of updates from the previous version, as it's the culmination of about a year's worth of development and user testing. Most of these are quality-of-life improvements or bug fixes, 
-with a few new features thrown in.
+with a few new features thrown in. Specifically SMART now better supports those projects which just intend to use SMART as a labeling platform and do not intend to use the model features, something which we've discovered is a fairly common ask.
 
-**NOTE**: This version has a lot of new features, some of which were added recently. We will try and post new updates regularly as new 
-bugs are found and fixed.
+.. warning:: 
+  This version has a lot of new features, some of which were added recently. We will try and post new updates regularly as new bugs are found and fixed.
 
 Changes from 2.0.1
 ******************

@@ -81,6 +81,12 @@ At the bottom of the Details page, there are buttons to delete the project, edit
 .. note::
 	If you have set up a database connection, there will also be buttons for ingesting new data from the ingest table, and exporting labeled data to the export table. Note that the export will **completely drop and rewrite the export table every time.**
 
+|annotate-downloadmodel-exportimportdatabutton|
+
+When you click on the "Ingest new data from Database" button, SMART will import the ingest database table and compare it with the data already in SMART.
+If there are any new items in the database which do not already exist in SMART, these will be added. SMART will return the number of new items added in a window, or, if an error was thrown, the error:
+
+|smart-ingest-nonewdata|
 
 .. _update:
 
@@ -119,3 +125,5 @@ The button to delete a project can be found on the :ref:`details` page of a proj
 .. |details-data| image:: ./nstatic/img/smart-reviewedit-detailsdata.png
 .. |details-buttons| image:: ./nstatic/img/smart-reviewedit-detailsbuttons.png
 .. |delete-project| image:: ./nstatic/img/smart-reviewedit-delete.png
+.. |annotate-downloadmodel-exportimportdatabutton| image:: ./nstatic/img/smart-downloadmodel-exportimportdatabutton.png
+.. |smart-ingest-nonewdata| image:: ./nstatic/img/smart-ingest-nonewdata.png

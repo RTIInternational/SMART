@@ -63,7 +63,7 @@ An important consideration in active learning is model performance. To assess yo
 .. math::
 	\frac{TP + TN}{TP + FN + TN + FP}
 
-* **Precision**: Indicates how precise the model is at correctly predciting a particular category.
+* **Precision**: Indicates how precise the model is at correctly predicting a particular category.
 
 .. math::
 	\frac{TP}{TP + FN}
@@ -109,10 +109,12 @@ As an example, if a project creator chooses 100% for the percentage of the batch
 IRR Data Flow
 *************
 
-If the project creator has enabled IRR, additional steps are added to the data pipeline. First, when the project provides a batch of unlabeled data to label, the previously specified IRR percentage is taken out and marked as IRR. When a user opens the annotation page to begin labeling, SMART first checks if there is any IRR data that SMART has not yet seen. This data is pulled first, and the rest of the deck is filled with non-IRR data. This deck is then shuffled before being presented to the user to make it harder to know what data is IRR. SMART tracks what IRR data has been labeled/skipped by which users. Skips are automatically recorded in the IRR Log table, while labels are placed in the same label table as non-IRR data (though the training set will not incorporate them as they are marked IRR). Once IRR data has sufficient skips or labels, two outcomes can happen:
+If the project creator has enabled IRR, additional steps are added to the data pipeline. First, when the project provides a batch of unlabeled data to label, the previously specified IRR percentage is taken out and marked as IRR. 
+When a user opens the annotation page to begin labeling, SMART first checks if there is any IRR data that SMART has not yet seen. This data is pulled first, and the rest of the deck is filled with non-IRR data. This deck is then shuffled before being presented to the user to make it harder to know what data is IRR. SMART tracks what IRR data has been labeled/sent for adjudication by which users. 
+"Sent to adjudication" is automatically recorded in the internal IRR Log table, while labels are placed in the same label table as non-IRR data (though the training set will not incorporate them as they are marked IRR). Once IRR data has enough people either code it or send it to adjudication, two outcomes can happen:
 
 1.	If everyone labeled the datum and these labels were the same, then the datum is added with the agreed upon label to the training set.
-2.	If any coder skipped the datum, or coders disagreed upon the label, the datum is sent to the admin for the final label.
+2.	If any coder sent the datum for adjudication, or coders disagreed on the label, the datum is sent to the admin table for the final label.
 
 After a datum is processed, the labels from all coders are recorded in the IRR Log table.
 
