@@ -53,8 +53,12 @@ Finally, create a profile to start your own new labelling projects or to be adde
 
 **Production Installation**
 
-SMART provides both development and production docker builds depening on user need. The production setup [EMILY differences?]. 
+SMART provides both development and production docker builds depening on user need. The production setup is fairly close to the development one, with some changes that make it easier for the application to function in production.
+One large one is that celery is currently not supported for the production build due to some complications it can introduce when running the application in production on a managed server.
 See `envs/prod/README.md` for more information, including instructions on setting up regular backups of the production database.
+
+.. note::
+	If you intend to run SMART on a server where other things may be running, you may run into problems with ports already being in use. This can be fixed by changing the default SMART ports in the docker compose files.
 
 .. warning::
 	Please note that while we do plan to keep SMART up to date as exploits are found in packages, in cases where your project includes sensitive data, we reccomend running SMART inside a closed network. 
