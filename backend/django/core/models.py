@@ -256,7 +256,7 @@ class DataLabel(models.Model):
     label = models.ForeignKey("Label", on_delete=models.CASCADE)
     training_set = models.ForeignKey("TrainingSet", on_delete=models.CASCADE)
     time_to_label = models.IntegerField(null=True)
-    timestamp = models.DateTimeField(null=True, default=None)
+    timestamp = models.DateTimeField(default=timezone.now)
 
 
 class LabelChangeLog(models.Model):
