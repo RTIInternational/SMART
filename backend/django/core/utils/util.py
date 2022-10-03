@@ -208,7 +208,7 @@ def create_labels_from_csv(df, project):
         lambda x: Data.objects.get(hash=x, project=project).pk
     )
     df["time_to_label"] = None
-    df["timestamp"] = None
+    df["timestamp"] = timezone.now()
     df["training_set_id"] = project.get_current_training_set().pk
     df["label_id"] = df["Label"].apply(lambda x: labels[x])
     df["profile_id"] = project.creator.pk
