@@ -612,7 +612,7 @@ def get_labeled_data(project):
                     d.timestamp
                 )
             else:
-                temp["Timestamp"] = "None"
+                temp["Timestamp"] = None
             data.append(temp)
     labeled_data_frame = pd.DataFrame(data)
     label_frame = pd.DataFrame(labels)
