@@ -646,6 +646,7 @@ class ProjectUpdateUmbrella(LoginRequiredMixin, UserPassesTestMixin, View):
         context["umbrella_choices"] = [
             umbrella_choice for umbrella_choice in projects_umbrellas if umbrella_choice
         ]
+        print(context["umbrella_choices"])
 
         context["umbrella"] = project.umbrella_string
 

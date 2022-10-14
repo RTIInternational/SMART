@@ -18,7 +18,7 @@
             <p>Select a folder or leave this option blank.</p>
             {{ form.errors.as_ul }}
             <select class="form-control" name="umbrella">
-              <option value=""></option>
+              <option value="">Other Projects</option>
               {% for umbrella_choice in umbrella_choices %}
                 <option {% ifequal umbrella umbrella_choice %}selected="selected"{% endifequal %} value="{{ umbrella_choice }}">{{ umbrella_choice }}</option>
               {% endfor %}

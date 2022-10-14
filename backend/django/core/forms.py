@@ -424,7 +424,7 @@ class DataWizardForm(forms.ModelForm):
         elif data_source == "Database_Ingest":
             if self.ingest_schema is None:
                 raise ValidationError(
-                    "No ingest table specified. Please add an ingest "
+                    "No import table specified. Please add an import "
                     "schema and table to the external database connection."
                 )
             data_df = get_full_table(
@@ -571,12 +571,12 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
             ):
                 if len(self.cleaned_data["ingest_table_name"]) == 0:
                     self._errors["ingest_table_name"] = self.error_class(
-                        ["ERROR: need to specify ingest table if schema is set."]
+                        ["ERROR: need to specify import table if schema is set."]
                     )
                     field_error = True
                 if len(self.cleaned_data["ingest_schema"]) == 0:
                     self._errors["ingest_schema"] = self.error_class(
-                        ["ERROR: need to specify ingest schema if table name is set."]
+                        ["ERROR: need to specify import schema if table name is set."]
                     )
                     field_error = True
 

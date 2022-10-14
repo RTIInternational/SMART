@@ -119,7 +119,7 @@
                 {% if project.has_database_connection %}
                 <li class="list-group-item">
                   <dt>Database connection:</dt>
-                  <dd>Ingest Table: {{ project.get_ingest_database }}</dd>
+                  <dd>Import Table: {{ project.get_ingest_database }}</dd>
                   <dd>Export Table: {{ project.get_export_database }}</dd>
                 </li>
                 {% endif %}
@@ -252,7 +252,7 @@
             </a>
             {% if project.get_ingest_database != "" %}
             <a class="btn btn-primary" id="ingest_datatable_button">
-              Ingest new data from Database
+              Import new data from Database
             </a>
             {% endif %}
             {% if project.get_export_database != "" %}
