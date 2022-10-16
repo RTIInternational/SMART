@@ -4,7 +4,7 @@ import os
 import tempfile
 import zipfile
 
-import pandas as pd
+import sqlalchemy
 from django.conf import settings
 from django.http import HttpResponse
 from rest_framework import status
@@ -201,14 +201,10 @@ def export_database_table(request, project_pk):
                     engine_database = get_connection(
                         external_db.database_type, connection_dict
                     )
-                    table_name_string = (
-                        f"{external_db.export_schema}.{external_db.export_table_name}"
-                    )
 
                     # pull all labeled data
                     data, labels = get_labeled_data(project)
                     if len(data) > 0:
-
                         # pull the export table
                         if check_if_table_exists(
                             engine_database,
@@ -217,23 +213,17 @@ def export_database_table(request, project_pk):
                         ):
                             response[
                                 "success_message"
-                            ] = "Appending labeled data to existing table."
+                            ] = "Table exists. Dropping and replacing with new output data."
 
-                            # Only upload new data. Deduping on upload ID, since duplicate contents
-                            # are deduped when the data is first added
-                            existing_ids = pd.read_sql(
-                                sql=f"SELECT DISTINCT ID FROM {table_name_string}",
+                            # drop the table and then replace the data
+                            data.to_sql(
+                                name=external_db.export_table_name,
                                 con=engine_database,
-                            )["ID"].tolist()
-                            data = data.loc[~data["ID"].isin(existing_ids)]
-                            if len(data) > 0:
-                                data.to_sql(
-                                    name=external_db.export_table_name,
-                                    con=engine_database,
-                                    schema=external_db.export_schema,
-                                    if_exists="append",
-                                    index=False,
-                                )
+                                schema=external_db.export_schema,
+                                if_exists="replace",
+                                index=False,
+                                dtype={"Timestamp": sqlalchemy.DateTime},
+                            )
 
                         else:
                             response[
@@ -246,6 +236,7 @@ def export_database_table(request, project_pk):
                                 schema=external_db.export_schema,
                                 if_exists="fail",
                                 index=False,
+                                dtype={"Timestamp": sqlalchemy.DateTime},
                             )
                     response[
                         "success_message"

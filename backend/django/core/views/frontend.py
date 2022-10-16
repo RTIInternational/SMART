@@ -24,6 +24,7 @@ from core.forms import (
     ProjectWizardForm,
 )
 from core.models import (
+    AssignedData,
     Data,
     ExternalDatabase,
     Label,
@@ -94,8 +95,11 @@ class ProjectAdmin(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super(ProjectAdmin, self).get_context_data(**kwargs)
 
-        ctx["project"] = Project.objects.get(pk=self.kwargs["pk"])
-
+        project = Project.objects.get(pk=self.kwargs["pk"])
+        ctx["project"] = project
+        users = AssignedData.objects.filter(data__project=project).distinct("profile")
+        coders = [d.profile for d in users]
+        ctx["coders"] = coders
         return ctx
 
 

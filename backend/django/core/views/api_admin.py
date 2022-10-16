@@ -7,19 +7,21 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
 from core.models import (
+    AssignedData,
     Data,
     DataLabel,
     DataPrediction,
     IRRLog,
     Label,
     Model,
+    Profile,
     Project,
     ProjectPermissions,
     TrainingSet,
 )
 from core.permissions import IsAdminOrCreator, IsCoder
 from core.utils.util import irr_heatmap_data, perc_agreement_table_data, project_status
-from core.utils.utils_annotate import leave_coding_page
+from core.utils.utils_annotate import leave_coding_page, unassign_datum
 from core.utils.utils_model import cohens_kappa, fleiss_kappa
 
 
@@ -328,3 +330,18 @@ def get_project_status(request, project_pk):
     project_details = project_status(project)
 
     return Response(project_details)
+
+
+@api_view(["GET"])
+@permission_classes((IsAdminOrCreator,))
+def unassign_coders(request, project_pk, profile_id):
+    """Unassigns all data from user for project."""
+    project = Project.objects.get(pk=project_pk)
+    profile = Profile.objects.get(pk=profile_id)
+
+    assigned_data = AssignedData.objects.filter(profile=profile, data__project=project)
+    datas = [d.data for d in assigned_data]
+    for d in datas:
+        unassign_datum(d, profile)
+
+    return Response(project_status(project))

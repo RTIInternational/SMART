@@ -5,6 +5,7 @@ from itertools import combinations
 
 import numpy as np
 import pandas as pd
+import pytz
 from celery import chord
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -30,6 +31,7 @@ from core.models import (
     TrainingSet,
 )
 from core.utils.utils_queue import fill_queue
+from smart.settings import TIME_ZONE_FRONTEND
 
 # from string_grouper import compute_pairwise_similarities
 
@@ -102,7 +104,14 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
     """
 
     new_df = add_data(project, form_data)
+
+    # only fill the queues if the queues are empty.
+    num_in_queues = 0
     if queue:
+        num_in_queues += DataQueue.objects.filter(queue_id=queue.id).count()
+    if irr_queue:
+        num_in_queues += DataQueue.objects.filter(queue_id=irr_queue.id).count()
+    if queue and num_in_queues == 0:
         fill_queue(
             queue=queue,
             irr_queue=irr_queue,
@@ -597,6 +606,13 @@ def get_labeled_data(project):
             for m in metadata:
                 temp[m.metadata_field.field_name] = m.value
             temp["Label"] = label.name
+            temp["Profile"] = str(d.profile.user)
+            if d.timestamp:
+                temp["Timestamp"] = pytz.timezone(TIME_ZONE_FRONTEND).normalize(
+                    d.timestamp
+                )
+            else:
+                temp["Timestamp"] = None
             data.append(temp)
     labeled_data_frame = pd.DataFrame(data)
     label_frame = pd.DataFrame(labels)

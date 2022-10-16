@@ -20,7 +20,7 @@ class DataCard extends React.Component {
     render() {
         let card;
 
-        const { labels, message, cards, passCard, annotateCard } = this.props;
+        const { labels, message, cards, passCard, annotateCard, unassignCard } = this.props;
 
         if (!(cards === undefined) && cards.length > 0) {
             //just get the labels from the cards
@@ -37,6 +37,7 @@ class DataCard extends React.Component {
                                 ADMIN
                             )}
                         onSkip={(card, message = null) => passCard(card, cards.length, ADMIN, message)}
+                        onUnassign={(card) => unassignCard(card, card.length, ADMIN)}
                     />
                 </div>
             );
@@ -57,7 +58,8 @@ DataCard.propTypes = {
     fetchCards: PropTypes.func.isRequired,
     annotateCard: PropTypes.func.isRequired,
     passCard: PropTypes.func.isRequired,
-    labels: PropTypes.arrayOf(PropTypes.object)
+    labels: PropTypes.arrayOf(PropTypes.object),
+    unassignCard: PropTypes.func.isRequired
 };
 
 export default DataCard;
