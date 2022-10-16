@@ -9,7 +9,6 @@ from pandas.errors import ParserError
 
 from core.utils.utils_external_db import (
     check_if_schema_exists,
-    check_if_table_exists,
     get_connection,
     get_full_table,
     test_connection,

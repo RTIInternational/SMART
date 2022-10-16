@@ -6,9 +6,8 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0070_adminprogress_last_action'),
-        ('core', '0070_merge_20220727_1406'),
+        ("core", "0070_adminprogress_last_action"),
+        ("core", "0070_merge_20220727_1406"),
     ]
 
-    operations = [
-    ]
+    operations = []
