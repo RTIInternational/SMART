@@ -118,6 +118,15 @@ class Project(models.Model):
             return f"{self.externaldatabase.ingest_schema}.{self.externaldatabase.ingest_table_name}"
         else:
             return ""
+    
+    def get_scheduled_ingest(self):
+        if self.externaldatabase.has_ingest:
+            if self.externaldatabase.cron_ingest:
+                return "On"
+            else:
+                return "Off"
+        else:
+            return "NaN"
 
     def get_export_database(self):
         if self.externaldatabase.has_export:

@@ -527,16 +527,6 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
                     )
                     field_error = True
 
-                if check_if_table_exists(
-                    engine_database,
-                    self.cleaned_data["export_schema"],
-                    self.cleaned_data["export_table_name"],
-                ):
-                    self._errors["export_table_name"] = self.error_class(
-                        ["ERROR: export table already exists."]
-                    )
-                    field_error = True
-
             if field_error:
                 raise ValidationError("Please fix field errors before resubmitting.")
 

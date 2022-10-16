@@ -66,6 +66,7 @@
                         <div id="ingest_schema_fields">
                             Enable scheduled ingest*: {{ wizard.form.cron_ingest }}
                         </div>
+                        <p>* Scheduled ingest must be set up by network administrators for this option to do anything.</p>
                         <div id="ingest_table_fields">
                             Ingest Table Name: {{ wizard.form.ingest_table_name }}
                         </div>
@@ -76,7 +77,7 @@
                         <div class="error-messages">{{ wizard.form.ingest_schema.errors }}</div>
                         <hr />
                         <p>The following fields are the table name and schema for the database table you wish SMART to export labeled data to.
-                            <b>WARNING:</b> The export table cannot already exist in the database. Please note that SMART will completely drop and rewrite this table each time you export.</p>
+                            <b>WARNING:</b> SMART will completely drop and rewrite this table each time you export. We recommend you chose a new table name that is not already in use in the database.</p>
                         <div id="export_table_fields">
                             Export Table Name: {{ wizard.form.export_table_name }}
                         </div>
@@ -84,7 +85,6 @@
                         <div id="export_schema_fields">
                             Export Schema: {{ wizard.form.export_schema }}
                         </div>
-                        <p>* Scheduled ingest must be set up by network administrators for this option to do anything.</p>
                         <div class="error-messages">{{ wizard.form.export_schema.errors }}</div>
                     </div>
                     <div class="error-messages">{{ wizard.form.non_field_errors }}</div>

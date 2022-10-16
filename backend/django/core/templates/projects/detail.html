@@ -120,6 +120,7 @@
                 <li class="list-group-item">
                   <dt>Database connection:</dt>
                   <dd>Ingest Table: {{ project.get_ingest_database }}</dd>
+                  <dd>Scheduled ingest: {{ project.get_scheduled_ingest }}</dd>
                   <dd>Export Table: {{ project.get_export_database }}</dd>
                 </li>
                 {% endif %}
