@@ -33,7 +33,9 @@
 
 <!-- Requests -->
 <script>
-    profile = document.getElementById("coderSelect").value;
+    if ($("#coderSelect option").length) {
+        profile = document.getElementById("coderSelect").value;
+    }
     $("#unassignBtn").click(function(event) {
         event.preventDefault();
         $.ajax({

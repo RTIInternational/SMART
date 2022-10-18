@@ -497,9 +497,10 @@ def irr_heatmap_data(project):
     user_label_counts = {}
     for user1 in user_list:
         for user2 in user_list:
-            if user1==user2:
-                continue
-            user_label_counts[str(user1) + "_" + str(user2)] = {"data":{},"labels":set()}
+            user_label_counts[str(user1) + "_" + str(user2)] = {
+                "data": {},
+                "labels": set(),
+            }
 
     for data_id in irr_data:
         # iterate over the data and count up labels
@@ -507,16 +508,18 @@ def irr_heatmap_data(project):
         small_user_list = data_log_list.values_list("profile__user", flat=True)
         for user1 in small_user_list:
             for user2 in small_user_list:
-                if user1==user2:
-                    continue
                 user_combo = str(user1) + "_" + str(user2)
-                label1 = str(data_log_list.get(profile__pk=user1).label).replace("None", "Adjudicate")
+                label1 = str(data_log_list.get(profile__pk=user1).label).replace(
+                    "None", "Adjudicate"
+                )
                 user_label_counts[user_combo]["labels"].add(label1)
-                label2 = str(data_log_list.get(profile__pk=user2).label).replace("None", "Adjudicate")
+                label2 = str(data_log_list.get(profile__pk=user2).label).replace(
+                    "None", "Adjudicate"
+                )
                 user_label_counts[user_combo]["labels"].add(label2)
                 if label1 not in user_label_counts[user_combo]["data"].keys():
                     user_label_counts[user_combo]["data"][label1] = {}
-                
+
                 if label2 not in user_label_counts[user_combo]["data"][label1].keys():
                     user_label_counts[user_combo]["data"][str(label1)][label2] = 1
                 else:
@@ -524,7 +527,7 @@ def irr_heatmap_data(project):
 
     # if label combinations didn't occur set them to 0
     for user_combo in user_label_counts.keys():
-        for label1 in  user_label_counts[user_combo]["labels"]:
+        for label1 in user_label_counts[user_combo]["labels"]:
             for label2 in user_label_counts[user_combo]["labels"]:
                 if label1 not in user_label_counts[user_combo]["data"].keys():
                     user_label_counts[user_combo]["data"][label1] = {}
@@ -548,7 +551,7 @@ def irr_heatmap_data(project):
                 )
         end_data[user_combo] = end_data_list
 
-    return end_data,end_data_labels
+    return end_data, end_data_labels
 
 
 def save_data_file(df, project_pk):
