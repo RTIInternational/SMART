@@ -91,7 +91,7 @@ def get_full_table(engine_database, schema, table):
         )
     except Exception as e:
         raise ValidationError(
-            f"ERROR: pulling the ingest table failed with the following error - {str(e)}"
+            f"ERROR: pulling the import table failed with the following error - {str(e)}"
         )
 
 

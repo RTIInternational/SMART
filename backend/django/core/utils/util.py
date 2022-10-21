@@ -491,24 +491,16 @@ def irr_heatmap_data(project):
         )
     )
     user_list.append(project.creator.pk)
-    label_list = list(
-        Label.objects.filter(project=project).values_list("name", flat=True)
-    )
-    label_list.append("Skip")
-
     irr_data = set(IRRLog.objects.values_list("data", flat=True))
 
     # Initialize the dictionary of dictionaries to use for the heatmap later
     user_label_counts = {}
     for user1 in user_list:
         for user2 in user_list:
-            user_label_counts[str(user1) + "_" + str(user2)] = {}
-            for label1 in label_list:
-                user_label_counts[str(user1) + "_" + str(user2)][str(label1)] = {}
-                for label2 in label_list:
-                    user_label_counts[str(user1) + "_" + str(user2)][str(label1)][
-                        str(label2)
-                    ] = 0
+            user_label_counts[str(user1) + "_" + str(user2)] = {
+                "data": {},
+                "labels": set(),
+            }
 
     for data_id in irr_data:
         # iterate over the data and count up labels
@@ -517,27 +509,49 @@ def irr_heatmap_data(project):
         for user1 in small_user_list:
             for user2 in small_user_list:
                 user_combo = str(user1) + "_" + str(user2)
-                label1 = data_log_list.get(profile__pk=user1).label
-                label2 = data_log_list.get(profile__pk=user2).label
-                user_label_counts[user_combo][str(label1).replace("None", "Skip")][
-                    str(label2).replace("None", "Skip")
-                ] += 1
+                label1 = str(data_log_list.get(profile__pk=user1).label).replace(
+                    "None", "Adjudicate"
+                )
+                user_label_counts[user_combo]["labels"].add(label1)
+                label2 = str(data_log_list.get(profile__pk=user2).label).replace(
+                    "None", "Adjudicate"
+                )
+                user_label_counts[user_combo]["labels"].add(label2)
+                if label1 not in user_label_counts[user_combo]["data"].keys():
+                    user_label_counts[user_combo]["data"][label1] = {}
+
+                if label2 not in user_label_counts[user_combo]["data"][label1].keys():
+                    user_label_counts[user_combo]["data"][str(label1)][label2] = 1
+                else:
+                    user_label_counts[user_combo]["data"][str(label1)][label2] += 1
+
+    # if label combinations didn't occur set them to 0
+    for user_combo in user_label_counts.keys():
+        for label1 in user_label_counts[user_combo]["labels"]:
+            for label2 in user_label_counts[user_combo]["labels"]:
+                if label1 not in user_label_counts[user_combo]["data"].keys():
+                    user_label_counts[user_combo]["data"][label1] = {}
+                if label2 not in user_label_counts[user_combo]["data"][label1].keys():
+                    user_label_counts[user_combo]["data"][label1][label2] = 0
+
     # get the results in the final format needed for the graph
     end_data = {}
+    end_data_labels = {}
     for user_combo in user_label_counts:
         end_data_list = []
-        for label1 in user_label_counts[user_combo]:
-            for label2 in user_label_counts[user_combo][label1]:
+        end_data_labels[user_combo] = list(user_label_counts[user_combo]["labels"])
+        for label1 in user_label_counts[user_combo]["data"]:
+            for label2 in user_label_counts[user_combo]["data"][label1]:
                 end_data_list.append(
                     {
                         "label1": label1,
                         "label2": label2,
-                        "count": user_label_counts[user_combo][label1][label2],
+                        "count": user_label_counts[user_combo]["data"][label1][label2],
                     }
                 )
         end_data[user_combo] = end_data_list
 
-    return end_data
+    return end_data, end_data_labels
 
 
 def save_data_file(df, project_pk):

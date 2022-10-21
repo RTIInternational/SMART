@@ -169,7 +169,7 @@ def import_database_table(request, project_pk):
             external_db = ExternalDatabase.objects.get(project=project)
 
             if not external_db.has_ingest:
-                response["error"] = "Project does not have ingest connections set up."
+                response["error"] = "Project does not have import connections set up."
             else:
                 # pull the ingest table
                 try:

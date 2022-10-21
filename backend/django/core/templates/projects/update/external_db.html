@@ -14,7 +14,7 @@
                     {% csrf_token %}
                     <h1>External Database Connection</h1>
                     <h3>Description</h3>
-                    <p>This page gives you the opportunity to set up or update a database connection to SMART. The ingest connection is used to import new unlabeled data into the SMART project to be labeled.</p>
+                    <p>This page gives you the opportunity to set up or update a database connection to SMART. The import connection is used to import new unlabeled data into the SMART project to be labeled.</p>
                     <div id="choose_db_type_box">
                         <label class="control-label" for="{{ form.database_type.id_for_label }}">Type of Database Connection this Project should have</label>
                         {% for radio in form.database_type %}
@@ -57,11 +57,11 @@
                         <p>The following fields are the table name and schema for the database table you wish SMART to read new data from.
                             At minimum the table must have a column "Text" with the text that needs to be labeled.</p>
                         <div id="ingest_table_fields_update">
-                            Ingest Table Name: {{ form.ingest_table_name }}
+                            Import Table Name: {{ form.ingest_table_name }}
                         </div>
                         <div class="error-messages">{{ form.ingest_table_name.errors }}</div>
                         <div id="ingest_schema_fields_update">
-                            Ingest Schema: {{ form.ingest_schema }}
+                            Import Schema: {{ form.ingest_schema }}
                         </div>
                         <div class="error-messages">{{ form.ingest_schema.errors }}</div>
                         <hr />

@@ -299,18 +299,15 @@ def heat_map_data(request, project_pk):
     """
     project = Project.objects.get(pk=project_pk)
 
-    heatmap_data = irr_heatmap_data(project)
-    labels = list(
-        Label.objects.all().filter(project=project).values_list("name", flat=True)
-    )
-    labels.append("Skip")
+    heatmap_data, heatmap_labels = irr_heatmap_data(project)
+
     coders = []
     profiles = ProjectPermissions.objects.filter(project=project)
     coders.append({"name": str(project.creator), "pk": project.creator.pk})
     for p in profiles:
         coders.append({"name": str(p.profile), "pk": p.profile.pk})
 
-    return Response({"data": heatmap_data, "labels": labels, "coders": coders})
+    return Response({"data": heatmap_data, "labels": heatmap_labels, "coders": coders})
 
 
 @api_view(["GET"])
