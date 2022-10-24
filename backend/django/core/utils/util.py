@@ -620,6 +620,8 @@ def get_labeled_data(project):
             for m in metadata:
                 temp[m.metadata_field.field_name] = m.value
             temp["Label"] = label.name
+            if label.description:
+                temp["Description"] = label.description
             temp["Profile"] = str(d.profile.user)
             if d.timestamp:
                 temp["Timestamp"] = pytz.timezone(TIME_ZONE_FRONTEND).normalize(
