@@ -37,10 +37,10 @@ If want to restore the database, run the following:
 
 Some projects may wish to ingest new data regularly from their ingest database. SMART has provided a management command which will pull new data for all projects with an ingest database set up which have selected the "Enable scheduled ingest" option in the database form.
 
-The following command may be added to the cron file above to ingest new data daily at noon.
+The following command may be added to the cron file above to ingest new data daily at noon. Confirmation or errors will print to `/var/log/smart_cron_log`.
 
 ```
-0 12 * * * docker exec -it backend python manage.py ingest_database_data
+0 12 * * * docker exec -i backend python manage.py ingest_database_data >> /var/log/smart_cron_log 2>&1
 ```
 
 ### Manual Ingest
