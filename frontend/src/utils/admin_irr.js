@@ -2,16 +2,18 @@
 
 function drawHeatmap(response) {
     let coders = response["coders"];
-    let labels = response["labels"];
     let coder1 = $('#coder1_select').val();
     let coder2 = $('#coder2_select').val();
     let comb1 = coder1.toString() + "_" + coder2.toString();
     let comb2 = coder2.toString() + "_" + coder1.toString();
     let data;
+    let labels;
     if (comb1 in response['data']) {
         data = response['data'][comb1];
+        labels = response["labels"][comb1];
     } else {
         data = response['data'][comb2];
+        labels = response["labels"][comb2];
     }
 
     let all_zero = true;
@@ -41,15 +43,10 @@ function drawHeatmap(response) {
 
     //Code adapted from blocks example:
     //http://bl.ocks.org/tjdecke/5558084
-    let margin = { top: 100, right: 100, bottom: 200, left: 100 };
-    let width, height;
-    if (labels.length > 10) {
-        width = labels.length * 50;
-        height = labels.length * 50;
-    } else {
-        width = 500;
-        height = labels.length * 50;
-    }
+    let margin = { top: 100, right: 100, bottom: 200, left: 125 };
+    let boxsize = 100;
+    let width = labels.length * boxsize;
+    let height = labels.length * boxsize;
 
     let colors = ["#f7fbff", "#deebf7", "#c6dbef", "#9ecae1", "#6baed6", "#4292c6", "#2171b5", "#08519c", "#08306b"];
     let buckets;
@@ -60,7 +57,7 @@ function drawHeatmap(response) {
         colors = colors.slice(0, buckets);
     }
 
-    let gridSize = 50,
+    let gridSize = boxsize,
         legendElementWidth = 30;
 
     //delete the old chart
@@ -75,41 +72,6 @@ function drawHeatmap(response) {
             .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-        //add the y axis labels
-        svg.selectAll(".vertLabel")
-            .data(labels)
-            .enter()
-            .append("text")
-            .text(function (d) {
-                return d.slice(0, 5);
-            })
-            .attr("x", 0)
-            .attr("y", function (d, i) {
-                return i * gridSize;
-            })
-            .style("text-anchor", "end")
-            .attr("transform", "translate(-6," + gridSize / 1.5 + ")")
-            .attr("class", function (d, i) {
-                return ((i >= 0 && i <= 4) ? "vertLabel mono axis axis-workweek" : "vertLabel mono axis");
-            });
-
-        //add the x axis labels
-        svg.selectAll(".horzLabel")
-            .data(labels)
-            .enter()
-            .append("text")
-            .text(function(d) {
-                return d.slice(0, 5);
-            })
-            .attr("x", function(d, i) {
-                return i * gridSize;
-            })
-            .attr("y", 0)
-            .style("text-anchor", "middle")
-            .attr("transform", "translate(" + gridSize / 2 + ", -6)")
-            .attr("class", function(d, i) {
-                return ((i >= 7 && i <= 16) ? "horzLabel mono axis axis-worktime" : "horzLabel mono axis");
-            });
 
         let colorScale = d3.scale.quantile()
             .domain([0, most_data + 1])
@@ -150,23 +112,49 @@ function drawHeatmap(response) {
         });
 
         //Axis code found at https://bl.ocks.org/d3noob/23e42c8f67210ac6c678db2cd07a747e
-        // text label for the x axis
-        svg.append("text")
-            .attr("transform",
-                "translate(" + (width / 5) + " ," +
-                             (-50) + ")")
-            .style("text-anchor", "middle")
-            .text(coder1_name);
-        // text label for the y axis
-        svg.append("text")
-            .attr("transform", "rotate(-90)")
-            .attr("y", -70)
-            .attr("x", 0 - (height / 5))
-            .attr("dy", "1em")
-            .style("text-anchor", "middle")
-            .text(coder2_name);
-
         cards.exit().remove();
+
+        //add the y axis labels
+        svg.selectAll(".vertLabel")
+            .data(labels)
+            .enter()
+            .append("text")
+            .text(function (d) {
+                if (d.length < 20) {
+                    return d;
+                }
+                return d.slice(0, 20) + "...";
+            })
+            .attr("x", 0)
+            .attr("y", function (d, i) {
+                return i * gridSize;
+            })
+            .style("text-anchor", "end")
+            .attr("transform", "translate(-6," + gridSize / 1.5 + ")")
+            .attr("class", function (d, i) {
+                return ((i >= 0 && i <= 4) ? "vertLabel mono axis axis-workweek" : "vertLabel mono axis");
+            });
+
+        //add the x axis labels
+        svg.selectAll(".horzLabel")
+            .data(labels)
+            .enter()
+            .append("text")
+            .text(function(d) {
+                if (d.length < 16) {
+                    return d;
+                }
+                return d.slice(0, 16) + "...";
+            })
+            .attr("x", function(d, i) {
+                return i * gridSize;
+            })
+            .attr("y", 0)
+            .style("text-anchor", "middle")
+            .attr("transform", "translate(" + gridSize / 2 + ", -6)")
+            .attr("class", function(d, i) {
+                return ((i >= 7 && i <= 16) ? "horzLabel mono axis axis-worktime" : "horzLabel mono axis");
+            });
 
         let legend = svg.selectAll(".legend")
             .data([0].concat(colorScale.quantiles()), function(d) {

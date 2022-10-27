@@ -40,7 +40,7 @@
 
                     <hr>
                     <div id="data_source_radios">
-                      <p>Data can be uploaded to SMART in one of two ways. If you chose an ingest table in the previous step you may import that table now. Otherwise, you can upload a data file.</p>
+                      <p>Data can be uploaded to SMART in one of two ways. If you chose an import table in the previous step you may import that table now. Otherwise, you can upload a data file.</p>
                       {% for radio2 in wizard.form.data_source %}
                       <div class="choose_data_source" name="data_source_choice" id="{{radio2.value}}" onchange="showHideOptionsDataSource(event)">
                         {{ radio2 }}
