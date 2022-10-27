@@ -1,22 +1,20 @@
 import copy
 from io import StringIO
 
-import numpy as np
 import pandas as pd
 from django import forms
 from django.core.exceptions import ValidationError
 from django.forms.widgets import RadioSelect, Select, Textarea, TextInput
 from pandas.errors import ParserError
 
-from core.utils.util import md5_hash
 from core.utils.utils_external_db import (
     check_if_schema_exists,
-    check_if_table_exists,
     get_connection,
     get_full_table,
     test_connection,
     test_login,
 )
+from core.utils.utils_form import clean_data_helper
 
 from .models import ExternalDatabase, Label, Project, ProjectPermissions
 
@@ -83,103 +81,6 @@ def read_data_file(data_file):
         raise ValidationError(
             "Unable to read the file.  Please ensure that the file is encoded in UTF-8."
         )
-    return data
-
-
-def clean_data_helper(
-    data, supplied_labels, dedup_on, dedup_fields, metadata_fields=None
-):
-
-    # correct for differences in capitalization
-    for col in data.columns:
-        for field, field_lower in zip(["Text", "Label", "ID"], ["text", "label", "id"]):
-            if col != field and col == field_lower:
-                data.rename(columns={col: field}, inplace=True)
-
-    if "Text" not in data.columns:
-        raise ValidationError("Data is missing required field 'Text'.")
-
-    if "Label" not in data.columns:
-        data["Label"] = None
-
-    if len(data) < 1:
-        raise ValidationError("Data is empty.")
-
-    found_metadata_fields = [
-        c for c in data.columns if c not in ["Text", "Label", "ID"]
-    ]
-
-    # this option is only true if we're adding data to an existing project
-    if (
-        metadata_fields is not None
-        and len(metadata_fields) > 0
-        and (set(metadata_fields) != set(found_metadata_fields))
-    ):
-        raise ValidationError(
-            "There were metadata fields provided in the "
-            "initial data upload that are missing from this data."
-            f" Original fields: {', '.join(metadata_fields)}."
-            f" Found fields: {', '.join(found_metadata_fields)}."
-        )
-
-    # validating the dedup list being sent
-    if dedup_on == "Text_Some_Metadata" and len(dedup_fields) == 0:
-        raise ValidationError(
-            "The 'Text and Metadata fields'"
-            " option was selected but no metadata fields were specified."
-        )
-
-    if len(dedup_fields) > 0:
-        dedup_list = [
-            d.strip() for d in dedup_fields.strip().split(";") if len(d.strip()) > 0
-        ]
-        if metadata_fields is not None:
-            compare_list = metadata_fields
-        else:
-            compare_list = found_metadata_fields
-
-        # if there is no metadata then there can't be dedup fields
-        if len(set(dedup_list) - set(compare_list)) > 0:
-            raise ValidationError(
-                "The dedup fields specified should be a subset of"
-                " the data's provided metadata fields. "
-                f"Dedup fields: {dedup_list},"
-                f" Metadata fields: {compare_list}"
-            )
-
-    labels_in_data = data["Label"].dropna(inplace=False).unique()
-    if len(labels_in_data) > 0 and len(set(labels_in_data) - set(supplied_labels)) > 0:
-        raise ValidationError(
-            "There are extra labels in the file which were not created in step 2.  File supplied {0} "
-            "but step 2 was given {1}".format(
-                ", ".join(labels_in_data), ", ".join(supplied_labels)
-            )
-        )
-
-    num_unlabeled_data = len(data[pd.isnull(data["Label"])])
-    if num_unlabeled_data < 1:
-        raise ValidationError(
-            "All text in the file already has a label.  SMART needs unlabeled data "
-            "to do active learning.  Please upload a file that has less labels."
-        )
-
-    if "ID" in data.columns:
-        # there should be no null values
-        if data["ID"].isnull().sum() > 0:
-            raise ValidationError("Unique ID field cannot have missing values.")
-
-        data_lens = data["ID"].astype(str).apply(lambda x: len(x))
-        # check that the ID follow the character limit
-        if np.any(np.greater(data_lens, [128] * len(data_lens))):
-            raise ValidationError(
-                "Unique ID should not be greater than 128 characters."
-            )
-
-        data["id_hash"] = data["ID"].astype(str).apply(md5_hash)
-        # they have an id column, check for duplicates
-        if len(data["id_hash"].tolist()) > len(data["id_hash"].unique()):
-            raise ValidationError("Unique ID provided contains duplicates.")
-
     return data
 
 
@@ -490,6 +391,7 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
         model = ExternalDatabase
         fields = [
             "database_type",
+            "cron_ingest",
             "ingest_schema",
             "ingest_table_name",
             "export_schema",
@@ -502,6 +404,7 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
         initial="none",
         required=True,
     )
+    cron_ingest = forms.BooleanField(initial=False, required=False)
     ingest_table_name = forms.CharField(initial="", required=False, max_length=50)
     ingest_schema = forms.CharField(initial="", required=False, max_length=50)
     export_table_name = forms.CharField(initial="", required=False, max_length=1024)
@@ -524,6 +427,7 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
         required_for_all_db = [
             "ingest_table_name",
             "ingest_schema",
+            "cron_ingest",
             "export_table_name",
             "export_schema",
             "username",
@@ -619,16 +523,6 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
                 ):
                     self._errors["export_schema"] = self.error_class(
                         ["ERROR: export schema doesn't exist in the database."]
-                    )
-                    field_error = True
-
-                if check_if_table_exists(
-                    engine_database,
-                    self.cleaned_data["export_schema"],
-                    self.cleaned_data["export_table_name"],
-                ):
-                    self._errors["export_table_name"] = self.error_class(
-                        ["ERROR: export table already exists."]
                     )
                     field_error = True
 

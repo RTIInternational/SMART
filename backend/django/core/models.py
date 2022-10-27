@@ -119,6 +119,15 @@ class Project(models.Model):
         else:
             return ""
 
+    def get_scheduled_ingest(self):
+        if self.externaldatabase.has_ingest:
+            if self.externaldatabase.cron_ingest:
+                return "On"
+            else:
+                return "Off"
+        else:
+            return "NaN"
+
     def get_export_database(self):
         if self.externaldatabase.has_export:
             return f"{self.externaldatabase.export_schema}.{self.externaldatabase.export_table_name}"
@@ -205,6 +214,7 @@ class ExternalDatabase(models.Model):
     )
 
     has_ingest = models.BooleanField(default=False)
+    cron_ingest = models.BooleanField(default=False)
     ingest_schema = models.CharField(max_length=50, null=True)
     ingest_table_name = models.CharField(max_length=50, null=True)
     has_export = models.BooleanField(default=False)

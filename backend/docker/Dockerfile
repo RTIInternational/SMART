@@ -8,10 +8,9 @@ RUN apt-get update && apt-get install -y netcat-traditional && \
     ACCEPT_EULA=Y apt-get install -y msodbcsql17 && \
     apt-get install -y unixodbc-dev
 
-
 WORKDIR /code
 ADD ./docker/requirements.txt /code/requirements.txt
 RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+RUN pip install -r requirements.txt --no-cache-dir
 RUN mkdir -p /data/data_files /data/tf_idf /data/model_pickles /data/code_books /data/external_db
 EXPOSE 8000
