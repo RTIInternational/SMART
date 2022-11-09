@@ -43,12 +43,18 @@ The following command may be added to the cron file above to ingest new data dai
 0 12 * * * docker exec -i backend python manage.py ingest_database_data >> /var/log/smart_cron_log 2>&1
 ```
 
-### Manual Ingest
+### Manual Ingest and Export
 
 If needing to perform a manual ingest, you can use this command:
 
 ```
 docker exec -it backend python manage.py ingest_database_data
+```
+
+If needing to perform a manual export, you can use this command:
+
+```
+docker exec -it backend python manage.py export_database_data
 ```
 
 ## Development

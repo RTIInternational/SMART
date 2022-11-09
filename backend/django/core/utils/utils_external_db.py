@@ -4,11 +4,11 @@ import os
 import pandas as pd
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from sqlalchemy import create_engine
+from sqlalchemy import DateTime, create_engine
 from sqlalchemy.exc import InterfaceError
 
-from core.models import ExternalDatabase, Label, MetaDataField
-from core.utils.util import upload_data
+from core.models import ExternalDatabase, Label, MetaDataField, Project
+from core.utils.util import get_labeled_data, upload_data
 from core.utils.utils_form import clean_data_helper
 
 
@@ -176,3 +176,65 @@ def load_ingest_table(project, response):
                 # return errors in the validation tool
                 response["error"] = str(e)
     return response
+
+
+def export_table(project_pk, response):
+    """This function exports all labeled data to the project export table."""
+
+    project = Project.objects.get(pk=project_pk)
+    if not project.has_database_connection():
+        response["error"] = "Project does not have a database connection."
+    else:
+        # check that the project has a database connection and export tables
+        connection_dict = load_external_db_file(project_pk)
+        external_db = ExternalDatabase.objects.get(project=project)
+
+        if not external_db.has_export:
+            response["error"] = "Project does not have export connections set up."
+        else:
+            try:
+                engine_database = get_connection(
+                    external_db.database_type, connection_dict
+                )
+
+                # pull all labeled data
+                data, labels = get_labeled_data(project)
+                if len(data) > 0:
+                    # pull the export table
+                    if check_if_table_exists(
+                        engine_database,
+                        external_db.export_schema,
+                        external_db.export_table_name,
+                    ):
+                        response[
+                            "success_message"
+                        ] = "Table exists. Dropping and replacing with new output data."
+
+                        # drop the table and then replace the data
+                        data.to_sql(
+                            name=external_db.export_table_name,
+                            con=engine_database,
+                            schema=external_db.export_schema,
+                            if_exists="replace",
+                            index=False,
+                            dtype={"Timestamp": DateTime},
+                        )
+
+                    else:
+                        response["success_message"] = "Creating new table in database."
+                        # create table with columns from labeled data
+                        data.to_sql(
+                            name=external_db.export_table_name,
+                            con=engine_database,
+                            schema=external_db.export_schema,
+                            if_exists="fail",
+                            index=False,
+                            dtype={"Timestamp": DateTime},
+                        )
+                response[
+                    "success_message"
+                ] += f" Added {len(data)} rows to the database."
+
+            except Exception as e:
+                # return errors in the validation tool
+                response["error"] = str(e)
