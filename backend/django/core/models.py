@@ -128,6 +128,15 @@ class Project(models.Model):
         else:
             return "NaN"
 
+    def get_scheduled_export(self):
+        if self.externaldatabase.has_export:
+            if self.externaldatabase.cron_export:
+                return "On"
+            else:
+                return "Off"
+        else:
+            return "NaN"
+
     def get_export_database(self):
         if self.externaldatabase.has_export:
             return f"{self.externaldatabase.export_schema}.{self.externaldatabase.export_table_name}"

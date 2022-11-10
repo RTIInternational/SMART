@@ -231,6 +231,8 @@ def export_table(project_pk, response):
                             index=False,
                             dtype={"Timestamp": DateTime},
                         )
+                else:
+                    response["success_message"] = "No data to export."
                 response[
                     "success_message"
                 ] += f" Added {len(data)} rows to the database."
