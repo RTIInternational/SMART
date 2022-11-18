@@ -4,6 +4,7 @@ import ReactTable from "react-table-6";
 import {
     Button,
     Alert,
+    Form,
     Modal
 } from "react-bootstrap";
 import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
@@ -69,6 +70,7 @@ class History extends React.Component {
         this.toggleConfirm = this.toggleConfirm.bind(this);
         this.historyChangeLabel = this.historyChangeLabel.bind(this);
         this.state = {
+            metadataFilter : "",
             showConfirm : false
         };
         this.cardID, this.rowID, this.label;
@@ -76,6 +78,10 @@ class History extends React.Component {
 
     toggleConfirm() {
         this.setState({ showConfirm : !this.state.showConfirm });
+    }
+
+    handleMetadataFilterChange(search) {
+        this.setState({ metadataFilter: search });
     }
 
     componentDidMount() {
@@ -181,6 +187,7 @@ class History extends React.Component {
 
     render() {
         const { history_data } = this.props;
+        const filteredHistoryData = this.state.metadataFilter !== "" ? history_data.filter((data) => data.metadata.join("").includes(this.state.metadataFilter)) : history_data;
 
         let page_sizes = [1];
         let counter = 1;
@@ -227,8 +234,12 @@ class History extends React.Component {
                     updated for the next run of the model
                 </p>
                 <CodebookLabelMenuContainer />
+                <Form.Control type="search" value={this.state.metadataFilter} onChange={(event) => this.handleMetadataFilterChange(event.target.value)} placeholder="Search Respondent Data" />
+                <Form.Text className="mb-2 text-muted">
+                    Filter data by values in Respondent Data
+                </Form.Text>
                 <ReactTable
-                    data={history_data}
+                    data={filteredHistoryData}
                     columns={COLUMNS}
                     pageSize={
                         history_data.length < 50 ? history_data.length : 50
