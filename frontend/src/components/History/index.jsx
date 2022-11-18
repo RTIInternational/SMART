@@ -21,9 +21,19 @@ const COLUMNS = [
         show: false
     },
     {
-        Header: "hidden",
+        Header: "Respondent Data",
         accessor: "metadata",
-        show: false
+        filterMethod: (filter, row) => {
+            if (
+                String(row.metadata.join(""))
+                    .toLowerCase()
+                    .includes(filter.value.toLowerCase())
+            ) {
+                return true;
+            } else {
+                return false;
+            }
+        }
     },
     {
         Header: "Data",
