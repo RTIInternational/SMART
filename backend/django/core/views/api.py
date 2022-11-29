@@ -4,17 +4,23 @@ import os
 import tempfile
 import zipfile
 
+import sqlalchemy
 from django.conf import settings
 from django.http import HttpResponse
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
-from core.models import Project
+from core.models import ExternalDatabase, Project
 from core.permissions import IsAdminOrCreator
 from core.templatetags import project_extras
 from core.utils.util import get_labeled_data
-from core.utils.utils_external_db import export_table, load_ingest_table
+from core.utils.utils_external_db import (
+    check_if_table_exists,
+    get_connection,
+    load_external_db_file,
+    load_ingest_table,
+)
 
 
 @api_view(["GET"])
@@ -176,14 +182,69 @@ def export_database_table(request, project_pk):
     """
     response = {}
     profile = request.user.profile
+    project = Project.objects.get(pk=project_pk)
+
     # Make sure coder is an admin
-    if (
-        project_extras.proj_permission_level(
-            Project.objects.get(pk=project_pk), profile
-        )
-        > 1
-    ):
-        export_table(project_pk, response)
+    if project_extras.proj_permission_level(project, profile) > 1:
+
+        if not project.has_database_connection():
+            response["error"] = "Project does not have a database connection."
+        else:
+            # check that the project has a database connection and export tables
+            connection_dict = load_external_db_file(project_pk)
+            external_db = ExternalDatabase.objects.get(project=project)
+
+            if not external_db.has_export:
+                response["error"] = "Project does not have export connections set up."
+            else:
+                try:
+                    engine_database = get_connection(
+                        external_db.database_type, connection_dict
+                    )
+
+                    # pull all labeled data
+                    data, labels = get_labeled_data(project)
+                    if len(data) > 0:
+                        # pull the export table
+                        if check_if_table_exists(
+                            engine_database,
+                            external_db.export_schema,
+                            external_db.export_table_name,
+                        ):
+                            response[
+                                "success_message"
+                            ] = "Table exists. Dropping and replacing with new output data."
+
+                            # drop the table and then replace the data
+                            data.to_sql(
+                                name=external_db.export_table_name,
+                                con=engine_database,
+                                schema=external_db.export_schema,
+                                if_exists="replace",
+                                index=False,
+                                dtype={"Timestamp": sqlalchemy.DateTime},
+                            )
+
+                        else:
+                            response[
+                                "success_message"
+                            ] = "Creating new table in database."
+                            # create table with columns from labeled data
+                            data.to_sql(
+                                name=external_db.export_table_name,
+                                con=engine_database,
+                                schema=external_db.export_schema,
+                                if_exists="fail",
+                                index=False,
+                                dtype={"Timestamp": sqlalchemy.DateTime},
+                            )
+                    response[
+                        "success_message"
+                    ] += f" Added {len(data)} rows to the database."
+
+                except Exception as e:
+                    # return errors in the validation tool
+                    response["error"] = str(e)
     else:
         response["error"] = "Invalid credentials. Must be an admin."
 
