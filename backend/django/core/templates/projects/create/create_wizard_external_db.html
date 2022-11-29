@@ -63,7 +63,7 @@
                         <hr />
                         <p>The following fields are the table name and schema for the database table you wish SMART to read new data from.
                             At minimum the table must have a column "Text" with the text that needs to be labeled.</p>
-                        <div id="ingest_cron_fields">
+                        <div id="ingest_schema_fields">
                             Enable scheduled ingest*: {{ wizard.form.cron_ingest }}
                         </div>
                         <p>* Scheduled ingest must be set up by network administrators for this option to do anything.</p>
@@ -78,10 +78,6 @@
                         <hr />
                         <p>The following fields are the table name and schema for the database table you wish SMART to export labeled data to.
                             <b>WARNING:</b> SMART will completely drop and rewrite this table each time you export. We recommend you chose a new table name that is not already in use in the database.</p>
-                        <div id="export_cron_fields">
-                            Enable scheduled export*: {{ wizard.form.cron_export }}
-                        </div>
-                        <p>* Scheduled export must be set up by network administrators for this option to do anything.</p>
                         <div id="export_table_fields">
                             Export Table Name: {{ wizard.form.export_table_name }}
                         </div>

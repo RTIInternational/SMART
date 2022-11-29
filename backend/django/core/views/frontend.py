@@ -292,7 +292,6 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
                     ingest_schema=external_data["ingest_schema"],
                     ingest_table_name=external_data["ingest_table_name"],
                     has_export=external_data["has_export"],
-                    cron_export=external_data["cron_export"],
                     export_schema=external_data["export_schema"],
                     export_table_name=external_data["export_table_name"],
                 )
@@ -599,7 +598,6 @@ class ProjectUpdateExternalDB(LoginRequiredMixin, UserPassesTestMixin, UpdateVie
                         ingest_schema=external_data["ingest_schema"],
                         ingest_table_name=external_data["ingest_table_name"],
                         has_export=external_data["has_export"],
-                        cron_export=external_data["cron_export"],
                         export_schema=external_data["export_schema"],
                         export_table_name=external_data["export_table_name"],
                     )
@@ -613,7 +611,6 @@ class ProjectUpdateExternalDB(LoginRequiredMixin, UserPassesTestMixin, UpdateVie
                         cron_ingest=False,
                         ingest_table_name=None,
                         has_export=False,
-                        cron_export=False,
                         export_schema=None,
                         export_table_name=None,
                     )

@@ -392,7 +392,6 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
         fields = [
             "database_type",
             "cron_ingest",
-            "cron_export",
             "ingest_schema",
             "ingest_table_name",
             "export_schema",
@@ -408,7 +407,6 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
     cron_ingest = forms.BooleanField(initial=False, required=False)
     ingest_table_name = forms.CharField(initial="", required=False, max_length=50)
     ingest_schema = forms.CharField(initial="", required=False, max_length=50)
-    cron_export = forms.BooleanField(initial=False, required=False)
     export_table_name = forms.CharField(initial="", required=False, max_length=1024)
     export_schema = forms.CharField(initial="", required=False, max_length=1024)
     username = forms.CharField(initial="", required=False, max_length=50)
@@ -430,7 +428,6 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
             "ingest_table_name",
             "ingest_schema",
             "cron_ingest",
-            "cron_export",
             "export_table_name",
             "export_schema",
             "username",
