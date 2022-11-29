@@ -122,6 +122,7 @@
                   <dd>Import Table: {{ project.get_ingest_database }}</dd>
                   <dd>Scheduled Import: {{ project.get_scheduled_ingest }}</dd>
                   <dd>Export Table: {{ project.get_export_database }}</dd>
+                  <dd>Scheduled Export: {{ project.get_scheduled_export }}</dd>
                 </li>
                 {% endif %}
                 {% if project.classifier != None %}
