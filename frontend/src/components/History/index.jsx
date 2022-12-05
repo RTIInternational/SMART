@@ -187,7 +187,20 @@ class History extends React.Component {
 
     render() {
         const { history_data } = this.props;
-        const filteredHistoryData = this.state.metadataFilter !== "" ? history_data.filter((data) => data.metadata.join("").includes(this.state.metadataFilter)) : history_data;
+        const filteredHistoryData = this.state.metadataFilter !== "" ? history_data.filter((data) => data.metadata.join(", ").toLowerCase().includes(this.state.metadataFilter.toLowerCase())) : history_data;
+
+        let metadataColumns = [];
+        filteredHistoryData.forEach((data) => {
+            data.filteredTableMetadata = {};
+            if (data.metadata)
+                data.metadata.forEach((metadata) => {
+                    const metadataRow = metadata.split(": ");
+                    const metadataColumn = metadataRow[0].replaceAll(" ", "_");
+                    const metadataValue = metadataRow[1];
+                    if (!metadataColumns.includes(metadataColumn)) metadataColumns.push(metadataColumn);
+                    data.filteredTableMetadata[metadataColumn] = metadataValue;
+                });
+        });
 
         let page_sizes = [1];
         let counter = 1;
@@ -234,13 +247,22 @@ class History extends React.Component {
                     updated for the next run of the model
                 </p>
                 <CodebookLabelMenuContainer />
-                <Form.Control type="search" value={this.state.metadataFilter} onChange={(event) => this.handleMetadataFilterChange(event.target.value)} placeholder="Search Respondent Data" />
+                <p>
+                    Filter by Respondent Data
+                </p>
+                <Form.Control type="search" value={this.state.metadataFilter} onChange={(event) => this.handleMetadataFilterChange(event.target.value)} placeholder="e.g. major: Business" />
                 <Form.Text className="mb-2 text-muted">
-                    Filter data by values in Respondent Data
+                    <b>NOTE:</b> For multiple properties, separate with commas (ex. major: Business, year: 2020)
                 </Form.Text>
                 <ReactTable
                     data={filteredHistoryData}
-                    columns={COLUMNS}
+                    columns={[...COLUMNS, ...metadataColumns.map((column) => {
+                        return {
+                            Header: column,
+                            accessor: `filteredTableMetadata.${column}`,
+                            show: true
+                        };
+                    })]}
                     pageSize={
                         history_data.length < 50 ? history_data.length : 50
                     }
