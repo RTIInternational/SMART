@@ -32,6 +32,8 @@ export const getHistory = (projectID) => {
                         id: response.data[i].id,
                         data: response.data[i].data,
                         metadata: response.data[i].metadata,
+                        formattedMetadata: response.data[i].formattedMetadata,
+                        metadataIDs: response.data[i].metadataIDs,
                         old_label: response.data[i].label,
                         old_label_id: response.data[i].labelID,
                         timestamp: response.data[i].timestamp,
@@ -95,6 +97,22 @@ export const changeToSkip = (dataID, oldLabelID, projectID, message) => {
                 dispatch(getHistory(projectID));
                 dispatch(getAdmin(projectID));
                 dispatch(getAdminCounts(projectID));
+            });
+    };
+};
+
+export const modifyMetadataValue = (metadataId, value) => {
+    let apiURL = `/api/modify_metadata_value/${metadataId}/`;
+    return dispatch => {
+        return fetch(apiURL, postConfig({ value }))
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    const error = new Error(response.statusText);
+                    error.response = response;
+                    throw error;
+                }
             });
     };
 };

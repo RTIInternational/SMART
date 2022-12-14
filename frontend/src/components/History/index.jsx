@@ -1,14 +1,10 @@
 import React from "react";
 import PropTypes from "prop-types";
 import ReactTable from "react-table-6";
-import {
-    Button,
-    Alert,
-    Form,
-    Modal
-} from "react-bootstrap";
+import { Button, Alert, Modal } from "react-bootstrap";
 import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
 import AnnotateCard, { buildCard } from "../AnnotateCard";
+import EditableMetadataCell from "./EditableMetadataCell";
 
 const COLUMNS = [
     {
@@ -70,7 +66,7 @@ class History extends React.Component {
         this.toggleConfirm = this.toggleConfirm.bind(this);
         this.historyChangeLabel = this.historyChangeLabel.bind(this);
         this.state = {
-            metadataFilter : "",
+            pageSize : parseInt(localStorage.getItem("pageSize") || "25"),
             showConfirm : false
         };
         this.cardID, this.rowID, this.label;
@@ -78,10 +74,6 @@ class History extends React.Component {
 
     toggleConfirm() {
         this.setState({ showConfirm : !this.state.showConfirm });
-    }
-
-    handleMetadataFilterChange(search) {
-        this.setState({ metadataFilter: search });
     }
 
     componentDidMount() {
@@ -187,19 +179,13 @@ class History extends React.Component {
 
     render() {
         const { history_data } = this.props;
-        const filteredHistoryData = this.state.metadataFilter !== "" ? history_data.filter((data) => data.metadata.join(", ").toLowerCase().includes(this.state.metadataFilter.toLowerCase())) : history_data;
 
         let metadataColumns = [];
-        filteredHistoryData.forEach((data) => {
-            data.filteredTableMetadata = {};
-            if (data.metadata)
-                data.metadata.forEach((metadata) => {
-                    const metadataRow = metadata.split(": ");
-                    const metadataColumn = metadataRow[0].replaceAll(" ", "_");
-                    const metadataValue = metadataRow[1];
-                    if (!metadataColumns.includes(metadataColumn)) metadataColumns.push(metadataColumn);
-                    data.filteredTableMetadata[metadataColumn] = metadataValue;
-                });
+        history_data.forEach((data) => {
+            if (data.formattedMetadata)
+                Object.keys(data.formattedMetadata).forEach((metadataColumn) =>
+                    !metadataColumns.includes(metadataColumn) ? metadataColumns.push(metadataColumn) : null
+                );
         });
 
         let page_sizes = [1];
@@ -247,26 +233,22 @@ class History extends React.Component {
                     updated for the next run of the model
                 </p>
                 <CodebookLabelMenuContainer />
-                <p>
-                    Filter by Respondent Data
-                </p>
-                <Form.Control type="search" value={this.state.metadataFilter} onChange={(event) => this.handleMetadataFilterChange(event.target.value)} placeholder="e.g. major: Business" />
-                <Form.Text className="mb-2 text-muted">
-                    <b>NOTE:</b> For multiple properties, separate with commas (ex. major: Business, year: 2020)
-                </Form.Text>
                 <ReactTable
-                    data={filteredHistoryData}
-                    columns={[...COLUMNS, ...metadataColumns.map((column) => {
+                    data={history_data}
+                    columns={[...COLUMNS, ...metadataColumns.map((column, i) => {
                         return {
                             Header: column,
-                            accessor: `filteredTableMetadata.${column}`,
-                            show: true
+                            accessor: `formattedMetadata.${column}`,
+                            show: true,
+                            Cell: (props) => (
+                                <EditableMetadataCell id={props.row._original.metadataIDs[i]} modifyMetadataValue={this.props.modifyMetadataValue} value={props.value} />
+                            ),
                         };
                     })]}
-                    pageSize={
-                        history_data.length < 50 ? history_data.length : 50
-                    }
-                    showPageSizeOptions={false}
+                    showPageSizeOptions={true}
+                    pageSizeOptions={[5, 10, 25, 50, 100]}
+                    defaultPageSize={this.state.pageSize}
+                    onPageSizeChange={(pageSize) => localStorage.setItem("pageSize", pageSize)}
                     SubComponent={row => this.getSubComponent(row)}
                     filterable={true}
                     defaultSorted={[
@@ -291,7 +273,8 @@ History.propTypes = {
     getHistory: PropTypes.func.isRequired,
     history_data: PropTypes.arrayOf(PropTypes.object),
     changeLabel: PropTypes.func.isRequired,
-    changeToSkip: PropTypes.func.isRequired
+    changeToSkip: PropTypes.func.isRequired,
+    modifyMetadataValue: PropTypes.func.isRequired
 };
 
 export default History;
