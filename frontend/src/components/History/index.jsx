@@ -9,69 +9,86 @@ import {
 import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
 import AnnotateCard, { buildCard } from "../AnnotateCard";
 
-const COLUMNS = [
-    {
-        Header: "edit",
-        accessor: "edit",
-        show: false
-    },
-    {
-        Header: "id",
-        accessor: "id",
-        show: false
-    },
-    {
-        Header: "hidden",
-        accessor: "metadata",
-        show: false
-    },
-    {
-        Header: "Data",
-        accessor: "data",
-        filterMethod: (filter, row) => {
-            if (
-                String(row.data)
-                    .toLowerCase()
-                    .includes(filter.value.toLowerCase())
-            ) {
-                return true;
-            } else {
-                return false;
-            }
-        }
-    },
-    {
-        Header: "Old Label",
-        accessor: "old_label",
-        width: 100
-    },
-    {
-        Header: "User",
-        accessor: "profile",
-        width: 100
-    },
-    {
-        Header: "Old Label ID",
-        accessor: "old_label_id",
-        show: false
-    },
-    {
-        Header: "Date/Time",
-        accessor: "timestamp",
-        id: "timestamp",
-        width: 150
-    }
-];
+
 
 class History extends React.Component {
     constructor() {
         super();
         this.toggleConfirm = this.toggleConfirm.bind(this);
+        this.verifyLabel = this.verifyLabel.bind(this);
         this.historyChangeLabel = this.historyChangeLabel.bind(this);
         this.state = {
             showConfirm : false
         };
         this.cardID, this.rowID, this.label;
+    }
+
+    COLUMNS() {
+        return [
+            {
+                Header: "edit",
+                accessor: "edit",
+                show: false
+            },
+            {
+                Header: "id",
+                accessor: "id",
+                show: false
+            },
+            {
+                Header: "hidden",
+                accessor: "metadata",
+                show: false
+            },
+            {
+                Header: "Data",
+                accessor: "data",
+                filterMethod: (filter, row) => {
+                    if (
+                        String(row.data)
+                            .toLowerCase()
+                            .includes(filter.value.toLowerCase())
+                    ) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+            },
+            {
+                Header: "Old Label",
+                accessor: "old_label",
+                width: 100
+            },
+            {
+                Header: "Verified",
+                width: 80,
+                accessor: "verified",
+                Cell: props => {
+                    if (props.value == "Yes") {
+                        return (<p>Yes</p>);
+                    } else {
+                        return (<Button variant="success" value={props.row.id} onClick={this.verifyLabel}>Verify</Button>);
+                    }
+                }
+            },
+            {
+                Header: "User",
+                accessor: "profile",
+                width: 100
+            },
+            {
+                Header: "Old Label ID",
+                accessor: "old_label_id",
+                show: false
+            },
+            {
+                Header: "Date/Time",
+                accessor: "timestamp",
+                id: "timestamp",
+                width: 150
+            }
+        ];
     }
 
     toggleConfirm() {
@@ -80,6 +97,10 @@ class History extends React.Component {
 
     componentDidMount() {
         this.props.getHistory();
+    }
+
+    verifyLabel(event) {
+        this.props.verifyDataLabel(event.target.value);
     }
 
     getLabelButton(row, label) {
@@ -229,7 +250,7 @@ class History extends React.Component {
                 <CodebookLabelMenuContainer />
                 <ReactTable
                     data={history_data}
-                    columns={COLUMNS}
+                    columns={this.COLUMNS()}
                     pageSize={
                         history_data.length < 50 ? history_data.length : 50
                     }
@@ -258,7 +279,8 @@ History.propTypes = {
     getHistory: PropTypes.func.isRequired,
     history_data: PropTypes.arrayOf(PropTypes.object),
     changeLabel: PropTypes.func.isRequired,
-    changeToSkip: PropTypes.func.isRequired
+    changeToSkip: PropTypes.func.isRequired,
+    verifyDataLabel: PropTypes.func.isRequired,
 };
 
 export default History;

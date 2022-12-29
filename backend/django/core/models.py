@@ -104,6 +104,13 @@ class Project(models.Model):
     def labeled_data_count(self):
         return self.data_set.all().filter(datalabel__isnull=False).count()
 
+    def unverified_labeled_data_count(self):
+        return (
+            self.data_set.all()
+            .filter(datalabel__isnull=False, datalabel__verified=False)
+            .count()
+        )
+
     def has_model(self):
         if self.model_set.count() > 0:
             return True
@@ -277,6 +284,7 @@ class DataLabel(models.Model):
     training_set = models.ForeignKey("TrainingSet", on_delete=models.CASCADE)
     time_to_label = models.IntegerField(null=True)
     timestamp = models.DateTimeField(null=True, default=None)
+    verified = models.BooleanField(default=True)
 
 
 class LabelChangeLog(models.Model):

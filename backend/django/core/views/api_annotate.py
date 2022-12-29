@@ -158,6 +158,36 @@ def unassign_data(request, data_pk):
 
 @api_view(["POST"])
 @permission_classes((IsCoder,))
+def verify_label(request, data_pk):
+    """Take a data label that was not verified, and verify it.
+
+    Args:
+        request: The POST request
+        data_pk: Primary key of the data
+    Returns:
+        {}
+    """
+    data = Data.objects.get(pk=data_pk)
+    response = {}
+    # if the coder has been un-assigned from the data
+    if not DataLabel.objects.filter(data=data).exists():
+        response[
+            "error"
+        ] = "ERROR: This data has no label to verify. Something must have gone wrong."
+        return Response(response)
+    elif DataLabel.objects.filter(data=data).count() > 1:
+        response["error"] = (
+            "ERROR: This data has multiple labels. This shouldn't "
+            "be possible with unverified data as it is pre-labeled."
+        )
+    else:
+        DataLabel.objects.filter(data=data).update(verified=True)
+
+    return Response(response)
+
+
+@api_view(["POST"])
+@permission_classes((IsCoder,))
 def skip_data(request, data_pk):
     """Take a datum that is in the assigneddata queue for that user and place it in the
     admin queue. Remove it from the assignedData queue.
@@ -755,6 +785,7 @@ def label_skew_label(request, data_pk):
                 training_set=current_training_set,
                 time_to_label=None,
                 timestamp=timezone.now(),
+                verified=True,
             )
     else:
         response["error"] = "Invalid permission. Must be an admin."
@@ -804,6 +835,7 @@ def label_admin_label(request, data_pk):
             training_set=current_training_set,
             time_to_label=None,
             timestamp=timezone.now(),
+            verified=True,
         )
 
         DataQueue.objects.filter(data=datum, queue=queue).delete()
@@ -873,6 +905,10 @@ def get_label_history(request, project_pk):
             new_timestamp = "None"
 
         serialized_data = DataSerializer(d.data, many=False).data
+        if d.verified:
+            verified = "Yes"
+        else:
+            verified = "No"
         temp_dict = {
             "data": serialized_data["text"],
             "metadata": serialized_data["metadata"],
@@ -880,6 +916,7 @@ def get_label_history(request, project_pk):
             "label": d.label.name,
             "labelID": d.label.id,
             "timestamp": new_timestamp,
+            "verified": verified,
             "edit": "yes",
             "profile": User.objects.get(
                 id=Profile.objects.get(id=d.profile_id).user_id
@@ -912,12 +949,17 @@ def get_label_history(request, project_pk):
             )
         else:
             new_timestamp = "None"
+        if d.verified:
+            verified = "Yes"
+        else:
+            verified = "No"
         temp_dict = {
             "data": d.data.text,
             "id": d.data.id,
             "label": d.label.name,
             "labelID": d.label.id,
             "timestamp": new_timestamp,
+            "verified": verified,
             "edit": "no",
             "profile": User.objects.get(
                 id=Profile.objects.get(id=d.profile_id).user_id

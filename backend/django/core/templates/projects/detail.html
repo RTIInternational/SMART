@@ -50,6 +50,8 @@
           <div id="status-panel" class="panel-collapse collapse show">
             <div class="panel-body">
               <p>Fully Labeled: <span id="fully-labeled"></span></p>
+              <p>Fully Labeled (Verified): <span id="fully-labeled-verified"></span></p>
+              <p>Fully Labeled (Unverified): <span id="fully-labeled-unverified"></span></p>
               <p>Unlabeled and Unassigned: <span id="unlabeled-unassigned"></span></p>
               <p>Awaiting Adjudication: <span id="awaiting-adjudication"></span></p>
               <p style="font-size: 0.65rem; margin-left: 8px;"><i>Note: </i>&nbsp;Data awaiting adjudication has either been skipped or is waiting on admin review because two or more coders disagreed on its label</p>
@@ -263,10 +265,16 @@
             </a>
             {% endif %}
           {% if project.has_model %}
-            <a class="btn btn-primary" id="download_model_btn">Download Model and Labeled Data</a>
+            <a class="btn btn-primary" id="download_model_btn" onclick="download_model({{project.pk}},1)">Download Model and All Labeled Data</a>
+            {% if project.unverified_labeled_data_count > 0 %}
+              <a class="btn btn-primary" id="download_model_btn_verified" onclick="download_model({{project.pk}},0)">Download Model and Only Verified Labeled Data</a>
+            {% endif %}
           {% else %}
             {% if project.labeled_data_count > 0 %}
-            <a class="btn btn-primary" id="download_btn">Download Labeled Data</a>
+            <a class="btn btn-primary" id="download_btn" onclick="download_data({{project.pk}},1)">Download Labeled Data</a>
+            {% if project.unverified_labeled_data_count > 0 and project.labeled_data_count > project.unverified_labeled_data_count %}
+              <a class="btn btn-primary" id="download_btn_verified" onclick="download_data({{project.pk}},0)">Download Only Verified Labeled Data</a>
+            {% endif %}
             {% else %}
             <a class="btn btn-primary disabled" id="download_btn">No Labeled Data to Download</a>
             {% endif %}
@@ -283,35 +291,13 @@
 {% block scripts_body %}
 <script>
 /*
- *  When the download model button is pressed, download a zip file
- *  with a README, the model, labeled data, and tfidf matrix
- */
-$('#download_model_btn').on('click', function() {
-  xhttp = new XMLHttpRequest();
-  xhttp.onreadystatechange = function() {
-    var a, today;
-    if (xhttp.readyState === 4 && xhttp.status === 200) {
-      a = document.createElement('a');
-      a.href = window.URL.createObjectURL(xhttp.response);
-      today = new Date();
-      a.download = 'project_' + {{ project.pk }} + '_model_' + today.toDateString().split(' ').join('_') + '.zip';
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      return a.click();
-    }
-  };
-  xhttp.open('GET', '/api/download_model/' + {{ project.pk }} + '/', true);
-  xhttp.setRequestHeader('Content-Type', 'application/json');
-  xhttp.responseType = 'blob';
-  xhttp.send();
-});
-
-/*
  *  When download button is pressed request the csv file, add the data as a blob
  *  to a new anchor element, and trigger a click event on that anchor element
  *  to prompt the download file popup
+ *  NOTE: this function is also in detail.html, but edited to work for multiple
+ *  buttons on the same page
  */
-$('#download_btn').on('click', function() {
+ function download_data(pk, unverified) {
   xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
     var a, today;
@@ -319,17 +305,42 @@ $('#download_btn').on('click', function() {
       a = document.createElement('a');
       a.href = window.URL.createObjectURL(xhttp.response);
       today = new Date();
-      a.download = 'project_' + {{ project.pk }} + '_labels_' + today.toDateString().split(' ').join('_') + '.csv';
+      a.download = 'project_' + String(pk) + '_labels_' + today.toDateString().split(' ').join('_') + '.csv';
       a.style.display = 'none';
       document.body.appendChild(a);
       return a.click();
     }
   };
-  xhttp.open('GET', '/api/download_data/' + {{ project.pk }} + '/', true);
+  xhttp.open('GET', '/api/download_data/' + String(pk) + '/' + String(unverified) + '/', true);
   xhttp.setRequestHeader('Content-Type', 'application/json');
   xhttp.responseType = 'blob';
   xhttp.send();
-});
+}
+
+/*
+ *  When the download model button is pressed, download a zip file
+ *  with a README, the model, labeled data, and tfidf matrix
+ */
+function download_model(pk, unverified) {
+  xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    var a, today;
+    if (xhttp.readyState === 4 && xhttp.status === 200) {
+      a = document.createElement('a');
+      a.href = window.URL.createObjectURL(xhttp.response);
+      today = new Date();
+      a.download = 'project_' + String(pk) + '_model_' + today.toDateString().split(' ').join('_') + '.zip';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      return a.click();
+    }
+  };
+  xhttp.open('GET', '/api/download_model/' + String(pk) + '/' + String(unverified) + '/', true);
+  xhttp.setRequestHeader('Content-Type', 'application/json');
+  xhttp.responseType = 'blob';
+  xhttp.send();
+}
+
 
 /*
  *  When the ingest datatable button is pressed, SMART pulls the entire
@@ -371,6 +382,8 @@ $(document).ready(function() {
     url: '/api/project_status/' + {{ project.pk }} + '/',
     success: function (response) {
       $('#fully-labeled').append(response.final);
+      $('#fully-labeled-verified').append(response.final_verified);
+      $('#fully-labeled-unverified').append(response.final_unverified);
       $('#unlabeled-unassigned').append(response.unlabeled);
       $('#awaiting-adjudication').append(response.adjudication);
       $('#recycled').append(response.recycled);

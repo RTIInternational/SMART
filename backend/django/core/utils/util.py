@@ -197,6 +197,7 @@ def create_labels_from_csv(df, project):
         "training_set_id",
         "time_to_label",
         "timestamp",
+        "verified",
     ]
     stream = StringIO()
 
@@ -212,6 +213,9 @@ def create_labels_from_csv(df, project):
     df["training_set_id"] = project.get_current_training_set().pk
     df["label_id"] = df["Label"].apply(lambda x: labels[x])
     df["profile_id"] = project.creator.pk
+
+    # data labels loaded in from a csv are unverified
+    df["verified"] = False
 
     df.to_csv(stream, sep="\t", header=False, index=False, columns=columns)
     stream.seek(0)
@@ -597,11 +601,12 @@ def save_codebook_file(data, project_pk):
     return fpath.replace("/data/code_books/", "")
 
 
-def get_labeled_data(project):
+def get_labeled_data(project, unverified=True):
     """Given a project, get the list of labeled data.
 
     Args:
         project: Project object
+        unverified: bool. If true, then include unverified data in download.
     Returns:
         data: a list of the labeled data
     """
@@ -612,6 +617,8 @@ def get_labeled_data(project):
     for label in project_labels:
         labels.append({"Name": label.name, "Label_ID": label.pk})
         labeled_data = DataLabel.objects.filter(label=label, data__irr_ind=False)
+        if not unverified:
+            labeled_data = labeled_data.filter(verified=True)
         for d in labeled_data:
             temp = {}
             temp["ID"] = d.data.upload_id
@@ -629,6 +636,10 @@ def get_labeled_data(project):
                 )
             else:
                 temp["Timestamp"] = None
+            if d.verified:
+                temp["Verified"] = "Yes"
+            else:
+                temp["Verified"] = "No"
             data.append(temp)
     labeled_data_frame = pd.DataFrame(data)
     label_frame = pd.DataFrame(labels)
@@ -648,6 +659,13 @@ def project_status(project):
 
     final_data_objs = list(
         DataLabel.objects.filter(data__project=project, data__irr_ind=False)
+    )
+
+    final_verified = DataLabel.objects.filter(
+        data__project=project, data__irr_ind=False, verified=True
+    )
+    final_unverified = DataLabel.objects.filter(
+        data__project=project, data__irr_ind=False, verified=False
     )
 
     stuff_in_irrlog = IRRLog.objects.filter(data__project=project).values_list(
@@ -674,6 +692,8 @@ def project_status(project):
         "adjudication": len(stuff_in_queue),
         "assigned": len(assigned_ids),
         "final": len(final_data_objs),
+        "final_verified": len(final_verified),
+        "final_unverified": len(final_unverified),
         "recycled": len(recycle_ids),
         "total": len(total_data_objs),
         "unlabeled": len(unlabeled_data_objs),

@@ -175,6 +175,7 @@ def label_data(label, datum, profile, time):
             training_set=current_training_set,
             time_to_label=time,
             timestamp=timezone.now(),
+            verified=True,
         )
         # There's a unique constraint on data/profile, so this is
         # guaranteed to return one object
@@ -240,6 +241,7 @@ def process_irr_label(data, label):
                     training_set=current_training_set,
                     time_to_label=None,
                     timestamp=timezone.now(),
+                    verified=True,
                 )
                 DataQueue.objects.filter(data=data).delete()
             else:
