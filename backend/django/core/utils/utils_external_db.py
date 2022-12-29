@@ -198,7 +198,9 @@ def export_table(project_pk, response):
                 )
 
                 # pull all labeled data
-                data, labels = get_labeled_data(project)
+                data, labels = get_labeled_data(
+                    project, unverified=(not external_db.export_verified_only)
+                )
                 if len(data) > 0:
                     # pull the export table
                     if check_if_table_exists(

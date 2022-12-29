@@ -125,6 +125,7 @@
                   <dd>Scheduled Import: {{ project.get_scheduled_ingest }}</dd>
                   <dd>Export Table: {{ project.get_export_database }}</dd>
                   <dd>Scheduled Export: {{ project.get_scheduled_export }}</dd>
+                  <dd>Export only Verified Labeled Data: {{ project.get_export_verified_only }}</dd>
                 </li>
                 {% endif %}
                 {% if project.classifier != None %}

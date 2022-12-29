@@ -144,6 +144,15 @@ class Project(models.Model):
         else:
             return "NaN"
 
+    def get_export_verified_only(self):
+        if self.externaldatabase.has_export:
+            if self.externaldatabase.export_verified_only:
+                return "On"
+            else:
+                return "Off"
+        else:
+            return "NaN"
+
     def get_export_database(self):
         if self.externaldatabase.has_export:
             return f"{self.externaldatabase.export_schema}.{self.externaldatabase.export_table_name}"
@@ -237,6 +246,7 @@ class ExternalDatabase(models.Model):
     cron_export = models.BooleanField(default=False)
     export_schema = models.CharField(max_length=1024, null=True)
     export_table_name = models.CharField(max_length=1024, null=True)
+    export_verified_only = models.BooleanField(default=False)
 
 
 class LabelEmbeddings(models.Model):

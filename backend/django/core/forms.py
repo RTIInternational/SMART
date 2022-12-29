@@ -397,6 +397,7 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
             "ingest_table_name",
             "export_schema",
             "export_table_name",
+            "export_verified_only",
         ]
 
     database_type = forms.ChoiceField(
@@ -411,6 +412,7 @@ class ExternalDatabaseWizardForm(forms.ModelForm):
     cron_export = forms.BooleanField(initial=False, required=False)
     export_table_name = forms.CharField(initial="", required=False, max_length=1024)
     export_schema = forms.CharField(initial="", required=False, max_length=1024)
+    export_verified_only = forms.BooleanField(initial=False, required=False)
     username = forms.CharField(initial="", required=False, max_length=50)
     password = forms.CharField(
         initial="", required=False, max_length=200, widget=forms.PasswordInput()

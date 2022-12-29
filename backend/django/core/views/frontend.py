@@ -295,6 +295,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
                     cron_export=external_data["cron_export"],
                     export_schema=external_data["export_schema"],
                     export_table_name=external_data["export_table_name"],
+                    export_verified_only=external_data["export_verified_only"],
                 )
             else:
                 # Create an empty database object
@@ -602,6 +603,7 @@ class ProjectUpdateExternalDB(LoginRequiredMixin, UserPassesTestMixin, UpdateVie
                         cron_export=external_data["cron_export"],
                         export_schema=external_data["export_schema"],
                         export_table_name=external_data["export_table_name"],
+                        export_verified_only=external_data["export_verified_only"],
                     )
                 elif project.has_database_connection():
                     # remove existing database connection
