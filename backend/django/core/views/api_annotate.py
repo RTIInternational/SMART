@@ -956,9 +956,7 @@ def modify_metadata_value(request, metadata_pk):
     Returns:
         {}
     """
-    print(metadata_pk)
     metadata = MetaData.objects.filter(pk=metadata_pk).first()
     metadata.value = request.data["value"]
-    print(request.data["value"])
     metadata.save()
     return Response({})

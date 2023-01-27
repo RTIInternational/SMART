@@ -1,7 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 import ReactTable from "react-table-6";
-import { Button, Alert, Modal } from "react-bootstrap";
+import { Button, Alert, Modal, OverlayTrigger, Tooltip } from "react-bootstrap";
 import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
 import AnnotateCard, { buildCard } from "../AnnotateCard";
 import EditableMetadataCell from "./EditableMetadataCell";
@@ -232,12 +232,26 @@ class History extends React.Component {
                     active learning in the past. The training data will only be
                     updated for the next run of the model
                 </p>
+                <p style={{ maxWidth: "75ch" }}>
+                    <strong>TIP:</strong> In this table you may edit metadata fields. Click on the value in the column and row where you want to change the data and it will open as a text box.
+                </p>
                 <CodebookLabelMenuContainer />
                 <ReactTable
                     data={history_data}
                     columns={[...COLUMNS, ...metadataColumns.map((column, i) => {
                         return {
-                            Header: column,
+                            Header: () => (
+                                <OverlayTrigger
+                                    placement="top"
+                                    overlay={
+                                        <Tooltip id={`history-column-${column}`}>
+                                            {column}
+                                        </Tooltip>
+                                    }
+                                >
+                                    <span style={{ display: "inline-block", width: "100%" }}>{column}</span>
+                                </OverlayTrigger>
+                            ),
                             accessor: `formattedMetadata.${column}`,
                             show: true,
                             Cell: (props) => (
