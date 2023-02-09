@@ -105,6 +105,7 @@ class CodebookLabelMenu extends React.Component {
                     ) : label_button}
                 </div>
                 {this.getLabels(labels, this.state.labels_open)}
+                {codebook_module}
             </div>
         );
     }
