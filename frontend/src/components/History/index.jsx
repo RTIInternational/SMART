@@ -1,13 +1,10 @@
 import React from "react";
 import PropTypes from "prop-types";
 import ReactTable from "react-table-6";
-import {
-    Button,
-    Alert,
-    Modal
-} from "react-bootstrap";
+import { Button, Alert, Modal, OverlayTrigger, Tooltip } from "react-bootstrap";
 import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
 import AnnotateCard, { buildCard } from "../AnnotateCard";
+import EditableMetadataCell from "./EditableMetadataCell";
 
 const COLUMNS = [
     {
@@ -69,6 +66,7 @@ class History extends React.Component {
         this.toggleConfirm = this.toggleConfirm.bind(this);
         this.historyChangeLabel = this.historyChangeLabel.bind(this);
         this.state = {
+            pageSize : parseInt(localStorage.getItem("pageSize") || "25"),
             showConfirm : false
         };
         this.cardID, this.rowID, this.label;
@@ -182,6 +180,14 @@ class History extends React.Component {
     render() {
         const { history_data } = this.props;
 
+        let metadataColumns = [];
+        history_data.forEach((data) => {
+            if (data.formattedMetadata)
+                Object.keys(data.formattedMetadata).forEach((metadataColumn) =>
+                    !metadataColumns.includes(metadataColumn) ? metadataColumns.push(metadataColumn) : null
+                );
+        });
+
         let page_sizes = [1];
         let counter = 1;
         for (let i = 5; i < history_data.length; i += 5 * counter) {
@@ -226,14 +232,37 @@ class History extends React.Component {
                     active learning in the past. The training data will only be
                     updated for the next run of the model
                 </p>
+                <p style={{ maxWidth: "75ch" }}>
+                    <strong>TIP:</strong> In this table you may edit metadata fields. Click on the value in the column and row where you want to change the data and it will open as a text box.
+                </p>
                 <CodebookLabelMenuContainer />
                 <ReactTable
                     data={history_data}
-                    columns={COLUMNS}
-                    pageSize={
-                        history_data.length < 50 ? history_data.length : 50
-                    }
-                    showPageSizeOptions={false}
+                    columns={[...COLUMNS, ...metadataColumns.map((column, i) => {
+                        return {
+                            Header: () => (
+                                <OverlayTrigger
+                                    placement="top"
+                                    overlay={
+                                        <Tooltip id={`history-column-${column}`}>
+                                            {column}
+                                        </Tooltip>
+                                    }
+                                >
+                                    <span style={{ display: "inline-block", width: "100%" }}>{column}</span>
+                                </OverlayTrigger>
+                            ),
+                            accessor: `formattedMetadata.${column}`,
+                            show: true,
+                            Cell: (props) => (
+                                <EditableMetadataCell id={props.row._original.metadataIDs[i]} modifyMetadataValue={this.props.modifyMetadataValue} value={props.value} />
+                            ),
+                        };
+                    })]}
+                    showPageSizeOptions={true}
+                    pageSizeOptions={[5, 10, 25, 50, 100]}
+                    defaultPageSize={this.state.pageSize}
+                    onPageSizeChange={(pageSize) => localStorage.setItem("pageSize", pageSize)}
                     SubComponent={row => this.getSubComponent(row)}
                     filterable={true}
                     defaultSorted={[
@@ -258,7 +287,8 @@ History.propTypes = {
     getHistory: PropTypes.func.isRequired,
     history_data: PropTypes.arrayOf(PropTypes.object),
     changeLabel: PropTypes.func.isRequired,
-    changeToSkip: PropTypes.func.isRequired
+    changeToSkip: PropTypes.func.isRequired,
+    modifyMetadataValue: PropTypes.func.isRequired
 };
 
 export default History;

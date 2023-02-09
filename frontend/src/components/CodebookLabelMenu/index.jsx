@@ -97,10 +97,12 @@ class CodebookLabelMenu extends React.Component {
         return (
             <div className="margin-bottom-15 no-overflow">
                 <div className="row" id="label_group_buttons">
-                    <ButtonGroup className="pull-left">
-                        {label_button}
-                        {codebook_button}
-                    </ButtonGroup>
+                    {CODEBOOK_URL != "" ? (
+                        <ButtonGroup className="pull-left">
+                            {label_button}
+                            {codebook_button}
+                        </ButtonGroup>
+                    ) : label_button}
                 </div>
                 {this.getLabels(labels, this.state.labels_open)}
                 {codebook_module}

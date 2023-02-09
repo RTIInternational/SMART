@@ -693,3 +693,21 @@ li.disabled {
     padding-right: 2px;
 }
 
+.editable-cell input {
+    border-collapse: collapse;
+    -webkit-box-direction: normal;
+    user-select: none;
+    white-space: nowrap;
+    margin: 0;
+    box-sizing: border-box;
+    border: 1px solid transparent;
+    background: #FFFFFF;
+    padding: 5px 7px;
+    border-radius: 3px;
+    outline-width: 0;
+    width: 100%;
+}
+
+.editable-cell input:focus {
+    border-color: rgba(0,0,0,0.1);
+}

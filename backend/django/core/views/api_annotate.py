@@ -22,6 +22,7 @@ from core.models import (
     Label,
     LabelChangeLog,
     LabelEmbeddings,
+    MetaData,
     Profile,
     Project,
     Queue,
@@ -873,9 +874,24 @@ def get_label_history(request, project_pk):
             new_timestamp = "None"
 
         serialized_data = DataSerializer(d.data, many=False).data
+
+        formattedMetaData = {}
+        metadataIDs = []
+        for m in serialized_data["metadata"]:
+            metadataRow = m.split(": ")
+            metadataColumn = metadataRow[0].replace(" ", "_")
+            metadataValue = metadataRow[1]
+            formattedMetaData[metadataColumn] = metadataValue
+
+        metadata = MetaData.objects.filter(data_id=d.data.id)
+        for m in metadata:
+            metadataIDs.append(m.pk)
+
         temp_dict = {
             "data": serialized_data["text"],
             "metadata": serialized_data["metadata"],
+            "formattedMetadata": formattedMetaData,
+            "metadataIDs": metadataIDs,
             "id": d.data.id,
             "label": d.label.name,
             "labelID": d.label.id,
@@ -926,3 +942,21 @@ def get_label_history(request, project_pk):
         results.append(temp_dict)
 
     return Response({"data": results})
+
+
+@api_view(["POST"])
+# @permission_classes((IsCoder,))
+def modify_metadata_value(request, metadata_pk):
+    """Take a single datum with a label and change the label in the DataLabel table.
+
+    Args:
+        request: The POST request
+        metadata_pk: Primary key of the metadata
+        value: New value for metadata field
+    Returns:
+        {}
+    """
+    metadata = MetaData.objects.filter(pk=metadata_pk).first()
+    metadata.value = request.data["value"]
+    metadata.save()
+    return Response({})
