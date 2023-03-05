@@ -29,6 +29,7 @@ from core.models import (
     ProjectPermissions,
     RecycleBin,
     TrainingSet,
+    VerifiedDataLabel,
 )
 from core.utils.utils_queue import fill_queue
 from smart.settings import TIME_ZONE_FRONTEND
@@ -197,7 +198,7 @@ def create_labels_from_csv(df, project):
         "training_set_id",
         "time_to_label",
         "timestamp",
-        "verified",
+        "pre_loaded",
     ]
     stream = StringIO()
 
@@ -214,8 +215,8 @@ def create_labels_from_csv(df, project):
     df["label_id"] = df["Label"].apply(lambda x: labels[x])
     df["profile_id"] = project.creator.pk
 
-    # data labels loaded in from a csv are unverified
-    df["verified"] = False
+    # these data are preloaded
+    df["pre_loaded"] = True
 
     df.to_csv(stream, sep="\t", header=False, index=False, columns=columns)
     stream.seek(0)
@@ -618,7 +619,7 @@ def get_labeled_data(project, unverified=True):
         labels.append({"Name": label.name, "Label_ID": label.pk})
         labeled_data = DataLabel.objects.filter(label=label, data__irr_ind=False)
         if not unverified:
-            labeled_data = labeled_data.filter(verified=True)
+            labeled_data = labeled_data.filter(verified__isnull=False)
         for d in labeled_data:
             temp = {}
             temp["ID"] = d.data.upload_id
@@ -627,6 +628,10 @@ def get_labeled_data(project, unverified=True):
             for m in metadata:
                 temp[m.metadata_field.field_name] = m.value
             temp["Label"] = label.name
+            if d.pre_loaded:
+                temp["Pre-Loaded"] = "Yes"
+            else:
+                temp["Pre-Loaded"] = "No"
             if label.description:
                 temp["Description"] = label.description
             temp["Profile"] = str(d.profile.user)
@@ -636,10 +641,15 @@ def get_labeled_data(project, unverified=True):
                 )
             else:
                 temp["Timestamp"] = None
-            if d.verified:
+            if hasattr(d, "verified"):
+                v = VerifiedDataLabel.objects.get(data_label=d)
                 temp["Verified"] = "Yes"
+                temp["Verified By"] = v.verified_by
+                temp["Verified Timestamp"] = v.verified_timestamp
             else:
                 temp["Verified"] = "No"
+                temp["Verified By"] = None
+                temp["Verified Timestamp"] = None
             data.append(temp)
     labeled_data_frame = pd.DataFrame(data)
     label_frame = pd.DataFrame(labels)

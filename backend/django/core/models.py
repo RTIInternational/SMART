@@ -107,7 +107,7 @@ class Project(models.Model):
     def unverified_labeled_data_count(self):
         return (
             self.data_set.all()
-            .filter(datalabel__isnull=False, datalabel__verified=False)
+            .filter(datalabel__isnull=False, datalabel__verified__isnull=False)
             .count()
         )
 
@@ -294,7 +294,15 @@ class DataLabel(models.Model):
     training_set = models.ForeignKey("TrainingSet", on_delete=models.CASCADE)
     time_to_label = models.IntegerField(null=True)
     timestamp = models.DateTimeField(null=True, default=None)
-    verified = models.BooleanField(default=True)
+    pre_loaded = models.BooleanField(default=False)
+
+
+class VerifiedDataLabel(models.Model):
+    data_label = models.OneToOneField(
+        "DataLabel", on_delete=models.CASCADE, primary_key=True, related_name="verified"
+    )
+    verified_by = models.ForeignKey("Profile", on_delete=models.CASCADE)
+    verified_timestamp = models.DateTimeField(null=True, default=None)
 
 
 class LabelChangeLog(models.Model):

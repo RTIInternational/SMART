@@ -38,6 +38,8 @@ export const getHistory = (projectID) => {
                         old_label_id: response.data[i].labelID,
                         timestamp: response.data[i].timestamp,
                         verified: response.data[i].verified,
+                        verified_by:response.data[i].verified_by,
+                        pre_loaded: response.data[i].pre_loaded,
                         edit: response.data[i].edit,
                         project: projectID,
                         profile: response.data[i].profile
@@ -127,7 +129,7 @@ export const verifyDataLabel = (dataID, projectID) => {
 
 export const modifyMetadataValue = (metadataId, value) => {
     let apiURL = `/api/modify_metadata_value/${metadataId}/`;
-    return dispatch => {
+    return () => {
         return fetch(apiURL, postConfig({ value }))
             .then(response => {
                 if (response.ok) {

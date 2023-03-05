@@ -59,18 +59,6 @@ class History extends React.Component {
                 width: 100
             },
             {
-                Header: "Verified",
-                width: 80,
-                accessor: "verified",
-                Cell: props => {
-                    if (props.value == "Yes") {
-                        return (<p>Yes</p>);
-                    } else {
-                        return (<Button variant="success" value={props.row.id} onClick={this.verifyLabel}>Verify</Button>);
-                    }
-                }
-            },
-            {
                 Header: "User",
                 accessor: "profile",
                 width: 100
@@ -85,6 +73,30 @@ class History extends React.Component {
                 accessor: "timestamp",
                 id: "timestamp",
                 width: 150
+            },
+            {
+                Header: "Verified",
+                width: 80,
+                accessor: "verified",
+                Cell: props => {
+                    if (props.value == "Yes") {
+                        return (<p>Yes</p>);
+                    } else if (props.value != "No") {
+                        return (<p>{props.value}</p>);
+                    } else {
+                        return (<Button variant="success" value={props.row.id} onClick={this.verifyLabel}>Verify</Button>);
+                    }
+                }
+            },
+            {
+                Header: "Verified By",
+                accessor: "verified_by",
+                width: 100
+            },
+            {
+                Header: "Pre-Loaded",
+                width: 100,
+                accessor: "pre_loaded"
             }
         ];
     }

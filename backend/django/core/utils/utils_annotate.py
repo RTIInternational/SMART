@@ -16,6 +16,7 @@ from core.models import (
     Project,
     Queue,
     RecycleBin,
+    VerifiedDataLabel,
 )
 from core.templatetags import project_extras
 from core.utils.utils_queue import pop_first_nonempty_queue
@@ -175,7 +176,6 @@ def label_data(label, datum, profile, time):
             training_set=current_training_set,
             time_to_label=time,
             timestamp=timezone.now(),
-            verified=True,
         )
         # There's a unique constraint on data/profile, so this is
         # guaranteed to return one object
@@ -234,14 +234,19 @@ def process_irr_label(data, label):
                 agree = True
                 # if they do, add a new element to dataLabel with one label
                 # by creator and remove from the irr queue
-                DataLabel.objects.create(
+                dl = DataLabel.objects.create(
                     data=data,
                     profile=project.creator,
                     label=label,
                     training_set=current_training_set,
                     time_to_label=None,
                     timestamp=timezone.now(),
-                    verified=True,
+                )
+                # IRR which has agreement is verified by default
+                VerifiedDataLabel.objects.create(
+                    data_label=dl,
+                    verified_timestamp=timezone.now(),
+                    verified_by=project.creator,
                 )
                 DataQueue.objects.filter(data=data).delete()
             else:
