@@ -11,6 +11,7 @@ const HistoryContainer = (props) => <History {...props} />;
 const mapStateToProps = (state) => {
     return {
         history_data: state.history.history_data,
+        unlabeled_data: state.history.unlabeled_data,
         labels: state.card.labels
     };
 };

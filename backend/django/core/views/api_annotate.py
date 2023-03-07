@@ -837,6 +837,7 @@ def get_label_history(request, project_pk):
     Returns:
         labels: The project labels
         data: DataLabel objects where that user was the one to label them
+        unlabeled: DataLabel objects without a label
     """
     profile = request.user.profile
     project = Project.objects.get(pk=project_pk)
@@ -941,8 +942,33 @@ def get_label_history(request, project_pk):
         }
         results.append(temp_dict)
 
-    return Response({"data": results})
+    unlabeled_results = []
+    for d in get_unlabeled_data(project_pk):
+        serialized_data = DataSerializer(d, many=False).data
 
+        formattedMetaData = {}
+        metadataIDs = []
+        for m in serialized_data["metadata"]:
+            metadataRow = m.split(": ")
+            metadataColumn = metadataRow[0].replace(" ", "_")
+            metadataValue = metadataRow[1]
+            formattedMetaData[metadataColumn] = metadataValue
+
+        metadata = MetaData.objects.filter(data_id=d.id)
+        for m in metadata:
+            metadataIDs.append(m.pk)
+
+        temp_dict = {
+            "data": serialized_data["text"],
+            "metadata": serialized_data["metadata"],
+            "formattedMetadata": formattedMetaData,
+            "metadataIDs": metadataIDs,
+            "id": d.id,
+            "edit": "yes",
+        }
+        unlabeled_results.append(temp_dict)
+
+    return Response({"data": results, "unlabeled": unlabeled_results})
 
 @api_view(["POST"])
 # @permission_classes((IsCoder,))

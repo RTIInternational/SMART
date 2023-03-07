@@ -67,7 +67,8 @@ class History extends React.Component {
         this.historyChangeLabel = this.historyChangeLabel.bind(this);
         this.state = {
             pageSize : parseInt(localStorage.getItem("pageSize") || "25"),
-            showConfirm : false
+            showConfirm: false,
+            showUnlabeled: false
         };
         this.cardID, this.rowID, this.label;
     }
@@ -78,6 +79,10 @@ class History extends React.Component {
 
     componentDidMount() {
         this.props.getHistory();
+    }
+
+    toggleShowUnlabeled() {
+        this.setState({ showUnlabeled : !this.state.showUnlabeled });
     }
 
     getLabelButton(row, label) {
@@ -178,7 +183,7 @@ class History extends React.Component {
     }
 
     render() {
-        const { history_data } = this.props;
+        const { history_data, unlabeled_data } = this.props;
 
         let metadataColumns = [];
         history_data.forEach((data) => {
@@ -236,8 +241,17 @@ class History extends React.Component {
                     <strong>TIP:</strong> In this table you may edit metadata fields. Click on the value in the column and row where you want to change the data and it will open as a text box.
                 </p>
                 <CodebookLabelMenuContainer />
+                <div>
+                    <p style={{ maxWidth: "75ch" }}>
+                        Toggle the checkbox below to show/hide unlabeled data:
+                    </p>
+                    <label>
+                        <input type="checkbox" onChange={() => this.toggleShowUnlabeled()} />
+                        <span style={{ marginLeft: "4px" }}>Unlabled Data</span>
+                    </label>
+                </div>
                 <ReactTable
-                    data={history_data}
+                    data={this.state.showUnlabeled ? [...history_data, ...unlabeled_data] : history_data}
                     columns={[...COLUMNS, ...metadataColumns.map((column, i) => {
                         return {
                             Header: () => (
