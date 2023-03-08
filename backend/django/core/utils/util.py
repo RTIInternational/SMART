@@ -672,10 +672,10 @@ def project_status(project):
     )
 
     final_verified = DataLabel.objects.filter(
-        data__project=project, data__irr_ind=False, verified=True
+        data__project=project, data__irr_ind=False, verified__isnull=False
     )
     final_unverified = DataLabel.objects.filter(
-        data__project=project, data__irr_ind=False, verified=False
+        data__project=project, data__irr_ind=False, verified__isnull=True
     )
 
     stuff_in_irrlog = IRRLog.objects.filter(data__project=project).values_list(
