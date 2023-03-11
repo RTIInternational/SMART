@@ -50,6 +50,9 @@ export const getHistory = (projectID) => {
                         old_label: response.data[i].label,
                         old_label_id: response.data[i].labelID,
                         timestamp: response.data[i].timestamp,
+                        verified: response.data[i].verified,
+                        verified_by:response.data[i].verified_by,
+                        pre_loaded: response.data[i].pre_loaded,
                         edit: response.data[i].edit,
                         project: projectID,
                         profile: response.data[i].profile
@@ -114,9 +117,32 @@ export const changeToSkip = (dataID, oldLabelID, projectID, message) => {
     };
 };
 
+
+export const verifyDataLabel = (dataID, projectID) => {
+    let payload = {
+        dataID: dataID
+    };
+    let apiURL = `/api/verify_label/${dataID}/`;
+    return dispatch => {
+        return fetch(apiURL, postConfig(payload))
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    const error = new Error(response.statusText);
+                    error.response = response;
+                    throw error;
+                }
+            }).then(() => {
+                dispatch(getHistory(projectID));
+            });
+    };
+};
+
+
 export const modifyMetadataValue = (metadataId, value) => {
     let apiURL = `/api/modify_metadata_value/${metadataId}/`;
-    return dispatch => {
+    return () => {
         return fetch(apiURL, postConfig({ value }))
             .then(response => {
                 if (response.ok) {

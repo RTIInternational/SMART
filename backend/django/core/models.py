@@ -104,6 +104,13 @@ class Project(models.Model):
     def labeled_data_count(self):
         return self.data_set.all().filter(datalabel__isnull=False).count()
 
+    def unverified_labeled_data_count(self):
+        return (
+            self.data_set.all()
+            .filter(datalabel__isnull=False, datalabel__verified__isnull=False)
+            .count()
+        )
+
     def has_model(self):
         if self.model_set.count() > 0:
             return True
@@ -131,6 +138,15 @@ class Project(models.Model):
     def get_scheduled_export(self):
         if self.externaldatabase.has_export:
             if self.externaldatabase.cron_export:
+                return "On"
+            else:
+                return "Off"
+        else:
+            return "NaN"
+
+    def get_export_verified_only(self):
+        if self.externaldatabase.has_export:
+            if self.externaldatabase.export_verified_only:
                 return "On"
             else:
                 return "Off"
@@ -230,6 +246,7 @@ class ExternalDatabase(models.Model):
     cron_export = models.BooleanField(default=False)
     export_schema = models.CharField(max_length=1024, null=True)
     export_table_name = models.CharField(max_length=1024, null=True)
+    export_verified_only = models.BooleanField(default=False)
 
 
 class LabelEmbeddings(models.Model):
@@ -277,6 +294,18 @@ class DataLabel(models.Model):
     training_set = models.ForeignKey("TrainingSet", on_delete=models.CASCADE)
     time_to_label = models.IntegerField(null=True)
     timestamp = models.DateTimeField(null=True, default=None)
+    pre_loaded = models.BooleanField(default=False)
+
+
+class VerifiedDataLabel(models.Model):
+    data_label = models.OneToOneField(
+        "DataLabel", on_delete=models.CASCADE, primary_key=True, related_name="verified"
+    )
+    verified_by = models.ForeignKey("Profile", on_delete=models.CASCADE)
+    verified_timestamp = models.DateTimeField(null=True, default=None)
+
+    def __str__(self):
+        return str(self.verified_by)
 
 
 class LabelChangeLog(models.Model):

@@ -87,10 +87,11 @@ class DataLabelModelSerializer(serializers.ModelSerializer):
     timestamp = serializers.DateTimeField(
         default_timezone=pytz.timezone(TIME_ZONE_FRONTEND), format="%Y-%m-%d, %I:%m %p"
     )
+    verified = serializers.StringRelatedField(many=False, read_only=True)
 
     class Meta:
         model = DataLabel
-        fields = ("data", "profile", "label", "timestamp")
+        fields = ("data", "profile", "label", "timestamp", "pre_loaded", "verified")
 
 
 class DataLabelSerializer(serializers.HyperlinkedModelSerializer):

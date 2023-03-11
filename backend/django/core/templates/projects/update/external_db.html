@@ -80,6 +80,9 @@
                         <div id="export_schema_fields_update">
                             Export Schema: {{ form.export_schema }}
                         </div>
+                        <div id="export_unvalidated">
+                            Only export validated labeled data: {{ form.export_verified_only }}
+                        </div>
                         <div class="error-messages">{{ form.export_schema.errors }}</div>
                     </div>
                     <div class="error-messages">{{ form.non_field_errors }}</div>

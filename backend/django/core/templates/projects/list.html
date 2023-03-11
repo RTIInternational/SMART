@@ -31,10 +31,16 @@
                         {% if project|proj_permission_level:request.user.profile > 1 %}
                         <td><a href="{% url 'projects:project_admin' project.pk %}">Admin Dashboard</a></td>
                           {% if project.has_model %}
-                            <td><a class="download_btn" name="{{ project.pk }}" onclick="download_model({{project.pk}})">Download Model and Labeled Data</a></td>
+                            <td><a class="download_model_btn" name="{{ project.pk }}" onclick="download_model({{project.pk}},1)">Download Model and Labeled Data</a></td>
+                            {% if project.unverified_labeled_data_count > 0  and project.labeled_data_count > project.unverified_labeled_data_count %}
+                              <td><a class="download_btn" id="download_model_btn_verified" onclick="download_model({{project.pk}},0)">Download Model and Only Verified Labeled Data</a></td>
+                            {% endif %}
                           {% else %}
                             {% if project.labeled_data_count > 0 %}
-                            <td><a class="download_btn" name="{{ project.pk }}" onclick="download_data({{project.pk}})">Download Labeled Data</a></td>
+                            <td><a class="download_btn" name="{{ project.pk }}" onclick="download_data({{project.pk}},1)">Download Labeled Data</a></td>
+                            {% if project.unverified_labeled_data_count > 0  and project.labeled_data_count > project.unverified_labeled_data_count %}
+                              <td><a class="download_btn" id="download_model_btn_verified" onclick="download_data({{project.pk}},0)">Download Only Verified Labeled Data</a></td>
+                            {% endif %}
                             {% else %}
                             <td><p>No Labeled Data to Download</p></td>
                             {% endif %}
@@ -72,10 +78,16 @@
                       {% if project|proj_permission_level:request.user.profile > 1 %}
                       <td><a href="{% url 'projects:project_admin' project.pk %}">Admin Dashboard</a></td>
                         {% if project.has_model %}
-                          <td><a class="download_btn" name="{{ project.pk }}" onclick="download_model({{project.pk}})">Download Model and Labeled Data</a></td>
+                          <td><a class="download_model_btn" name="{{ project.pk }}" onclick="download_model({{project.pk}},1)">Download Model and Labeled Data</a></td>
+                          {% if project.unverified_labeled_data_count > 0  and project.labeled_data_count > project.unverified_labeled_data_count %}
+                            <td><a class="download_btn" id="download_model_btn_verified" onclick="download_model({{project.pk}},0)">Download Model and Only Verified Labeled Data</a></td>
+                          {% endif %}
                         {% else %}
                           {% if project.labeled_data_count > 0 %}
-                          <td><a class="download_btn" name="{{ project.pk }}" onclick="download_data({{project.pk}})">Download Labeled Data</a></td>
+                          <td><a class="download_btn" name="{{ project.pk }}" onclick="download_data({{project.pk}},1)">Download Labeled Data</a></td>
+                          {% if project.unverified_labeled_data_count > 0  and project.labeled_data_count > project.unverified_labeled_data_count %}
+                            <td><a class="download_btn" id="download_model_btn_verified" onclick="download_data({{project.pk}},0)">Download Only Verified Labeled Data</a></td>
+                          {% endif %}
                           {% else %}
                           <td><p>No Labeled Data to Download</p></td>
                           {% endif %}
@@ -120,7 +132,7 @@
  *  NOTE: this function is also in detail.html, but edited to work for multiple
  *  buttons on the same page
  */
-function download_data(pk) {
+function download_data(pk, unverified) {
   xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
     var a, today;
@@ -134,7 +146,7 @@ function download_data(pk) {
       return a.click();
     }
   };
-  xhttp.open('GET', '/api/download_data/' + String(pk) + '/', true);
+  xhttp.open('GET', '/api/download_data/' + String(pk) + '/' + String(unverified) + '/', true);
   xhttp.setRequestHeader('Content-Type', 'application/json');
   xhttp.responseType = 'blob';
   xhttp.send();
@@ -144,7 +156,7 @@ function download_data(pk) {
  *  When the download model button is pressed, download a zip file
  *  with a README, the model, labeled data, and tfidf matrix
  */
-function download_model(pk) {
+function download_model(pk, unverified) {
   xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
     var a, today;
@@ -158,7 +170,7 @@ function download_model(pk) {
       return a.click();
     }
   };
-  xhttp.open('GET', '/api/download_model/' + String(pk) + '/', true);
+  xhttp.open('GET', '/api/download_model/' + String(pk) + '/' + String(unverified) + '/', true);
   xhttp.setRequestHeader('Content-Type', 'application/json');
   xhttp.responseType = 'blob';
   xhttp.send();

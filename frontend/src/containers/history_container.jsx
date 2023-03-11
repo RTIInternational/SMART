@@ -1,7 +1,14 @@
 import React from 'react';
 import { connect } from 'react-redux';
 
-import { getHistory, changeLabel, changeToSkip, modifyMetadataValue, toggleUnlabeled } from '../actions/history';
+import { 
+    getHistory, 
+    changeLabel, 
+    changeToSkip, 
+    verifyDataLabel, 
+    modifyMetadataValue, 
+    toggleUnlabeled 
+} from '../actions/history';
 import History from '../components/History';
 
 const PROJECT_ID = window.PROJECT_ID;
@@ -29,6 +36,9 @@ const mapDispatchToProps = (dispatch) => {
         },
         changeToSkip: (dataID, oldLabelID, message) => {
             dispatch(changeToSkip(dataID, oldLabelID, PROJECT_ID, message));
+        },
+        verifyDataLabel: (dataID) => {
+            dispatch(verifyDataLabel(dataID, PROJECT_ID));
         },
         modifyMetadataValue: (metadataId, value) => {
             dispatch(modifyMetadataValue(metadataId, value));
