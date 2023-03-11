@@ -135,7 +135,7 @@ class History extends React.Component {
         const { labels, changeToSkip, changeLabel } = this.props;
         const card = buildCard(row.row.id, null, row.original);
 
-        if (row.row.edit === "yes" && (row.row.old_label === "None")) {
+        if (row.row.edit === "yes" && (row.row.old_label === "")) {
             subComponent = (
                 <div className="sub-row cardface clearfix">
                     <AnnotateCard

@@ -960,16 +960,16 @@ def get_label_history(request, project_pk):
         data_df["edit"] = data_df["edit"].fillna("yes")
     else:
         data_df["edit"] = "yes"
-        data_df["label"] = "None"
-        data_df["profile"] = "None"
-        data_df["timestamp"] = "None"
+        data_df["label"] = ""
+        data_df["profile"] = ""
+        data_df["timestamp"] = ""
 
     # TODO: annotate uses pk while everything else uses ID. Let's fix this
     data_df["pk"] = data_df["id"]
 
     # now add back on the metadata fields
     print(data_df["data"].tolist())
-    results = data_df.fillna("None").to_dict(orient="records")
+    results = data_df.fillna("").to_dict(orient="records")
     for i in range(len(results)):
         results[i]["metadata"] = all_metadata[i]
         results[i]["formattedMetadata"] = all_metadata_formatted[i]

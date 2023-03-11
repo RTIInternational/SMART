@@ -100,6 +100,7 @@ class DataLabelSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class IRRLogModelSerializer(serializers.ModelSerializer):
+    profile = serializers.StringRelatedField(many=False, read_only=True)
     timestamp = serializers.DateTimeField(
         default_timezone=pytz.timezone(TIME_ZONE_FRONTEND), format="%Y-%m-%d, %I:%m %p"
     )
