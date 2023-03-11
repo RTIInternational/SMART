@@ -27,6 +27,7 @@ from core.models import (
     Project,
     Queue,
     RecycleBin,
+    VerifiedDataLabel,
 )
 from core.permissions import IsAdminOrCreator, IsCoder
 from core.serializers import DataSerializer, LabelSerializer
@@ -153,6 +154,40 @@ def unassign_data(request, data_pk):
     if AssignedData.objects.filter(data=data, profile=profile).exists():
         assignment = AssignedData.objects.get(data=data, profile=profile)
         assignment.delete()
+
+    return Response(response)
+
+
+@api_view(["POST"])
+@permission_classes((IsCoder,))
+def verify_label(request, data_pk):
+    """Take a data label that was not verified, and verify it.
+
+    Args:
+        request: The POST request
+        data_pk: Primary key of the data
+    Returns:
+        {}
+    """
+    data = Data.objects.get(pk=data_pk)
+    response = {}
+    # if the coder has been un-assigned from the data
+    if not DataLabel.objects.filter(data=data).exists():
+        response[
+            "error"
+        ] = "ERROR: This data has no label to verify. Something must have gone wrong."
+        return Response(response)
+    elif DataLabel.objects.filter(data=data).count() > 1:
+        response["error"] = (
+            "ERROR: This data has multiple labels. This shouldn't "
+            "be possible with unverified data as it is pre-labeled."
+        )
+    else:
+        VerifiedDataLabel.objects.create(
+            data_label=DataLabel.objects.get(data=data),
+            verified_timestamp=timezone.now(),
+            verified_by=request.user.profile,
+        )
 
     return Response(response)
 
@@ -383,7 +418,11 @@ def modify_label(request, data_pk):
     old_label = Label.objects.get(pk=request.data["oldLabelID"])
     with transaction.atomic():
         DataLabel.objects.filter(data=data, label=old_label).update(
-            label=label, time_to_label=0, timestamp=timezone.now(), profile=profile
+            label=label,
+            time_to_label=0,
+            timestamp=timezone.now(),
+            profile=profile,
+            pre_loaded=False,
         )
 
         LabelChangeLog.objects.create(
@@ -749,7 +788,7 @@ def label_skew_label(request, data_pk):
     current_training_set = project.get_current_training_set()
     if project_extras.proj_permission_level(datum.project, profile) >= 2:
         with transaction.atomic():
-            DataLabel.objects.create(
+            dl = DataLabel.objects.create(
                 data=datum,
                 label=label,
                 profile=profile,
@@ -757,6 +796,10 @@ def label_skew_label(request, data_pk):
                 time_to_label=None,
                 timestamp=timezone.now(),
             )
+            VerifiedDataLabel.objects.create(
+                data_label=dl, verified_timestamp=timezone.now(), verified_by=profile
+            )
+
     else:
         response["error"] = "Invalid permission. Must be an admin."
 
@@ -798,13 +841,16 @@ def label_admin_label(request, data_pk):
 
     with transaction.atomic():
         queue = project.queue_set.get(type="admin")
-        DataLabel.objects.create(
+        dl = DataLabel.objects.create(
             data=datum,
             label=label,
             profile=profile,
             training_set=current_training_set,
             time_to_label=None,
             timestamp=timezone.now(),
+        )
+        VerifiedDataLabel.objects.create(
+            data_label=dl, verified_timestamp=timezone.now(), verified_by=profile
         )
 
         DataQueue.objects.filter(data=datum, queue=queue).delete()
@@ -874,6 +920,21 @@ def get_label_history(request, project_pk):
             new_timestamp = "None"
 
         serialized_data = DataSerializer(d.data, many=False).data
+        if len(VerifiedDataLabel.objects.filter(data_label=d)) > 0:
+            verified = "Yes"
+            verified_by = (
+                User.objects.get(
+                    id=VerifiedDataLabel.objects.get(data_label=d).verified_by.user_id
+                ).username,
+            )
+        else:
+            verified = "No"
+            verified_by = None
+
+        if d.pre_loaded:
+            pre_loaded = "Yes"
+        else:
+            pre_loaded = "No"
 
         formattedMetaData = {}
         metadataIDs = []
@@ -896,6 +957,9 @@ def get_label_history(request, project_pk):
             "label": d.label.name,
             "labelID": d.label.id,
             "timestamp": new_timestamp,
+            "verified": verified,
+            "verified_by": verified_by,
+            "pre_loaded": pre_loaded,
             "edit": "yes",
             "profile": User.objects.get(
                 id=Profile.objects.get(id=d.profile_id).user_id
@@ -928,12 +992,16 @@ def get_label_history(request, project_pk):
             )
         else:
             new_timestamp = "None"
+
         temp_dict = {
             "data": d.data.text,
             "id": d.data.id,
             "label": d.label.name,
             "labelID": d.label.id,
             "timestamp": new_timestamp,
+            "verified": "N/A (IRR)",  # Technically resolved IRR is verified but perhaps not this user's specific label so just NA
+            "verified_by": None,
+            "pre_loaded": "No",  # IRR only looks at unlabeled data
             "edit": "no",
             "profile": User.objects.get(
                 id=Profile.objects.get(id=d.profile_id).user_id

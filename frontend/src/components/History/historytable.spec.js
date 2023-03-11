@@ -16,6 +16,7 @@ describe('<History />', () => {
                   history_data={data}
                   changeLabel = {fn}
                   changeToSkip= {fn}
+                  verifyDataLabel = {fn}
                   labels={labels}
                   modifyMetadataValue={fn}
                 />

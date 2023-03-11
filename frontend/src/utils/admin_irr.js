@@ -1,7 +1,6 @@
 /* global PROJECT_PK:false, PROJECT_PERCENTAGE_IRR:false */
 
 function drawHeatmap(response) {
-    let coders = response["coders"];
     let coder1 = $('#coder1_select').val();
     let coder2 = $('#coder2_select').val();
     let comb1 = coder1.toString() + "_" + coder2.toString();
@@ -27,19 +26,6 @@ function drawHeatmap(response) {
             all_zero = false;
         }
     }
-
-    let coder1_name = "";
-    let coder2_name = "";
-    //get the coder names to use for the axis labels
-    coders.forEach(function(coder){
-        if (coder.pk.toString() === coder1) {
-            coder1_name = coder.name;
-        }
-        if (coder.pk.toString() === coder2) {
-            coder2_name = coder.name;
-        }
-
-    });
 
     //Code adapted from blocks example:
     //http://bl.ocks.org/tjdecke/5558084

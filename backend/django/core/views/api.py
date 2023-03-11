@@ -19,7 +19,7 @@ from core.utils.utils_external_db import export_table, load_ingest_table
 
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))
-def download_data(request, project_pk):
+def download_data(request, project_pk, unverified):
     """This function gets the labeled data and makes it available for download.
 
     Args:
@@ -29,7 +29,7 @@ def download_data(request, project_pk):
         an HttpResponse containing the requested data
     """
     project = Project.objects.get(pk=project_pk)
-    data, labels = get_labeled_data(project)
+    data, labels = get_labeled_data(project, bool(int(unverified)))
     fieldnames = data.columns.values.tolist()
     data = data.to_dict("records")
 
@@ -46,7 +46,7 @@ def download_data(request, project_pk):
 
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))
-def download_model(request, project_pk):
+def download_model(request, project_pk, unverified):
     """This function gets the labeled data and makes it available for download.
 
     Args:
@@ -87,7 +87,7 @@ def download_model(request, project_pk):
         + ".pkl",
     )
 
-    data, label_data = get_labeled_data(project)
+    data, label_data = get_labeled_data(project, bool(int(unverified)))
     # open the tempfile and write the label data to it
     temp_labeleddata_file = tempfile.NamedTemporaryFile(
         mode="w", suffix=".csv", delete=False, dir=settings.DATA_DIR

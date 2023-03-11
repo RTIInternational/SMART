@@ -89,6 +89,9 @@
                         <div id="export_schema_fields">
                             Export Schema: {{ wizard.form.export_schema }}
                         </div>
+                        <div id="export_unvalidated">
+                            Only export validated labeled data: {{ wizard.export_verified_only }}
+                        </div>
                         <div class="error-messages">{{ wizard.form.export_schema.errors }}</div>
                     </div>
                     <div class="error-messages">{{ wizard.form.non_field_errors }}</div>
