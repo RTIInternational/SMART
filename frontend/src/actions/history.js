@@ -7,15 +7,25 @@ import { getAdminCounts } from './smart';
 import { getLabelCounts } from './skew';
 
 export const SET_HIST_DATA = 'SET_HIST_DATA';
-export const SET_UNLABELED_DATA = 'SET_UNLABELED_DATA';
+export const SET_UNLABELED = 'SET_UNLABELED';
 
 export const set_hist_data = createAction(SET_HIST_DATA);
-export const set_unlabeled_data = createAction(SET_UNLABELED_DATA);
+export const set_unlabeled = createAction(SET_UNLABELED);
+
+
+export const toggleUnlabeled = (projectID) => {
+    console.log("Inside toggleUnlabeled");
+    return (dispatch, getState) => {
+        console.log(getState().history.unlabeled);
+        dispatch(set_unlabeled(!getState().history.unlabeled));
+        dispatch(getHistory(projectID));
+    };
+};
 
 //Get the data for the history table
 export const getHistory = (projectID) => {
-    let apiURL = `/api/get_label_history/${projectID}/`;
-    return dispatch => {
+    return (dispatch, getState) => {
+        let apiURL = `/api/get_label_history/${projectID}/?unlabeled=${getState().history.unlabeled}`;
         return fetch(apiURL, getConfig())
             .then(response => {
                 if (response.ok) {
@@ -32,6 +42,7 @@ export const getHistory = (projectID) => {
                 for (let i = 0; i < response.data.length; i++) {
                     const row = {
                         id: response.data[i].id,
+                        pk: response.data[i].pk,
                         data: response.data[i].data,
                         metadata: response.data[i].metadata,
                         formattedMetadata: response.data[i].formattedMetadata,
@@ -46,21 +57,6 @@ export const getHistory = (projectID) => {
                     all_data.push(row);
                 }
                 dispatch(set_hist_data(all_data));
-
-                let unlabeled_data = [];
-                for (let i = 0; i < response.unlabeled.length; i++) {
-                    const row = {
-                        id: response.unlabeled[i].id,
-                        data: response.unlabeled[i].data,
-                        metadata: response.unlabeled[i].metadata,
-                        formattedMetadata: response.unlabeled[i].formattedMetadata,
-                        metadataIDs: response.unlabeled[i].metadataIDs,
-                        edit: response.unlabeled[i].edit,
-                        project: projectID,
-                    };
-                    unlabeled_data.push(row);
-                }
-                dispatch(set_unlabeled_data(unlabeled_data));
             })
             .catch(err => console.log("Error: ", err));
     };

@@ -1,8 +1,8 @@
+import math
 import random
 
-import pytz
+import pandas as pd
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
@@ -23,13 +23,18 @@ from core.models import (
     LabelChangeLog,
     LabelEmbeddings,
     MetaData,
-    Profile,
     Project,
     Queue,
     RecycleBin,
 )
 from core.permissions import IsAdminOrCreator, IsCoder
-from core.serializers import DataSerializer, LabelSerializer
+from core.serializers import (
+    DataLabelModelSerializer,
+    DataMetadataIDSerializer,
+    DataSerializer,
+    IRRLogModelSerializer,
+    LabelSerializer,
+)
 from core.templatetags import project_extras
 from core.utils.utils_annotate import (
     cache_embeddings,
@@ -46,7 +51,7 @@ from core.utils.utils_annotate import (
 from core.utils.utils_model import check_and_trigger_model
 from core.utils.utils_queue import fill_queue
 from core.utils.utils_redis import redis_serialize_data, redis_serialize_set
-from smart.settings import ADMIN_TIMEOUT_MINUTES, TIME_ZONE_FRONTEND
+from smart.settings import ADMIN_TIMEOUT_MINUTES
 
 # Using a prebuilt model
 # How this model was built: https://github.com/dsteedRTI/csv-to-embeddings-model
@@ -380,20 +385,34 @@ def modify_label(request, data_pk):
     project = data.project
 
     label = Label.objects.get(pk=request.data["labelID"])
-    old_label = Label.objects.get(pk=request.data["oldLabelID"])
-    with transaction.atomic():
-        DataLabel.objects.filter(data=data, label=old_label).update(
-            label=label, time_to_label=0, timestamp=timezone.now(), profile=profile
-        )
 
-        LabelChangeLog.objects.create(
-            project=project,
-            data=data,
-            profile=profile,
-            old_label=old_label.name,
-            new_label=label.name,
-            change_timestamp=timezone.now(),
-        )
+    if "oldLabelID" not in request.data:
+        print("This data was never labeled")
+        current_training_set = project.get_current_training_set()
+        with transaction.atomic():
+            DataLabel.objects.create(
+                data=data,
+                label=label,
+                time_to_label=0,
+                timestamp=timezone.now(),
+                profile=profile,
+                training_set=current_training_set,
+            )
+    else:
+        old_label = Label.objects.get(pk=request.data["oldLabelID"])
+        with transaction.atomic():
+            DataLabel.objects.filter(data=data, label=old_label).update(
+                label=label, time_to_label=0, timestamp=timezone.now(), profile=profile
+            )
+
+            LabelChangeLog.objects.create(
+                project=project,
+                data=data,
+                profile=profile,
+                old_label=old_label.name,
+                new_label=label.name,
+                change_timestamp=timezone.now(),
+            )
 
     return Response(response)
 
@@ -414,32 +433,42 @@ def modify_label_to_skip(request, data_pk):
     profile = request.user.profile
     response = {}
     project = data.project
-    old_label = Label.objects.get(pk=request.data["oldLabelID"])
+
     queue = Queue.objects.get(project=project, type="admin")
     createUnresolvedAdjudicateMessage(project, data, request.data["message"])
 
     with transaction.atomic():
-        DataLabel.objects.filter(data=data, label=old_label).delete()
-        if data.irr_ind:
-            # if it was irr, add it to the log
-            if len(IRRLog.objects.filter(data=data, profile=profile)) == 0:
-                IRRLog.objects.create(
-                    data=data, profile=profile, label=None, timestamp=timezone.now()
-                )
-        else:
-            # if it's not irr, add it to the admin queue immediately
+        if "oldLabelID" not in request.data:
+            print("Item wasn't labeled")
+            # since it wasn't labeled, it isn't IRR and we don't need to change a label
             DataQueue.objects.create(data=data, queue=queue)
-
             # update redis
             settings.REDIS.sadd(redis_serialize_set(queue), redis_serialize_data(data))
-        LabelChangeLog.objects.create(
-            project=project,
-            data=data,
-            profile=profile,
-            old_label=old_label.name,
-            new_label="skip",
-            change_timestamp=timezone.now(),
-        )
+        else:
+            old_label = Label.objects.get(pk=request.data["oldLabelID"])
+            DataLabel.objects.filter(data=data, label=old_label).delete()
+            if data.irr_ind:
+                # if it was irr, add it to the log
+                if len(IRRLog.objects.filter(data=data, profile=profile)) == 0:
+                    IRRLog.objects.create(
+                        data=data, profile=profile, label=None, timestamp=timezone.now()
+                    )
+            else:
+                # if it's not irr, add it to the admin queue immediately
+                DataQueue.objects.create(data=data, queue=queue)
+
+                # update redis
+                settings.REDIS.sadd(
+                    redis_serialize_set(queue), redis_serialize_data(data)
+                )
+            LabelChangeLog.objects.create(
+                project=project,
+                data=data,
+                profile=profile,
+                old_label=old_label.name,
+                new_label="skip",
+                change_timestamp=timezone.now(),
+            )
 
     return Response(response)
 
@@ -839,136 +868,114 @@ def get_label_history(request, project_pk):
         data: DataLabel objects where that user was the one to label them
         unlabeled: DataLabel objects without a label
     """
+    print("INSIDE get_label_history")
     profile = request.user.profile
     project = Project.objects.get(pk=project_pk)
 
     labels = Label.objects.all().filter(project=project)
+    # irr data gets set to not IRR once it's finalized
+    finalized_irr_data = IRRLog.objects.filter(data__irr_ind=False).values_list(
+        "data__pk", flat=True
+    )
     if project_extras.proj_permission_level(project, profile) >= 2:
-        data = DataLabel.objects.filter(data__project=project_pk, label__in=labels)
+        labeled_data = DataLabel.objects.filter(
+            data__project=project_pk, label__in=labels
+        ).exclude(data__in=finalized_irr_data)
     else:
-        data = DataLabel.objects.filter(
+        labeled_data = DataLabel.objects.filter(
             profile=profile, data__project=project_pk, label__in=labels
+        ).exclude(data__in=finalized_irr_data)
+
+    labeled_data_list = list(labeled_data.values_list("data__pk", flat=True))
+
+    # even for an admin, we only get personal IRR data
+    personal_irr_data = IRRLog.objects.filter(
+        profile=profile, data__project=project_pk, label__isnull=False
+    ).exclude(data__pk__in=labeled_data_list)
+    irr_data_list = list(personal_irr_data.values_list("data__pk", flat=True))
+
+    # TODO: in this section also apply any additional filters. It will be faster this way
+    # also, subset by pagination before passing it to the data serializer
+    total_data_list = labeled_data_list + irr_data_list
+    if request.GET.get("unlabeled") == "true":
+        unlabeled_data = list(
+            get_unlabeled_data(project_pk).values_list("pk", flat=True)
+        )
+        total_data_list += unlabeled_data
+
+    # return the page indicated in the query, get total pages
+    page = 0
+    page_size = 100
+    all_data = Data.objects.filter(pk__in=total_data_list).order_by("text")
+    total_pages = math.ceil(len(all_data) / page_size)
+    print(page * page_size, min((page + 1) * page_size, len(all_data)))
+
+    page_data = all_data[page * page_size : min((page + 1) * page_size, len(all_data))]
+    # get the metadata IDs needed for metadata editing
+    page_data_metadata_ids = [
+        d["metadata"] for d in DataMetadataIDSerializer(page_data, many=True).data
+    ]
+
+    page_data = DataSerializer(page_data, many=True).data
+
+    # derive the metadata fields in the forms needed for the table
+    all_metadata = [c.popitem("metadata")[1] for c in page_data]
+    all_metadata_formatted = [
+        {c.split(":")[0].replace(" ", "_"): c.split(":")[1] for c in inner_list}
+        for inner_list in all_metadata
+    ]
+
+    data_df = pd.DataFrame(page_data).rename(columns={"pk": "id", "text": "data"})
+
+    # get the labeled data into the correct format for returning
+    label_dict = {label.pk: label.name for label in labels}
+    labeled_data_df = pd.DataFrame(
+        DataLabelModelSerializer(
+            labeled_data.filter(data__pk__in=data_df["id"].tolist()), many=True
+        ).data
+    ).rename(columns={"data": "id", "label": "labelID"})
+    irr_data_df = pd.DataFrame(
+        IRRLogModelSerializer(
+            personal_irr_data.filter(data__pk__in=data_df["id"].tolist()), many=True
+        ).data
+    ).rename(columns={"data": "id", "label": "labelID"})
+
+    if len(labeled_data_df) > 0:
+        labeled_data_df["edit"] = "yes"
+        labeled_data_df["label"] = labeled_data_df["labelID"].apply(
+            lambda x: label_dict[x]
         )
 
-    data_list = []
-    results = []
-    for d in data:
-        # if it is not labeled irr but is in the log, the data is resolved IRR,
-        if not d.data.irr_ind and len(IRRLog.objects.filter(data=d.data)) > 0:
-            continue
+    if len(irr_data_df) > 0:
+        irr_data_df["edit"] = "no"
+        irr_data_df["label"] = irr_data_df["labelID"].apply(lambda x: label_dict[x])
 
-        data_list.append(d.data.id)
-        if d.timestamp:
-            time = pytz.timezone(TIME_ZONE_FRONTEND).normalize(d.timestamp)
-            if time.minute < 10:
-                minute = "0" + str(time.minute)
-            else:
-                minute = str(time.minute)
-            if time.second < 10:
-                second = "0" + str(time.second)
-            else:
-                second = str(time.second)
-            new_timestamp = (
-                str(time.date()) + ", " + str(time.hour) + ":" + minute + "." + second
-            )
-        else:
-            new_timestamp = "None"
-
-        serialized_data = DataSerializer(d.data, many=False).data
-
-        formattedMetaData = {}
-        metadataIDs = []
-        for m in serialized_data["metadata"]:
-            metadataRow = m.split(": ")
-            metadataColumn = metadataRow[0].replace(" ", "_")
-            metadataValue = metadataRow[1]
-            formattedMetaData[metadataColumn] = metadataValue
-
-        metadata = MetaData.objects.filter(data_id=d.data.id)
-        for m in metadata:
-            metadataIDs.append(m.pk)
-
-        temp_dict = {
-            "data": serialized_data["text"],
-            "metadata": serialized_data["metadata"],
-            "formattedMetadata": formattedMetaData,
-            "metadataIDs": metadataIDs,
-            "id": d.data.id,
-            "label": d.label.name,
-            "labelID": d.label.id,
-            "timestamp": new_timestamp,
-            "edit": "yes",
-            "profile": User.objects.get(
-                id=Profile.objects.get(id=d.profile_id).user_id
-            ).username,
-        }
-        results.append(temp_dict)
-
-    data_irr = IRRLog.objects.filter(
-        profile=profile, data__project=project_pk, label__isnull=False
+    all_labeled_stuff = pd.concat([labeled_data_df, irr_data_df], axis=0).reset_index(
+        drop=True
     )
 
-    for d in data_irr:
-        # if the data was labeled by that person (they were the admin), don't add
-        # it twice
-        if d.data.id in data_list:
-            continue
+    # merge the data info with the label info
+    if len(all_labeled_stuff) > 0:
+        data_df = data_df.merge(all_labeled_stuff, on=["id"], how="left")
+        data_df["edit"] = data_df["edit"].fillna("yes")
+    else:
+        data_df["edit"] = "yes"
+        data_df["label"] = "None"
+        data_df["profile"] = "None"
+        data_df["timestamp"] = "None"
 
-        if d.timestamp:
-            time = pytz.timezone(TIME_ZONE_FRONTEND).normalize(d.timestamp)
-            if time.minute < 10:
-                minute = "0" + str(time.minute)
-            else:
-                minute = str(time.minute)
-            if time.second < 10:
-                second = "0" + str(time.second)
-            else:
-                second = str(time.second)
-            new_timestamp = (
-                str(time.date()) + ", " + str(time.hour) + ":" + minute + "." + second
-            )
-        else:
-            new_timestamp = "None"
-        temp_dict = {
-            "data": d.data.text,
-            "id": d.data.id,
-            "label": d.label.name,
-            "labelID": d.label.id,
-            "timestamp": new_timestamp,
-            "edit": "no",
-            "profile": User.objects.get(
-                id=Profile.objects.get(id=d.profile_id).user_id
-            ).username,
-        }
-        results.append(temp_dict)
+    # TODO: annotate uses pk while everything else uses ID. Let's fix this
+    data_df["pk"] = data_df["id"]
 
-    unlabeled_results = []
-    for d in get_unlabeled_data(project_pk):
-        serialized_data = DataSerializer(d, many=False).data
+    # now add back on the metadata fields
+    print(data_df["data"].tolist())
+    results = data_df.fillna("None").to_dict(orient="records")
+    for i in range(len(results)):
+        results[i]["metadata"] = all_metadata[i]
+        results[i]["formattedMetadata"] = all_metadata_formatted[i]
+        results[i]["metadataIDs"] = page_data_metadata_ids[i]
+    return Response({"data": results, "total_pages": total_pages})
 
-        formattedMetaData = {}
-        metadataIDs = []
-        for m in serialized_data["metadata"]:
-            metadataRow = m.split(": ")
-            metadataColumn = metadataRow[0].replace(" ", "_")
-            metadataValue = metadataRow[1]
-            formattedMetaData[metadataColumn] = metadataValue
-
-        metadata = MetaData.objects.filter(data_id=d.id)
-        for m in metadata:
-            metadataIDs.append(m.pk)
-
-        temp_dict = {
-            "data": serialized_data["text"],
-            "metadata": serialized_data["metadata"],
-            "formattedMetadata": formattedMetaData,
-            "metadataIDs": metadataIDs,
-            "id": d.id,
-            "edit": "yes",
-        }
-        unlabeled_results.append(temp_dict)
-
-    return Response({"data": results, "unlabeled": unlabeled_results})
 
 @api_view(["POST"])
 # @permission_classes((IsCoder,))

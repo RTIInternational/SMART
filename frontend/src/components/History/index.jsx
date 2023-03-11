@@ -6,6 +6,8 @@ import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_conta
 import AnnotateCard, { buildCard } from "../AnnotateCard";
 import EditableMetadataCell from "./EditableMetadataCell";
 
+const ADMIN = window.ADMIN;
+
 const COLUMNS = [
     {
         Header: "edit",
@@ -67,8 +69,7 @@ class History extends React.Component {
         this.historyChangeLabel = this.historyChangeLabel.bind(this);
         this.state = {
             pageSize : parseInt(localStorage.getItem("pageSize") || "25"),
-            showConfirm: false,
-            showUnlabeled: false
+            showConfirm: false
         };
         this.cardID, this.rowID, this.label;
     }
@@ -82,7 +83,7 @@ class History extends React.Component {
     }
 
     toggleShowUnlabeled() {
-        this.setState({ showUnlabeled : !this.state.showUnlabeled });
+        this.props.toggleUnlabeled();
     }
 
     getLabelButton(row, label) {
@@ -131,10 +132,33 @@ class History extends React.Component {
 
     getSubComponent(row) {
         let subComponent;
-        const { labels, changeToSkip } = this.props;
+        const { labels, changeToSkip, changeLabel } = this.props;
         const card = buildCard(row.row.id, null, row.original);
 
-        if (row.row.edit === "yes") {
+        if (row.row.edit === "yes" && (row.row.old_label === "None")) {
+            subComponent = (
+                <div className="sub-row cardface clearfix">
+                    <AnnotateCard
+                        card={card}
+                        labels={labels}
+                        onSelectLabel={(card, label) => {
+                            changeLabel(
+                                card.id,
+                                undefined,
+                                label
+                            );
+                        }}
+                        onSkip={(card, message) => {
+                            changeToSkip(
+                                card.id,
+                                undefined,
+                                message
+                            );
+                        }}
+                    />
+                </div>
+            );
+        } else if (row.row.edit === "yes") {
             subComponent = (
                 <div className="sub-row cardface clearfix">
                     <AnnotateCard
@@ -183,7 +207,7 @@ class History extends React.Component {
     }
 
     render() {
-        const { history_data, unlabeled_data } = this.props;
+        const { history_data } = this.props;
 
         let metadataColumns = [];
         history_data.forEach((data) => {
@@ -251,7 +275,7 @@ class History extends React.Component {
                     </label>
                 </div>
                 <ReactTable
-                    data={this.state.showUnlabeled ? [...history_data, ...unlabeled_data] : history_data}
+                    data={ history_data }
                     columns={[...COLUMNS, ...metadataColumns.map((column, i) => {
                         return {
                             Header: () => (
@@ -279,12 +303,12 @@ class History extends React.Component {
                     onPageSizeChange={(pageSize) => localStorage.setItem("pageSize", pageSize)}
                     SubComponent={row => this.getSubComponent(row)}
                     filterable={true}
-                    defaultSorted={[
-                        {
-                            id: "timestamp",
-                            desc: true
-                        }
-                    ]}
+                    // defaultSorted={[
+                    //     {
+                    //         id: "timestamp",
+                    //         desc: true
+                    //     }
+                    // ]}
                 />
                 {confirm_message}
             </div>
@@ -299,6 +323,7 @@ class History extends React.Component {
 History.propTypes = {
     labels: PropTypes.arrayOf(PropTypes.object),
     getHistory: PropTypes.func.isRequired,
+    toggleUnlabeled: PropTypes.func.isRequired,
     history_data: PropTypes.arrayOf(PropTypes.object),
     changeLabel: PropTypes.func.isRequired,
     changeToSkip: PropTypes.func.isRequired,
