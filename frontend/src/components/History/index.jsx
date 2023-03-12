@@ -5,6 +5,7 @@ import { Button, Alert, Modal, OverlayTrigger, Tooltip } from "react-bootstrap";
 import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
 import AnnotateCard, { buildCard } from "../AnnotateCard";
 import EditableMetadataCell from "./EditableMetadataCell";
+import Select from "react-dropdown-select";
 
 
 class History extends React.Component {
@@ -237,7 +238,37 @@ class History extends React.Component {
     }
 
     render() {
-        const { history_data } = this.props;
+        const { history_data, num_pages, setCurrentPage } = this.props;
+
+        let paginationDropdown = (<div></div>);
+        if (num_pages > 1) {
+            let pageOptions = [];
+            for (let i = 1; i < num_pages; i++) {
+                pageOptions.push({ "value":i, "pageLabel":`Page ${i} (${(i - 1) * 100} - ${(i) * 100})` });
+            }
+            pageOptions.push({ "value":num_pages, "pageLabel":`Page ${num_pages} (${(num_pages - 1) * 100}+)` });
+            paginationDropdown = (
+                <div>
+                    <b>
+                        NOTE: For performance reasons, SMART only returns 100 items at a time. 
+                        Use the dropdown below to navigate between batches of 100 items. Items are sorted 
+                        by text in alphabetical order.
+                    </b>
+                    <Select
+                        className="align-items-center flex py-1 px-2 annotate-select"
+                        dropdownHandle={false}
+                        labelField="pageLabel"
+                        onChange={(selection) => {
+                            setCurrentPage(selection[0].value);
+                        }}
+                        options={pageOptions}
+                        placeholder="Select Page..."
+                        searchBy="pageLabel"
+                    />
+                </div>
+            );
+        }
+        
 
         let metadataColumns = [];
         history_data.forEach((data) => {
@@ -246,14 +277,6 @@ class History extends React.Component {
                     !metadataColumns.includes(metadataColumn) ? metadataColumns.push(metadataColumn) : null
                 );
         });
-
-        let page_sizes = [1];
-        let counter = 1;
-        for (let i = 5; i < history_data.length; i += 5 * counter) {
-            page_sizes.push(i);
-            counter += 1;
-        }
-        page_sizes.push(history_data.length);
 
         //Confirmation button
         let confirm_message = (
@@ -276,6 +299,21 @@ class History extends React.Component {
             </Modal>
         );
 
+        let unlabeled_checkbox = (<div></div>);
+        if (!window.PROJECT_USES_IRR) {
+            unlabeled_checkbox = (
+                <div>
+                    <p style={{ maxWidth: "75ch" }}>
+                        Toggle the checkbox below to show/hide unlabeled data:
+                    </p>
+                    <label>
+                        <input type="checkbox" onChange={() => this.toggleShowUnlabeled()} />
+                        <span style={{ marginLeft: "4px" }}>Unlabled Data</span>
+                    </label>
+                </div>
+            );
+        }
+
         return (
             <div className="history">
                 <h3>Instructions</h3>
@@ -295,14 +333,9 @@ class History extends React.Component {
                     <strong>TIP:</strong> In this table you may edit metadata fields. Click on the value in the column and row where you want to change the data and it will open as a text box.
                 </p>
                 <CodebookLabelMenuContainer />
+                {unlabeled_checkbox}
                 <div>
-                    <p style={{ maxWidth: "75ch" }}>
-                        Toggle the checkbox below to show/hide unlabeled data:
-                    </p>
-                    <label>
-                        <input type="checkbox" onChange={() => this.toggleShowUnlabeled()} />
-                        <span style={{ marginLeft: "4px" }}>Unlabled Data</span>
-                    </label>
+                    {paginationDropdown}
                 </div>
                 <ReactTable
                     data={history_data}
@@ -354,7 +387,10 @@ History.propTypes = {
     labels: PropTypes.arrayOf(PropTypes.object),
     getHistory: PropTypes.func.isRequired,
     toggleUnlabeled: PropTypes.func.isRequired,
+    setCurrentPage: PropTypes.func.isRequired,
     history_data: PropTypes.arrayOf(PropTypes.object),
+    num_pages: PropTypes.number,
+    current_page: PropTypes.number,
     changeLabel: PropTypes.func.isRequired,
     changeToSkip: PropTypes.func.isRequired,
     verifyDataLabel: PropTypes.func.isRequired,

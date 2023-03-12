@@ -15,6 +15,7 @@
     window.CODEBOOK_URL = "{% static project.codebook_file %}"
   {% endif %}
   window.ADMIN = {{admin}};
+  window.PROJECT_USES_IRR = {{project_uses_irr}};
 
   window.onload = function (e) {
     $.ajax({

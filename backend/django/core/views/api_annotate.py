@@ -432,13 +432,17 @@ def modify_label(request, data_pk):
                 timestamp=timezone.now(),
                 profile=profile,
                 training_set=current_training_set,
-                pre_loaded=False
+                pre_loaded=False,
             )
     else:
         old_label = Label.objects.get(pk=request.data["oldLabelID"])
         with transaction.atomic():
             DataLabel.objects.filter(data=data, label=old_label).update(
-                label=label, time_to_label=0, timestamp=timezone.now(), profile=profile, pre_loaded=False
+                label=label,
+                time_to_label=0,
+                timestamp=timezone.now(),
+                profile=profile,
+                pre_loaded=False,
             )
 
             LabelChangeLog.objects.create(
@@ -447,7 +451,7 @@ def modify_label(request, data_pk):
                 profile=profile,
                 old_label=old_label.name,
                 new_label=label.name,
-                change_timestamp=timezone.now()
+                change_timestamp=timezone.now(),
             )
 
     return Response(response)
@@ -947,7 +951,7 @@ def get_label_history(request, project_pk):
         total_data_list += unlabeled_data
 
     # return the page indicated in the query, get total pages
-    page = 0
+    page = int(request.GET.get("current_page")) - 1
     page_size = 100
     all_data = Data.objects.filter(pk__in=total_data_list).order_by("text")
     total_pages = math.ceil(len(all_data) / page_size)
@@ -969,6 +973,8 @@ def get_label_history(request, project_pk):
     ]
 
     data_df = pd.DataFrame(page_data).rename(columns={"pk": "id", "text": "data"})
+    if len(data_df) == 0:
+        return Response({"data": [], "total_pages": 1})
 
     # get the labeled data into the correct format for returning
     label_dict = {label.pk: label.name for label in labels}
@@ -977,7 +983,6 @@ def get_label_history(request, project_pk):
             labeled_data.filter(data__pk__in=data_df["id"].tolist()), many=True
         ).data
     ).rename(columns={"data": "id", "label": "labelID", "verified": "verified_by"})
-    
 
     irr_data_df = pd.DataFrame(
         IRRLogModelSerializer(
@@ -986,23 +991,26 @@ def get_label_history(request, project_pk):
     ).rename(columns={"data": "id", "label": "labelID"})
 
     if len(labeled_data_df) > 0:
-        labeled_data_df["verified"] = labeled_data_df["verified_by"].apply(lambda x: "No" if x is None else "Yes")
-        labeled_data_df["pre_loaded"] = labeled_data_df["pre_loaded"].apply(lambda x: "Yes" if x == True else "No")
+        labeled_data_df["verified"] = labeled_data_df["verified_by"].apply(
+            lambda x: "No" if x is None else "Yes"
+        )
+        labeled_data_df["pre_loaded"] = labeled_data_df["pre_loaded"].apply(
+            lambda x: "Yes" if x else "No"
+        )
         labeled_data_df["edit"] = "yes"
         labeled_data_df["label"] = labeled_data_df["labelID"].apply(
             lambda x: label_dict[x]
         )
         print(labeled_data_df)
 
-
-
     if len(irr_data_df) > 0:
         irr_data_df["edit"] = "no"
         irr_data_df["label"] = irr_data_df["labelID"].apply(lambda x: label_dict[x])
-        irr_data_df["verified"] = "N/A (IRR)" # Technically resolved IRR is verified but perhaps not this user's specific label so just NA
-        irr_data_df["verified_by"]= None
+        irr_data_df[
+            "verified"
+        ] = "N/A (IRR)"  # Technically resolved IRR is verified but perhaps not this user's specific label so just NA
+        irr_data_df["verified_by"] = None
         irr_data_df["pre_loaded"] = "No"  # IRR only looks at unlabeled data
-
 
     all_labeled_stuff = pd.concat([labeled_data_df, irr_data_df], axis=0).reset_index(
         drop=True
@@ -1017,7 +1025,7 @@ def get_label_history(request, project_pk):
         data_df["label"] = ""
         data_df["profile"] = ""
         data_df["timestamp"] = ""
-        data_df["verified"] = "NA"
+        data_df["verified"] = ""
         data_df["verified_by"] = ""
         data_df["pre_loaded"] = ""
 

@@ -8,16 +8,27 @@ import { getLabelCounts } from './skew';
 
 export const SET_HIST_DATA = 'SET_HIST_DATA';
 export const SET_UNLABELED = 'SET_UNLABELED';
+export const SET_NUM_PAGES = 'SET_NUM_PAGES';
+export const SET_CURRENT_PAGE = 'SET_CURRENT_PAGE';
 
+export const set_num_pages = createAction(SET_NUM_PAGES);
 export const set_hist_data = createAction(SET_HIST_DATA);
 export const set_unlabeled = createAction(SET_UNLABELED);
-
+export const set_current_page = createAction(SET_CURRENT_PAGE);
 
 export const toggleUnlabeled = (projectID) => {
-    console.log("Inside toggleUnlabeled");
     return (dispatch, getState) => {
-        console.log(getState().history.unlabeled);
         dispatch(set_unlabeled(!getState().history.unlabeled));
+        dispatch(set_current_page(1));
+        dispatch(getHistory(projectID));
+        
+    };
+};
+
+
+export const setCurrentPage = (projectID, page) => {
+    return (dispatch) => {
+        dispatch(set_current_page(page));
         dispatch(getHistory(projectID));
     };
 };
@@ -25,7 +36,13 @@ export const toggleUnlabeled = (projectID) => {
 //Get the data for the history table
 export const getHistory = (projectID) => {
     return (dispatch, getState) => {
-        let apiURL = `/api/get_label_history/${projectID}/?unlabeled=${getState().history.unlabeled}`;
+        let params = new URLSearchParams(
+            {
+                unlabeled: getState().history.unlabeled,
+                current_page: getState().history.current_page,
+            }
+        );
+        let apiURL = `/api/get_label_history/${projectID}/?${params.toString()}`;
         return fetch(apiURL, getConfig())
             .then(response => {
                 if (response.ok) {
@@ -60,6 +77,7 @@ export const getHistory = (projectID) => {
                     all_data.push(row);
                 }
                 dispatch(set_hist_data(all_data));
+                dispatch(set_num_pages(response.total_pages));
             })
             .catch(err => console.log("Error: ", err));
     };
