@@ -23,6 +23,7 @@ from core.models import (
     LabelChangeLog,
     LabelEmbeddings,
     MetaData,
+    MetaDataField,
     Project,
     Queue,
     RecycleBin,
@@ -422,7 +423,6 @@ def modify_label(request, data_pk):
     label = Label.objects.get(pk=request.data["labelID"])
 
     if "oldLabelID" not in request.data:
-        print("This data was never labeled")
         current_training_set = project.get_current_training_set()
         with transaction.atomic():
             DataLabel.objects.create(
@@ -479,7 +479,6 @@ def modify_label_to_skip(request, data_pk):
 
     with transaction.atomic():
         if "oldLabelID" not in request.data:
-            print("Item wasn't labeled")
             # since it wasn't labeled, it isn't IRR and we don't need to change a label
             DataQueue.objects.create(data=data, queue=queue)
             # update redis
@@ -915,7 +914,6 @@ def get_label_history(request, project_pk):
         data: DataLabel objects where that user was the one to label them
         unlabeled: DataLabel objects without a label
     """
-    print("INSIDE get_label_history")
     profile = request.user.profile
     project = Project.objects.get(pk=project_pk)
 
@@ -941,8 +939,7 @@ def get_label_history(request, project_pk):
     ).exclude(data__pk__in=labeled_data_list)
     irr_data_list = list(personal_irr_data.values_list("data__pk", flat=True))
 
-    # TODO: in this section also apply any additional filters. It will be faster this way
-    # also, subset by pagination before passing it to the data serializer
+    # add the unlabeled data if selected
     total_data_list = labeled_data_list + irr_data_list
     if request.GET.get("unlabeled") == "true":
         unlabeled_data = list(
@@ -954,8 +951,22 @@ def get_label_history(request, project_pk):
     page = int(request.GET.get("current_page")) - 1
     page_size = 100
     all_data = Data.objects.filter(pk__in=total_data_list).order_by("text")
+    metadata_objects = MetaDataField.objects.filter(project=project)
+
+    # filter the results by the search terms
+    text_filter = request.GET.get("Text")
+    if text_filter is not None and text_filter != "":
+        all_data = all_data.filter(text__contains=text_filter)
+
+    for m in metadata_objects:
+        m_filter = request.GET.get(str(m))
+        if m_filter is not None and m_filter != "":
+            data_with_metadata_filter = MetaData.objects.filter(
+                metadata_field=m, value__contains=m_filter
+            ).values_list("data__pk", flat=True)
+            all_data = all_data.filter(pk__in=data_with_metadata_filter)
+
     total_pages = math.ceil(len(all_data) / page_size)
-    print(page * page_size, min((page + 1) * page_size, len(all_data)))
 
     page_data = all_data[page * page_size : min((page + 1) * page_size, len(all_data))]
     # get the metadata IDs needed for metadata editing
@@ -974,7 +985,13 @@ def get_label_history(request, project_pk):
 
     data_df = pd.DataFrame(page_data).rename(columns={"pk": "id", "text": "data"})
     if len(data_df) == 0:
-        return Response({"data": [], "total_pages": 1})
+        return Response(
+            {
+                "data": [],
+                "total_pages": 1,
+                "metadata_fields": [str(field) for field in metadata_objects],
+            }
+        )
 
     # get the labeled data into the correct format for returning
     label_dict = {label.pk: label.name for label in labels}
@@ -1001,7 +1018,6 @@ def get_label_history(request, project_pk):
         labeled_data_df["label"] = labeled_data_df["labelID"].apply(
             lambda x: label_dict[x]
         )
-        print(labeled_data_df)
 
     if len(irr_data_df) > 0:
         irr_data_df["edit"] = "no"
@@ -1033,13 +1049,19 @@ def get_label_history(request, project_pk):
     data_df["pk"] = data_df["id"]
 
     # now add back on the metadata fields
-    print(data_df["data"].tolist())
     results = data_df.fillna("").to_dict(orient="records")
     for i in range(len(results)):
         results[i]["metadata"] = all_metadata[i]
         results[i]["formattedMetadata"] = all_metadata_formatted[i]
         results[i]["metadataIDs"] = page_data_metadata_ids[i]
-    return Response({"data": results, "total_pages": total_pages})
+
+    return Response(
+        {
+            "data": results,
+            "total_pages": total_pages,
+            "metadata_fields": [str(field) for field in metadata_objects],
+        }
+    )
 
 
 @api_view(["POST"])

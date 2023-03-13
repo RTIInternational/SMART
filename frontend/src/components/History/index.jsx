@@ -1,7 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 import ReactTable from "react-table-6";
-import { Button, Alert, Modal, OverlayTrigger, Tooltip } from "react-bootstrap";
+import { Button, Alert, Modal, OverlayTrigger, Tooltip, Container, Row, Col, Card } from "react-bootstrap";
 import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
 import AnnotateCard, { buildCard } from "../AnnotateCard";
 import EditableMetadataCell from "./EditableMetadataCell";
@@ -14,9 +14,13 @@ class History extends React.Component {
         this.toggleConfirm = this.toggleConfirm.bind(this);
         this.verifyLabel = this.verifyLabel.bind(this);
         this.historyChangeLabel = this.historyChangeLabel.bind(this);
+        this.createFilterForm = this.createFilterForm.bind(this);
+        this.changeFilterValue = this.changeFilterValue.bind(this);
+        this.filterHistory = this.filterHistory.bind(this);
         this.state = {
             pageSize : parseInt(localStorage.getItem("pageSize") || "25"),
-            showConfirm: false
+            showConfirm: false,
+            temp_filters: { Text:"" }
         };
         this.cardID, this.rowID, this.label;
     }
@@ -107,6 +111,21 @@ class History extends React.Component {
 
     componentDidMount() {
         this.props.getHistory();
+    }
+
+    componentDidUpdate(prevProps, prevState) {
+        if (prevProps.metadata_fields != this.props.metadata_fields) {
+            // Only populate this once
+            if (this.props.metadata_fields.length > 0 && Object.keys(this.state.temp_filters).length == 1) {
+                let temp = { Text: this.state.temp_filters.Text };
+                this.props.metadata_fields.map(field => {
+                    temp[field] = "";
+                });
+                this.setState({ 
+                    temp_filters: temp
+                });
+            }
+        }
     }
 
     toggleShowUnlabeled() {
@@ -237,9 +256,58 @@ class History extends React.Component {
         );
     }
 
+    filterHistory(event) {
+        // Update official filter state and re-pull history table
+        event.preventDefault();
+        this.props.filterHistoryTable(this.state.temp_filters);
+    }
+
+    changeFilterValue(event) {
+        let temp = this.state.temp_filters;
+        temp[event.target.name] = event.target.value;
+        this.setState({ 
+            temp_filters: temp
+        });
+    }
+
+    createFilterForm() {
+        // The form contains filters for text, and any metadata field
+        if (this.props.history_data.length == 0){
+            return (<div></div>);
+        } else {
+            return (
+                <Container as={Card} body={true} bg="Secondary">
+                    <Row m2={2}>
+                        <form onSubmit={this.filterHistory}>
+                            <Col>
+                                <label>
+                                    Data: 
+                                    <input type="text" name="Text" value={this.state.temp_filters.Text} onChange={this.changeFilterValue} />
+                                </label>
+                            </Col> 
+                            {this.props.metadata_fields.map(field => {
+                                return (
+                                    <Col key={field}>
+                                        <label>
+                                            {field}: 
+                                            <input type="text" name={field} value={this.state.temp_filters[field] || ''} onChange={this.changeFilterValue} />
+                                        </label>
+                                    </Col>
+                                
+                                );
+                            })}
+                            <input type="submit" value="Apply Filters" />
+                        </form>
+                    </Row>
+                </Container>
+            );
+        }
+    }
+
     render() {
         const { history_data, num_pages, setCurrentPage } = this.props;
 
+        
         let paginationDropdown = (<div></div>);
         if (num_pages > 1) {
             let pageOptions = [];
@@ -302,7 +370,7 @@ class History extends React.Component {
         let unlabeled_checkbox = (<div></div>);
         if (!window.PROJECT_USES_IRR) {
             unlabeled_checkbox = (
-                <div>
+                <Card body={true}>
                     <p style={{ maxWidth: "75ch" }}>
                         Toggle the checkbox below to show/hide unlabeled data:
                     </p>
@@ -310,7 +378,7 @@ class History extends React.Component {
                         <input type="checkbox" onChange={() => this.toggleShowUnlabeled()} />
                         <span style={{ marginLeft: "4px" }}>Unlabled Data</span>
                     </label>
-                </div>
+                </Card>
             );
         }
 
@@ -334,6 +402,7 @@ class History extends React.Component {
                 </p>
                 <CodebookLabelMenuContainer />
                 {unlabeled_checkbox}
+                {this.createFilterForm()}
                 <div>
                     {paginationDropdown}
                 </div>
@@ -389,7 +458,9 @@ History.propTypes = {
     toggleUnlabeled: PropTypes.func.isRequired,
     setCurrentPage: PropTypes.func.isRequired,
     history_data: PropTypes.arrayOf(PropTypes.object),
+    filterHistoryTable: PropTypes.func.isRequired,
     num_pages: PropTypes.number,
+    metadata_fields: PropTypes.arrayOf(PropTypes.object),
     current_page: PropTypes.number,
     changeLabel: PropTypes.func.isRequired,
     changeToSkip: PropTypes.func.isRequired,

@@ -8,7 +8,8 @@ import {
     verifyDataLabel, 
     modifyMetadataValue, 
     toggleUnlabeled,
-    setCurrentPage
+    setCurrentPage,
+    filterHistoryTable
 } from '../actions/history';
 import History from '../components/History';
 
@@ -22,7 +23,9 @@ const mapStateToProps = (state) => {
         unlabeled: state.history.unlabeled,
         labels: state.card.labels,
         num_pages: state.history.num_pages,
-        current_page: state.history.current_page
+        current_page: state.history.current_page,
+        filterChoices: state.history.filter_choices,
+        metadata_fields: state.history.metadata_fields
     };
 };
 
@@ -36,6 +39,9 @@ const mapDispatchToProps = (dispatch) => {
         },
         setCurrentPage: (page) => {
             dispatch(setCurrentPage(PROJECT_ID, page));
+        },
+        filterHistoryTable: (filter_choices) => {
+            dispatch(filterHistoryTable(PROJECT_ID, filter_choices));
         },
         changeLabel: (dataID, oldLabelID, labelID) => {
             dispatch(changeLabel(dataID, oldLabelID, labelID, PROJECT_ID));
