@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Spinner } from "react-bootstrap";
 
 function handleErrors(res) {
@@ -12,17 +12,21 @@ export default function SuggestedLabels({ card, labels, onSelectLabel }) {
     const [suggestions, setSuggestions] = useState();
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        let isMounted = true;
+    const mountedRef = useRef(true);
+    const getComparisons = useCallback(() => {
         fetch(`/api/comparisons/${card.text.project}?text=${card.text.text || card.text.data}`)
             .then(handleErrors)
             .then(res => res.json().then(result => {
                 setLoading(false);
-                if (isMounted) setSuggestions(result);
+                if (mountedRef.current) setSuggestions(result);
             }))
             .catch(error => console.log(error));
+    });
+
+    useEffect(() => {
+        getComparisons();
         return () => {
-            isMounted = false;
+            mountedRef.current = false;
         };
     }, []);
 
