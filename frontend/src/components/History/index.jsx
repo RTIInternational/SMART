@@ -424,9 +424,9 @@ class History extends React.Component {
                             ),
                             accessor: `formattedMetadata.${column}`,
                             show: true,
-                            Cell: (props) => (
-                                <EditableMetadataCell id={props.row._original.metadataIDs[i]} modifyMetadataValue={this.props.modifyMetadataValue} value={props.value} />
-                            ),
+                            // Cell: (props) => (
+                            //     <EditableMetadataCell id={props.row._original.metadataIDs[i]} modifyMetadataValue={this.props.modifyMetadataValue} value={props.value} />
+                            // ),
                         };
                     })]}
                     showPageSizeOptions={true}
