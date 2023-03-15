@@ -17,8 +17,10 @@ export default function SuggestedLabels({ card, labels, onSelectLabel }) {
         fetch(`/api/comparisons/${card.text.project}?text=${card.text.text || card.text.data}`)
             .then(handleErrors)
             .then(res => res.json().then(result => {
-                setLoading(false);
-                if (isMounted) setSuggestions(result);
+                if (isMounted) {
+                    setLoading(false);
+                    setSuggestions(result);
+                }
             }))
             .catch(error => console.log(error));
         return () => {
