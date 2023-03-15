@@ -1,10 +1,9 @@
 import React from "react";
 import PropTypes from "prop-types";
 import ReactTable from "react-table-6";
-import { Button, Alert, Modal, OverlayTrigger, Tooltip, Container, Row, Col, Card } from "react-bootstrap";
+import { Button, Alert, Modal, OverlayTrigger, Tooltip } from "react-bootstrap";
 import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
 import AnnotateCard, { buildCard } from "../AnnotateCard";
-import EditableMetadataCell from "./EditableMetadataCell";
 import Select from "react-dropdown-select";
 
 
@@ -273,29 +272,24 @@ class History extends React.Component {
     createFilterForm() {
         // The form contains filters for text, and any metadata field
         return (
-            <Container as={Card} body={true} bg="Secondary">
-                <Row m2={2}>
-                    <form onSubmit={this.filterHistory}>
-                        <Col>
-                            <label>
-                                Data: 
-                                <input type="text" name="Text" value={this.state.temp_filters.Text} onChange={this.changeFilterValue} />
-                            </label>
-                        </Col> 
-                        {this.props.metadata_fields.map(field => {
-                            return (
-                                <Col key={field}>
-                                    <label>
-                                        {field}: 
-                                        <input type="text" name={field} value={this.state.temp_filters[field] || ''} onChange={this.changeFilterValue} />
-                                    </label>
-                                </Col>
-                            );
-                        })}
-                        <input type="submit" value="Apply Filters" />
-                    </form>
-                </Row>
-            </Container>
+            <div>
+                <h4>Filters</h4>
+                <form onSubmit={this.filterHistory}>
+                    <div className="form-group history-filter">
+                        <label className="control-label" style={{ marginRight: "4px" }}>Data</label>
+                        <input className="form-control" type="text" name="Text" value={this.state.temp_filters.Text} onChange={this.changeFilterValue} />
+                    </div>
+                    {this.props.metadata_fields.map(field => {
+                        return (
+                            <div className="form-group history-filter" key={field}>
+                                <label className="control-label" style={{ marginRight: "4px" }}>{field}</label>
+                                <input className="form-control" type="text" name={field} value={this.state.temp_filters[field] || ''} onChange={this.changeFilterValue} />
+                            </div>
+                        );
+                    })}
+                    <input className="btn btn-primary" type="submit" value="Apply Filters" />
+                </form>
+            </div>
         );
     }
 
@@ -311,11 +305,12 @@ class History extends React.Component {
             }
             pageOptions.push({ "value":num_pages, "pageLabel":`Page ${num_pages} (${(num_pages - 1) * 100}+)` });
             paginationDropdown = (
-                <div>
+                <div style={{ marginBottom: "1rem" }}>
                     <b>
                         NOTE: For performance reasons, SMART only returns 100 items at a time. 
                         Use the dropdown below to navigate between batches of 100 items. Items are sorted 
                         by text in alphabetical order.
+                        <br />
                     </b>
                     <Select
                         className="align-items-center flex py-1 px-2 annotate-select"
@@ -365,15 +360,15 @@ class History extends React.Component {
         let unlabeled_checkbox = (<div></div>);
         if (!window.PROJECT_USES_IRR) {
             unlabeled_checkbox = (
-                <Card body={true}>
-                    <p style={{ maxWidth: "75ch" }}>
+                <div className="form-group" style={{ marginBottom: "0" }}>
+                    <p>
                         Toggle the checkbox below to show/hide unlabeled data:
                     </p>
-                    <label>
+                    <label className="control-label">
+                        <span style={{ marginRight: "4px" }}>Unlabled Data</span>
                         <input type="checkbox" onChange={() => this.toggleShowUnlabeled()} />
-                        <span style={{ marginLeft: "4px" }}>Unlabled Data</span>
                     </label>
-                </Card>
+                </div>
             );
         }
 
@@ -396,8 +391,12 @@ class History extends React.Component {
                     <strong>TIP:</strong> In this table you may edit metadata fields. Click on the value in the column and row where you want to change the data and it will open as a text box.
                 </p>
                 <CodebookLabelMenuContainer />
-                {unlabeled_checkbox}
-                {this.createFilterForm()}
+                <div className="history-filters">
+                    {this.createFilterForm()}
+                </div>
+                <div className="history-filters">
+                    {unlabeled_checkbox}
+                </div>
                 <div>
                     {paginationDropdown}
                 </div>
@@ -429,7 +428,6 @@ class History extends React.Component {
                     defaultPageSize={this.state.pageSize}
                     onPageSizeChange={(pageSize) => localStorage.setItem("pageSize", pageSize)}
                     SubComponent={row => this.getSubComponent(row)}
-                    filterable={true}
                     // defaultSorted={[
                     //     {
                     //         id: "timestamp",
