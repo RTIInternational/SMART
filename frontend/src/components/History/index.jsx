@@ -272,36 +272,31 @@ class History extends React.Component {
 
     createFilterForm() {
         // The form contains filters for text, and any metadata field
-        if (this.props.history_data.length == 0){
-            return (<div></div>);
-        } else {
-            return (
-                <Container as={Card} body={true} bg="Secondary">
-                    <Row m2={2}>
-                        <form onSubmit={this.filterHistory}>
-                            <Col>
-                                <label>
-                                    Data: 
-                                    <input type="text" name="Text" value={this.state.temp_filters.Text} onChange={this.changeFilterValue} />
-                                </label>
-                            </Col> 
-                            {this.props.metadata_fields.map(field => {
-                                return (
-                                    <Col key={field}>
-                                        <label>
-                                            {field}: 
-                                            <input type="text" name={field} value={this.state.temp_filters[field] || ''} onChange={this.changeFilterValue} />
-                                        </label>
-                                    </Col>
-                                
-                                );
-                            })}
-                            <input type="submit" value="Apply Filters" />
-                        </form>
-                    </Row>
-                </Container>
-            );
-        }
+        return (
+            <Container as={Card} body={true} bg="Secondary">
+                <Row m2={2}>
+                    <form onSubmit={this.filterHistory}>
+                        <Col>
+                            <label>
+                                Data: 
+                                <input type="text" name="Text" value={this.state.temp_filters.Text} onChange={this.changeFilterValue} />
+                            </label>
+                        </Col> 
+                        {this.props.metadata_fields.map(field => {
+                            return (
+                                <Col key={field}>
+                                    <label>
+                                        {field}: 
+                                        <input type="text" name={field} value={this.state.temp_filters[field] || ''} onChange={this.changeFilterValue} />
+                                    </label>
+                                </Col>
+                            );
+                        })}
+                        <input type="submit" value="Apply Filters" />
+                    </form>
+                </Row>
+            </Container>
+        );
     }
 
     render() {
