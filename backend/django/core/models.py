@@ -304,6 +304,9 @@ class VerifiedDataLabel(models.Model):
     verified_by = models.ForeignKey("Profile", on_delete=models.CASCADE)
     verified_timestamp = models.DateTimeField(null=True, default=None)
 
+    def __str__(self):
+        return str(self.verified_by)
+
 
 class LabelChangeLog(models.Model):
     project = models.ForeignKey("Project", on_delete=models.CASCADE)

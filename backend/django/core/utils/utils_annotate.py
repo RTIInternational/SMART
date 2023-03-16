@@ -277,6 +277,7 @@ def get_unlabeled_data(project_pk):
         project.data_set.filter(datalabel__isnull=True)
         .exclude(id__in=queued_ids)
         .exclude(id__in=recycle_ids)
+        .exclude(irr_ind=True)
     )
 
     return unlabeled_data

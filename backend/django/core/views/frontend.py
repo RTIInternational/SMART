@@ -74,6 +74,12 @@ class ProjectCode(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             ctx["admin"] = "false"
         ctx["project"] = Project.objects.get(pk=self.kwargs["pk"])
 
+        uses_irr = ctx["project"].percentage_irr > 0
+        if uses_irr:
+            ctx["project_uses_irr"] = "true"
+        else:
+            ctx["project_uses_irr"] = "false"
+
         return ctx
 
 
