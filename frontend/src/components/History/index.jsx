@@ -428,12 +428,16 @@ class History extends React.Component {
                     defaultPageSize={this.state.pageSize}
                     onPageSizeChange={(pageSize) => localStorage.setItem("pageSize", pageSize)}
                     SubComponent={row => this.getSubComponent(row)}
-                    // defaultSorted={[
-                    //     {
-                    //         id: "timestamp",
-                    //         desc: true
-                    //     }
-                    // ]}
+                    defaultSorted={[
+                        {
+                            id: "timestamp",
+                            desc: true
+                        },
+                        {
+                            id: "data",
+                            desc: false
+                        }
+                    ]}
                 />
                 {confirm_message}
             </div>
