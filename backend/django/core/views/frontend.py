@@ -74,6 +74,12 @@ class ProjectCode(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             ctx["admin"] = "false"
         ctx["project"] = Project.objects.get(pk=self.kwargs["pk"])
 
+        uses_irr = ctx["project"].percentage_irr > 0
+        if uses_irr:
+            ctx["project_uses_irr"] = "true"
+        else:
+            ctx["project_uses_irr"] = "false"
+
         return ctx
 
 
@@ -288,11 +294,14 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
                     env_file=external_file,
                     database_type=external_data["database_type"],
                     has_ingest=external_data["has_ingest"],
+                    cron_ingest=external_data["cron_ingest"],
                     ingest_schema=external_data["ingest_schema"],
                     ingest_table_name=external_data["ingest_table_name"],
                     has_export=external_data["has_export"],
+                    cron_export=external_data["cron_export"],
                     export_schema=external_data["export_schema"],
                     export_table_name=external_data["export_table_name"],
+                    export_verified_only=external_data["export_verified_only"],
                 )
             else:
                 # Create an empty database object
@@ -592,12 +601,15 @@ class ProjectUpdateExternalDB(LoginRequiredMixin, UserPassesTestMixin, UpdateVie
                     external_db.update(
                         env_file=external_file,
                         database_type=external_data["database_type"],
+                        cron_ingest=external_data["cron_ingest"],
                         has_ingest=external_data["has_ingest"],
                         ingest_schema=external_data["ingest_schema"],
                         ingest_table_name=external_data["ingest_table_name"],
                         has_export=external_data["has_export"],
+                        cron_export=external_data["cron_export"],
                         export_schema=external_data["export_schema"],
                         export_table_name=external_data["export_table_name"],
+                        export_verified_only=external_data["export_verified_only"],
                     )
                 elif project.has_database_connection():
                     # remove existing database connection
@@ -606,8 +618,10 @@ class ProjectUpdateExternalDB(LoginRequiredMixin, UserPassesTestMixin, UpdateVie
                         database_type="none",
                         has_ingest=False,
                         ingest_schema=None,
+                        cron_ingest=False,
                         ingest_table_name=None,
                         has_export=False,
+                        cron_export=False,
                         export_schema=None,
                         export_table_name=None,
                     )

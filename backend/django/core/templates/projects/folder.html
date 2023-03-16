@@ -10,15 +10,15 @@
           {{ form.media.css }}
           <form action="." method="post" enctype="multipart/form-data">
              {% csrf_token %}
-             <h1>Add Project To Folder</h1>
+             <h1>Add Project To Group</h1>
              <h3>Description</h3>
-             <p>To help organize your projects, you can assign projects to folders displayed on the project page.</p>
+             <p>To help organize your projects, you can assign projects to groups displayed on the project page.</p>
              <h3>Instructions</h3>
-             <p>Type the name of the folder in the input field you wish to create and select an existing project below to add to the folder.</p>
-             <p>Folder names must include at least one alphanumerical character.</p>
+             <p>Type the name of the group in the input field you wish to create and select an existing project below to add to the group.</p>
+             <p>Group names must include at least one alphanumerical character.</p>
              {{ form.errors.as_ul }}
              {% if projects|length > 0  %}
-                <input class="form-control" name="umbrella" placeholder="Folder Name" pattern="^.*[a-zA-Z0-9]+.*$" list="umbrella_choices" autocomplete="off" required/>
+                <input class="form-control" name="umbrella" placeholder="Group Name" pattern="^.*[a-zA-Z0-9]+.*$" list="umbrella_choices" autocomplete="off" required/>
                 <br />
                 <select class="form-control" name="project">
                     {% for project in projects %}
@@ -30,7 +30,7 @@
                     <button class="btn btn-primary" type="submit">Submit</button>
                 </div>
             {% else %}
-                <p>You do not have any existing projects to add to a new folder. Please <a href="/projects/add">create a project</a> first.</p>
+                <p>You do not have any existing projects to add to a new group. Please <a href="/projects/add">create a project</a> first.</p>
             {% endif %}
           </form>
         </div>

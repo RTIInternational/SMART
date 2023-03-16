@@ -34,8 +34,13 @@ annotate_patterns = [
     re_path(
         r"^modify_label_to_skip/(?P<data_pk>\d+)/$", api_annotate.modify_label_to_skip
     ),
+    re_path(
+        r"^modify_metadata_value/(?P<metadata_pk>\d+)/$",
+        api_annotate.modify_metadata_value,
+    ),
     re_path(r"^unassign_data/(?P<data_pk>\d+)/$", api_annotate.unassign_data),
     re_path(r"^skip_data/(?P<data_pk>\d+)/$", api_annotate.skip_data),
+    re_path(r"^verify_label/(?P<data_pk>\d+)/$", api_annotate.verify_label),
     re_path(
         r"^enter_coding_page/(?P<project_pk>\d+)/$", api_annotate.enter_coding_page
     ),
@@ -85,8 +90,12 @@ adminpage_patterns = [
 urlpatterns = [
     re_path(r"^", include(api_router.urls)),
     # re_path(r"^progressbarupload/", include("progressbarupload.urls")),
-    re_path(r"^download_data/(?P<project_pk>\d+)/$", api.download_data),
-    re_path(r"^download_model/(?P<project_pk>\d+)/$", api.download_model),
+    re_path(
+        r"^download_data/(?P<project_pk>\d+)/(?P<unverified>\d)/$", api.download_data
+    ),
+    re_path(
+        r"^download_model/(?P<project_pk>\d+)/(?P<unverified>\d)/$", api.download_model
+    ),
     re_path(r"^import_database_table/(?P<project_pk>\d+)/$", api.import_database_table),
     re_path(r"^export_database_table/(?P<project_pk>\d+)/$", api.export_database_table),
     re_path(r"^", include(annotate_patterns)),

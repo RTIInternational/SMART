@@ -29,6 +29,7 @@ from core.models import (
     ProjectPermissions,
     RecycleBin,
     TrainingSet,
+    VerifiedDataLabel,
 )
 from core.utils.utils_queue import fill_queue
 from smart.settings import TIME_ZONE_FRONTEND
@@ -197,6 +198,7 @@ def create_labels_from_csv(df, project):
         "training_set_id",
         "time_to_label",
         "timestamp",
+        "pre_loaded",
     ]
     stream = StringIO()
 
@@ -212,6 +214,9 @@ def create_labels_from_csv(df, project):
     df["training_set_id"] = project.get_current_training_set().pk
     df["label_id"] = df["Label"].apply(lambda x: labels[x])
     df["profile_id"] = project.creator.pk
+
+    # these data are preloaded
+    df["pre_loaded"] = True
 
     df.to_csv(stream, sep="\t", header=False, index=False, columns=columns)
     stream.seek(0)
@@ -491,24 +496,16 @@ def irr_heatmap_data(project):
         )
     )
     user_list.append(project.creator.pk)
-    label_list = list(
-        Label.objects.filter(project=project).values_list("name", flat=True)
-    )
-    label_list.append("Skip")
-
     irr_data = set(IRRLog.objects.values_list("data", flat=True))
 
     # Initialize the dictionary of dictionaries to use for the heatmap later
     user_label_counts = {}
     for user1 in user_list:
         for user2 in user_list:
-            user_label_counts[str(user1) + "_" + str(user2)] = {}
-            for label1 in label_list:
-                user_label_counts[str(user1) + "_" + str(user2)][str(label1)] = {}
-                for label2 in label_list:
-                    user_label_counts[str(user1) + "_" + str(user2)][str(label1)][
-                        str(label2)
-                    ] = 0
+            user_label_counts[str(user1) + "_" + str(user2)] = {
+                "data": {},
+                "labels": set(),
+            }
 
     for data_id in irr_data:
         # iterate over the data and count up labels
@@ -517,27 +514,49 @@ def irr_heatmap_data(project):
         for user1 in small_user_list:
             for user2 in small_user_list:
                 user_combo = str(user1) + "_" + str(user2)
-                label1 = data_log_list.get(profile__pk=user1).label
-                label2 = data_log_list.get(profile__pk=user2).label
-                user_label_counts[user_combo][str(label1).replace("None", "Skip")][
-                    str(label2).replace("None", "Skip")
-                ] += 1
+                label1 = str(data_log_list.get(profile__pk=user1).label).replace(
+                    "None", "Adjudicate"
+                )
+                user_label_counts[user_combo]["labels"].add(label1)
+                label2 = str(data_log_list.get(profile__pk=user2).label).replace(
+                    "None", "Adjudicate"
+                )
+                user_label_counts[user_combo]["labels"].add(label2)
+                if label1 not in user_label_counts[user_combo]["data"].keys():
+                    user_label_counts[user_combo]["data"][label1] = {}
+
+                if label2 not in user_label_counts[user_combo]["data"][label1].keys():
+                    user_label_counts[user_combo]["data"][str(label1)][label2] = 1
+                else:
+                    user_label_counts[user_combo]["data"][str(label1)][label2] += 1
+
+    # if label combinations didn't occur set them to 0
+    for user_combo in user_label_counts.keys():
+        for label1 in user_label_counts[user_combo]["labels"]:
+            for label2 in user_label_counts[user_combo]["labels"]:
+                if label1 not in user_label_counts[user_combo]["data"].keys():
+                    user_label_counts[user_combo]["data"][label1] = {}
+                if label2 not in user_label_counts[user_combo]["data"][label1].keys():
+                    user_label_counts[user_combo]["data"][label1][label2] = 0
+
     # get the results in the final format needed for the graph
     end_data = {}
+    end_data_labels = {}
     for user_combo in user_label_counts:
         end_data_list = []
-        for label1 in user_label_counts[user_combo]:
-            for label2 in user_label_counts[user_combo][label1]:
+        end_data_labels[user_combo] = list(user_label_counts[user_combo]["labels"])
+        for label1 in user_label_counts[user_combo]["data"]:
+            for label2 in user_label_counts[user_combo]["data"][label1]:
                 end_data_list.append(
                     {
                         "label1": label1,
                         "label2": label2,
-                        "count": user_label_counts[user_combo][label1][label2],
+                        "count": user_label_counts[user_combo]["data"][label1][label2],
                     }
                 )
         end_data[user_combo] = end_data_list
 
-    return end_data
+    return end_data, end_data_labels
 
 
 def save_data_file(df, project_pk):
@@ -583,11 +602,12 @@ def save_codebook_file(data, project_pk):
     return fpath.replace("/data/code_books/", "")
 
 
-def get_labeled_data(project):
+def get_labeled_data(project, unverified=True):
     """Given a project, get the list of labeled data.
 
     Args:
         project: Project object
+        unverified: bool. If true, then include unverified data in download.
     Returns:
         data: a list of the labeled data
     """
@@ -598,6 +618,8 @@ def get_labeled_data(project):
     for label in project_labels:
         labels.append({"Name": label.name, "Label_ID": label.pk})
         labeled_data = DataLabel.objects.filter(label=label, data__irr_ind=False)
+        if not unverified:
+            labeled_data = labeled_data.filter(verified__isnull=False)
         for d in labeled_data:
             temp = {}
             temp["ID"] = d.data.upload_id
@@ -606,13 +628,28 @@ def get_labeled_data(project):
             for m in metadata:
                 temp[m.metadata_field.field_name] = m.value
             temp["Label"] = label.name
+            if d.pre_loaded:
+                temp["Pre-Loaded"] = "Yes"
+            else:
+                temp["Pre-Loaded"] = "No"
+            if label.description:
+                temp["Description"] = label.description
             temp["Profile"] = str(d.profile.user)
             if d.timestamp:
                 temp["Timestamp"] = pytz.timezone(TIME_ZONE_FRONTEND).normalize(
                     d.timestamp
                 )
             else:
-                temp["Timestamp"] = "None"
+                temp["Timestamp"] = None
+            if hasattr(d, "verified"):
+                v = VerifiedDataLabel.objects.get(data_label=d)
+                temp["Verified"] = "Yes"
+                temp["Verified By"] = v.verified_by
+                temp["Verified Timestamp"] = v.verified_timestamp
+            else:
+                temp["Verified"] = "No"
+                temp["Verified By"] = None
+                temp["Verified Timestamp"] = None
             data.append(temp)
     labeled_data_frame = pd.DataFrame(data)
     label_frame = pd.DataFrame(labels)
@@ -632,6 +669,13 @@ def project_status(project):
 
     final_data_objs = list(
         DataLabel.objects.filter(data__project=project, data__irr_ind=False)
+    )
+
+    final_verified = DataLabel.objects.filter(
+        data__project=project, data__irr_ind=False, verified__isnull=False
+    )
+    final_unverified = DataLabel.objects.filter(
+        data__project=project, data__irr_ind=False, verified__isnull=True
     )
 
     stuff_in_irrlog = IRRLog.objects.filter(data__project=project).values_list(
@@ -658,6 +702,8 @@ def project_status(project):
         "adjudication": len(stuff_in_queue),
         "assigned": len(assigned_ids),
         "final": len(final_data_objs),
+        "final_verified": len(final_verified),
+        "final_unverified": len(final_unverified),
         "recycled": len(recycle_ids),
         "total": len(total_data_objs),
         "unlabeled": len(unlabeled_data_objs),

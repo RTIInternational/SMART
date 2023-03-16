@@ -4,8 +4,12 @@ import os
 import pandas as pd
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from sqlalchemy import create_engine
+from sqlalchemy import DateTime, create_engine
 from sqlalchemy.exc import InterfaceError
+
+from core.models import ExternalDatabase, Label, MetaDataField, Project
+from core.utils.util import get_labeled_data, upload_data
+from core.utils.utils_form import clean_data_helper
 
 
 def get_connection(db_type, connection_dict):
@@ -91,7 +95,7 @@ def get_full_table(engine_database, schema, table):
         )
     except Exception as e:
         raise ValidationError(
-            f"ERROR: pulling the ingest table failed with the following error - {str(e)}"
+            f"ERROR: pulling the import table failed with the following error - {str(e)}"
         )
 
 
@@ -121,3 +125,120 @@ def delete_external_db_file(project_pk):
     file_name = "project_" + str(project_pk) + "_db_connection.json"
     fpath = os.path.join(settings.ENV_FILE_PATH, file_name)
     os.remove(fpath)
+
+
+def load_ingest_table(project, response):
+    """This function imports all data from an existing database connection."""
+    if not project.has_database_connection():
+        response["error"] = "Project does not have a database connection."
+    else:
+        # check that the project has a database connection and ingest tables
+        connection_dict = load_external_db_file(project.pk)
+        external_db = ExternalDatabase.objects.get(project=project)
+
+        if not external_db.has_ingest:
+            response["error"] = "Project does not have ingest connections set up."
+        else:
+            # pull the ingest table
+            try:
+                engine_database = get_connection(
+                    external_db.database_type, connection_dict
+                )
+
+                # pull the full database table
+                data = get_full_table(
+                    engine_database,
+                    external_db.ingest_schema,
+                    external_db.ingest_table_name,
+                )
+                # clean it using the form validation tool
+                cleaned_data = clean_data_helper(
+                    data,
+                    Label.objects.filter(project=project).values_list(
+                        "name", flat=True
+                    ),
+                    project.dedup_on,
+                    project.dedup_fields,
+                    MetaDataField.objects.filter(project=project).values_list(
+                        "field_name", flat=True
+                    ),
+                )
+                # add the data to the project
+                num_added = upload_data(
+                    cleaned_data,
+                    project,
+                    project.queue_set.get(type="normal"),
+                    project.queue_set.get(type="irr"),
+                    batch_size=project.batch_size,
+                )
+                response["num_added"] = num_added
+            except Exception as e:
+                # return errors in the validation tool
+                response["error"] = str(e)
+    return response
+
+
+def export_table(project_pk, response):
+    """This function exports all labeled data to the project export table."""
+
+    project = Project.objects.get(pk=project_pk)
+    if not project.has_database_connection():
+        response["error"] = "Project does not have a database connection."
+    else:
+        # check that the project has a database connection and export tables
+        connection_dict = load_external_db_file(project_pk)
+        external_db = ExternalDatabase.objects.get(project=project)
+
+        if not external_db.has_export:
+            response["error"] = "Project does not have export connections set up."
+        else:
+            try:
+                engine_database = get_connection(
+                    external_db.database_type, connection_dict
+                )
+
+                # pull all labeled data
+                data, labels = get_labeled_data(
+                    project, unverified=(not external_db.export_verified_only)
+                )
+                if len(data) > 0:
+                    # pull the export table
+                    if check_if_table_exists(
+                        engine_database,
+                        external_db.export_schema,
+                        external_db.export_table_name,
+                    ):
+                        response[
+                            "success_message"
+                        ] = "Table exists. Dropping and replacing with new output data."
+
+                        # drop the table and then replace the data
+                        data.to_sql(
+                            name=external_db.export_table_name,
+                            con=engine_database,
+                            schema=external_db.export_schema,
+                            if_exists="replace",
+                            index=False,
+                            dtype={"Timestamp": DateTime},
+                        )
+
+                    else:
+                        response["success_message"] = "Creating new table in database."
+                        # create table with columns from labeled data
+                        data.to_sql(
+                            name=external_db.export_table_name,
+                            con=engine_database,
+                            schema=external_db.export_schema,
+                            if_exists="fail",
+                            index=False,
+                            dtype={"Timestamp": DateTime},
+                        )
+                else:
+                    response["success_message"] = "No data to export."
+                response[
+                    "success_message"
+                ] += f" Added {len(data)} rows to the database."
+
+            except Exception as e:
+                # return errors in the validation tool
+                response["error"] = str(e)
