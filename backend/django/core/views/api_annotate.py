@@ -422,7 +422,10 @@ def modify_label(request, data_pk):
 
     label = Label.objects.get(pk=request.data["labelID"])
 
-    if "oldLabelID" not in request.data:
+    if (
+        "oldLabelID" not in request.data
+        and not DataLabel.objects.filter(data=data).exists()
+    ):
         current_training_set = project.get_current_training_set()
         with transaction.atomic():
             DataLabel.objects.create(
@@ -434,7 +437,7 @@ def modify_label(request, data_pk):
                 training_set=current_training_set,
                 pre_loaded=False,
             )
-    else:
+    elif "oldLabelID" in request.data:
         old_label = Label.objects.get(pk=request.data["oldLabelID"])
         with transaction.atomic():
             DataLabel.objects.filter(data=data, label=old_label).update(
@@ -453,6 +456,7 @@ def modify_label(request, data_pk):
                 new_label=label.name,
                 change_timestamp=timezone.now(),
             )
+    # if there is no previous label but there is a datalabel it's probably a double click so do nothing
 
     return Response(response)
 
