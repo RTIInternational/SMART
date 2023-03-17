@@ -956,13 +956,13 @@ def get_label_history(request, project_pk):
     # filter the results by the search terms
     text_filter = request.GET.get("Text")
     if text_filter is not None and text_filter != "":
-        all_data = all_data.filter(text__contains=text_filter)
+        all_data = all_data.filter(text__icontains=text_filter)
 
     for m in metadata_objects:
         m_filter = request.GET.get(str(m))
         if m_filter is not None and m_filter != "":
             data_with_metadata_filter = MetaData.objects.filter(
-                metadata_field=m, value__contains=m_filter
+                metadata_field=m, value__icontains=m_filter
             ).values_list("data__pk", flat=True)
             all_data = all_data.filter(pk__in=data_with_metadata_filter)
 
