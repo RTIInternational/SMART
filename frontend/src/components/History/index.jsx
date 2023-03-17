@@ -333,7 +333,7 @@ class History extends React.Component {
                             setCurrentPage(selection[0].value);
                         }}
                         options={pageOptions}
-                        placeholder="Select Page..."
+                        placeholder="Select Batch..."
                         searchBy="pageLabel"
                     />
                 </div>
