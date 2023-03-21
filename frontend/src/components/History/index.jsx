@@ -16,6 +16,7 @@ class History extends React.Component {
         this.createFilterForm = this.createFilterForm.bind(this);
         this.changeFilterValue = this.changeFilterValue.bind(this);
         this.filterHistory = this.filterHistory.bind(this);
+        this.resetFilters = this.resetFilters.bind(this);
         this.state = {
             pageSize : parseInt(localStorage.getItem("pageSize") || "25"),
             showConfirm: false,
@@ -269,6 +270,17 @@ class History extends React.Component {
         });
     }
 
+    resetFilters() {
+        let current_filters = this.state.temp_filters;
+        for (let key in current_filters) {
+            current_filters[key] = "";
+        }
+        this.setState({
+            temp_filters: current_filters
+        });
+        this.props.filterHistoryTable(this.state.temp_filters);
+    }
+
     createFilterForm() {
         // The form contains filters for text, and any metadata field
         return (
@@ -288,6 +300,7 @@ class History extends React.Component {
                         );
                     })}
                     <input className="btn btn-primary" type="submit" value="Apply Filters" />
+                    <Button variant="secondary" onClick={this.resetFilters}>Reset Filters</Button>
                 </form>
             </div>
         );
@@ -301,15 +314,15 @@ class History extends React.Component {
         if (num_pages > 1) {
             let pageOptions = [];
             for (let i = 1; i < num_pages; i++) {
-                pageOptions.push({ "value":i, "pageLabel":`Page ${i} (${(i - 1) * 100} - ${(i) * 100})` });
+                pageOptions.push({ "value":i, "pageLabel":`Batch ${i} (${(i - 1) * 100} - ${(i) * 100})` });
             }
-            pageOptions.push({ "value":num_pages, "pageLabel":`Page ${num_pages} (${(num_pages - 1) * 100}+)` });
+            pageOptions.push({ "value":num_pages, "pageLabel":`Batch ${num_pages} (${(num_pages - 1) * 100}+)` });
             paginationDropdown = (
                 <div style={{ marginBottom: "1rem" }}>
                     <b>
                         NOTE: For performance reasons, SMART only returns 100 items at a time. 
                         Use the dropdown below to navigate between batches of 100 items. Items are sorted 
-                        by text in alphabetical order.
+                        by text in alphabetical order. Recently labeled items in a batch are returned first.
                         <br />
                     </b>
                     <Select
@@ -320,7 +333,7 @@ class History extends React.Component {
                             setCurrentPage(selection[0].value);
                         }}
                         options={pageOptions}
-                        placeholder="Select Page..."
+                        placeholder="Select Batch..."
                         searchBy="pageLabel"
                     />
                 </div>
@@ -357,7 +370,20 @@ class History extends React.Component {
             </Modal>
         );
 
-        let unlabeled_checkbox = (<div></div>);
+        let unlabeled_checkbox = (
+            <div className="form-group" style={{ marginBottom: "0" }}>
+                <p>
+                    Toggle the checkbox below to show/hide unlabeled data:
+                </p>
+                <label className="control-label">
+                    <span style={{ marginRight: "4px" }}>Unlabled Data</span>
+                    <input type="checkbox" disabled />
+                </label>
+                <div>
+                    <i>Unlabeled data cannot be accessed in the history table for projects using the Inter-Rater-Reliability feature.</i>
+                </div>
+            </div>
+        );
         if (!window.PROJECT_USES_IRR) {
             unlabeled_checkbox = (
                 <div className="form-group" style={{ marginBottom: "0" }}>
@@ -376,20 +402,20 @@ class History extends React.Component {
             <div className="history">
                 <h3>Instructions</h3>
                 <p>This page allows a coder to change past labels.</p>
-                <p style={{ maxWidth: "75ch" }}>
+                <p>
                     To annotate, click on a data entry below and select the
                     label from the expanded list of labels. The chart will then
-                    update with the new label and current timestamp{" "}
+                    update with the new label and current timestamp{" "}.
                 </p>
-                <p style={{ maxWidth: "75ch" }}>
+                <p>
                     <strong>NOTE:</strong> Data labels that are changed on this
                     page will not effect past model accuracy or data selected by
                     active learning in the past. The training data will only be
-                    updated for the next run of the model
+                    updated for the next run of the model.
                 </p>
-                <p style={{ maxWidth: "75ch" }}>
+                {/* <p style={{ maxWidth: "75ch" }}>
                     <strong>TIP:</strong> In this table you may edit metadata fields. Click on the value in the column and row where you want to change the data and it will open as a text box.
-                </p>
+                </p> */}
                 <CodebookLabelMenuContainer />
                 <div className="history-filters">
                     {this.createFilterForm()}
