@@ -144,14 +144,14 @@ def test_download_model(
     )
 
     # check admin priviledges
-    response = client.get("/api/download_model/" + str(project.pk) + "/").json()
+    response = client.get("/api/download_model/" + str(project.pk) + "/1/").json()
     assert (
         "detail" in response
         and "Invalid permission. Must be an admin" in response["detail"]
     )
 
     # check that the response is the correct type
-    response = admin_client.get("/api/download_model/" + str(project.pk) + "/")
+    response = admin_client.get("/api/download_model/" + str(project.pk) + "/1/")
     assert "detail" not in response
     assert response.get("Content-Type") == "application/x-zip-compressed"
 
@@ -188,13 +188,13 @@ def test_download_labeled_data(
         profile=client_profile, project=project, permission="CODER"
     )
     # check admin priviledges
-    response = client.get("/api/download_data/" + str(project.pk) + "/").json()
+    response = client.get("/api/download_data/" + str(project.pk) + "/1/").json()
     assert (
         "detail" in response
         and "Invalid permission. Must be an admin" in response["detail"]
     )
 
     # check that the response is the correct type
-    response = admin_client.get("/api/download_data/" + str(project.pk) + "/")
+    response = admin_client.get("/api/download_data/" + str(project.pk) + "/1/")
     assert "detail" not in response
     assert response.get("Content-Type") == "text/csv"
