@@ -228,7 +228,7 @@ Can I Customize the Embeddings?
 Yes you can! SMART saves the embeddings model it uses in the `smart_embeddings_model folder <https://github.com/RTIInternational/SMART/tree/master/backend/django/core/smart_embeddings_model>`_. 
 Depending on the domain of your data, you might have some phrases which you want the model to know are similar, or some which you don't want the model to think are close. 
 
-You can update the SMART model using the `csv to embeddings model repository <https://github.com/dsteedRTI/csv-to-embeddings-model>`_.
+You can update the SMART model using the `csv to embeddings model repository <https://github.com/RTIInternational/csv-to-embeddings-model>`_.
 
 
 .. |annotate-cards| image:: ./nstatic/img/smart-annotate-annotatedata-cards.png

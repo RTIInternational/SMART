@@ -34,16 +34,16 @@ Changes from 2.0.1
 **New Features**
 
 * Metadata fields can now be provided with data and options have been added for deduplication based on this (see "Metadata [NEW]"[TODO link])
-* A database connection can now be set up for ingesting new data and exporting labeled data. Currently only supports Microsoft databases [TODO verify and link]
+* A database connection can now be set up for ingesting new data and exporting labeled data. Currently only supports Microsoft SQL Server (MSSQL) databases [TODO verify and link]
 * Labels can now be loaded in from files during project creation (see :ref:`create-new-project`)
-* Projects can no be added to Groups which mainly just affects the project page (see "Project Grouping [NEW]")
+* Projects can not be added to Groups which mainly just affects the project page (see "Project Grouping [NEW]")
 * For projects with more than 5 labels, the top 5 most likely labels are now provided when annotating using label embeddings (see "Most Likely Label Prediction [NEW]")
 * The production build has been updated to be more functional (see "Production Settings [NEW]")
 * The history page is now searchable and project admin can see and edit the historic labels of all coders
 * The skew page is now searchable more directly and returns the top 50 items
 * Project admin can now un-assign coders on the admin page, to free up items for other coders to label. 
 * There is now a timeout in affect for the lock on the admin tables. If an admin has not done anything in the last 15 minutes in a project, and another admin requests the project page, the lock will be given to the new admin. 
-* The project page now lists counts for the data left to code. This excludes and items in the recycle bin.
+* The project page now lists counts for the data left to code. This excludes items in the recycle bin.
 * The details page now provides counts for the data in the project and where the data is in the coding or IRR pipeline.
 * The Skip button has been changed so it merely un-assigns the card to be labeled later. Instead, there is a separate "Adjudicate" button which has the old skip functionality of sending the card to the Admin table. This button now also requires a reason for sending to the Admin.
 
@@ -79,6 +79,7 @@ Changes from 2.0.1
 * The annotate page has been updated to make things more readable and work with the new Metadata options. In addition projects with many labels will see them appear in a dropdown instead of as individual buttons.
 * Frontend dependencies have been updated so that they pull in new bug fix versions.
 * Messages for admin lockout or when there are no cards to assign have been updated for clarity.
+* Some small GUI changes were made based on feedback from a UX designer
 
 Contributors
 ************

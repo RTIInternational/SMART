@@ -7,6 +7,7 @@ Feature Highlights
 ^^^^^^^^^^^^^^^^^^
 
 * **Active Learning** algorithms for selecting the next batch of data to label.
+* **Label Suggestions** generated using embeddings to suggest the most likely labels for each data item.
 * **Inter-rater reliability** metrics to help determine a human-level baseline and the understand the test validity of your labeling task.
 * **Admin dashboard** and other project management tools to help oversee the labeling process and coder progress.
 * **Multi-user coding**, for parallel annotation efforts within a project.

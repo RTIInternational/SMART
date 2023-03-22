@@ -51,6 +51,7 @@ You can also upload a file with labels and descriptions by clicking the "Choose 
 	* If you plan on uploading a data file that contains labels, the label categories in the file must match those provided on this page.
 	* You may add up to 10,000 labels to each project.
 	* Label files must contain ``Label`` and ``Description`` columns.
+	* The label file must be a CSV (comma separated values) file.
 
 .. warning::
 	* You cannot add, remove, or update any labels for a project after the project is created.
