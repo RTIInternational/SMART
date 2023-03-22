@@ -60,6 +60,7 @@
     "prop-types": "^15.7.2",
     "react": "^16.14.0",
     "react-bootstrap": "^1.5.2",
+    "react-debounce-input": "^3.3.0",
     "react-dom": "^16.14.0",
     "react-dropdown-select": "^4.7.4",
     "react-nvd3": "^0.5.7",

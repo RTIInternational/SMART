@@ -197,7 +197,7 @@ pyjwt[crypto]==1.7.1
     # via
     #   django-allauth
     #   djangorestframework-jwt
-pyodbc==4.0.32
+pyodbc==4.0.35
     # via -r docker/requirements.in
 pyparsing==2.4.7
     # via packaging

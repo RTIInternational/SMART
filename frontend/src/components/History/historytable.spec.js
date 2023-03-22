@@ -8,15 +8,19 @@ describe('<History />', () => {
         it('renders properly if all props provided', () => {
             const fn = () => {};
             const data = [];
+            const unlabeled_data = [];
             const labels = [];
 
             const wrapper = shallow(
                 <History
                   getHistory = {fn}
                   history_data={data}
+                  unlabeled_data={unlabeled_data}
                   changeLabel = {fn}
                   changeToSkip= {fn}
+                  verifyDataLabel = {fn}
                   labels={labels}
+                  modifyMetadataValue={fn}
                 />
             );
         });

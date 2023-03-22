@@ -16,6 +16,7 @@ from core.models import (
     Project,
     Queue,
     RecycleBin,
+    VerifiedDataLabel,
 )
 from core.templatetags import project_extras
 from core.utils.utils_queue import pop_first_nonempty_queue
@@ -233,13 +234,19 @@ def process_irr_label(data, label):
                 agree = True
                 # if they do, add a new element to dataLabel with one label
                 # by creator and remove from the irr queue
-                DataLabel.objects.create(
+                dl = DataLabel.objects.create(
                     data=data,
                     profile=project.creator,
                     label=label,
                     training_set=current_training_set,
                     time_to_label=None,
                     timestamp=timezone.now(),
+                )
+                # IRR which has agreement is verified by default
+                VerifiedDataLabel.objects.create(
+                    data_label=dl,
+                    verified_timestamp=timezone.now(),
+                    verified_by=project.creator,
                 )
                 DataQueue.objects.filter(data=data).delete()
             else:
@@ -270,6 +277,7 @@ def get_unlabeled_data(project_pk):
         project.data_set.filter(datalabel__isnull=True)
         .exclude(id__in=queued_ids)
         .exclude(id__in=recycle_ids)
+        .exclude(irr_ind=True)
     )
 
     return unlabeled_data
