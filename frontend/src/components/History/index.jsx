@@ -443,10 +443,7 @@ class History extends React.Component {
                                 </OverlayTrigger>
                             ),
                             accessor: `formattedMetadata.${column}`,
-                            show: true,
-                            // Cell: (props) => (
-                            //     <EditableMetadataCell id={props.row._original.metadataIDs[i]} modifyMetadataValue={this.props.modifyMetadataValue} value={props.value} />
-                            // ),
+                            show: true
                         };
                     })]}
                     showPageSizeOptions={true}
@@ -488,7 +485,6 @@ History.propTypes = {
     changeLabel: PropTypes.func.isRequired,
     changeToSkip: PropTypes.func.isRequired,
     verifyDataLabel: PropTypes.func.isRequired,
-    modifyMetadataValue: PropTypes.func.isRequired
 };
 
 export default History;

@@ -5,6 +5,7 @@ import {
     Tooltip,
     OverlayTrigger
 } from "react-bootstrap";
+import Metadata from "./Metadata";
 
 export default function CardData({ card, onSkip, onUnassign, showAdjudicate = true }) {
     return (
@@ -19,7 +20,7 @@ export default function CardData({ card, onSkip, onUnassign, showAdjudicate = tr
                 <h4>Text to Label</h4>
                 <p style={{ whiteSpace: "normal" }}>{card.text["text"] || card.text["data"]}</p>
             </div>
-            {extractMetadata(card)}
+            <Metadata card={card} />
         </div>
     );
 }
@@ -95,19 +96,4 @@ function drawSkipQueueButton(card, onUnassign) {
             </OverlayTrigger>
         </Fragment>
     );
-}
-
-function extractMetadata(card) {
-    if (card.text["metadata"].length == 0) {
-        return <p></p>;
-    } else {
-        return (
-            <div className="card-metadata">
-                <h4>Respondent Data</h4>
-                {card.text["metadata"].map(val => (
-                    <p key={val}>{val}</p>
-                ))}
-            </div>
-        );
-    }
 }

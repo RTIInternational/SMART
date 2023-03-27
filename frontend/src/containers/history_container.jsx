@@ -6,7 +6,6 @@ import {
     changeLabel, 
     changeToSkip, 
     verifyDataLabel, 
-    modifyMetadataValue, 
     toggleUnlabeled,
     setCurrentPage,
     filterHistoryTable
@@ -51,9 +50,6 @@ const mapDispatchToProps = (dispatch) => {
         },
         verifyDataLabel: (dataID) => {
             dispatch(verifyDataLabel(dataID, PROJECT_ID));
-        },
-        modifyMetadataValue: (metadataId, value) => {
-            dispatch(modifyMetadataValue(metadataId, value));
         }
     };
 };
