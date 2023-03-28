@@ -144,3 +144,23 @@ export const passCard = (card, num_cards_left, is_admin, projectID, message) => 
             });
     };
 };
+
+// update a card's metadata
+export const modifyMetadataValues = (dataPk, metadatas, projectPk) => {
+    let apiURL = `/api/modify_metadata_values/${dataPk}/`;
+    return dispatch => {
+        return fetch(apiURL, postConfig({ metadatas }))
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    const error = new Error(response.statusText);
+                    error.response = response;
+                    throw error;
+                }
+            })
+            .then(() => {
+                dispatch(getHistory(projectPk));
+            });
+    };
+};

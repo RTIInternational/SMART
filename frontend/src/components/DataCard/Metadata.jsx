@@ -1,27 +1,12 @@
 import React, { Fragment, useState } from "react";
-import { postConfig } from "../../utils/fetch_configs";
 
-const modifyMetadataValues = (dataPk, metadatas) => {
-    let apiURL = `/api/modify_metadata_values/${dataPk}/`;
-    fetch(apiURL, postConfig({ metadatas }))
-        .then(response => {
-            if (response.ok) {
-                return response.json();
-            } else {
-                const error = new Error(response.statusText);
-                error.response = response;
-                throw error;
-            }
-        });
-};
-
-export default function Metadata({ card }) {
+export default function Metadata({ card, modifyMetadataValues }) {
     const originalMetadata = card.text["metadata"].reduce((a, b) => {
         const [key, value] = b.split(': ');
         a[key] = value;
         return a;
     }, {});
-    const pk = card.text["pk"];
+    const dataPk = card.text["pk"] || card.text["id"];
 
     const [edit, setEdit] = useState(false);
     const [metadata, setMetadata] = useState(originalMetadata || []);
@@ -29,7 +14,7 @@ export default function Metadata({ card }) {
     function handleSubmit(e) {
         e.preventDefault();
         setEdit(false);
-        modifyMetadataValues(pk, Object.entries(metadata).filter(([key, value]) =>
+        modifyMetadataValues(dataPk, Object.entries(metadata).filter(([key, value]) =>
             originalMetadata[key] !== value
         ).map(([key, value]) => ({ key, previous: originalMetadata[key], value })));
     }
@@ -52,10 +37,10 @@ export default function Metadata({ card }) {
         <Element className="card-metadata" onSubmit={handleSubmit}>
             <div className="card-metadata-header">
                 <h4>Respondent Data</h4>
-                {!edit && <button className="btn btn-info" onClick={() => setEdit(true)} type="button">
+                {modifyMetadataValues && !edit && <button className="btn btn-info" onClick={() => setEdit(true)} type="button">
                     Edit
                 </button>}
-                {edit && (
+                {modifyMetadataValues && edit && (
                     <Fragment>
                         <button className="btn btn-info" type="submit">Save</button>
                         <button className="btn btn-info" onClick={() => reset()} type="button">

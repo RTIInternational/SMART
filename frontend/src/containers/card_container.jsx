@@ -1,7 +1,7 @@
 import React from 'react';
 import { connect } from 'react-redux';
 
-import { fetchCards, annotateCard, passCard, unassignCard } from '../actions/card';
+import { fetchCards, annotateCard, passCard, unassignCard, modifyMetadataValues } from '../actions/card';
 import DataCard from '../components/DataCard';
 
 const PROJECT_ID = window.PROJECT_ID;
@@ -29,6 +29,9 @@ const mapDispatchToProps = (dispatch) => {
         },
         unassignCard: (dataId, num_cards_left, is_admin) => {
             dispatch(unassignCard(dataId, num_cards_left, is_admin, PROJECT_ID));
+        },
+        modifyMetadataValues: (dataPk, metadatas) => {
+            dispatch(modifyMetadataValues(dataPk, metadatas, PROJECT_ID));
         }
     };
 };

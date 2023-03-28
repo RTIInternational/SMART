@@ -20,6 +20,7 @@ describe('<History />', () => {
                   changeToSkip= {fn}
                   verifyDataLabel = {fn}
                   labels={labels}
+                  modifyMetadataValues={fn}
                 />
             );
         });

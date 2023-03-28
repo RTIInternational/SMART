@@ -7,7 +7,7 @@ import {
 } from "react-bootstrap";
 import Metadata from "./Metadata";
 
-export default function CardData({ card, onSkip, onUnassign, showAdjudicate = true }) {
+export default function CardData({ card, onSkip, onUnassign, showAdjudicate = true, modifyMetadataValues }) {
     return (
         <div className="cardface-info">
             {showAdjudicate && (
@@ -20,7 +20,7 @@ export default function CardData({ card, onSkip, onUnassign, showAdjudicate = tr
                 <h4>Text to Label</h4>
                 <p style={{ whiteSpace: "normal" }}>{card.text["text"] || card.text["data"]}</p>
             </div>
-            <Metadata card={card} />
+            <Metadata card={card} modifyMetadataValues={modifyMetadataValues} />
         </div>
     );
 }

@@ -1,5 +1,6 @@
 import React from 'react';
 import { connect } from 'react-redux';
+import { modifyMetadataValues } from '../actions/card';
 
 import { 
     getHistory, 
@@ -50,6 +51,9 @@ const mapDispatchToProps = (dispatch) => {
         },
         verifyDataLabel: (dataID) => {
             dispatch(verifyDataLabel(dataID, PROJECT_ID));
+        },
+        modifyMetadataValues: (dataPk, metadatas) => {
+            dispatch(modifyMetadataValues(dataPk, metadatas, PROJECT_ID));
         }
     };
 };
