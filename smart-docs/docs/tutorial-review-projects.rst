@@ -23,7 +23,7 @@ The image below is the project page for User1. We see that the user is a Coder f
 Adding a Project to a Group
 ---------------------------
 
-To add a project to a group, we must first create the group and add one project to it by clicking the "New Folder" button, writing the name of the group, and adding a project.
+To add a project to a group, we must first create the group and add one project to it by clicking the "New Group" button, writing the name of the group, and adding a project.
 
 Below we add our "About Cats Classifier" project to a new group.
 
