@@ -952,7 +952,10 @@ def get_label_history(request, project_pk):
         total_data_list += unlabeled_data
 
     # return the page indicated in the query, get total pages
-    page = int(request.GET.get("current_page")) - 1
+    current_page = request.GET.get("current_page")
+    if current_page is None:
+        current_page = 1
+    page = int(current_page) - 1
     page_size = 100
     all_data = Data.objects.filter(pk__in=total_data_list).order_by("text")
     metadata_objects = MetaDataField.objects.filter(project=project)
