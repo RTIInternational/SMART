@@ -116,7 +116,7 @@ Each batch in the history table is automatically sorted by the date to provide t
 For items that either don't have a label date or have the same date, they are returned in alphabetical order by text.
 
 
-**Filtering:** By default, the history table contains all labeled items. The filter form at the top allows users to filter results to specific text or metadata values.
+**Filtering:** By default, the history table contains all labeled items. The filter form at the top allows users to filter results to specific text or metadata values. The "Reset Filters" button resets the form and returns the History table back to it's original state.
 
 |annotate-history-filtering|
 
@@ -127,8 +127,11 @@ For items that either don't have a label date or have the same date, they are re
 [NEW] Toggling Unlabeled Data (Non-IRR Projects Only)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+;;
 
+.. Warning::
 
+  *For Active Learning Users:* While we don't explicitly prohibit projects with Active Learning from using this feature, it's important to note that the History table always presents all un-assigned and unlabeled data in alphabetical order, and is not impacted by the ordering suggestions from any Active Learning model. Users will need to annotate using the "Annotate Data" tab to benefit from Active Learning.
 
 .. _fixskew:
 
