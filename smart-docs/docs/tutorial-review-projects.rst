@@ -96,7 +96,7 @@ Updating a Project
 The Update Project page is accessible from the :ref:`details` of a project. This page can be used for the following operations:
 
 * Edit the project name and description
-* Add or remove an MSSQL database connection
+* Add or remove an MSSQL database connection, or change settings (NOTE: you will be required to re-enter database credentials to make changes)
 * Add additional data to label
 * Add or change the codebook file
 * Add, remove, or change project permissions

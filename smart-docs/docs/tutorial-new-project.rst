@@ -116,6 +116,29 @@ Below is an example of setting up a database connection, for our Cat projects, w
 
 |project-database-connection|
 
+The fields for a database connection are:
+
+* Host/Sever: Place the database is hosted.
+* Database Name: Name of the specific database to connect to.
+* Username and Password: Credentials for a user that is authorized to connect to the database. (NOTE: for security reasons this information is not saved to the SMART internal database.)
+* Port: The port to connect through.
+* Driver Type: This is the driver needed to connect to the database. Currently only MS SQL is supported.
+
+**Ingest**
+
+This section of the form is needed to set up which table and schema data should be pulled from into SMART. The layout of this data uses the same rules as a regular data file upload.
+
+*Scheduled Ingest:* If this button is checked, then SMART will add this project to the list of projects that will pull in new data from the indicated tables whenever the management command `ingest_database_data` is used.
+This will allow a server admin to set up re-occuring pulls through a service like cron. See the README in the `envs/prod` folder on the repository for more information.
+
+**Export**
+
+This section of the form is needed to set up the table and schema where labeled data should be exported. These exports contain the same fields which show up when someone downloads the labeled data on the details or project list page.
+
+*Scheduled Export:* Just like scheduled ingest, SMART allows projects to set up scheduled export through the `export_database_data` management command.
+
+*Exporting only validated data:* This checkbox affects if un-validated labeled data will be included in database exports. Labeled data can be validated in the :ref:`annotationpage` through the history table
+ or the "IRR | Requires Adjudication" tab. Resolved IRR data is automatically considered validated. By default, database exports will include all labeled data.
 
 
 Upload Data
