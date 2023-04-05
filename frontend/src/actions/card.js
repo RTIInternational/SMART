@@ -5,7 +5,7 @@ import moment from 'moment';
 import { getConfig, postConfig } from '../utils/fetch_configs';
 import { getHistory } from './history';
 import { getAdmin } from './adminTables';
-import { getLabelCounts } from './skew';
+import { getLabelCounts, getUnlabeled } from './skew';
 import { getAdminCounts } from './smart';
 
 export const POP_CARD = 'POP_CARD';
@@ -161,6 +161,7 @@ export const modifyMetadataValues = (dataPk, metadatas, projectPk) => {
             })
             .then(() => {
                 dispatch(getHistory(projectPk));
+                dispatch(getUnlabeled(projectPk));
             });
     };
 };

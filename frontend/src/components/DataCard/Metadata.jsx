@@ -1,22 +1,25 @@
 import React, { Fragment, useState } from "react";
 
 export default function Metadata({ card, modifyMetadataValues }) {
-    const originalMetadata = card.text["metadata"].reduce((a, b) => {
-        const [key, value] = b.split(': ');
-        a[key] = value;
-        return a;
-    }, {});
     const dataPk = card.text["pk"] || card.text["id"];
 
     const [edit, setEdit] = useState(false);
+    const [originalMetadata, setOriginalMetadata] = useState(card.text["metadata"].reduce((a, b) => {
+        const [key, value] = b.split(': ');
+        a[key] = value;
+        return a;
+    }, {}));
     const [metadata, setMetadata] = useState(originalMetadata || []);
 
     function handleSubmit(e) {
         e.preventDefault();
         setEdit(false);
+        
         modifyMetadataValues(dataPk, Object.entries(metadata).filter(([key, value]) =>
             originalMetadata[key] !== value
         ).map(([key, value]) => ({ key, previous: originalMetadata[key], value })));
+
+        setOriginalMetadata(metadata);
     }
 
     function reset() {
