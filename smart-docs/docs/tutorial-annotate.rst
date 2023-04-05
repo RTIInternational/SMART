@@ -65,18 +65,32 @@ History Page
 
 **User: ALL**
 
-Perhaps you have been happily coding your data and you accidentally click the wrong label. Now you have data labeled "About a Cat" which is decidedly *not about cats!* Or perhaps you have labeled a number of items when your project leader announces that from this day forth, *Chihuahuas will also be counted as cats!* The history tab exists for scenarios like these ones. In this tab, you are able to view and edit your past labels. This page includes all data that has been labeled by you personally, and provides the text, past label, and date/time of the most recent label.
+Overview
+~~~~~~~~
 
-The history table is automatically sorted by the date to provide the most recent labels first [see :ref:`searchingandsorting`].
+Perhaps you have been happily coding your data and you accidentally click the wrong label. Now you have data labeled "About a Cat" which is decidedly *not about cats!* Or perhaps you have labeled a number of items when your project leader announces that from this day forth, *Chihuahuas will also be counted as cats!* The history tab exists for scenarios like these ones. In this tab, you are able to view and edit your past labels.
+
+This page includes all data that has been labeled by you personally, and provides the following fields:
+
+* **Data**: the text being labeled
+* **Old Label**: the current label assigned to the data
+* **User**: The username of the user who labeled the data (for pre-loaded labels this defaults to the project creator)
+* **Date/Time**: The date and time where the data was labeled
+* **[NEW] Verified**: This field indicates if the label has been verified. If it has, this field will say "Yes." If not, it will instead include a button to verify the data. Note that this feature is disabled for IRR data, as IRR data includes it's own form of verification through either coder agreement or admin adjudication if they don't agree.
+* **[NEW] Verified By**: This is the username of the user who verified the data label.
+* **[NEW] Pre-Loaded**: This field indicates if this labeled item was loaded into the system already labeled. Note that if you change the label in the history table, it will no longer be pre-loaded.
+* **[NEW] Metadata Fields**: All metadata fields are also listed as columns, and so can be used for sorting or searching within a batch.
 
 .. Note::
 	Administrative users will be able to see and edit the labeled data for all coders. In the page below, we can see both new_user's and user1's labels.
 
 |annotate-history-page|
 
+
 To save space, the history table only includes enough text for each data sample to fit the page width. To expand a row for reading and editing, click on the arrow to the left of the text. This will open up a subrow with the entire text and the label/skip options. Note that changing a label to Adjudicate will remove it from the history table as you have effectively given up responsibility for it.
 
 |annotate-history-expanded|
+
 
 .. Note::
 
@@ -87,6 +101,33 @@ To save space, the history table only includes enough text for each data sample 
 .. Warning::
 
   *For Active Learning Users:* Active learning algorithms use past labeled data to select future batches. Data labels changed retroactively will appear in the training data for the next batch, but will not effect past batches or the current batch. Excessive amounts of label changing may confuse active learning algorithms and make them less effective (see :ref:`active-learning` for more details)
+
+
+
+[NEW] Searching, Sorting, and Filtering
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+**Batching:** To keep the performance of the history table optimal, SMART sorts the data by alphabetical order and then batches the results into groups of 100 items.
+
+|annotate-history-batches|
+
+Each batch in the history table is automatically sorted by the date to provide the most recent labels first, and users can sort and filter within the batch inside the table [see :ref:`searchingandsorting`].
+For items that either don't have a label date or have the same date, they are returned in alphabetical order by text.
+
+
+**Filtering:** By default, the history table contains all labeled items. The filter form at the top allows users to filter results to specific text or metadata values.
+
+|annotate-history-filtering|
+
+.. Note::
+	Filters are not case-sensitive, and return all examples where the filtered text is contained in the field of interest. This is also the case with numeric fields, so for example if you filter Num_Comments to "9," items with values 9, 89, 901, or 1239 would all be returned.
+
+
+[NEW] Toggling Unlabeled Data (Non-IRR Projects Only)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
 
 
 .. _fixskew:
@@ -231,6 +272,8 @@ The :ref:`fixskew` table has a seperate text button and search bar above the tab
 .. |annotate-history-expanded| image:: ./nstatic/img/smart-annotate-history-expanded.png
 .. |annotate-history-page| image:: ./nstatic/img/smart-annotate-history-page.png
 .. |annotate-history-irrmessage| image:: ./nstatic/img/smart-annotate-history-irrmessage.png
+.. |annotate-history-batches| image:: ./nstatic/img/smart-annotate-history-batches.png
+.. |annotate-history-filtering| image:: ./nstatic/img/smart-annotate-history-filtering.png
 
 .. |annotate-fixskew-page| image:: ./nstatic/img/smart-annotate-fixskew-page.png
 .. |annotate-fixskew-fixhamburger| image:: ./nstatic/img/smart-annotate-fixskew-fixhamburger.png
