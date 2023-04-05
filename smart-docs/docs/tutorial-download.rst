@@ -21,6 +21,9 @@ So you have been working hard labeling your data and have accumulated a respecta
 
 	 |annotate-downloadmodel-files|
 
+4. If your project has both verified and unverified labeled data, you will see an additional button which says "Download Only Verified Labeled Data" or "Download Model and Only Verified Labeled Data" depending on if you have a trained model to download. Using this button restricts the data downloaded to just data which has been verified (see :ref:`details-counts` for more information).
+
+
 This button is available in one of two places.
 
 * The Projects Page:
@@ -36,10 +39,13 @@ OR (if you have the same project above with a database connection set up)
 |annotate-downloadmodel-exportimportdatabutton|
 OR (if you have labeled data and a model)
 |annotate-downloadmodel-modelanddatabutton|
+OR (if you have the same project as above but you also have some verified labels)
+|annotate-downloadmodel-modelanddatabutton-verified|
 
 .. |annotate-downloadmodel-files| image:: ./nstatic/img/smart-downloadmodel-files.png
 .. |annotate-downloadmodel-databutton| image:: ./nstatic/img/smart-downloadmodel-databutton.png
 .. |annotate-downloadmodel-modelanddatabutton| image:: ./nstatic/img/smart-downloadmodel-modelanddatabutton.png
+.. |annotate-downloadmodel-modelanddatabutton-verified| image:: ./nstatic/img/smart-downloadmodel-modelanddatabutton-verified.png
 .. |annotate-downloadmodel-nodatabutton| image:: ./nstatic/img/smart-downloadmodel-nodatabutton.png
 .. |annotate-downloadmodel-projectsview| image:: ./nstatic/img/smart-downloadmodel-projectsview.png
 .. |annotate-downloadmodel-exportimportdatabutton| image:: ./nstatic/img/smart-downloadmodel-exportimportdatabutton.png

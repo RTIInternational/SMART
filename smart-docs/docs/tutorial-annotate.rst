@@ -127,7 +127,17 @@ For items that either don't have a label date or have the same date, they are re
 [NEW] Toggling Unlabeled Data (Non-IRR Projects Only)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-;;
+By design, the History table primarily exists to allow users to view and change their past labels. But what do you do if you are trying to label new items, but require the context of how you labeled similar items in the past?
+
+For these cases, SMART now allows users to toggle the History table to include data which is unlabeled and un-assigned by checking the "Unlabeled Data" checkbox below the filter box. This data shows up with empty values for all label-related fields like "Old Label."
+They can then filter or sort the table to the data they want, and code items from there using the same workflow someone would use to change a previously assigned label.
+
+|annotate-history-unlabeled|
+
+
+Because this feature essentially goes around the logic used to hand out IRR data to coders, it is disabled for projects where the percent IRR is greater than 0%. Instead, users will see the following message:
+
+|annotate-history-unlabeled-disabled|
 
 .. Warning::
 
@@ -145,9 +155,15 @@ The "Fix Skew" page exists for this scenario. In this tab, users with admin priv
 
 |annotate-fixskew-page|
 
+
+The :ref:`fixskew` table has a separate text button and search bar above the table, as the skew page cannot load all of the unlabeled data at once, and will instead just load the top 50 data items that contain the searched text.
+
+|annotate-searchandsort-skewsearch|
+
+
 To fix a skew, follow these steps:
 
-1. Use the search bar above the table to search the data for keywords. The first 50 text items by closest match will be returned [see :ref:`searchingandsorting` for more information].
+1. Use the search bar above the table to search the data for keywords. The first 50 text items by closest match will be returned.
 2. Click on the arrow to the left of the row to expand
 3. Assign a label to the data
 
@@ -158,7 +174,9 @@ Once data has been labeled, the graph at the top will show the change in label c
 
 .. Warning::
 
-	 For most projects the Fix Skew tab should *NOT* be used in place of the Annotate Data tab. The Fix Skew tab does not use :ref:`irr`, or allow the option of Adjudicating data. Excessive use of this page can also undermine the effects of Active Learning, or introduce unintended bias (since the data is chosen consciously by the user).
+	 The Fix Skew page is very similar to the History page's Unlabeled Data feature, in that it gives users the ability to code whatever they want in any order. This allows coders to both ignore any Active Learning model present, and any IRR requirements (data coded on this page will be assigned a final label without being shown to anyone else). As such, please use with caution if you are using either feature!
+
+
 
 .. _adminannotate:
 
@@ -246,8 +264,8 @@ Below is our codebook for the "About Cats" projects.
 
 .. _searchingandsorting:
 
-Searching and Sorting (feature)
--------------------------------
+Searching and Sorting Tables
+----------------------------
 
 **User: ALL**
 
@@ -265,9 +283,6 @@ The tables on the :ref:`history` and :ref:`recyclebin` can be filtered using the
 
 |annotate-searchandsort-search|
 
-The :ref:`fixskew` table has a seperate text button and search bar above the table, as the skew page cannot load all of the unlabeled data at once, and will instead just load the top 50 data items that contain the searched text.
-
-|annotate-searchandsort-skewsearch|
 
 .. |annotate-cards| image:: ./nstatic/img/smart-annotate-annotatedata-cards.png
 .. |annotate-nocards| image:: ./nstatic/img/smart-annotate-annotatedata-nocards.png
@@ -277,6 +292,8 @@ The :ref:`fixskew` table has a seperate text button and search bar above the tab
 .. |annotate-history-irrmessage| image:: ./nstatic/img/smart-annotate-history-irrmessage.png
 .. |annotate-history-batches| image:: ./nstatic/img/smart-annotate-history-batches.png
 .. |annotate-history-filtering| image:: ./nstatic/img/smart-annotate-history-filtering.png
+.. |annotate-history-unlabeled| image:: ./nstatic/img/smart-annotate-history-unlabeled.png
+.. |annotate-history-unlabeled-disabled| image:: ./nstatic/img/smart-annotate-history-unlabeled-disabled.png
 
 .. |annotate-fixskew-page| image:: ./nstatic/img/smart-annotate-fixskew-page.png
 .. |annotate-fixskew-fixhamburger| image:: ./nstatic/img/smart-annotate-fixskew-fixhamburger.png
