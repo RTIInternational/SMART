@@ -259,6 +259,8 @@ class History extends React.Component {
     filterHistory(event) {
         // Update official filter state and re-pull history table
         event.preventDefault();
+        // always reset page when applying new filter
+        this.props.set_current_page(1);
         this.props.filterHistoryTable(this.state.temp_filters);
     }
 
@@ -278,6 +280,8 @@ class History extends React.Component {
         this.setState({
             temp_filters: current_filters
         });
+        // always reset page when applying new filter
+        this.props.set_current_page(1);
         this.props.filterHistoryTable(this.state.temp_filters);
     }
 
