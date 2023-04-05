@@ -37,8 +37,8 @@ const mapDispatchToProps = (dispatch) => {
         toggleUnlabeled: () => {
             dispatch(toggleUnlabeled(PROJECT_ID));
         },
-        setCurrentPage: (page) => {
-            dispatch(setCurrentPage(PROJECT_ID, page));
+        setCurrentPage: (page, getHist) => {
+            dispatch(setCurrentPage(PROJECT_ID, page, getHist));
         },
         filterHistoryTable: (filter_choices) => {
             dispatch(filterHistoryTable(PROJECT_ID, filter_choices));

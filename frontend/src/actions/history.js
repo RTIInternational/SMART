@@ -30,12 +30,15 @@ export const toggleUnlabeled = (projectID) => {
 };
 
 
-export const setCurrentPage = (projectID, page) => {
+export const setCurrentPage = (projectID, page, getHist) => {
     return (dispatch) => {
         dispatch(set_current_page(page));
-        dispatch(getHistory(projectID));
+        if (getHist) {
+            dispatch(getHistory(projectID));
+        }
     };
 };
+
 
 export const filterHistoryTable = (projectID, temp_filters) => {
     return (dispatch) => {
