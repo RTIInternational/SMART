@@ -20,13 +20,14 @@ class DataCard extends React.Component {
     render() {
         let card;
 
-        const { labels, message, cards, passCard, annotateCard, unassignCard } = this.props;
+        const { labels, message, cards, passCard, annotateCard, unassignCard, modifyMetadataValues } = this.props;
 
         if (!(cards === undefined) && cards.length > 0) {
             //just get the labels from the cards
             card = (
                 <div className="full" key={cards[0].id}>
                     <AnnotateCard
+                        modifyMetadataValues={modifyMetadataValues}
                         card={cards[0]}
                         labels={labels}
                         onSelectLabel={(card, label) =>
@@ -59,7 +60,8 @@ DataCard.propTypes = {
     annotateCard: PropTypes.func.isRequired,
     passCard: PropTypes.func.isRequired,
     labels: PropTypes.arrayOf(PropTypes.object),
-    unassignCard: PropTypes.func.isRequired
+    unassignCard: PropTypes.func.isRequired,
+    modifyMetadataValues: PropTypes.func.isRequired
 };
 
 export default DataCard;

@@ -180,6 +180,25 @@ main {
         background-color: #F5F5F5;
         border-radius: 4px;
         padding: 8px 16px;
+
+        .card-metadata-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+
+            h4 {
+                width: 100%;
+            }
+        }
+
+        .form-group {
+            display: flex;
+            align-items: center;
+    
+            .form-control {
+                width: fit-content;
+            }
+        }
     }
 }
 

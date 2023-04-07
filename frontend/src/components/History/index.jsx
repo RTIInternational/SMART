@@ -113,7 +113,7 @@ class History extends React.Component {
         this.props.getHistory();
     }
 
-    componentDidUpdate(prevProps, prevState) {
+    componentDidUpdate(prevProps) {
         if (prevProps.metadata_fields != this.props.metadata_fields) {
             // Only populate this once
             if (this.props.metadata_fields.length > 0 && Object.keys(this.state.temp_filters).length == 1) {
@@ -180,7 +180,7 @@ class History extends React.Component {
         }
     }
 
-    getSubComponent(row) {
+    getSubComponent(row, modifyMetadataValues) {
         let subComponent;
         const { labels, changeToSkip, changeLabel } = this.props;
         const card = buildCard(row.row.id, null, row.original);
@@ -205,6 +205,7 @@ class History extends React.Component {
                                 message
                             );
                         }}
+                        modifyMetadataValues={modifyMetadataValues}
                     />
                 </div>
             );
@@ -227,6 +228,7 @@ class History extends React.Component {
                                 message
                             );
                         }}
+                        modifyMetadataValues={modifyMetadataValues}
                     />
                 </div>
             );
@@ -304,15 +306,14 @@ class History extends React.Component {
                         );
                     })}
                     <input className="btn btn-primary" type="submit" value="Apply Filters" />
-                    <Button variant="secondary" onClick={this.resetFilters}>Reset Filters</Button>
+                    <Button className="ml-3" variant="secondary" onClick={this.resetFilters}>Reset Filters</Button>
                 </form>
             </div>
         );
     }
 
     render() {
-        const { history_data, num_pages, setCurrentPage } = this.props;
-
+        const { history_data, num_pages, setCurrentPage, modifyMetadataValues } = this.props;
         
         let paginationDropdown = (<div></div>);
         if (num_pages > 1) {
@@ -432,7 +433,7 @@ class History extends React.Component {
                 </div>
                 <ReactTable
                     data={history_data}
-                    columns={[...this.COLUMNS(), ...metadataColumns.map((column, i) => {
+                    columns={[...this.COLUMNS(), ...metadataColumns.map((column) => {
                         return {
                             Header: () => (
                                 <OverlayTrigger
@@ -447,17 +448,14 @@ class History extends React.Component {
                                 </OverlayTrigger>
                             ),
                             accessor: `formattedMetadata.${column}`,
-                            show: true,
-                            // Cell: (props) => (
-                            //     <EditableMetadataCell id={props.row._original.metadataIDs[i]} modifyMetadataValue={this.props.modifyMetadataValue} value={props.value} />
-                            // ),
+                            show: true
                         };
                     })]}
                     showPageSizeOptions={true}
                     pageSizeOptions={[5, 10, 25, 50, 100]}
                     defaultPageSize={this.state.pageSize}
                     onPageSizeChange={(pageSize) => localStorage.setItem("pageSize", pageSize)}
-                    SubComponent={row => this.getSubComponent(row)}
+                    SubComponent={row => this.getSubComponent(row, modifyMetadataValues)}
                     defaultSorted={[
                         {
                             id: "timestamp",
@@ -492,7 +490,7 @@ History.propTypes = {
     changeLabel: PropTypes.func.isRequired,
     changeToSkip: PropTypes.func.isRequired,
     verifyDataLabel: PropTypes.func.isRequired,
-    modifyMetadataValue: PropTypes.func.isRequired
+    modifyMetadataValues: PropTypes.func.isRequired
 };
 
 export default History;

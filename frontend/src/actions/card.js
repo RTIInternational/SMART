@@ -5,7 +5,7 @@ import moment from 'moment';
 import { getConfig, postConfig } from '../utils/fetch_configs';
 import { getHistory } from './history';
 import { getAdmin } from './adminTables';
-import { getLabelCounts } from './skew';
+import { getLabelCounts, getUnlabeled } from './skew';
 import { getAdminCounts } from './smart';
 
 export const POP_CARD = 'POP_CARD';
@@ -141,6 +141,27 @@ export const passCard = (card, num_cards_left, is_admin, projectID, message) => 
                     }
                     if (num_cards_left <= 1) dispatch(fetchCards(projectID));
                 }
+            });
+    };
+};
+
+// update a card's metadata
+export const modifyMetadataValues = (dataPk, metadatas, projectPk) => {
+    let apiURL = `/api/modify_metadata_values/${dataPk}/`;
+    return dispatch => {
+        return fetch(apiURL, postConfig({ metadatas }))
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    const error = new Error(response.statusText);
+                    error.response = response;
+                    throw error;
+                }
+            })
+            .then(() => {
+                dispatch(getHistory(projectPk));
+                dispatch(getUnlabeled(projectPk));
             });
     };
 };

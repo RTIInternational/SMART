@@ -171,20 +171,3 @@ export const verifyDataLabel = (dataID, projectID) => {
             });
     };
 };
-
-
-export const modifyMetadataValue = (metadataId, value) => {
-    let apiURL = `/api/modify_metadata_value/${metadataId}/`;
-    return () => {
-        return fetch(apiURL, postConfig({ value }))
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                } else {
-                    const error = new Error(response.statusText);
-                    error.response = response;
-                    throw error;
-                }
-            });
-    };
-};

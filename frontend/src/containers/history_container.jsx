@@ -1,12 +1,12 @@
 import React from 'react';
 import { connect } from 'react-redux';
+import { modifyMetadataValues } from '../actions/card';
 
 import { 
     getHistory, 
     changeLabel, 
     changeToSkip, 
     verifyDataLabel, 
-    modifyMetadataValue, 
     toggleUnlabeled,
     setCurrentPage,
     filterHistoryTable
@@ -52,8 +52,8 @@ const mapDispatchToProps = (dispatch) => {
         verifyDataLabel: (dataID) => {
             dispatch(verifyDataLabel(dataID, PROJECT_ID));
         },
-        modifyMetadataValue: (metadataId, value) => {
-            dispatch(modifyMetadataValue(metadataId, value));
+        modifyMetadataValues: (dataPk, metadatas) => {
+            dispatch(modifyMetadataValues(dataPk, metadatas, PROJECT_ID));
         }
     };
 };

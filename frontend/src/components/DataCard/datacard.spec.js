@@ -17,6 +17,7 @@ describe('<DataCard />', () => {
                 annotateCard = {fn}
                 passCard={fn}
                 unassignCard={fn}
+                modifyMetadataValues={fn}
               />
             );
         });
