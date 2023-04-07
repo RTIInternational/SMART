@@ -262,7 +262,7 @@ class History extends React.Component {
         // Update official filter state and re-pull history table
         event.preventDefault();
         // always reset page when applying new filter
-        this.props.set_current_page(1);
+        this.props.setCurrentPage(1, false);
         this.props.filterHistoryTable(this.state.temp_filters);
     }
 
@@ -283,7 +283,7 @@ class History extends React.Component {
             temp_filters: current_filters
         });
         // always reset page when applying new filter
-        this.props.set_current_page(1);
+        this.props.setCurrentPage(1, false);
         this.props.filterHistoryTable(this.state.temp_filters);
     }
 
@@ -335,7 +335,7 @@ class History extends React.Component {
                         dropdownHandle={false}
                         labelField="pageLabel"
                         onChange={(selection) => {
-                            setCurrentPage(selection[0].value);
+                            setCurrentPage(selection[0].value, true);
                         }}
                         options={pageOptions}
                         placeholder="Select Batch..."
