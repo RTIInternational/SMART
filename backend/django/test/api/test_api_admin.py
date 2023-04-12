@@ -1,3 +1,4 @@
+from itertools import product
 from test.util import assert_collections_equal, sign_in_and_fill_queue
 
 import pandas as pd
@@ -199,7 +200,6 @@ def test_heat_map_data(
     """
 
     # sign in the users
-    labels = test_labels_all_irr
     normal_queue, admin_queue, irr_queue = test_all_irr_all_queues
     project = test_project_all_irr_data
 
@@ -227,8 +227,13 @@ def test_heat_map_data(
 
     # get the heatmap. Check that the list of coders and list of labels match
     response = admin_client.get("/api/heat_map_data/" + str(project.pk) + "/").json()
-    project_labels = [label.name for label in labels]
-    project_labels.append("Skip")
+
+    user_list = [str(client_profile.pk), str(admin_profile.pk), str(third_profile.pk)]
+    coder_combos = ["_".join(list(c)) for c in list(product(user_list, user_list))]
+
+    # the labels should be what labels have been used for IRR shared by the coders
+    # this starts out empty for all coder combinations
+    project_labels = {c: [] for c in coder_combos}
     assert_collections_equal(response["labels"], project_labels)
 
     coder_dict_list = []
@@ -242,15 +247,8 @@ def test_heat_map_data(
         for user2 in project_coders:
             user_combo = str(user1) + "_" + str(user2)
             assert user_combo in response["data"]
-            # check that for each combo of users there is each combo of labels
-            assert len(response["data"][user_combo]) == len(project_labels) ** 2
-            label_frame = pd.DataFrame(response["data"][user_combo])
-            label_frame["comb"] = label_frame["label1"] + "_" + label_frame["label2"]
-            comb_list = []
-            for lab1 in project_labels:
-                for lab2 in project_labels:
-                    comb_list.append(lab1 + "_" + lab2)
-            assert_collections_equal(label_frame["comb"].tolist(), comb_list)
+            # check that for each combo of users it starts out as empty
+            assert len(response["data"][user_combo]) == 0
 
 
 def test_label_distribution(
