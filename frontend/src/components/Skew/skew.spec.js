@@ -18,6 +18,7 @@ describe('<Skew />', () => {
                   skewLabel={fn}
                   getLabelCounts={fn}
                   label_counts={data}
+                  modifyMetadataValues={fn}
                 />
             );
         });

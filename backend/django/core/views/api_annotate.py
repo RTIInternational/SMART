@@ -422,7 +422,10 @@ def modify_label(request, data_pk):
 
     label = Label.objects.get(pk=request.data["labelID"])
 
-    if "oldLabelID" not in request.data:
+    if (
+        "oldLabelID" not in request.data
+        and not DataLabel.objects.filter(data=data).exists()
+    ):
         current_training_set = project.get_current_training_set()
         with transaction.atomic():
             DataLabel.objects.create(
@@ -434,7 +437,7 @@ def modify_label(request, data_pk):
                 training_set=current_training_set,
                 pre_loaded=False,
             )
-    else:
+    elif "oldLabelID" in request.data:
         old_label = Label.objects.get(pk=request.data["oldLabelID"])
         with transaction.atomic():
             DataLabel.objects.filter(data=data, label=old_label).update(
@@ -453,6 +456,7 @@ def modify_label(request, data_pk):
                 new_label=label.name,
                 change_timestamp=timezone.now(),
             )
+    # if there is no previous label but there is a datalabel it's probably a double click so do nothing
 
     return Response(response)
 
@@ -948,7 +952,10 @@ def get_label_history(request, project_pk):
         total_data_list += unlabeled_data
 
     # return the page indicated in the query, get total pages
-    page = int(request.GET.get("current_page")) - 1
+    current_page = request.GET.get("current_page")
+    if current_page is None:
+        current_page = 1
+    page = int(current_page) - 1
     page_size = 100
     all_data = Data.objects.filter(pk__in=total_data_list).order_by("text")
     metadata_objects = MetaDataField.objects.filter(project=project)
@@ -956,13 +963,13 @@ def get_label_history(request, project_pk):
     # filter the results by the search terms
     text_filter = request.GET.get("Text")
     if text_filter is not None and text_filter != "":
-        all_data = all_data.filter(text__contains=text_filter)
+        all_data = all_data.filter(text__icontains=text_filter)
 
     for m in metadata_objects:
         m_filter = request.GET.get(str(m))
         if m_filter is not None and m_filter != "":
             data_with_metadata_filter = MetaData.objects.filter(
-                metadata_field=m, value__contains=m_filter
+                metadata_field=m, value__icontains=m_filter
             ).values_list("data__pk", flat=True)
             all_data = all_data.filter(pk__in=data_with_metadata_filter)
 
@@ -1066,17 +1073,24 @@ def get_label_history(request, project_pk):
 
 @api_view(["POST"])
 # @permission_classes((IsCoder,))
-def modify_metadata_value(request, metadata_pk):
-    """Take a single datum with a label and change the label in the DataLabel table.
+def modify_metadata_values(request, data_pk):
+    """Update metadata values
 
     Args:
         request: The POST request
-        metadata_pk: Primary key of the metadata
-        value: New value for metadata field
+        data_pk: Primary key of the data
+        metadatas: {
+            key: Metadata field_name,
+            value: New value
+        }
     Returns:
         {}
     """
-    metadata = MetaData.objects.filter(pk=metadata_pk).first()
-    metadata.value = request.data["value"]
-    metadata.save()
+    data = Data.objects.get(pk=data_pk)
+    metadata = MetaData.objects.filter(data_id=data.id)
+    metadatas = request.data["metadatas"]
+    for m in metadatas:
+        metadata = MetaData.objects.get(data_id=data.id, value=m["previous"])
+        metadata.value = m["value"]
+        metadata.save()
     return Response({})

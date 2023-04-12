@@ -73,7 +73,7 @@ class Skew extends React.Component {
     }
 
     render() {
-        const { unlabeled_data, labels, skewLabel, label_counts, message } = this.props;
+        const { unlabeled_data, labels, skewLabel, label_counts, message, modifyMetadataValues } = this.props;
 
         if (message.length > 0){
             let message_new = message[0];
@@ -171,6 +171,7 @@ class Skew extends React.Component {
                                     }}
                                     onSkip={null}
                                     showAdjudicate={false}
+                                    modifyMetadataValues={modifyMetadataValues}
                                 />
                             </div>
                         );
@@ -192,7 +193,8 @@ Skew.propTypes = {
     skewLabel: PropTypes.func.isRequired,
     getLabelCounts: PropTypes.func.isRequired,
     label_counts: PropTypes.arrayOf(PropTypes.object),
-    message: PropTypes.string
+    message: PropTypes.string,
+    modifyMetadataValues: PropTypes.func.isRequired
 };
 
 export default Skew;

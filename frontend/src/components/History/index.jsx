@@ -16,6 +16,7 @@ class History extends React.Component {
         this.createFilterForm = this.createFilterForm.bind(this);
         this.changeFilterValue = this.changeFilterValue.bind(this);
         this.filterHistory = this.filterHistory.bind(this);
+        this.resetFilters = this.resetFilters.bind(this);
         this.state = {
             pageSize : parseInt(localStorage.getItem("pageSize") || "25"),
             showConfirm: false,
@@ -112,7 +113,7 @@ class History extends React.Component {
         this.props.getHistory();
     }
 
-    componentDidUpdate(prevProps, prevState) {
+    componentDidUpdate(prevProps) {
         if (prevProps.metadata_fields != this.props.metadata_fields) {
             // Only populate this once
             if (this.props.metadata_fields.length > 0 && Object.keys(this.state.temp_filters).length == 1) {
@@ -179,7 +180,7 @@ class History extends React.Component {
         }
     }
 
-    getSubComponent(row) {
+    getSubComponent(row, modifyMetadataValues) {
         let subComponent;
         const { labels, changeToSkip, changeLabel } = this.props;
         const card = buildCard(row.row.id, null, row.original);
@@ -204,6 +205,7 @@ class History extends React.Component {
                                 message
                             );
                         }}
+                        modifyMetadataValues={modifyMetadataValues}
                     />
                 </div>
             );
@@ -226,6 +228,7 @@ class History extends React.Component {
                                 message
                             );
                         }}
+                        modifyMetadataValues={modifyMetadataValues}
                     />
                 </div>
             );
@@ -258,6 +261,8 @@ class History extends React.Component {
     filterHistory(event) {
         // Update official filter state and re-pull history table
         event.preventDefault();
+        // always reset page when applying new filter
+        this.props.setCurrentPage(1, false);
         this.props.filterHistoryTable(this.state.temp_filters);
     }
 
@@ -267,6 +272,19 @@ class History extends React.Component {
         this.setState({ 
             temp_filters: temp
         });
+    }
+
+    resetFilters() {
+        let current_filters = this.state.temp_filters;
+        for (let key in current_filters) {
+            current_filters[key] = "";
+        }
+        this.setState({
+            temp_filters: current_filters
+        });
+        // always reset page when applying new filter
+        this.props.setCurrentPage(1, false);
+        this.props.filterHistoryTable(this.state.temp_filters);
     }
 
     createFilterForm() {
@@ -288,28 +306,28 @@ class History extends React.Component {
                         );
                     })}
                     <input className="btn btn-primary" type="submit" value="Apply Filters" />
+                    <Button className="ml-3" variant="secondary" onClick={this.resetFilters}>Reset Filters</Button>
                 </form>
             </div>
         );
     }
 
     render() {
-        const { history_data, num_pages, setCurrentPage } = this.props;
-
+        const { history_data, num_pages, setCurrentPage, modifyMetadataValues } = this.props;
         
         let paginationDropdown = (<div></div>);
         if (num_pages > 1) {
             let pageOptions = [];
             for (let i = 1; i < num_pages; i++) {
-                pageOptions.push({ "value":i, "pageLabel":`Page ${i} (${(i - 1) * 100} - ${(i) * 100})` });
+                pageOptions.push({ "value":i, "pageLabel":`Batch ${i} (${(i - 1) * 100} - ${(i) * 100})` });
             }
-            pageOptions.push({ "value":num_pages, "pageLabel":`Page ${num_pages} (${(num_pages - 1) * 100}+)` });
+            pageOptions.push({ "value":num_pages, "pageLabel":`Batch ${num_pages} (${(num_pages - 1) * 100}+)` });
             paginationDropdown = (
                 <div style={{ marginBottom: "1rem" }}>
                     <b>
                         NOTE: For performance reasons, SMART only returns 100 items at a time. 
                         Use the dropdown below to navigate between batches of 100 items. Items are sorted 
-                        by text in alphabetical order.
+                        by text in alphabetical order. Recently labeled items in a batch are returned first.
                         <br />
                     </b>
                     <Select
@@ -317,10 +335,10 @@ class History extends React.Component {
                         dropdownHandle={false}
                         labelField="pageLabel"
                         onChange={(selection) => {
-                            setCurrentPage(selection[0].value);
+                            setCurrentPage(selection[0].value, true);
                         }}
                         options={pageOptions}
-                        placeholder="Select Page..."
+                        placeholder="Select Batch..."
                         searchBy="pageLabel"
                     />
                 </div>
@@ -357,7 +375,20 @@ class History extends React.Component {
             </Modal>
         );
 
-        let unlabeled_checkbox = (<div></div>);
+        let unlabeled_checkbox = (
+            <div className="form-group" style={{ marginBottom: "0" }}>
+                <p>
+                    Toggle the checkbox below to show/hide unlabeled data:
+                </p>
+                <label className="control-label">
+                    <span style={{ marginRight: "4px" }}>Unlabled Data</span>
+                    <input type="checkbox" disabled />
+                </label>
+                <div>
+                    <i>Unlabeled data cannot be accessed in the history table for projects using the Inter-Rater-Reliability feature.</i>
+                </div>
+            </div>
+        );
         if (!window.PROJECT_USES_IRR) {
             unlabeled_checkbox = (
                 <div className="form-group" style={{ marginBottom: "0" }}>
@@ -376,20 +407,20 @@ class History extends React.Component {
             <div className="history">
                 <h3>Instructions</h3>
                 <p>This page allows a coder to change past labels.</p>
-                <p style={{ maxWidth: "75ch" }}>
+                <p>
                     To annotate, click on a data entry below and select the
                     label from the expanded list of labels. The chart will then
-                    update with the new label and current timestamp{" "}
+                    update with the new label and current timestamp{" "}.
                 </p>
-                <p style={{ maxWidth: "75ch" }}>
+                <p>
                     <strong>NOTE:</strong> Data labels that are changed on this
                     page will not effect past model accuracy or data selected by
                     active learning in the past. The training data will only be
-                    updated for the next run of the model
+                    updated for the next run of the model.
                 </p>
-                <p style={{ maxWidth: "75ch" }}>
+                {/* <p style={{ maxWidth: "75ch" }}>
                     <strong>TIP:</strong> In this table you may edit metadata fields. Click on the value in the column and row where you want to change the data and it will open as a text box.
-                </p>
+                </p> */}
                 <CodebookLabelMenuContainer />
                 <div className="history-filters">
                     {this.createFilterForm()}
@@ -402,7 +433,7 @@ class History extends React.Component {
                 </div>
                 <ReactTable
                     data={history_data}
-                    columns={[...this.COLUMNS(), ...metadataColumns.map((column, i) => {
+                    columns={[...this.COLUMNS(), ...metadataColumns.map((column) => {
                         return {
                             Header: () => (
                                 <OverlayTrigger
@@ -417,17 +448,14 @@ class History extends React.Component {
                                 </OverlayTrigger>
                             ),
                             accessor: `formattedMetadata.${column}`,
-                            show: true,
-                            // Cell: (props) => (
-                            //     <EditableMetadataCell id={props.row._original.metadataIDs[i]} modifyMetadataValue={this.props.modifyMetadataValue} value={props.value} />
-                            // ),
+                            show: true
                         };
                     })]}
                     showPageSizeOptions={true}
                     pageSizeOptions={[5, 10, 25, 50, 100]}
                     defaultPageSize={this.state.pageSize}
                     onPageSizeChange={(pageSize) => localStorage.setItem("pageSize", pageSize)}
-                    SubComponent={row => this.getSubComponent(row)}
+                    SubComponent={row => this.getSubComponent(row, modifyMetadataValues)}
                     defaultSorted={[
                         {
                             id: "timestamp",
@@ -462,7 +490,7 @@ History.propTypes = {
     changeLabel: PropTypes.func.isRequired,
     changeToSkip: PropTypes.func.isRequired,
     verifyDataLabel: PropTypes.func.isRequired,
-    modifyMetadataValue: PropTypes.func.isRequired
+    modifyMetadataValues: PropTypes.func.isRequired
 };
 
 export default History;
