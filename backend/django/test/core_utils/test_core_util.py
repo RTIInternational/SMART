@@ -311,12 +311,11 @@ def test_heatmap_data(
     same2 = str(test_profile2.pk) + "_" + str(test_profile2.pk)
 
     # don't label anything. The heatmap shoud have all zeros for user pair
-    heatmap = irr_heatmap_data(project)
+    heatmap, irr_labels = irr_heatmap_data(project)
     assert combo1 in heatmap
     heatmap = heatmap[combo1]
 
-    counts = pd.DataFrame(heatmap)["count"].tolist()
-    assert np.all(np.equal(counts, [0] * len(counts)))
+    assert heatmap == []
 
     # have one user skip 3 things and another label them.
     for i in range(3):
@@ -326,7 +325,7 @@ def test_heatmap_data(
         skip_data(datum, test_profile2)
 
     # check that user1-user1 map is I3
-    heatmap = irr_heatmap_data(project)
+    heatmap, irr_labels = irr_heatmap_data(project)
     same_frame = pd.DataFrame(heatmap[same1])
     assert (
         same_frame.loc[
@@ -355,30 +354,31 @@ def test_heatmap_data(
     same_frame2 = pd.DataFrame(heatmap[same2])
     assert (
         same_frame2.loc[
-            (same_frame2["label1"] == "Skip") & (same_frame["label2"] == "Skip")
+            (same_frame2["label1"] == "Adjudicate")
+            & (same_frame2["label2"] == "Adjudicate")
         ]["count"].tolist()[0]
         == 3
     )
     assert np.sum(same_frame2["count"].tolist()) == 3
 
     # check that the between-user heatmap has skip-label = 1 for each label
-    heatmap = irr_heatmap_data(project)
+    heatmap, irr_labels = irr_heatmap_data(project)
     heatmap = pd.DataFrame(heatmap[combo1])
     assert (
         heatmap.loc[
-            (heatmap["label1"] == labels[0].name) & (heatmap["label2"] == "Skip")
+            (heatmap["label1"] == labels[0].name) & (heatmap["label2"] == "Adjudicate")
         ]["count"].tolist()[0]
         == 1
     )
     assert (
         heatmap.loc[
-            (heatmap["label1"] == labels[1].name) & (heatmap["label2"] == "Skip")
+            (heatmap["label1"] == labels[1].name) & (heatmap["label2"] == "Adjudicate")
         ]["count"].tolist()[0]
         == 1
     )
     assert (
         heatmap.loc[
-            (heatmap["label1"] == labels[2].name) & (heatmap["label2"] == "Skip")
+            (heatmap["label1"] == labels[2].name) & (heatmap["label2"] == "Adjudicate")
         ]["count"].tolist()[0]
         == 1
     )
@@ -392,7 +392,7 @@ def test_heatmap_data(
         label_data(labels[i % 3], datum, test_profile, 3)
         label_data(labels[i % 3], datum, test_profile2, 3)
 
-    heatmap = irr_heatmap_data(project)
+    heatmap, irr_labels = irr_heatmap_data(project)
     heatmap = pd.DataFrame(heatmap[combo1])
 
     assert (
@@ -421,7 +421,7 @@ def test_heatmap_data(
     # have one user label something, show the heatmap hasn't changed
     datum = assign_datum(test_profile, project, "irr")
     label_data(labels[0], datum, test_profile, 3)
-    heatmap = irr_heatmap_data(project)
+    heatmap, irr_labels = irr_heatmap_data(project)
     same_map = heatmap[same1]
     assert np.sum(pd.DataFrame(same_map)["count"].tolist()) == 8
     heatmap = pd.DataFrame(heatmap[combo1])

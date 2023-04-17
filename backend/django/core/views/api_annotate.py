@@ -1074,7 +1074,7 @@ def get_label_history(request, project_pk):
 @api_view(["POST"])
 # @permission_classes((IsCoder,))
 def modify_metadata_values(request, data_pk):
-    """Update metadata values
+    """Update metadata values.
 
     Args:
         request: The POST request
