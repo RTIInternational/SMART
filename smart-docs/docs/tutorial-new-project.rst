@@ -16,17 +16,20 @@ Project Groups \[NEW\]
 ----------------------
 
 As of SMART 3.0.0, projects can now be grouped. By default any project not assigned a group will be put in the "Other Projects" group. 
-Project groups can only be created and assigned once at least one project exists, so currently if the "New Group" button is pressed you should see the following page.
+Project groups can only be created and assigned once at least one project exists.  At this point, if the "New Group" button is pressed you should see the following page:
 
 |project-groups-noproject|
 
-For instructions on how to use project groups see :ref:`Project Groups<projectgroups>`
+For instructions on how to use project groups see :ref:`Project Groups<projectgroups>`.
 
 Project Description
 -------------------
 
 The first step in creating your project is to provide a project name and description.  The name will be the internal reference for the project which users will see on their landing pages and the description will be available for users on the project Details page.  
-Below, we fill out the name and description for our "About Cats Classifier" project which will use the modeling features to classify posts in one of three ways, and our "About Cats Labeling" project which will classify posts in many ways and not use a classifier:
+Below, we fill out the name and description for two projects:
+
+- An "About Cats Classifier" project, which will use the modeling features to classify posts in one of three ways, and, 
+- An "About Cats Labeling" project which will classify posts in many ways, though not use a classifier
 
 |project-info-classifier|
 
@@ -37,7 +40,7 @@ Below, we fill out the name and description for our "About Cats Classifier" proj
 Creating Label Definitions
 --------------------------
 
-In the Labels section, we will create categories for labeling. These labeled observations can then be used to train a classification model that predicts what category a new observation belongs. To add new categories, just fill-in the names of the categories you're interested in predicting into the input boxes. 
+In the Labels section, we will create categories for labeling. These labeled observations can then be used to train a classification model that predicts into what category a new observation belongs. To add new categories, just fill-in the names of the categories you're interested in predicting into the input boxes. 
 If you have more than two labels, use the "add label" link to add more rows to the form. 
 If you decide that you want to remove a label after adding it, use the "remove label" link to remove the label name.
 
@@ -54,13 +57,13 @@ You can also upload a file with labels and descriptions by clicking the "Choose 
 	* The label file must be a CSV (comma separated values) file.
 
 .. warning::
-	* You cannot add, remove, or update any labels for a project after the project is created.
+	* You cannot add, remove, or update any label categories for a project after the project is created.  However, you can always export your labeled data and upload into a new project to add or remove new label categories as needed.
 
-For our first project "About Cats Classifier" we only have three labels which we want SMART to predict, so we fill them in below:
+For our first project "About Cats Classifier", we only have three labels which we want SMART to predict, so we fill them in below:
 
 |project-labels-classifier|
 
-For our second project "About Cats Labeling" we have many more labels, which we will fill in using a file.
+For our second project "About Cats Labeling", we have many more labels, which we will fill in using a file.
 
 |project-labels-nonclassifier|
 
@@ -91,7 +94,7 @@ In the development environment, SMART includes three user profiles for testing p
 Adding Codebook
 ---------------
 
-This page gives you the opportunity to upload extra information for coders that maybe be helpful for clarifying the labelling task (ex: tips for differentiating categories, examples of labeled data, etc.). This is particularly useful if the categories you're interested in labelling are numerous or nuanced.
+This page gives you the opportunity to upload extra information for coders that maybe helpful for clarifying the labelling task (e.g., tips for differentiating categories, examples of labeled data, etc.). This is particularly useful if the categories you're interested in labelling are numerous or nuanced.
 
 A demo codebook for the tutorial can be found in the ``smart/demo/`` directory, which we will be using for both projects. To upload the codebook, click the "Choose File" button and select ``cat-codebook.pdf``:
 
@@ -112,33 +115,32 @@ New in SMART 3.0.0, this page lets you connect SMART to an MSSQL database. This 
 
 	A database connection can be set up or removed any time after the project has been created by going to the :ref:`update` page.
 
-Below is an example of setting up a database connection, for our Cat projects, we will not be setting up a connection.
+Below is an example of setting up a database connection. For our Cat projects, we will not be setting up a connection.
 
 |project-database-connection|
 
 The fields for a database connection are:
 
-* Host/Sever: Place the database is hosted.
-* Database Name: Name of the specific database to connect to.
-* Username and Password: Credentials for a user that is authorized to connect to the database. (NOTE: for security reasons this information is not saved to the SMART internal database.)
-* Port: The port to connect through.
-* Driver Type: This is the driver needed to connect to the database. Currently only MS SQL is supported.
+* **Host/Sever**: Place the database is hosted.
+* **Database Name**: Name of the specific database to connect to.
+* **Username and Password**: Credentials for a user that is authorized to connect to the database. (NOTE: for security reasons this information is not saved to the SMART internal database).
+* **Port**: The port to connect through.
+* **Driver Type**: The driver needed to connect to the database. Currently only MS SQL is supported.
 
 **Ingest**
 
-This section of the form is needed to set up which table and schema data should be pulled from into SMART. The layout of this data uses the same rules as a regular data file upload.
+This section of the form is needed to set up which table and schema data should be pulled into SMART. The layout of this data uses the same rules as a regular data file upload.
 
 *Scheduled Ingest:* If this button is checked, then SMART will add this project to the list of projects that will pull in new data from the indicated tables whenever the management command `ingest_database_data` is used.
 This will allow a server admin to set up re-occuring pulls through a service like cron. See the README in the `envs/prod` folder on the repository for more information.
 
 **Export**
 
-This section of the form is needed to set up the table and schema where labeled data should be exported. These exports contain the same fields which show up when someone downloads the labeled data on the details or project list page.
+This section of the form is needed to set up the table and schema where labeled data should be exported. These exports contain the same fields which show up when someone downloads the labeled data on the Details or Project list page.
 
 *Scheduled Export:* Just like scheduled ingest, SMART allows projects to set up scheduled export through the `export_database_data` management command.
 
-*Exporting only validated data:* This checkbox affects if un-validated labeled data will be included in database exports. Labeled data can be validated in the :ref:`annotationpage` through the history table
- or the "IRR | Requires Adjudication" tab. Resolved IRR data is automatically considered validated. By default, database exports will include all labeled data.
+*Exporting only validated data:* This checkbox affects if un-validated labeled data will be included in database exports. Labeled data can be validated in the :ref:`annotationpage` through the history table or the "IRR | Requires Adjudication" tab. Resolved IRR data is automatically considered validated. By default, database exports will include all labeled data.
 
 
 Upload Data
@@ -146,7 +148,7 @@ Upload Data
 
 Time to upload your data!
 
-SMART now provides two options for uploading data. If you have set up a database connection in the previous step, you can select 
+SMART now provides two options for uploading data. If you have set-up a database connection in the previous step, you can select 
 "Connect to Database and Import Table" to import your data from the ingest table you indicated in the Database Connection page. Otherwise, select "File Upload" to upload a data file to SMART.
 
 To upload, the data must pass the following checks:
@@ -162,17 +164,19 @@ The ``Label`` column should contain any pre-existing labels for the correspondin
 
 .. _projectmetadata:
 
-**Project Metadata \[NEW\]**
+Project Metadata \[NEW\]
 ----------------------------
 
 Any fields outside of ``Text``, ``Label``, or ``ID`` will be classified as "metadata," also called "respondent data." This is additional data which you would like to be presented along with the text to aid in labeling. 
 
 Some details about metadata:
 
-* Metadata fields can have nulls
-* If you upload a file or pull in a table with metadata fields in project creation, SMART will expect all future data uploads to have those fields 
-* SMART will disregard metadata fields in files uploaded after project creation if they did not exist in the first project creation upload.
-* Metadata fields can be used in SMART for deduplication. In the example below, the "Score" metadata field has been selected for deduplication. This means that if two posts have the same text but different scores, they will be considered distinct entities for coding by SMART.
+.. note::
+
+	* Metadata fields can have nulls.
+	* If you upload a file or pull in a table with metadata fields in project creation, SMART will expect all future data uploads to have those fields.
+	* SMART will disregard metadata fields in files uploaded after project creation if they did not exist in the first project creation upload.
+	* Metadata fields can be used in SMART for deduplication. In the example below, the "Score" metadata field has been selected for deduplication. This means that if two posts have the same text but different scores, they will be considered distinct entities for coding by SMART.
 
 |project-dataup|
 
@@ -199,11 +203,11 @@ For our second project "About Cats Labeling" we will want to go with the default
 |project-adv-set-nonclassifier|
 
 .. note::
-	* You may be wondering... "Can I make a project with both a classifier and a large number of labels?" The answer is yes, SMART will let you do that. However, the Active Learning and model portions of SMART only turn on when it deems you have randomly labeled **at least one of each possible label**, and even then it will likely not be very accurate until it has a representative sample of each label. So the more labels you have... the more you have to label! This is why we don't reccomend enableing the classifier option in SMART for projects with more than 5 labels.
+	* You may be wondering... "Can I make a project with both a classifier and a large number of labels?" The answer is yes, SMART will let you do that. However, the active learning and model components of SMART only turn on when it deems you have **at least one labeled observation per category**.  Even then, the model will likely be inaccurate until there are a sufficient number of labeled observations per category. For this reason, we do not recommend enabling the classifier component for projects with more than 5 label categories.
 
 .. tip::
 
-	The data used in this tutorial is shipped with SMART and can be found in the ``smart/demo/`` directory. To upload this file, click the "Choose File" button and select ``cat-example.csv``:
+	The data used in this tutorial is shipped with SMART and can be found in the ``smart/demo/`` directory. To upload this file, click the "Choose File" button and select ``cat-example.csv``.
 
 
 .. |project-start| image:: ./nstatic/img/smart-newproject-start.png
