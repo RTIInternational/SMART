@@ -44,14 +44,14 @@ class Dev(Configuration):
         "django_celery_results",
         "rest_framework",
         "rest_framework.authtoken",
-        "rest_auth",
+        "dj_rest_auth",
         "django.contrib.sites",
         "allauth",
         "allauth.account",
         "postgres_stats",
         "formtools",
-        "rest_auth.registration",
-        "rest_framework_swagger",
+        "dj_rest_auth.registration",
+        # "rest_framework_swagger",
         "webpack_loader",
     ]
 

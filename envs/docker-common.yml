@@ -2,22 +2,26 @@ version: '2.1'
 
 services:
   postgres:
-    image: postgres:9.6.2
+    image: postgres:15.2
     environment:
       - POSTGRES_PASSWORD=my-secret-password
       - POSTGRES_USER=smart
       - POSTGRES_DB=smart
+      - POSTGRES_HOST=postgres
     ports:
       - "${EXTERNAL_POSTGRES_PORT:-5432}:5432"
     volumes:
       - smart_pgdata:/var/lib/postgresql/data
 
   redis:
-    image: redis:3.0
+    image: redis:6.0
     ports:
       - "${EXTERNAL_REDIS_PORT:-6379}:6379"
 
   backend:
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
     container_name: backend
     volumes:
       - ../backend/django:/code
@@ -35,6 +39,9 @@ services:
       - /code/node_modules
 
   celery_worker:
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
     volumes:
       - ../backend/django:/code
       - smart_data:/data/
