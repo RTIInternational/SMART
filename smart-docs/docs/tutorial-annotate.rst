@@ -1,7 +1,7 @@
 Part 4: Annotating Data
 =======================
 
-Once your project has been created, you are ready to start labeling your data! To begin, you can navigate to any project Annotation page from the :ref:`Projects Page <projects>` or to a specific Annotation page by pressing the "Annotate" link on the top navigation bar when on a project :ref:`details` or :ref:`Admin Dashboard <admindashboard>` page.
+Once your project has been created, you are ready to start labeling! To begin, you can navigate to any project Annotation page from the :ref:`Projects Page <projects>` or to a specific Annotation page by pressing the "Annotate" link on the top navigation bar when on a project :ref:`details` or :ref:`Admin Dashboard <admindashboard>` page.
 
 The Annotate page consists of either two or five tabs, depending on your User permissions. The sections below are marked by either ADMIN (available only to those with admin privileges) or ALL (available to everyone with at least coder privileges).
 
@@ -25,10 +25,11 @@ Annotate Data Page
 
 The Annotate Data tab is where most users will spend a majority of their time. When you enter this page, SMART will pass you a portion of the current batch as a deck of "cards", to be presented to you one at a time. You can then choose one of two actions:
 
-* *label* (for projects with at most five labels): Assign a label to the piece of data by clicking on the button corresponding to the desired label. 
-* *label* (for projects with more than five labels): Assign a label to the piece of data by either clicking on one of the suggested labels (see :ref:`label-embeddings` for more information on label suggestions), or by searching for the correct label in the dropdown.
-* *skip*: This option is used when you want to skip an item for now. This will send it back into the pool of data to label.
-* *Adjudicate* (formerly called skip): This option is used when you are unsure of what label to choose, or for some other reason want to send this data item to the project administrators for review. When selecting this option, you will be required to provide a reason why you are sending the item to the administrators. Data that is not IRR is sent to the Admin Annotation page to be reviewed by any user with admin privileges. Data that is IRR will still need to wait for the required number of coders to weigh in (Adjudicating counts as your label).
+* **Label**:
+	* *For projects with at most five labels*: Assign a label to the observation by clicking on the button corresponding to the desired label. 
+	* *For projects with more than five labels*: Assign a label to the observation by either clicking on one of the suggested labels (see :ref:`label-embeddings` for more information on label suggestions), or by searching for the correct label in the dropdown.
+* **Skip**: This option is used when you want to skip an observation for now. This will send it back into the pool of data to label.
+* **Adjudicate**: This option is used when you are unsure of what label to choose or you want to send an observation to the project administrators for review. When selecting this option, you will be required to provide a reason why you are sending the item to the administrators. Data that is not IRR is sent to the :ref:`adminannotate` to be reviewed by any user with admin privileges. Data that is IRR will still need to wait for the required number of coders to weigh in (adjudicating counts as your label).
 
 If the data is not being used for :ref:`irr` and is labeled, then this data will be marked as labeled and removed from the pool of unlabeled data. If data is IRR, then it may still be presented to additional coders on the project, but will not be presented to you again.
 
@@ -82,7 +83,7 @@ This page includes all data that has been labeled by you personally, and provide
 * **[NEW] Metadata Fields**: All metadata fields are also listed as columns, and so can be used for sorting or searching within a batch.
 
 .. Note::
-	Administrative users will be able to see and edit the labeled data for all coders. In the page below, we can see both new_user's and user1's labels.
+	Administrative users will be able to see and edit the labeled data for all coders. In the page below, we can see both ``new_user``'s and ``user1``'s labels.
 
 |annotate-history-page|
 
@@ -100,7 +101,7 @@ To save space, the history table only includes enough text for each data sample 
 
 .. Warning::
 
-  *For Active Learning Users:* Active learning algorithms use past labeled data to select future batches. Data labels changed retroactively will appear in the training data for the next batch, but will not effect past batches or the current batch. Excessive amounts of label changing may confuse active learning algorithms and make them less effective (see :ref:`active-learning` for more details)
+  *For Active Learning Users:* Active learning algorithms use past labeled data to select future batches. Data labels changed retroactively will appear in the training data for the next batch, but will not affect past batches or the current batch. Excessive label changing may hamper active learning algorithms and make them less effective (see :ref:`active-learning` for more details)
 
 
 
@@ -112,11 +113,11 @@ To save space, the history table only includes enough text for each data sample 
 
 |annotate-history-batches|
 
-Each batch in the history table is automatically sorted by the date to provide the most recent labels first, and users can sort and filter within the batch inside the table [see :ref:`searchingandsorting`].
+Each batch in the history table is automatically sorted by the date to provide the most recent labels first, and users can sort and filter within the batch inside the table (see :ref:`searchingandsorting`).
 For items that either don't have a label date or have the same date, they are returned in alphabetical order by text.
 
 
-**Filtering:** By default, the history table contains all labeled items. The filter form at the top allows users to filter results to specific text or metadata values. The "Reset Filters" button resets the form and returns the History table back to it's original state.
+**Filtering:** By default, the history table contains all labeled items. The filter form at the top allows users to filter results to specific text or metadata values. The "Reset Filters" button resets the form and returns the History table back to its original state.
 
 |annotate-history-filtering|
 
@@ -141,7 +142,7 @@ Because this feature essentially goes around the logic used to hand out IRR data
 
 .. Warning::
 
-  *For Active Learning Users:* While we don't explicitly prohibit projects with Active Learning from using this feature, it's important to note that the History table always presents all un-assigned and unlabeled data in alphabetical order, and is not impacted by the ordering suggestions from any Active Learning model. Users will need to annotate using the "Annotate Data" tab to benefit from Active Learning.
+  *For Active Learning Users:* While we don't explicitly prohibit projects with Active Learning from using this feature, it's important to note that the History table always presents all unassigned and unlabeled data in alphabetical order, and is not impacted by the ordering suggestions from Active Learning models. Users will need to annotate using the "Annotate Data" tab to benefit from Active Learning.
 
 .. _fixskew:
 
@@ -204,8 +205,10 @@ Projects that do not utilize IRR will only show the Requires Adjudication count:
 
 The Admin Annotation page consists of a table with two columns. The first shows the reason data ended up in the table (IRR or Sent for Adjudication). The second gives the text for the data, the reason the Coder gave for sending the data to Adjudication (if not IRR), and provides options for how the data should be processed. The admin has two options for any data in this table:
 
-* *label*: By clicking on one of the label buttons, suggestions, or dropdowns, the data is assigned the selected label and becomes part of the training set. If this data was sent for adjudication, then it will also become available in the admin's :ref:`history` if they want to change it later. If the data is IRR, it will also appear in their history table, but will **NOT** be editable by any user.
-* *discard*: This option exists for data that is simply un-codable and should not be included in the project. Clicking this option will remove the data from any IRR records, the :ref:`fixskew`, and any consideration for future batches. (Note that the data can be restored on the :ref:`recyclebin`).
+* **Label**: 
+	* By clicking on one of the label buttons, suggestions, or dropdowns, the data is assigned the selected label and becomes part of the training set. If this data was sent for adjudication, then it will also become available in the admin's :ref:`history` if they want to change it later. If the data is IRR, it will also appear in their history table, but will **NOT** be editable by any user.
+* **Discard**: 
+	* This option exists for data that is simply un-codable and should not be included in the project. Clicking this option will remove the data from any IRR records, the :ref:`fixskew`, and any consideration for future batches. Note that the data can be restored on the :ref:`recyclebin`.
 
 |annotate-adminannotation|
 
@@ -220,7 +223,7 @@ The Recycle Bin page acts much like a recycle bin or trash folder for most compu
 
 .. tip::
 
-		You can search the Recycle Bin table for specific data [see :ref:`searchingandsorting`]
+		You can search the Recycle Bin table for specific data (see :ref:`searchingandsorting`).
 
 |annotate-recyclebin-page|
 
@@ -250,7 +253,7 @@ Codebook (feature)
 
 **User: ALL**
 
-When creating or updating a project, a creator or admin has the option to add a codebook (see :ref:`addcodebook`). If a codebook has been uploaded, then in addition to the :ref:`labelguide`, a codebook button will be available on each tab of the :ref:`annotationpage` page. To open, click the ``codebook`` button. This will open a pdf viewer on the application with the file. To close, either click the ``x`` in the top right corner of the popup, or click anywhere on the screen outside of the codebook.
+When creating or updating a project, a creator or admin has the option to add a codebook (see :ref:`addcodebook`). If a codebook has been uploaded, then in addition to the :ref:`labelguide`, a codebook button will be available on each tab of the :ref:`annotationpage` page. To open, click the ``codebook`` button. This will open a PDF viewer on the application with the file. To close, either click the ``x`` in the top right corner of the popup, or click anywhere on the screen outside of the codebook.
 
 Below is our codebook for the "About Cats" projects.
 
@@ -258,7 +261,7 @@ Below is our codebook for the "About Cats" projects.
 
 .. Warning::
 
-	This feature makes use of the browser's built in pdf viewer. For most modern browsers like Firefox, Chrome, or Safari, this viewer will include a print or download button. However, if you are using an outdated browser, this might not be available.
+	This feature makes use of the browser's built in PDF viewer. For most modern browsers like Firefox, Chrome, or Safari, this viewer will include a print or download button. However, if you are using an outdated browser, this might not be available.
 
 
 
