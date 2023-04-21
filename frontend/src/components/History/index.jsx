@@ -58,25 +58,30 @@ class History extends React.Component {
                 }
             },
             {
-                Header: "Old Label",
-                accessor: "old_label",
+                Header: "Current Label",
+                accessor: "current_label",
                 width: 100
-            },
+            }
+        ];
+    }
+
+    LABELINFOCOLUMNS() {
+        return [
             {
-                Header: "User",
+                Header: "Labeled By",
                 accessor: "profile",
-                width: 100
+                width: 80
             },
             {
-                Header: "Old Label ID",
-                accessor: "old_label_id",
+                Header: "Current Label ID",
+                accessor: "current_label_id",
                 show: false
             },
             {
-                Header: "Date/Time",
+                Header: "Label Date/Time",
                 accessor: "timestamp",
                 id: "timestamp",
-                width: 150
+                width: 100
             },
             {
                 Header: "Verified",
@@ -139,7 +144,7 @@ class History extends React.Component {
     getLabelButton(row, label) {
         const { changeLabel } = this.props;
 
-        if (row.row.old_label_id === label.pk) {
+        if (row.row.current_label_id === label.pk) {
             return (
                 <Button
                     key={label.pk.toString() + "_" + row.row.id.toString()}
@@ -154,7 +159,7 @@ class History extends React.Component {
                 <Button
                     key={label.pk.toString() + "_" + row.row.id.toString()}
                     onClick={() =>
-                        changeLabel(row.row.id, row.row.old_label_id, label.pk)
+                        changeLabel(row.row.id, row.row.current_label_id, label.pk)
                     }
                     variant="primary"
                 >
@@ -185,7 +190,7 @@ class History extends React.Component {
         const { labels, changeToSkip, changeLabel } = this.props;
         const card = buildCard(row.row.id, null, row.original);
 
-        if (row.row.edit === "yes" && (row.row.old_label === "")) {
+        if (row.row.edit === "yes" && (row.row.current_label === "")) {
             subComponent = (
                 <div className="sub-row cardface clearfix">
                     <AnnotateCard
@@ -218,13 +223,13 @@ class History extends React.Component {
                         onSelectLabel={(card, label) => {
                             this.toggleConfirm();
                             this.cardID = card.id;
-                            this.rowID = row.row.old_label_id;
+                            this.rowID = row.row.current_label_id;
                             this.label = label;
                         }}
                         onSkip={(card, message) => {
                             changeToSkip(
                                 card.id,
-                                row.row.old_label_id,
+                                row.row.current_label_id,
                                 message
                             );
                         }}
@@ -450,7 +455,7 @@ class History extends React.Component {
                             accessor: `formattedMetadata.${column}`,
                             show: true
                         };
-                    })]}
+                    }), ...this.LABELINFOCOLUMNS()]}
                     showPageSizeOptions={true}
                     pageSizeOptions={[5, 10, 25, 50, 100]}
                     defaultPageSize={this.state.pageSize}
