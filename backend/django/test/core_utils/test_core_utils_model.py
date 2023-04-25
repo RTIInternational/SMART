@@ -309,6 +309,13 @@ def test_check_and_trigger_batched_success(
     )
 
     # Assert queue filled and redis sycned
+    fill_queue(
+        queue=test_queue,
+        orderby=project.learning_method,
+        irr_queue=test_irr_queue_labeled,
+        batch_size=project.batch_size,
+        irr_percent=project.percentage_irr,
+    )
     assert (
         test_queue.data.count() + test_irr_queue_labeled.data.count()
     ) == test_queue.length
@@ -402,6 +409,14 @@ def test_check_and_trigger_queue_changes_success(
         len(predictions)
         == Data.objects.filter(project=project, labelers=None).count()
         * project.labels.count()
+    )
+
+    fill_queue(
+        queue=project.queue_set.get(type="normal"),
+        orderby=project.learning_method,
+        irr_queue=project.queue_set.get(type="irr"),
+        batch_size=project.batch_size,
+        irr_percent=project.percentage_irr,
     )
 
     # Assert queue filled and redis sycned

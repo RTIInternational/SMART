@@ -1,12 +1,12 @@
 import React from 'react';
 import { connect } from 'react-redux';
+import { modifyMetadataValues } from '../actions/card';
 
 import { 
     getHistory, 
     changeLabel, 
     changeToSkip, 
     verifyDataLabel, 
-    modifyMetadataValue, 
     toggleUnlabeled,
     setCurrentPage,
     filterHistoryTable
@@ -37,8 +37,8 @@ const mapDispatchToProps = (dispatch) => {
         toggleUnlabeled: () => {
             dispatch(toggleUnlabeled(PROJECT_ID));
         },
-        setCurrentPage: (page) => {
-            dispatch(setCurrentPage(PROJECT_ID, page));
+        setCurrentPage: (page, getHist) => {
+            dispatch(setCurrentPage(PROJECT_ID, page, getHist));
         },
         filterHistoryTable: (filter_choices) => {
             dispatch(filterHistoryTable(PROJECT_ID, filter_choices));
@@ -52,8 +52,8 @@ const mapDispatchToProps = (dispatch) => {
         verifyDataLabel: (dataID) => {
             dispatch(verifyDataLabel(dataID, PROJECT_ID));
         },
-        modifyMetadataValue: (metadataId, value) => {
-            dispatch(modifyMetadataValue(metadataId, value));
+        modifyMetadataValues: (dataPk, metadatas) => {
+            dispatch(modifyMetadataValues(dataPk, metadatas, PROJECT_ID));
         }
     };
 };

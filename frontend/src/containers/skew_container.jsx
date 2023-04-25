@@ -1,5 +1,6 @@
 import React from 'react';
 import { connect } from 'react-redux';
+import { modifyMetadataValues } from '../actions/card';
 
 import { getUnlabeled, skewLabel, getLabelCounts } from '../actions/skew';
 import Skew from '../components/Skew';
@@ -27,6 +28,9 @@ const mapDispatchToProps = (dispatch) => {
         },
         getLabelCounts: () => {
             dispatch(getLabelCounts(PROJECT_ID));
+        },
+        modifyMetadataValues: (dataPk, metadatas) => {
+            dispatch(modifyMetadataValues(dataPk, metadatas, PROJECT_ID));
         }
     };
 };

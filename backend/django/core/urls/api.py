@@ -35,8 +35,8 @@ annotate_patterns = [
         r"^modify_label_to_skip/(?P<data_pk>\d+)/$", api_annotate.modify_label_to_skip
     ),
     re_path(
-        r"^modify_metadata_value/(?P<metadata_pk>\d+)/$",
-        api_annotate.modify_metadata_value,
+        r"^modify_metadata_values/(?P<data_pk>\d+)/$",
+        api_annotate.modify_metadata_values,
     ),
     re_path(r"^unassign_data/(?P<data_pk>\d+)/$", api_annotate.unassign_data),
     re_path(r"^skip_data/(?P<data_pk>\d+)/$", api_annotate.skip_data),

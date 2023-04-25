@@ -1073,17 +1073,24 @@ def get_label_history(request, project_pk):
 
 @api_view(["POST"])
 # @permission_classes((IsCoder,))
-def modify_metadata_value(request, metadata_pk):
-    """Take a single datum with a label and change the label in the DataLabel table.
+def modify_metadata_values(request, data_pk):
+    """Update metadata values.
 
     Args:
         request: The POST request
-        metadata_pk: Primary key of the metadata
-        value: New value for metadata field
+        data_pk: Primary key of the data
+        metadatas: {
+            key: Metadata field_name,
+            value: New value
+        }
     Returns:
         {}
     """
-    metadata = MetaData.objects.filter(pk=metadata_pk).first()
-    metadata.value = request.data["value"]
-    metadata.save()
+    data = Data.objects.get(pk=data_pk)
+    metadata = MetaData.objects.filter(data_id=data.id)
+    metadatas = request.data["metadatas"]
+    for m in metadatas:
+        metadata = MetaData.objects.get(data_id=data.id, value=m["previous"])
+        metadata.value = m["value"]
+        metadata.save()
     return Response({})

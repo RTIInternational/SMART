@@ -59,6 +59,14 @@ def test_model_task(
         * project.labels.count()
     )
 
+    fill_queue(
+        queue=project.queue_set.get(type="normal"),
+        orderby=project.learning_method,
+        irr_queue=project.queue_set.get(type="irr"),
+        batch_size=project.batch_size,
+        irr_percent=project.percentage_irr,
+    )
+
     # Assert bothe queues are filled and redis sycned
     assert (
         test_queue.data.count() + test_irr_queue_labeled.data.count()
