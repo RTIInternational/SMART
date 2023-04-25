@@ -177,23 +177,13 @@ In many applied settings, the distribution of categories the user may be interes
 See :ref:`fixskew` for more information on using this feature.
 
 
-
-.. [#settles] Settles, B. (2012). Active learning. Synthesis Lectures on Artificial Intelligence and Machine Learning, 6(1), 1-114.
-
-.. [#cohenswiki] https://en.wikipedia.org/wiki/Cohen%27s_kappa
-
-.. [#fleisswiki] https://en.wikipedia.org/wiki/Fleiss%27_kappa
-
-.. [#attenberg] Attenberg, J., & Provost, F. (2010). Why label when you can search?: Alternatives to active learning for applying human resources to build classification models under extreme class imbalance. In Proceedings of the 16th ACM SIGKDD international conference on Knowledge discovery and data mining (pp. 423-432). ACM.
-
-
 .. _label-embeddings:
 
 Label Embeddings
 ----------------
 
 For projects with more than 5 labels, SMART automatically generates embeddings of the labels and their descriptions. 
-When a user then goes to code items, SMART will present the top five labels with the closest embeddings to the text embeddings.
+When a user goes to code items, SMART will present the top five label categories based on the cosine similiarty between the text and label embeddings.
 
 |annotate-cards|
 
@@ -203,32 +193,22 @@ When a user then goes to code items, SMART will present the top five labels with
 What are Text Embeddings?
 *************************
 
-Loosely, text embedding is a broad group of methods used to take pieces of text and turn it into vectors which can then be compared mathematically for similarity. 
-At its most basic, a text embedding could be a vector of length N where each dimension is the number of times a specific word appeared in the text. 
-However, more advanced deep learning methods are able to capture the underlying meaning of two pieces of text in vector form, so two sentences with completely different words may be close together in space if they mean the same things.
+A text embedding is a numerical representation of text which can be used for many downstream use cases.
+At its most basic, a text embedding could be a vector of length N where each dimension is the number of times a specific word appears in the text (i.e., a `bag-of-words <https://en.wikipedia.org/wiki/Bag-of-words_model>`_ model). 
+However, more advanced deep learning methods that do not rely solely on term counts have been shown to be able to effectively capture the semantic meaning of text. 
+For example, two sentences could be deemed similiar if they convey similiar meaning, even if they use completely different words.
 
-For example, here is a guide to one text embedding algorithm "`FastText <https://amitness.com/2020/06/fasttext-embeddings/>`_."
-
-Specifically, SMART uses a `sentence-transformers <https://www.SBERT.net>`_ model. It maps sentences and paragraphs to a 384 dimensional dense vector space. 
-
-
-.. _embeddings-faq:
-
-Is this the Same as the Classifier Model SMART Trains?
-******************************************************
-
-No, while the embeddings also use a model, they are static, and explicitly do not update and improve as more items are labeled. 
-
-
-.. _embeddings-customize:
-
-Can I Customize the Embeddings?
-*******************************
-
-Yes you can! SMART saves the embeddings model it uses in the `smart_embeddings_model folder <https://github.com/RTIInternational/SMART/tree/master/backend/django/core/smart_embeddings_model>`_. 
-Depending on the domain of your data, you might have some phrases which you want the model to know are similar, or some which you don't want the model to think are close. 
-
-You can update the SMART model using the `csv to embeddings model repository <https://github.com/RTIInternational/csv-to-embeddings-model>`_.
+SMART uses a version of MPNet model [#song]_ from the `sentence-transformers <https://www.SBERT.net>`_ library to generate embeddings, mapping input documents and label text to 384 dimensional dense vectors. 
 
 
 .. |annotate-cards| image:: ./nstatic/img/smart-annotate-annotatedata-cards.png
+
+.. [#settles] Settles, B. (2012). Active learning. Synthesis Lectures on Artificial Intelligence and Machine Learning, 6(1), 1-114.
+
+.. [#cohenswiki] https://en.wikipedia.org/wiki/Cohen%27s_kappa
+
+.. [#fleisswiki] https://en.wikipedia.org/wiki/Fleiss%27_kappa
+
+.. [#attenberg] Attenberg, J., & Provost, F. (2010). Why label when you can search?: Alternatives to active learning for applying human resources to build classification models under extreme class imbalance. In Proceedings of the 16th ACM SIGKDD international conference on Knowledge discovery and data mining (pp. 423-432). ACM.
+
+.. [#song] Song, K., Tan, X., Qin, T., Lu, J., & Liu, T. Y. (2020). Mpnet: Masked and permuted pre-training for language understanding. Advances in Neural Information Processing Systems, 33, 16857-16867.

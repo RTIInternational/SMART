@@ -33,7 +33,7 @@ Below we add our "About Cats Classifier" project to a new group.
 You can add more projects to that group by clicking "New Folder" and typing the same group name,
 but you can also add projects to the list of existing groups through selecting that project in the project page and then going to ``Details``-> ``Update Project`` -> ``Add Project to Folder``.
 
-Below we add out "About Cats Labeling" project to the Group we made for the "About Cats Classifier" project.
+Below we add our "About Cats Labeling" project to the Group we made for the "About Cats Classifier" project.
 
 |projects-update-group|
 
@@ -84,7 +84,7 @@ At the bottom of the Details page, there are buttons to delete the project, edit
 |annotate-downloadmodel-exportimportdatabutton|
 
 When you click on the "Ingest new data from Database" button, SMART will import the ingest database table and compare it with the data already in SMART.
-If there are any new items in the database which do not already exist in SMART, these will be added. SMART will return the number of new items added in a window, or, if an error was thrown, the error:
+If there are any new items in the database which do not already exist in SMART, these will be added. SMART will return the number of new items added in a window, or if an error was thrown, the error:
 
 |smart-ingest-nonewdata|
 
@@ -100,18 +100,18 @@ The Update Project page is accessible from the :ref:`details` of a project. This
 * Add additional data to label
 * Add or change the codebook file
 * Add, remove, or change project permissions
-* Edit label *descriptions*
+* Edit label descriptions
 * Add the project to an existing group
 
 .. tip::
 
-	* SMART allows up to two million records total. This includes additional data added later.
-	* New data is checked against existing data for duplication.
+	* SMART allows up to two million records total per project. This includes additional data added later.
+	* New data is checked against existing project data for duplication.
 
 Deleting a Project
 ------------------
 
-The button to delete a project can be found on the :ref:`details` page of a project. To delete a project, click this button and then select "yes" at the prompt.
+The button to delete a project can be found on the :ref:`details` page of a project. To delete a project, click this button and then select "Yes" at the prompt.
 
 |delete-project|
 

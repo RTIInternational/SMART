@@ -82,6 +82,21 @@ We implemented an option to label data in batches due to its practicality. While
 
 To provide assistance for just this scenario, researchers have developed *batch-mode active learning* algorithms that help assemble batches containing both informative and diverse examples, reducing the chance that observations within a batch will provide redundant information.  While effective on large batch sizes, initial tests comparing batch-mode active learning models against simpler non-batch active learning strategies showed similar performance on more modest batch sizes **[link to notebook]**.  Due to the complexity of many batch-mode active learning models and similar performance on smaller batch sizes, we forego including batch-mode active learning models in the initial release.
 
+
+Is the model used to generate embeddings the same as the classifier SMART iteratively trains?
+*********************************************************************************************
+
+No, while a model is also used to generate embeddings, they are static and do not update as more items are labeled. 
+
+
+Can I customize the label embeddings?
+*************************************
+
+Yes you can! SMART saves the embeddings model it uses in the `smart_embeddings_model folder <https://github.com/RTIInternational/SMART/tree/master/backend/django/core/smart_embeddings_model>`_. 
+Depending on the subject domain, you might want to update your model to associate certain phrases as being similar or dissimilar if they are uncommonly used outside of your field. 
+
+You can update the SMART embeddings model using the `csv to embeddings model repository <https://github.com/RTIInternational/csv-to-embeddings-model>`_.
+
 What's the tech stack used to build SMART?
 ******************************************
 
