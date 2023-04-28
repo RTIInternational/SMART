@@ -1,14 +1,8 @@
 import React from "react";
 import PropTypes from "prop-types";
 import ReactTable from "react-table-6";
-import {
-    Button,
-    ButtonToolbar,
-    Tooltip,
-    OverlayTrigger
-} from "react-bootstrap";
-import Select from "react-dropdown-select";
 import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
+import AnnotateCard, { buildCard } from "../AnnotateCard";
 
 class AdminTable extends React.Component {
     componentDidMount() {
@@ -21,7 +15,7 @@ class AdminTable extends React.Component {
         } else {
             return (
                 <div>
-                    <u>Background Data</u>
+                    <u>Respondent Data</u>
                     {row.row["metadata"].map(val => (
                         <p key={val}>{val}</p>
                     ))}
@@ -32,11 +26,7 @@ class AdminTable extends React.Component {
     }
 
     render() {
-        const { admin_data, labels, adminLabel, discardData } = this.props;
-
-        let labelsOptions = labels.map(label =>
-            Object.assign(label, { value: label["pk"] })
-        );
+        const { admin_data, labels, message, adminLabel, discardData } = this.props;
 
         const columns = [
             {
@@ -58,76 +48,26 @@ class AdminTable extends React.Component {
             {
                 Header: "Unlabeled Data",
                 accessor: "data",
-                Cell: row => (
-                    <div>
-                        {this.getText(row)}
-                        <p id="admin_text">{row.row.data}</p>
-                        <div id="admin_buttons">
-                            <ButtonToolbar variant="btn-toolbar pull-right">
-                                {labels.length > 5 ? (
-                                    <Select
-                                        className="absolute align-items-center flex py-1 px-2"
-                                        dropdownHandle={false}
-                                        labelField="name"
-                                        onChange={value =>
-                                            adminLabel(
-                                                row.row.id,
-                                                value[0]["pk"]
-                                            )
-                                        }
-                                        options={labelsOptions}
-                                        placeholder="Select label..."
-                                        searchBy="name"
-                                        sortBy="name"
-                                        style={{
-                                            position: "absolute",
-                                            minWidth: "200px",
-                                            width: "fit-content"
-                                        }}
-                                    />
-                                ) : (
-                                    labels.map(opt => (
-                                        <Button
-                                            onClick={() =>
-                                                adminLabel(
-                                                    row.row.id,
-                                                    opt["pk"]
-                                                )
-                                            }
-                                            variant="primary"
-                                            key={
-                                                opt["pk"].toString() +
-                                                "_" +
-                                                row.row.id.toString()
-                                            }
-                                        >
-                                            {opt["name"]}
-                                        </Button>
-                                    ))
-                                )}
-                                <OverlayTrigger
-                                    placement="top"
-                                    overlay={
-                                        <Tooltip id="discard_tooltip">
-                                            This marks this data as uncodable,
-                                            and will remove it from the active
-                                            data in this project.
-                                        </Tooltip>
-                                    }
-                                >
-                                    <Button
-                                        key={"discard_" + row.row.id.toString()}
-                                        onClick={() => discardData(row.row.id)}
-                                        variant="danger"
-                                        style={{ marginLeft: "205px" }}
-                                    >
-                                        Discard
-                                    </Button>
-                                </OverlayTrigger>
-                            </ButtonToolbar>
+                Cell: row => {
+                    return (
+                        <div className="sub-row">
+                            {row.original.message && (
+                                <div className="adjudicate-message">
+                                    <h4>Reason for skipping:</h4>
+                                    <p style={{ whiteSpace: "normal" }}>{row.original.message}</p>
+                                </div>
+                            )}
+                            <AnnotateCard
+                                card={buildCard(row.row.id, null, row.original)}
+                                hideAdjudicate={true}
+                                labels={labels}
+                                onSelectLabel={(card, label) => adminLabel(card.id, label)}
+                                onDiscard={(id) => discardData(id)}
+                                showAdjudicate={false}
+                            />
                         </div>
-                    </div>
-                )
+                    );
+                }
             }
         ];
 
@@ -136,6 +76,13 @@ class AdminTable extends React.Component {
             page_sizes.push(i);
         }
         page_sizes.push(admin_data.length);
+
+        if (message.length > 0){
+            let message_new = message[0];
+            if (message_new.includes("ERROR")){
+                return (<div>{message_new}</div>);
+            }
+        }
 
         return (
             <div>
@@ -160,6 +107,9 @@ class AdminTable extends React.Component {
                         min-width: 200px;\
                         width: fit-content;\
                     }\
+                    .rt-td {\
+                        overflow-y: auto !important;\
+                    }\
                 "
                     }
                 </style>
@@ -172,6 +122,7 @@ AdminTable.propTypes = {
     getAdmin: PropTypes.func.isRequired,
     admin_data: PropTypes.arrayOf(PropTypes.object),
     labels: PropTypes.arrayOf(PropTypes.object),
+    message: PropTypes.string,
     adminLabel: PropTypes.func.isRequired,
     discardData: PropTypes.func.isRequired
 };

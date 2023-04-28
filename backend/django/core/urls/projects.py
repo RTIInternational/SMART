@@ -17,6 +17,11 @@ urlpatterns = [
         name="project_detail",
     ),
     re_path(
+        r"^projects/(?P<pk>\d+)/update/umbrella/$",
+        frontend.ProjectUpdateUmbrella.as_view(),
+        name="project_update_umbrella",
+    ),
+    re_path(
         r"^projects/(?P<pk>\d+)/update/$",
         frontend.ProjectUpdateLanding.as_view(),
         name="project_update_landing",
@@ -35,6 +40,11 @@ urlpatterns = [
         r"^projects/(?P<pk>\d+)/update/codebook/$",
         frontend.ProjectUpdateCodebook.as_view(),
         name="project_update_codebook",
+    ),
+    re_path(
+        r"^projects/(?P<pk>\d+)/update/external_db/$",
+        frontend.ProjectUpdateExternalDB.as_view(),
+        name="project_update_external_db",
     ),
     re_path(
         r"^projects/(?P<pk>\d+)/update/permissions/$",
@@ -60,5 +70,10 @@ urlpatterns = [
         r"^projects/(?P<pk>\d+)/admin/$",
         frontend.ProjectAdmin.as_view(),
         name="project_admin",
+    ),
+    re_path(
+        r"^projects/folder/$",
+        frontend.CreateFolder.as_view(),
+        name="folder_create",
     ),
 ]

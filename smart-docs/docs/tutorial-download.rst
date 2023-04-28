@@ -15,8 +15,14 @@ So you have been working hard labeling your data and have accumulated a respecta
 	d. A pickle file with the trained classifier model
 	e. A pickle file with the trained Vectorizer used to preprocess data into the TFIDF format
 	f. A README with detailed descriptions of the files and sample code on how to preprocess new data and predict it with your trained model.
+	g. A Dockerfile which can be used to setup an environment similar to that of the application.
+	h. A script to startup a jupyter notebook server. Not meant to be run outside of the docker container.
+	i. A Jupyter Notebook which demonstrates usage of the files and model (see section 4 of the README).
 
 	 |annotate-downloadmodel-files|
+
+4. If your project has both verified and unverified labeled data, you will see an additional button which says "Download Only Verified Labeled Data" or "Download Model and Only Verified Labeled Data" depending on if you have a trained model to download. Using this button restricts the data downloaded to just data which has been verified (see :ref:`details` for more information).
+
 
 This button is available in one of two places.
 
@@ -27,14 +33,23 @@ This button is available in one of two places.
 * The bottom of the :ref:`details`:
 
 |annotate-downloadmodel-nodatabutton|
-OR
+
+OR (if you have labeled data but no model)
 |annotate-downloadmodel-databutton|
-OR
+
+OR (if you have the same project above with a database connection set up)
+|annotate-downloadmodel-exportimportdatabutton|
+
+OR (if you have labeled data and a model)
 |annotate-downloadmodel-modelanddatabutton|
 
+OR (if you have the same project as above but you also have some verified labels)
+|annotate-downloadmodel-modelanddatabutton-verified|
 
 .. |annotate-downloadmodel-files| image:: ./nstatic/img/smart-downloadmodel-files.png
 .. |annotate-downloadmodel-databutton| image:: ./nstatic/img/smart-downloadmodel-databutton.png
 .. |annotate-downloadmodel-modelanddatabutton| image:: ./nstatic/img/smart-downloadmodel-modelanddatabutton.png
+.. |annotate-downloadmodel-modelanddatabutton-verified| image:: ./nstatic/img/smart-downloadmodel-modelanddatabutton-verified.png
 .. |annotate-downloadmodel-nodatabutton| image:: ./nstatic/img/smart-downloadmodel-nodatabutton.png
 .. |annotate-downloadmodel-projectsview| image:: ./nstatic/img/smart-downloadmodel-projectsview.png
+.. |annotate-downloadmodel-exportimportdatabutton| image:: ./nstatic/img/smart-downloadmodel-exportimportdatabutton.png

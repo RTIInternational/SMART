@@ -1,68 +1,139 @@
 import React from "react";
 import PropTypes from "prop-types";
 import ReactTable from "react-table-6";
-import {
-    Button,
-    ButtonToolbar,
-    Tooltip,
-    OverlayTrigger,
-    Alert
-} from "react-bootstrap";
-import Select from "react-dropdown-select";
+import { Button, Alert, Modal, OverlayTrigger, Tooltip } from "react-bootstrap";
 import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
+import AnnotateCard, { buildCard } from "../AnnotateCard";
+import Select from "react-dropdown-select";
 
-const COLUMNS = [
-    {
-        Header: "edit",
-        accessor: "edit",
-        show: false
-    },
-    {
-        Header: "id",
-        accessor: "id",
-        show: false
-    },
-    {
-        Header: "hidden",
-        accessor: "metadata",
-        show: false
-    },
-    {
-        Header: "Data",
-        accessor: "data",
-        filterMethod: (filter, row) => {
-            if (
-                String(row.data)
-                    .toLowerCase()
-                    .includes(filter.value.toLowerCase())
-            ) {
-                return true;
-            } else {
-                return false;
-            }
-        }
-    },
-    {
-        Header: "Old Label",
-        accessor: "old_label",
-        width: 100
-    },
-    {
-        Header: "Old Label ID",
-        accessor: "old_label_id",
-        show: false
-    },
-    {
-        Header: "Date/Time",
-        accessor: "timestamp",
-        id: "timestamp",
-        width: 150
-    }
-];
 
 class History extends React.Component {
+    constructor() {
+        super();
+        this.toggleConfirm = this.toggleConfirm.bind(this);
+        this.verifyLabel = this.verifyLabel.bind(this);
+        this.historyChangeLabel = this.historyChangeLabel.bind(this);
+        this.createFilterForm = this.createFilterForm.bind(this);
+        this.changeFilterValue = this.changeFilterValue.bind(this);
+        this.filterHistory = this.filterHistory.bind(this);
+        this.resetFilters = this.resetFilters.bind(this);
+        this.state = {
+            pageSize : parseInt(localStorage.getItem("pageSize") || "25"),
+            showConfirm: false,
+            temp_filters: { Text:"" }
+        };
+        this.cardID, this.rowID, this.label;
+    }
+
+    COLUMNS() {
+        return [
+            {
+                Header: "edit",
+                accessor: "edit",
+                show: false
+            },
+            {
+                Header: "id",
+                accessor: "id",
+                show: false
+            },
+            {
+                Header: "hidden",
+                accessor: "metadata",
+                show: false
+            },
+            {
+                Header: "Data",
+                accessor: "data",
+                filterMethod: (filter, row) => {
+                    if (
+                        String(row.data)
+                            .toLowerCase()
+                            .includes(filter.value.toLowerCase())
+                    ) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+            },
+            {
+                Header: "Old Label",
+                accessor: "old_label",
+                width: 100
+            },
+            {
+                Header: "User",
+                accessor: "profile",
+                width: 100
+            },
+            {
+                Header: "Old Label ID",
+                accessor: "old_label_id",
+                show: false
+            },
+            {
+                Header: "Date/Time",
+                accessor: "timestamp",
+                id: "timestamp",
+                width: 150
+            },
+            {
+                Header: "Verified",
+                width: 80,
+                accessor: "verified",
+                Cell: props => {
+                    if (props.value == "Yes") {
+                        return (<p>Yes</p>);
+                    } else if (props.value != "No") {
+                        return (<p>{props.value}</p>);
+                    } else {
+                        return (<Button variant="success" value={props.row.id} onClick={this.verifyLabel}>Verify</Button>);
+                    }
+                }
+            },
+            {
+                Header: "Verified By",
+                accessor: "verified_by",
+                width: 100
+            },
+            {
+                Header: "Pre-Loaded",
+                width: 100,
+                accessor: "pre_loaded"
+            }
+        ];
+    }
+
+    toggleConfirm() {
+        this.setState({ showConfirm : !this.state.showConfirm });
+    }
+
     componentDidMount() {
         this.props.getHistory();
+    }
+
+    componentDidUpdate(prevProps) {
+        if (prevProps.metadata_fields != this.props.metadata_fields) {
+            // Only populate this once
+            if (this.props.metadata_fields.length > 0 && Object.keys(this.state.temp_filters).length == 1) {
+                let temp = { Text: this.state.temp_filters.Text };
+                this.props.metadata_fields.map(field => {
+                    temp[field] = "";
+                });
+                this.setState({ 
+                    temp_filters: temp
+                });
+            }
+        }
+    }
+
+    toggleShowUnlabeled() {
+        this.props.toggleUnlabeled();
+    }
+
+    verifyLabel(event) {
+        this.props.verifyDataLabel(event.target.value);
     }
 
     getLabelButton(row, label) {
@@ -99,7 +170,7 @@ class History extends React.Component {
         } else {
             return (
                 <div>
-                    <u>Background Data</u>
+                    <u>Respondent Data</u>
                     {row.row["metadata"].map(val => (
                         <p key={val}>{val}</p>
                     ))}
@@ -109,67 +180,56 @@ class History extends React.Component {
         }
     }
 
-    getSubComponent(row) {
+    getSubComponent(row, modifyMetadataValues) {
         let subComponent;
-        const { labels, changeLabel, changeToSkip } = this.props;
+        const { labels, changeToSkip, changeLabel } = this.props;
+        const card = buildCard(row.row.id, null, row.original);
 
-        let labelsOptions = labels.map(label =>
-            Object.assign(label, { value: label["pk"] })
-        );
-
-        if (row.row.edit === "yes") {
+        if (row.row.edit === "yes" && (row.row.old_label === "")) {
             subComponent = (
-                <div className="sub-row">
-                    {this.getText(row)}
-                    <p>{row.row.data}</p>
-                    <ButtonToolbar variant="btn-toolbar pull-right">
-                        {labels.length > 5 ? (
-                            <Select
-                                className="align-items-center flex py-1 px-2"
-                                dropdownHandle={false}
-                                labelField="name"
-                                onChange={value =>
-                                    changeLabel(
-                                        row.row.id,
-                                        row.row.old_label_id,
-                                        value[0]["pk"]
-                                    )
-                                }
-                                options={labelsOptions}
-                                placeholder="Select label..."
-                                searchBy="name"
-                                sortBy="name"
-                                style={{ minWidth: "200px" }}
-                            />
-                        ) : (
-                            <React.Fragment>
-                                {labels.map(label =>
-                                    this.getLabelButton(row, label)
-                                )}
-                            </React.Fragment>
-                        )}
-                        <OverlayTrigger
-                            placement="top"
-                            overlay={
-                                <Tooltip id="skip_tooltip">
-                                    Clicking this button will send this document
-                                    to an administrator for review
-                                </Tooltip>
-                            }
-                        >
-                            <Button
-                                onClick={() =>
-                                    changeToSkip(
-                                        row.row.id,
-                                        row.row.old_label_id
-                                    )
-                                }
-                                variant="info"
-                            >
-                                Skip
-                            </Button>
-                        </OverlayTrigger>
-                    </ButtonToolbar>
+                <div className="sub-row cardface clearfix">
+                    <AnnotateCard
+                        card={card}
+                        labels={labels}
+                        onSelectLabel={(card, label) => {
+                            changeLabel(
+                                card.id,
+                                undefined,
+                                label
+                            );
+                        }}
+                        onSkip={(card, message) => {
+                            changeToSkip(
+                                card.id,
+                                undefined,
+                                message
+                            );
+                        }}
+                        modifyMetadataValues={modifyMetadataValues}
+                    />
+                </div>
+            );
+        } else if (row.row.edit === "yes") {
+            subComponent = (
+                <div className="sub-row cardface clearfix">
+                    <AnnotateCard
+                        card={card}
+                        labels={labels}
+                        onSelectLabel={(card, label) => {
+                            this.toggleConfirm();
+                            this.cardID = card.id;
+                            this.rowID = row.row.old_label_id;
+                            this.label = label;
+                        }}
+                        onSkip={(card, message) => {
+                            changeToSkip(
+                                card.id,
+                                row.row.old_label_id,
+                                message
+                            );
+                        }}
+                        modifyMetadataValues={modifyMetadataValues}
+                    />
                 </div>
             );
         } else {
@@ -188,49 +248,226 @@ class History extends React.Component {
         return subComponent;
     }
 
-    render() {
-        const { history_data } = this.props;
+    historyChangeLabel() {
+        const { changeLabel } = this.props;
+        this.toggleConfirm();                 
+        changeLabel(
+            this.cardID,
+            this.rowID,
+            this.label
+        );
+    }
 
-        let page_sizes = [1];
-        let counter = 1;
-        for (let i = 5; i < history_data.length; i += 5 * counter) {
-            page_sizes.push(i);
-            counter += 1;
+    filterHistory(event) {
+        // Update official filter state and re-pull history table
+        event.preventDefault();
+        // always reset page when applying new filter
+        this.props.setCurrentPage(1, false);
+        this.props.filterHistoryTable(this.state.temp_filters);
+    }
+
+    changeFilterValue(event) {
+        let temp = this.state.temp_filters;
+        temp[event.target.name] = event.target.value;
+        this.setState({ 
+            temp_filters: temp
+        });
+    }
+
+    resetFilters() {
+        let current_filters = this.state.temp_filters;
+        for (let key in current_filters) {
+            current_filters[key] = "";
         }
-        page_sizes.push(history_data.length);
+        this.setState({
+            temp_filters: current_filters
+        });
+        // always reset page when applying new filter
+        this.props.setCurrentPage(1, false);
+        this.props.filterHistoryTable(this.state.temp_filters);
+    }
 
+    createFilterForm() {
+        // The form contains filters for text, and any metadata field
         return (
             <div>
+                <h4>Filters</h4>
+                <form onSubmit={this.filterHistory}>
+                    <div className="form-group history-filter">
+                        <label className="control-label" style={{ marginRight: "4px" }}>Data</label>
+                        <input className="form-control" type="text" name="Text" value={this.state.temp_filters.Text} onChange={this.changeFilterValue} />
+                    </div>
+                    {this.props.metadata_fields.map(field => {
+                        return (
+                            <div className="form-group history-filter" key={field}>
+                                <label className="control-label" style={{ marginRight: "4px" }}>{field}</label>
+                                <input className="form-control" type="text" name={field} value={this.state.temp_filters[field] || ''} onChange={this.changeFilterValue} />
+                            </div>
+                        );
+                    })}
+                    <input className="btn btn-primary" type="submit" value="Apply Filters" />
+                    <Button className="ml-3" variant="secondary" onClick={this.resetFilters}>Reset Filters</Button>
+                </form>
+            </div>
+        );
+    }
+
+    render() {
+        const { history_data, num_pages, setCurrentPage, modifyMetadataValues } = this.props;
+        
+        let paginationDropdown = (<div></div>);
+        if (num_pages > 1) {
+            let pageOptions = [];
+            for (let i = 1; i < num_pages; i++) {
+                pageOptions.push({ "value":i, "pageLabel":`Batch ${i} (${(i - 1) * 100} - ${(i) * 100})` });
+            }
+            pageOptions.push({ "value":num_pages, "pageLabel":`Batch ${num_pages} (${(num_pages - 1) * 100}+)` });
+            paginationDropdown = (
+                <div style={{ marginBottom: "1rem" }}>
+                    <b>
+                        NOTE: For performance reasons, SMART only returns 100 items at a time. 
+                        Use the dropdown below to navigate between batches of 100 items. Items are sorted 
+                        by text in alphabetical order. Recently labeled items in a batch are returned first.
+                        <br />
+                    </b>
+                    <Select
+                        className="align-items-center flex py-1 px-2 annotate-select"
+                        dropdownHandle={false}
+                        labelField="pageLabel"
+                        onChange={(selection) => {
+                            setCurrentPage(selection[0].value, true);
+                        }}
+                        options={pageOptions}
+                        placeholder="Select Batch..."
+                        searchBy="pageLabel"
+                    />
+                </div>
+            );
+        }
+        
+
+        let metadataColumns = [];
+        history_data.forEach((data) => {
+            if (data.formattedMetadata)
+                Object.keys(data.formattedMetadata).forEach((metadataColumn) =>
+                    !metadataColumns.includes(metadataColumn) ? metadataColumns.push(metadataColumn) : null
+                );
+        });
+
+        //Confirmation button
+        let confirm_message = (
+            <Modal
+                centered
+                show={this.state.showConfirm} 
+                onHide={this.toggleConfirm} animation={false}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Confirmation</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>Are you sure you want to change labels?</Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={this.toggleConfirm}>
+                        Cancel
+                    </Button>
+                    <Button variant="primary" onClick={ this.historyChangeLabel }>
+                        Confirm change
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+        );
+
+        let unlabeled_checkbox = (
+            <div className="form-group" style={{ marginBottom: "0" }}>
+                <p>
+                    Toggle the checkbox below to show/hide unlabeled data:
+                </p>
+                <label className="control-label">
+                    <span style={{ marginRight: "4px" }}>Unlabled Data</span>
+                    <input type="checkbox" disabled />
+                </label>
+                <div>
+                    <i>Unlabeled data cannot be accessed in the history table for projects using the Inter-Rater-Reliability feature.</i>
+                </div>
+            </div>
+        );
+        if (!window.PROJECT_USES_IRR) {
+            unlabeled_checkbox = (
+                <div className="form-group" style={{ marginBottom: "0" }}>
+                    <p>
+                        Toggle the checkbox below to show/hide unlabeled data:
+                    </p>
+                    <label className="control-label">
+                        <span style={{ marginRight: "4px" }}>Unlabled Data</span>
+                        <input type="checkbox" onChange={() => this.toggleShowUnlabeled()} />
+                    </label>
+                </div>
+            );
+        }
+
+        return (
+            <div className="history">
                 <h3>Instructions</h3>
                 <p>This page allows a coder to change past labels.</p>
                 <p>
                     To annotate, click on a data entry below and select the
                     label from the expanded list of labels. The chart will then
-                    update with the new label and current timestamp{" "}
+                    update with the new label and current timestamp{" "}.
                 </p>
                 <p>
                     <strong>NOTE:</strong> Data labels that are changed on this
                     page will not effect past model accuracy or data selected by
                     active learning in the past. The training data will only be
-                    updated for the next run of the model
+                    updated for the next run of the model.
                 </p>
+                {/* <p style={{ maxWidth: "75ch" }}>
+                    <strong>TIP:</strong> In this table you may edit metadata fields. Click on the value in the column and row where you want to change the data and it will open as a text box.
+                </p> */}
                 <CodebookLabelMenuContainer />
+                <div className="history-filters">
+                    {this.createFilterForm()}
+                </div>
+                <div className="history-filters">
+                    {unlabeled_checkbox}
+                </div>
+                <div>
+                    {paginationDropdown}
+                </div>
                 <ReactTable
                     data={history_data}
-                    columns={COLUMNS}
-                    pageSize={
-                        history_data.length < 50 ? history_data.length : 50
-                    }
-                    showPageSizeOptions={false}
-                    SubComponent={row => this.getSubComponent(row)}
-                    filterable={true}
+                    columns={[...this.COLUMNS(), ...metadataColumns.map((column) => {
+                        return {
+                            Header: () => (
+                                <OverlayTrigger
+                                    placement="top"
+                                    overlay={
+                                        <Tooltip id={`history-column-${column}`}>
+                                            {column}
+                                        </Tooltip>
+                                    }
+                                >
+                                    <span style={{ display: "inline-block", width: "100%" }}>{column}</span>
+                                </OverlayTrigger>
+                            ),
+                            accessor: `formattedMetadata.${column}`,
+                            show: true
+                        };
+                    })]}
+                    showPageSizeOptions={true}
+                    pageSizeOptions={[5, 10, 25, 50, 100]}
+                    defaultPageSize={this.state.pageSize}
+                    onPageSizeChange={(pageSize) => localStorage.setItem("pageSize", pageSize)}
+                    SubComponent={row => this.getSubComponent(row, modifyMetadataValues)}
                     defaultSorted={[
                         {
                             id: "timestamp",
                             desc: true
+                        },
+                        {
+                            id: "data",
+                            desc: false
                         }
                     ]}
                 />
+                {confirm_message}
             </div>
         );
     }
@@ -243,9 +480,17 @@ class History extends React.Component {
 History.propTypes = {
     labels: PropTypes.arrayOf(PropTypes.object),
     getHistory: PropTypes.func.isRequired,
+    toggleUnlabeled: PropTypes.func.isRequired,
+    setCurrentPage: PropTypes.func.isRequired,
     history_data: PropTypes.arrayOf(PropTypes.object),
+    filterHistoryTable: PropTypes.func.isRequired,
+    num_pages: PropTypes.number,
+    metadata_fields: PropTypes.arrayOf(PropTypes.object),
+    current_page: PropTypes.number,
     changeLabel: PropTypes.func.isRequired,
-    changeToSkip: PropTypes.func.isRequired
+    changeToSkip: PropTypes.func.isRequired,
+    verifyDataLabel: PropTypes.func.isRequired,
+    modifyMetadataValues: PropTypes.func.isRequired
 };
 
 export default History;

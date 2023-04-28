@@ -1,13 +1,9 @@
 import React from "react";
 import PropTypes from "prop-types";
 import {
-    Button,
-    ButtonToolbar,
-    Card,
-    Tooltip,
-    OverlayTrigger
+    Card
 } from "react-bootstrap";
-import Select from "react-dropdown-select";
+import AnnotateCard from "../AnnotateCard";
 
 const ADMIN = window.ADMIN;
 
@@ -21,102 +17,35 @@ class DataCard extends React.Component {
         }
     }
 
-    getText(card) {
-        if (card.text["metadata"].length == 0) {
-            return <p></p>;
-        } else {
-            return (
-                <div>
-                    <u>Background Data</u>
-                    {card.text["metadata"].map(val => (
-                        <p key={val}>{val}</p>
-                    ))}
-                    <u>Text to Label</u>
-                </div>
-            );
-        }
-    }
-
     render() {
         let card;
-        const { labels, message, cards, passCard, annotateCard } = this.props;
 
-        let labelsOptions = labels.map(label =>
-            Object.assign(label, { value: label["pk"] })
-        );
+        const { labels, message, cards, passCard, annotateCard, unassignCard, modifyMetadataValues } = this.props;
 
         if (!(cards === undefined) && cards.length > 0) {
             //just get the labels from the cards
             card = (
                 <div className="full" key={cards[0].id}>
-                    <div className="cardface clearfix">
-                        <h2>Card {cards[0].id + 1}</h2>
-                        {this.getText(cards[0])}
-                        <p>{cards[0].text["text"]}</p>
-                        <ButtonToolbar className="btn-toolbar pull-right">
-                            {labels.length > 5 ? (
-                                <Select
-                                    className="align-items-center flex py-1 px-2"
-                                    dropdownHandle={false}
-                                    labelField="name"
-                                    onChange={value =>
-                                        annotateCard(
-                                            cards[0],
-                                            value[0]["pk"],
-                                            cards.length,
-                                            ADMIN
-                                        )
-                                    }
-                                    options={labelsOptions}
-                                    placeholder="Select label..."
-                                    searchBy="name"
-                                    sortBy="name"
-                                    style={{ minWidth: "200px" }}
-                                />
-                            ) : (
-                                labels.map(opt => (
-                                    <Button
-                                        onClick={() =>
-                                            annotateCard(
-                                                cards[0],
-                                                opt["pk"],
-                                                cards.length,
-                                                ADMIN
-                                            )
-                                        }
-                                        variant="primary"
-                                        key={`deck-button-${opt["name"]}`}
-                                    >
-                                        {opt["name"]}
-                                    </Button>
-                                ))
+                    <AnnotateCard
+                        modifyMetadataValues={modifyMetadataValues}
+                        card={cards[0]}
+                        labels={labels}
+                        onSelectLabel={(card, label) =>
+                            annotateCard(
+                                card,
+                                label,
+                                cards.length,
+                                ADMIN
                             )}
-                            <OverlayTrigger
-                                placement="top"
-                                overlay={
-                                    <Tooltip id="skip_tooltip">
-                                        Clicking this button will send this
-                                        document to an administrator for review
-                                    </Tooltip>
-                                }
-                            >
-                                <Button
-                                    onClick={() => {
-                                        passCard(cards[0], cards.length, ADMIN);
-                                    }}
-                                    variant="info"
-                                >
-                                    Skip
-                                </Button>
-                            </OverlayTrigger>
-                        </ButtonToolbar>
-                    </div>
+                        onSkip={(card, message = null) => passCard(card, cards.length, ADMIN, message)}
+                        onUnassign={(card) => unassignCard(card, card.length, ADMIN)}
+                    />
                 </div>
             );
         } else {
             let blankDeckMessage = message
                 ? message
-                : "No more data to label at this time. Please check back later";
+                : "No more data to label at this time. There may be no data left to label, or all data may be assigned to other coders who are logged into the project. Please check back later.";
             card = <Card body>{blankDeckMessage}</Card>;
         }
 
@@ -130,7 +59,9 @@ DataCard.propTypes = {
     fetchCards: PropTypes.func.isRequired,
     annotateCard: PropTypes.func.isRequired,
     passCard: PropTypes.func.isRequired,
-    labels: PropTypes.arrayOf(PropTypes.object)
+    labels: PropTypes.arrayOf(PropTypes.object),
+    unassignCard: PropTypes.func.isRequired,
+    modifyMetadataValues: PropTypes.func.isRequired
 };
 
 export default DataCard;

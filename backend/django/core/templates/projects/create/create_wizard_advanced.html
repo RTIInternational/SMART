@@ -20,8 +20,37 @@
           {% csrf_token %}
           {{ wizard.management_form }}
 
-          <h1>Advanced Settings</h1>
+          <h1 style="margin-bottom: 1.5rem">Optional Advanced Settings</h1>
           <div class="form-group">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h5 class="panel-title">
+                  <a data-toggle="collapse" href="#c-panel" class="accordion-toggle collapsed">
+                    Model Selection
+                  </a>
+                </h5>
+              </div>
+              <div id="c-panel" class="panel-collapse collapse hide">
+                <div class="panel-body">
+                  <div id="choose_classifier_box">
+                    <div id="use_model_div">
+                      <p>Train and display results for a model: {{ wizard.form.use_model }}</p>
+                      <p>NOTE: This option must be checked to use Active Learning</p>
+                      <br />
+                    </div>
+                    <div id="classifier_radios">
+                      <p>Choose the classification algorithm used by active learning algorithms and for general prediction.</p>
+                      {% for radio2 in wizard.form.classifier %}
+                      <div class="choose_classifier" name="classifier_choice" id="{{radio2.value}}">
+                        {{radio2}}
+                      </div>
+                      {% endfor %}
+                    </div>
+                    <p>{{ wizard.form.classifier.errors }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
             <div class="panel panel-default" id="al_tab">
               <div class="panel-heading">
                 <h5 class="panel-title">
@@ -45,45 +74,16 @@
                 </div>
               </div>
             </div>
-            <div class="panel panel-default">
-              <div class="panel-heading">
-                <h5 class="panel-title">
-                  <a data-toggle="collapse" href="#c-panel" class="accordion-toggle">
-                    Model Selection
-                  </a>
-                </h5>
-              </div>
-              <div id="c-panel" class="panel-collapse collapse show">
-                <div class="panel-body">
-                  <div id="choose_classifier_box">
-                    <div id="use_model_div">
-                      <p>Train and display results for a model: {{ wizard.form.use_model }}</p>
-                      <p>NOTE: If you uncheck this option, you cannot use Active Learning</p>
-                      <br />
-                    </div>
-                    <div id="classifier_radios">
-                      <p>Choose the classification algorithm used by active learning algorithms and for general prediction.</p>
-                      {% for radio2 in wizard.form.classifier %}
-                      <div class="choose_classifier" name="classifier_choice" id="{{radio2.value}}">
-                        {{radio2}}
-                      </div>
-                      {% endfor %}
-                    </div>
-                    <p>{{ wizard.form.classifier.errors }}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
 
             <div class="panel panel-default">
               <div class="panel-heading">
                 <h5 class="panel-title">
-                  <a data-toggle="collapse" href="#irr-panel" class="accordion-toggle">
+                  <a data-toggle="collapse" href="#irr-panel" class="accordion-toggle collapsed">
                     Inter-rater Reliability (IRR) Settings
                   </a>
                 </h5>
               </div>
-              <div id="irr-panel" class="panel-collapse collapse show">
+              <div id="irr-panel" class="panel-collapse collapse hide">
                 <div class="panel-body">
                   <div id = "choose_irr_or_not">
                     <p>Under IRR, a certain percentage of the data is labeled by
@@ -106,16 +106,13 @@
             <div class="panel panel-default">
               <div class="panel-heading">
                 <h5 class="panel-title">
-                  <a data-toggle="collapse" href="#b-panel" class="accordion-toggle">
+                  <a data-toggle="collapse" href="#b-panel" class="accordion-toggle collapsed">
                     Batch Settings
                   </a>
                 </h5>
               </div>
-              <div id="b-panel" class="panel-collapse collapse show">
+              <div id="b-panel" class="panel-collapse collapse hide">
                 <div class="panel-body">
-                  <div id="use_default_size">
-                    Use default size (10 times the number of labels): {{ wizard.form.use_default_batch_size}}
-                  </div>
                   <div id="choose_batch_size">
                     Batch size (must be between 10 and 1000): {{ wizard.form.batch_size}}
                   </div>
@@ -128,7 +125,10 @@
             <button class="btn btn-info" name="wizard_goto_step" type="submit" value="project">1. Info</button>
             <button class="btn btn-info" name="wizard_goto_step" type="submit" value="labels">2. Labels</button>
             <button class="btn btn-info" name="wizard_goto_step" type="submit" value="permissions">3. Permissions</button>
-            <input class="btn btn-primary" type="submit" value="Next Step"/>
+            <button class="btn btn-info" name="wizard_goto_step" type="submit" value="codebook">4. CodeBook</button>
+            <button class="btn btn-info" name="wizard_goto_step" type="submit" value="external">5. External Database Connection</button>
+            <button class="btn btn-info" name="wizard_goto_step" type="submit" value="data">6. Data</button>
+            <input class="btn btn-primary" type="submit" value="Submit" />
             <p class="pull-right">Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
           </div>
         </form>

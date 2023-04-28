@@ -6,16 +6,20 @@ import zipfile
 
 from django.conf import settings
 from django.http import HttpResponse
+from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
 
 from core.models import Project
 from core.permissions import IsAdminOrCreator
+from core.templatetags import project_extras
 from core.utils.util import get_labeled_data
+from core.utils.utils_external_db import export_table, load_ingest_table
 
 
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))
-def download_data(request, project_pk):
+def download_data(request, project_pk, unverified):
     """This function gets the labeled data and makes it available for download.
 
     Args:
@@ -25,13 +29,12 @@ def download_data(request, project_pk):
         an HttpResponse containing the requested data
     """
     project = Project.objects.get(pk=project_pk)
-    data, labels = get_labeled_data(project)
+    data, labels = get_labeled_data(project, bool(int(unverified)))
+    fieldnames = data.columns.values.tolist()
     data = data.to_dict("records")
 
     buffer = io.StringIO()
-    wr = csv.DictWriter(
-        buffer, fieldnames=["ID", "Text", "Label"], quoting=csv.QUOTE_ALL
-    )
+    wr = csv.DictWriter(buffer, fieldnames=fieldnames, quoting=csv.QUOTE_ALL)
     wr.writeheader()
     wr.writerows(data)
     buffer.seek(0)
@@ -43,7 +46,7 @@ def download_data(request, project_pk):
 
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))
-def download_model(request, project_pk):
+def download_model(request, project_pk, unverified):
     """This function gets the labeled data and makes it available for download.
 
     Args:
@@ -84,7 +87,7 @@ def download_model(request, project_pk):
         + ".pkl",
     )
 
-    data, label_data = get_labeled_data(project)
+    data, label_data = get_labeled_data(project, bool(int(unverified)))
     # open the tempfile and write the label data to it
     temp_labeleddata_file = tempfile.NamedTemporaryFile(
         mode="w", suffix=".csv", delete=False, dir=settings.DATA_DIR
@@ -131,3 +134,60 @@ def download_model(request, project_pk):
     response["Content-Disposition"] = "attachment;"
 
     return response
+
+
+@api_view(["POST"])
+@permission_classes((IsAdminOrCreator,))
+def import_database_table(request, project_pk):
+    """This function imports all data from an existing database connection.
+
+    Args:
+        request: The POST request
+        project_pk: Primary key of the project
+    Returns:
+        {}
+    """
+    response = {}
+    profile = request.user.profile
+    project = Project.objects.get(pk=project_pk)
+
+    # Make sure coder is an admin
+    if project_extras.proj_permission_level(project, profile) > 1:
+        response = load_ingest_table(project, response)
+    else:
+        response["error"] = "Invalid credentials. Must be an admin."
+
+    if "error" in response.keys():
+        return Response(response, status=status.HTTP_404_NOT_FOUND)
+
+    return Response(response)
+
+
+@api_view(["POST"])
+@permission_classes((IsAdminOrCreator,))
+def export_database_table(request, project_pk):
+    """This function exports labeled data to an existing database connection.
+
+    Args:
+        request: The POST request
+        project_pk: Primary key of the project
+    Returns:
+        {}
+    """
+    response = {}
+    profile = request.user.profile
+    # Make sure coder is an admin
+    if (
+        project_extras.proj_permission_level(
+            Project.objects.get(pk=project_pk), profile
+        )
+        > 1
+    ):
+        export_table(project_pk, response)
+    else:
+        response["error"] = "Invalid credentials. Must be an admin."
+
+    if "error" in response.keys():
+        return Response(response, status=status.HTTP_404_NOT_FOUND)
+
+    return Response(response)

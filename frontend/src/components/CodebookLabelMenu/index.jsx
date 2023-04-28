@@ -52,7 +52,7 @@ class CodebookLabelMenu extends React.Component {
 
         if (CODEBOOK_URL != "") {
             codebook_module = (
-                <Modal show={this.state.codebook_open} onHide={this.toggleCodebook}>
+                <Modal dialogClassName="codebook-modal" style={{ opacity: 1 }} show={this.state.codebook_open} onHide={this.toggleCodebook}>
                     <Modal.Header closeButton>
                         <Modal.Title>Codebook</Modal.Title>
                     </Modal.Header>
@@ -78,18 +78,18 @@ class CodebookLabelMenu extends React.Component {
             label_button = (
                 <Button
                     onClick={this.toggleLabel}
-                    className="minus_button"
+                    className="menu-down"
                     variant="danger">
-                    <span className="glyphicon glyphicon-minus" aria-hidden="true"></span> Label Guide
+                    <span className="glyphicon glyphicon-menu-down" aria-hidden="true"></span> Label Guide
                 </Button>
             );
         } else {
             label_button = (
                 <Button
                     onClick={this.toggleLabel}
-                    className="plus_button"
+                    className="menu-right"
                     variant="success">
-                    <span className="glyphicon glyphicon-plus" aria-hidden="true"></span> Label Guide
+                    <span className="glyphicon glyphicon-menu-right" aria-hidden="true"></span> Label Guide
                 </Button>
             );
         }
@@ -97,10 +97,12 @@ class CodebookLabelMenu extends React.Component {
         return (
             <div className="margin-bottom-15 no-overflow">
                 <div className="row" id="label_group_buttons">
-                    <ButtonGroup className="pull-left">
-                        {label_button}
-                        {codebook_button}
-                    </ButtonGroup>
+                    {CODEBOOK_URL != "" ? (
+                        <ButtonGroup className="pull-left">
+                            {label_button}
+                            {codebook_button}
+                        </ButtonGroup>
+                    ) : label_button}
                 </div>
                 {this.getLabels(labels, this.state.labels_open)}
                 {codebook_module}

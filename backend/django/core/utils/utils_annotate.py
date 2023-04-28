@@ -1,8 +1,23 @@
+from random import randrange
+
 from django.conf import settings
+from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
 
-from core.models import AssignedData, Data, DataLabel, DataQueue, IRRLog, Queue
+from core.models import (
+    AdjudicateDescription,
+    AdminProgress,
+    AssignedData,
+    Data,
+    DataLabel,
+    DataQueue,
+    IRRLog,
+    Project,
+    Queue,
+    RecycleBin,
+    VerifiedDataLabel,
+)
 from core.templatetags import project_extras
 from core.utils.utils_queue import pop_first_nonempty_queue
 from core.utils.utils_redis import (
@@ -10,6 +25,19 @@ from core.utils.utils_redis import (
     redis_serialize_queue,
     redis_serialize_set,
 )
+
+
+def leave_coding_page(profile, project):
+    """unnasign data and remove any admin locks for a specific user and project."""
+    assigned_data = AssignedData.objects.filter(profile=profile, data__project=project)
+
+    for assignment in assigned_data:
+        unassign_datum(assignment.data, profile)
+
+    if project_extras.proj_permission_level(project, profile) > 1:
+        if AdminProgress.objects.filter(project=project, profile=profile).count() > 0:
+            prog = AdminProgress.objects.get(project=project, profile=profile)
+            prog.delete()
 
 
 def assign_datum(profile, project, type="normal"):
@@ -64,21 +92,24 @@ def get_assignments(profile, project, num_assignments):
         ]
     else:
         data = []
-        more_irr = True
-        for i in range(num_assignments):
 
-            # first try to get any IRR data
-            if more_irr:
+        for i in range(num_assignments):
+            # if there is IRR, with some probability get an IRR item
+            rand_choice = randrange(0, 101)
+            if project.percentage_irr > 0 and rand_choice <= project.percentage_irr:
                 assigned_datum = assign_datum(profile, project, type="irr")
                 if assigned_datum is None:
                     # no irr data found
-                    more_irr = False
                     assigned_datum = assign_datum(profile, project)
             else:
                 # get normal data
                 assigned_datum = assign_datum(profile, project)
+                if assigned_datum is None:
+                    # no non-irr data found so checking for irr
+                    assigned_datum = assign_datum(profile, project, type="irr")
             if assigned_datum is None:
                 break
+
             data.append(assigned_datum)
         return data
 
@@ -203,13 +234,19 @@ def process_irr_label(data, label):
                 agree = True
                 # if they do, add a new element to dataLabel with one label
                 # by creator and remove from the irr queue
-                DataLabel.objects.create(
+                dl = DataLabel.objects.create(
                     data=data,
                     profile=project.creator,
                     label=label,
                     training_set=current_training_set,
                     time_to_label=None,
                     timestamp=timezone.now(),
+                )
+                # IRR which has agreement is verified by default
+                VerifiedDataLabel.objects.create(
+                    data_label=dl,
+                    verified_timestamp=timezone.now(),
+                    verified_by=project.creator,
                 )
                 DataQueue.objects.filter(data=data).delete()
             else:
@@ -225,3 +262,41 @@ def process_irr_label(data, label):
             settings.REDIS.sadd(
                 redis_serialize_set(admin_queue), redis_serialize_data(data)
             )
+
+
+def get_unlabeled_data(project_pk):
+    project = Project.objects.get(pk=project_pk)
+
+    stuff_in_queue = DataQueue.objects.filter(queue__project=project)
+    queued_ids = [queued.data.id for queued in stuff_in_queue]
+
+    recycle_ids = RecycleBin.objects.filter(data__project=project).values_list(
+        "data__pk", flat=True
+    )
+    unlabeled_data = (
+        project.data_set.filter(datalabel__isnull=True)
+        .exclude(id__in=queued_ids)
+        .exclude(id__in=recycle_ids)
+        .exclude(irr_ind=True)
+    )
+
+    return unlabeled_data
+
+
+def createUnresolvedAdjudicateMessage(project, data, message):
+    AdjudicateDescription.objects.create(project=project, data=data, message=message)
+
+
+def cache_embeddings(project_pk, embeddings):
+    cache.set(project_pk, embeddings)
+
+
+def get_embeddings(project_pk):
+    return cache.get(project_pk)
+
+
+def update_last_action(project, profile):
+    admin_qs = AdminProgress.objects.filter(project=project, profile=profile)
+    if admin_qs.exists():
+        admin = admin_qs[0]
+        admin.save()

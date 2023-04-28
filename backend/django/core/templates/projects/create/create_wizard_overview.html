@@ -22,7 +22,7 @@
 
           <h1>Project Info</h1>
           <div class="form-group">
-            <label class="control-label" for="{{ wizard.form.name.id_for_label }}">{{ wizard.form.name.label }}</label>
+            <label class="control-label" for="{{ wizard.form.name.id_for_label }}">{{ wizard.form.name.label }} (required)</label>
             <input class="form-control" id="{{ wizard.form.name.id_for_label }}" maxlength="30" name="{{ wizard.form.name.html_name }}" type="text" placeholder="{{ form.name.label }}" value="{{ form.name.value|default_if_none:'' }}"/>
             <div class="error-messages">{{ wizard.form.name.errors }}</div>
           </div>
@@ -30,6 +30,17 @@
             <label class="control-label" for="{{ wizard.form.description.id_for_label }}">{{ wizard.form.description.label }}</label>
             <textarea class="form-control" id="{{ wizard.form.description.id_for_label }}" name="{{ wizard.form.description.html_name }}">{{ form.description.value|default_if_none:'' }}</textarea>
             <div class="error-messages">{{ wizard.form.description.errors }}</div>
+          </div>
+          <div class="form-group">
+            <label class="control-label" for="{{ wizard.form.umbrella_string.id_for_label }}">Group</label>
+            <select class="form-control" name="{{ wizard.form.umbrella_string.html_name }}" value="{{ form.umbrella_string.value|default_if_none:'' }}">
+              <option value=""></option>
+              {% for umbrella in umbrella_choices %}
+                <option>{{ umbrella }}</option>
+              {% endfor %}
+            </select>
+            <p style="margin-top: 4px;">Select a group or leave this option blank.</p>
+            <div class="error-messages">{{ wizard.form.umbrella_string.errors }}</div>
           </div>
           <div class="wizard_nav_bar">
             <input class="btn btn-primary" type="submit" value="Next Step"/>

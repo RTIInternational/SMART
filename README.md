@@ -41,7 +41,7 @@ docker volume create --name=vol_smart_data
 Then, migrate the database to ensure the schema is prepared for the application. 
 
 ```bash
-docker-compose run --rm smart_backend ./migrate.sh
+docker-compose run --rm backend ./migrate.sh
 ```
 
 ### Workflow During Development
@@ -61,7 +61,7 @@ docker-compose up
 If your database is blank, you will need to run migrations to initialize all the required schema objects; you can start a blank backend container and run the migration django management command with the following command:
 
 ```shell
-docker-compose run --rm smart_backend ./migrate.sh
+docker-compose run --rm backend ./migrate.sh
 ```
 
 #### Dependency management in Python
@@ -69,8 +69,8 @@ docker-compose run --rm smart_backend ./migrate.sh
 We use [pip-tools](https://github.com/jazzband/pip-tools) to manage Python dependencies. To change the dependencies:
 
 1. Edit [requirements.in](./backend/docker/requirements.in) to add, remove, or edit a dependency. You only need to put primary dependencies here, that is, the ones explicitly needed by our source code. pip-tools will take care of adding their dependencies.
-1. Run `docker-compose run --rm smart_backend pip-compile docker/requirements.in` to generate a new [requirements.txt](./backend/docker/requirements.txt). Note that pip-tools uses the existing `requirements.txt` file when building a new one, so that it can maintain existing versions. To upgrade a package to the newest version compatible with the other libraries, just remove it from the existing `requirements.txt` before running pip-compile.
-1. Run `docker-compose build smart_backend` to install the updated requirements into the Docker image.
+1. Run `docker-compose run --rm backend pip-compile docker/requirements.in` to generate a new [requirements.txt](./backend/docker/requirements.txt). Note that pip-tools uses the existing `requirements.txt` file when building a new one, so that it can maintain existing versions. To upgrade a package to the newest version compatible with the other libraries, just remove it from the existing `requirements.txt` before running pip-compile.
+1. Run `docker-compose build backend` to install the updated requirements into the Docker image.
 
 ### Custom Environment Variables
 
@@ -86,12 +86,17 @@ EXTERNAL_FRONTEND_PORT=3001
 
 The `.env` file is ignored by `.gitignore`.
 
+### Timezones
+
+All date-times in the SMART backend and database are set to UTC (Coordinated Universal Time) as reccomended by the [Django docs](https://docs.djangoproject.com/en/4.1/topics/i18n/timezones/). By default the history and download date-times are set to Eastern New York time. To change this, go to `SMART/backend/django/smart/settings.py` and update the `TIME_ZONE_FRONTEND` variable to the desired time-zone.
+
+
 ### Running tests
 
 Backend tests use [py.test](https://docs.pytest.org/en/latest/) and [flake8](http://flake8.pycqa.org/en/latest/).  To run them, use the following `docker-compose` command from the `env/dev` directory:
 
 ```
-docker-compose run --rm smart_backend ./run_tests.sh <args>
+docker-compose run --rm backend ./run_tests.sh <args>
 ```
 
 Where `<args>` are arguments to be passed to py.test.  Use `py.test -h` to see all the options, but a few useful ones are highlighted below:

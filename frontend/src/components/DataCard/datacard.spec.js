@@ -15,7 +15,9 @@ describe('<DataCard />', () => {
                 message = {message}
                 fetchCards = {fn}
                 annotateCard = {fn}
-                passCard = {fn}
+                passCard={fn}
+                unassignCard={fn}
+                modifyMetadataValues={fn}
               />
             );
         });

@@ -1,11 +1,11 @@
 import React from "react";
 import PropTypes from "prop-types";
 import ReactTable from "react-table-6";
-import { Button, ButtonToolbar, Card } from "react-bootstrap";
+import { Card } from "react-bootstrap";
 import NVD3Chart from "react-nvd3";
-import Select from "react-dropdown-select";
 import d3 from "d3";
 import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
+import AnnotateCard, { buildCard } from "../AnnotateCard";
 
 const COLUMNS = [
     {
@@ -20,22 +20,21 @@ const COLUMNS = [
     },
     {
         Header: "Unlabeled Data",
-        accessor: "data",
-        filterMethod: (filter, row) => {
-            if (
-                String(row["data"])
-                    .toLowerCase()
-                    .includes(filter.value.toLowerCase())
-            ) {
-                return true;
-            } else {
-                return false;
-            }
-        }
+        accessor: "data"
     }
 ];
 
 class Skew extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            filteredData: undefined,
+            isSearching: false,
+            search: ''
+        };
+        this.handleSearch = this.handleSearch.bind(this);
+    }
+
     componentDidMount() {
         this.props.getUnlabeled();
         this.props.getLabelCounts();
@@ -47,7 +46,7 @@ class Skew extends React.Component {
         } else {
             return (
                 <div>
-                    <u>Background Data</u>
+                    <u>Respondent Data</u>
                     {row.row["metadata"].map(val => (
                         <p key={val}>{val}</p>
                     ))}
@@ -57,12 +56,31 @@ class Skew extends React.Component {
         }
     }
 
-    render() {
-        const { unlabeled_data, labels, skewLabel, label_counts } = this.props;
+    handleSearch(event) {
+        event.preventDefault();
+        this.setState({ isSearching: true });
+        if (this.state.search.length > 0) {
+            fetch(`/api/search_data_unlabeled_table/${window.PROJECT_ID}?text=${this.state.search}`)
+                .then(res => res.json().then(result => {
+                    this.setState({ filteredData: result.data });
+                    this.setState({ isSearching: false });
+                }))
+                .catch(error => console.log(error));
+        } else {
+            this.setState({ filteredData: undefined });
+            this.setState({ isSearching: false });
+        }
+    }
 
-        let labelsOptions = labels.map(label =>
-            Object.assign(label, { value: label["pk"] })
-        );
+    render() {
+        const { unlabeled_data, labels, skewLabel, label_counts, message, modifyMetadataValues } = this.props;
+
+        if (message.length > 0){
+            let message_new = message[0];
+            if (message_new.includes("ERROR")){
+                return (<div>{message_new}</div>);
+            }
+        }
 
         return (
             <div>
@@ -115,60 +133,46 @@ class Skew extends React.Component {
                     </div>
                 </div>
                 <CodebookLabelMenuContainer />
+                <p>
+                    View the unlabeled data for this project in the table below.<br/>
+                    Note: The first 50 unlabeled data items appear in the table. If you are looking for a specific value, use the search input to filter the data.
+                </p>
+                <form onSubmit={this.handleSearch}>
+                    <input className="skew-input" onChange={event => this.setState({ search: event.target.value })} placeholder="Search Data..." value={this.state.search} />
+                    {!this.state.isSearching ? (
+                        <button className="btn btn-info skew-search-button" type="submit">Search</button>
+                    ) : (
+                        <p style={{ marginBottom: '8px', marginTop: '8px' }}>Searching unlabeled data for {this.state.search}...</p>
+                    )}
+                </form>
                 <ReactTable
-                    data={unlabeled_data}
+                    data={this.state.filteredData ? this.state.filteredData : unlabeled_data}
                     columns={COLUMNS}
-                    filterable={true}
                     showPageSizeOptions={false}
                     pageSize={
-                        unlabeled_data.length < 50 ? unlabeled_data.length : 50
+                        this.state.filteredData ? this.state.filteredData.length < 50 ? this.state.filteredData.length : 50 : unlabeled_data.length < 50 ? unlabeled_data.length : 50
                     }
                     SubComponent={row => {
+                        const card = buildCard(row.row.id, null, row.original);
+
                         return (
-                            <div className="sub-row">
-                                {this.getText(row)}
-                                <p id="skew_text">{row.row.data}</p>
-                                <div id="skew_buttons">
-                                    <ButtonToolbar variant="btn-toolbar pull-right">
-                                        {labels.length > 5 ? (
-                                            <Select
-                                                className="align-items-center flex py-1 px-2"
-                                                dropdownHandle={false}
-                                                labelField="name"
-                                                onChange={value =>
-                                                    skewLabel(
-                                                        row.row.id,
-                                                        value[0]["pk"]
-                                                    )
-                                                }
-                                                options={labelsOptions}
-                                                placeholder="Select label..."
-                                                searchBy="name"
-                                                sortBy="name"
-                                                style={{ minWidth: "200px" }}
-                                            />
-                                        ) : (
-                                            labels.map(opt => (
-                                                <Button
-                                                    onClick={() =>
-                                                        skewLabel(
-                                                            row.row.id,
-                                                            opt["pk"]
-                                                        )
-                                                    }
-                                                    variant="primary"
-                                                    key={
-                                                        opt["pk"].toString() +
-                                                        "_" +
-                                                        row.row.id.toString()
-                                                    }
-                                                >
-                                                    {opt["name"]}
-                                                </Button>
-                                            ))
-                                        )}
-                                    </ButtonToolbar>
-                                </div>
+                            <div className="sub-row cardface clearfix">
+                                <AnnotateCard
+                                    card={card}
+                                    labels={labels}
+                                    onSelectLabel={(card, label) => {
+                                        skewLabel(
+                                            card.id,
+                                            label
+                                        );
+                                        if (this.state.filteredData) {
+                                            this.setState({ filteredData: this.state.filteredData.filter(d => d.id !== card.id) });
+                                        }
+                                    }}
+                                    onSkip={null}
+                                    showAdjudicate={false}
+                                    modifyMetadataValues={modifyMetadataValues}
+                                />
                             </div>
                         );
                     }}
@@ -188,7 +192,9 @@ Skew.propTypes = {
     labels: PropTypes.arrayOf(PropTypes.object),
     skewLabel: PropTypes.func.isRequired,
     getLabelCounts: PropTypes.func.isRequired,
-    label_counts: PropTypes.arrayOf(PropTypes.object)
+    label_counts: PropTypes.arrayOf(PropTypes.object),
+    message: PropTypes.string,
+    modifyMetadataValues: PropTypes.func.isRequired
 };
 
 export default Skew;

@@ -2,9 +2,19 @@ FROM python:3.8
 ENV PYTHONUNBUFFERED 1
 RUN apt-get update && apt-get install -y netcat-traditional
 WORKDIR /code
+
+RUN apt-get install -y unixodbc unixodbc-dev
+
+RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
+  && curl https://packages.microsoft.com/config/debian/10/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+  && apt-get update \
+  && ACCEPT_EULA=Y apt-get install -y --no-install-recommends --allow-unauthenticated msodbcsql17 mssql-tools \
+  && echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile \
+  && echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+
 ADD ./docker/requirements.txt /code/requirements.txt
 RUN pip install --upgrade pip
-RUN pip install  -r requirements.txt
+RUN pip install  -r requirements.txt --no-cache-dir
 RUN pip install gunicorn
 ADD ./django/ /code/
 RUN mkdir -p /data/data_files /data/tf_idf /data/model_pickles /data/code_books

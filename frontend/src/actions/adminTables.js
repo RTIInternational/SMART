@@ -38,7 +38,9 @@ export const getAdmin = (projectID) => {
                         id: response.data[i].ID,
                         data: response.data[i].Text,
                         metadata: response.data[i].metadata,
-                        reason: response.data[i].Reason
+                        reason: response.data[i].Reason,
+                        project: projectID,
+                        message: response.data[i].message
                     };
                     all_data.push(row);
                 }

@@ -8,6 +8,7 @@ import {
     OverlayTrigger
 } from "react-bootstrap";
 import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
+import AnnotateCard, { buildCard } from "../AnnotateCard";
 
 const COLUMNS = [
     {
@@ -48,7 +49,7 @@ class RecycleBin extends React.Component {
         } else {
             return (
                 <div>
-                    <u>Background Data</u>
+                    <u>Respondent Data</u>
                     {row.row["metadata"].map(val => (
                         <p key={val}>{val}</p>
                     ))}
@@ -65,6 +66,12 @@ class RecycleBin extends React.Component {
             <div className="sub-row">
                 {this.getText(row)}
                 <p id="disc_text">{row.row.data}</p>
+                <AnnotateCard
+                    card={buildCard(row.row.id, null, { data: row.row.data, metadata: row.row.metadata })}
+                    readonly={true}
+                    showAdjudicate={false}
+                    suggestions={false}
+                />
                 <div id="disc_buttons">
                     <ButtonToolbar variant="btn-toolbar pull-right">
                         <OverlayTrigger
@@ -90,7 +97,14 @@ class RecycleBin extends React.Component {
     }
 
     render() {
-        const { discarded_data } = this.props;
+        const { discarded_data, message } = this.props;
+
+        if (message.length > 0){
+            let message_new = message[0];
+            if (message_new.includes("ERROR")){
+                return (<div>{message_new}</div>);
+            }
+        }
 
         return (
             <div>
@@ -127,7 +141,8 @@ class RecycleBin extends React.Component {
 RecycleBin.propTypes = {
     getDiscarded: PropTypes.func.isRequired,
     discarded_data: PropTypes.arrayOf(PropTypes.object),
-    restoreData: PropTypes.func.isRequired
+    restoreData: PropTypes.func.isRequired,
+    message: PropTypes.string
 };
 
 export default RecycleBin;

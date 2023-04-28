@@ -28,7 +28,7 @@ Then, migrate the database to ensure the schema is prepared for the application.
 
 ::
 
-  $ docker-compose run --rm smart_backend ./migrate.sh
+  $ docker-compose run --rm backend ./migrate.sh
 
 Lastly, run ``docker-compose up`` to start all docker containers.  This will start up the containers in the foreground so you can see the logs.  If you prefer to run the containers in the background use ``docker-compose up -d``. When switching between branches there is no need to run any additional commands (except build if there is dependency change).
 
@@ -50,3 +50,17 @@ Finally, create a profile to start your own new labelling projects or to be adde
 
 .. |login-screen| image:: ./nstatic/img/smart-login-screen.png
 .. |sign-up| image:: ./nstatic/img/smart-sign-up.png
+
+**Production Installation**
+
+SMART provides both development and production docker builds, depening on user need. The production setup is fairly close to the development one, with some changes that make it easier for the application to run in production.
+One noteable difference is that celery is currently not supported for the production build due to some complications it can introduce when running the application in production on a managed server.
+See `envs/prod/README.md` for more information, including instructions on setting up regular backups of the production database.
+
+.. note::
+	If you intend to run SMART on a server where other processes may be running, you may run into problems with ports already being in use. This can be fixed by changing the default SMART ports in the docker compose files.
+
+.. warning::
+	Please note that there may be delays in updating SMART's dependencies between releases. If your project includes sensitive data, we recommend running SMART within a closed, secure network environment. 
+
+

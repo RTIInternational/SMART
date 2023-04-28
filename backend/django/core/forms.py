@@ -1,19 +1,25 @@
 import copy
 from io import StringIO
 
-import numpy as np
 import pandas as pd
 from django import forms
 from django.core.exceptions import ValidationError
 from django.forms.widgets import RadioSelect, Select, Textarea, TextInput
 from pandas.errors import ParserError
 
-from core.utils.util import md5_hash
+from core.utils.utils_external_db import (
+    check_if_schema_exists,
+    get_connection,
+    get_full_table,
+    test_connection,
+    test_login,
+)
+from core.utils.utils_form import clean_data_helper
 
-from .models import Label, Project, ProjectPermissions
+from .models import ExternalDatabase, Label, Project, ProjectPermissions
 
 
-def clean_data_helper(data, supplied_labels, metadata_fields=[]):
+def read_data_file(data_file):
     ALLOWED_TYPES = [
         "text/csv",
         "text/tab-separated-values",
@@ -25,43 +31,44 @@ def clean_data_helper(data, supplied_labels, metadata_fields=[]):
         "application/vnd.ms-excel.addin.macroenabled.12",
         "application/vnd.ms-excel.sheet.binary.macroenabled.12",
     ]
-    REQUIRED_HEADERS = ["Text", "Label"]
     MAX_FILE_SIZE = 500 * 1000 * 1000
+    if data_file is None:
+        raise ValidationError("ERROR: no file specified.")
 
-    if data.size > MAX_FILE_SIZE:
+    if data_file.size > MAX_FILE_SIZE:
         raise ValidationError(
             "File is too large.  Received {0} but max size is {1}.".format(
-                data.size, MAX_FILE_SIZE
+                data_file.size, MAX_FILE_SIZE
             )
         )
 
     try:
-        if data.content_type == "text/tab-separated-values":
+        if data_file.content_type == "text/tab-separated-values":
             data = pd.read_csv(
-                StringIO(data.read().decode("utf8", "ignore")),
+                StringIO(data_file.read().decode("utf8", "ignore")),
                 sep="\t",
                 dtype=str,
             ).dropna(axis=0, how="all")
-        elif data.content_type == "text/csv":
+        elif data_file.content_type == "text/csv":
             data = pd.read_csv(
-                StringIO(data.read().decode("utf8", "ignore")),
+                StringIO(data_file.read().decode("utf8", "ignore")),
                 dtype=str,
             ).dropna(axis=0, how="all")
-        elif data.content_type.startswith("application/vnd") and data.name.endswith(
-            ".csv"
-        ):
+        elif data_file.content_type.startswith(
+            "application/vnd"
+        ) and data_file.name.endswith(".csv"):
             data = pd.read_csv(
-                StringIO(data.read().decode("utf8", "ignore")),
+                StringIO(data_file.read().decode("utf8", "ignore")),
                 dtype=str,
             ).dropna(axis=0, how="all")
-        elif data.content_type.startswith("application/vnd") and data.name.endswith(
-            ".xlsx"
-        ):
-            data = pd.read_excel(data, dtype=str).dropna(axis=0, how="all")
+        elif data_file.content_type.startswith(
+            "application/vnd"
+        ) and data_file.name.endswith(".xlsx"):
+            data = pd.read_excel(data_file, dtype=str).dropna(axis=0, how="all")
         else:
             raise ValidationError(
                 "File type is not supported.  Received {0} but only {1} are supported.".format(
-                    data.content_type, ", ".join(ALLOWED_TYPES)
+                    data_file.content_type, ", ".join(ALLOWED_TYPES)
                 )
             )
     except ParserError:
@@ -74,61 +81,6 @@ def clean_data_helper(data, supplied_labels, metadata_fields=[]):
         raise ValidationError(
             "Unable to read the file.  Please ensure that the file is encoded in UTF-8."
         )
-
-    for col in REQUIRED_HEADERS:
-        if col not in data.columns:
-            raise ValidationError(f"File is missing required field {col}.")
-
-    if len(data) < 1:
-        raise ValidationError("File should contain some data.")
-
-    found_metadata_fields = [
-        c for c in data.columns if c.lower() not in ["text", "label", "id"]
-    ]
-    if metadata_fields is not None and (
-        len(metadata_fields) > 0
-        and (set(metadata_fields) != set(found_metadata_fields))
-    ):
-        raise ValidationError(
-            "There were metadata fields provided in the "
-            "initial data upload that are missing from this data."
-            f" Original fields: {', '.join(metadata_fields)}."
-            f" Found fields: {', '.join(found_metadata_fields)}."
-        )
-
-    labels_in_data = data["Label"].dropna(inplace=False).unique()
-    if len(labels_in_data) > 0 and len(set(labels_in_data) - set(supplied_labels)) > 0:
-        raise ValidationError(
-            "There are extra labels in the file which were not created in step 2.  File supplied {0} "
-            "but step 2 was given {1}".format(
-                ", ".join(labels_in_data), ", ".join(supplied_labels)
-            )
-        )
-
-    num_unlabeled_data = len(data[pd.isnull(data["Label"])])
-    if num_unlabeled_data < 1:
-        raise ValidationError(
-            "All text in the file already has a label.  SMART needs unlabeled data "
-            "to do active learning.  Please upload a file that has less labels."
-        )
-
-    if "ID" in data.columns:
-        # there should be no null values
-        if data["ID"].isnull().sum() > 0:
-            raise ValidationError("Unique ID field cannot have missing values.")
-
-        data_lens = data["ID"].astype(str).apply(lambda x: len(x))
-        # check that the ID follow the character limit
-        if np.any(np.greater(data_lens, [128] * len(data_lens))):
-            raise ValidationError(
-                "Unique ID should not be greater than 128 characters."
-            )
-
-        data["id_hash"] = data["ID"].astype(str).apply(md5_hash)
-        # they have an id column, check for duplicates
-        if len(data["id_hash"].tolist()) > len(data["id_hash"].unique()):
-            raise ValidationError("Unique ID provided contains duplicates.")
-
     return data
 
 
@@ -151,15 +103,22 @@ class ProjectUpdateForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.project_labels = kwargs.pop("labels", None)
         self.project_metadata = kwargs.pop("metadata", None)
+        self.dedup_on = kwargs.pop("dedup_on", None)
+        self.dedup_fields = kwargs.pop("dedup_fields", None)
         super(ProjectUpdateForm, self).__init__(*args, **kwargs)
 
     def clean_data(self):
         data = self.cleaned_data.get("data", False)
         labels = self.project_labels
         metadata_fields = self.project_metadata
+        dedup_on = self.dedup_on
+        dedup_fields = self.dedup_fields
         cb_data = self.cleaned_data.get("cb_data", False)
         if data:
-            return clean_data_helper(data, labels, metadata_fields)
+            data_df = read_data_file(data)
+            return clean_data_helper(
+                data_df, labels, dedup_on, dedup_fields, metadata_fields
+            )
         if cb_data:
             return cleanCodebookDataHelper(cb_data)
 
@@ -231,6 +190,9 @@ class ProjectPermissionsForm(forms.ModelForm):
                     user__profile=self.profile
                 )
             )
+        self.fields["profile"]._set_queryset(
+            self.fields["profile"].choices.queryset.order_by("user__username")
+        )
 
 
 LabelFormSet = forms.inlineformset_factory(
@@ -241,10 +203,15 @@ LabelFormSet = forms.inlineformset_factory(
     validate_min=True,
     extra=0,
     can_delete=True,
-    absolute_max=10000,
+    absolute_max=55000,
 )
 LabelDescriptionFormSet = forms.inlineformset_factory(
-    Project, Label, form=LabelDescriptionForm, can_delete=False, extra=0
+    Project,
+    Label,
+    form=LabelDescriptionForm,
+    can_delete=False,
+    extra=0,
+    absolute_max=55000,
 )
 PermissionsFormSet = forms.inlineformset_factory(
     Project, ProjectPermissions, form=ProjectPermissionsForm, extra=1, can_delete=True
@@ -254,7 +221,7 @@ PermissionsFormSet = forms.inlineformset_factory(
 class ProjectWizardForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ["name", "description"]
+        fields = ["name", "description", "umbrella_string"]
 
 
 class AdvancedWizardForm(forms.ModelForm):
@@ -268,7 +235,7 @@ class AdvancedWizardForm(forms.ModelForm):
             "classifier",
         ]
 
-    use_active_learning = forms.BooleanField(initial=True, required=False)
+    use_active_learning = forms.BooleanField(initial=False, required=False)
     active_l_choices = copy.deepcopy(Project.ACTIVE_L_CHOICES)
     # remove random from the options
     active_l_choices.remove(("random", "Randomly (No Active Learning)"))
@@ -282,9 +249,9 @@ class AdvancedWizardForm(forms.ModelForm):
     percentage_irr = forms.FloatField(initial=10.0, min_value=0.0, max_value=100.0)
     num_users_irr = forms.IntegerField(initial=2, min_value=2)
     use_default_batch_size = forms.BooleanField(initial=True, required=False)
-    batch_size = forms.IntegerField(initial=30, min_value=10, max_value=10000)
+    batch_size = forms.IntegerField(initial=30, min_value=10, max_value=55000)
 
-    use_model = forms.BooleanField(initial=True, required=False)
+    use_model = forms.BooleanField(initial=False, required=False)
     classifier = forms.ChoiceField(
         widget=RadioSelect(),
         choices=Project.CLASSIFIER_CHOICES,
@@ -314,19 +281,95 @@ class AdvancedWizardForm(forms.ModelForm):
         return self.cleaned_data
 
 
-class DataWizardForm(forms.Form):
+class DataWizardForm(forms.ModelForm):
+    class Meta:
+        model = Project
+        fields = ["dedup_on", "dedup_fields"]
+
+    data_source = forms.ChoiceField(
+        widget=RadioSelect(),
+        choices=(
+            ("File_Upload", "File Upload"),
+            ("Database_Ingest", "Connect to Database and Import Table"),
+        ),
+        initial="File_Upload",
+        required=True,
+    )
+
+    data = forms.FileField(required=False)
+
+    dedup_on = forms.ChoiceField(
+        widget=RadioSelect(),
+        choices=Project.DEDUP_CHOICES,
+        initial="Text",
+        required=True,
+    )
+
+    dedup_fields = forms.CharField(required=False, initial="", max_length=50)
+
+    def __init__(self, *args, **kwargs):
+        self.supplied_labels = kwargs.pop("labels", None)
+        self.engine_database = kwargs.pop("engine_database", None)
+        self.ingest_schema = kwargs.pop("ingest_schema", None)
+        self.ingest_table_name = kwargs.pop("ingest_table_name", None)
+        database_type = kwargs.pop("database_type", None)
+        super(DataWizardForm, self).__init__(*args, **kwargs)
+
+        if database_type == "microsoft":
+            self.fields["data_source"].initial = "Database_Ingest"
+
+    def clean(self):
+        data_source = self.cleaned_data.get("data_source", False)
+        if data_source == "File_Upload":
+            data_df = read_data_file(self.cleaned_data.get("data", False))
+        elif data_source == "Database_Ingest":
+            if self.ingest_schema is None:
+                raise ValidationError(
+                    "No import table specified. Please add an import "
+                    "schema and table to the external database connection."
+                )
+            data_df = get_full_table(
+                self.engine_database, self.ingest_schema, self.ingest_table_name
+            )
+        else:
+            raise ValidationError(
+                f"Unrecognized value for data source type: {data_source}"
+            )
+
+        dedup_on = self.cleaned_data.get("dedup_on", False)
+        dedup_fields = ""
+        if dedup_on == "Text_Some_Metadata":
+            dedup_fields = self.cleaned_data.get("dedup_fields", False)
+
+        labels = self.supplied_labels
+        self.cleaned_data["data"] = clean_data_helper(
+            data_df, labels, dedup_on, dedup_fields
+        )
+        return self.cleaned_data
+
+
+class DataUpdateWizardForm(forms.Form):
+
     data = forms.FileField()
 
     def __init__(self, *args, **kwargs):
         self.supplied_labels = kwargs.pop("labels", None)
         self.supplied_metadata = kwargs.pop("metadata", None)
-        super(DataWizardForm, self).__init__(*args, **kwargs)
+        self.dedup_on = kwargs.pop("dedup_on", None)
+        self.dedup_fields = kwargs.pop("dedup_fields", None)
+        super(DataUpdateWizardForm, self).__init__(*args, **kwargs)
 
     def clean_data(self):
-        data = self.cleaned_data.get("data", False)
+        data_df = read_data_file(self.cleaned_data.get("data", False))
+        dedup_on = self.dedup_on
+        dedup_fields = ""
+        if dedup_on == "Text_Some_Metadata":
+            dedup_fields = self.dedup_fields
+
         labels = self.supplied_labels
         metadata = self.supplied_metadata
-        return clean_data_helper(data, labels, metadata)
+
+        return clean_data_helper(data_df, labels, dedup_on, dedup_fields, metadata)
 
 
 class CodeBookWizardForm(forms.Form):
@@ -341,3 +384,154 @@ class CodeBookWizardForm(forms.Form):
             return cleanCodebookDataHelper(data)
         else:
             return ""
+
+
+class ExternalDatabaseWizardForm(forms.ModelForm):
+    class Meta:
+        model = ExternalDatabase
+        fields = [
+            "database_type",
+            "cron_ingest",
+            "cron_export",
+            "ingest_schema",
+            "ingest_table_name",
+            "export_schema",
+            "export_table_name",
+            "export_verified_only",
+        ]
+
+    database_type = forms.ChoiceField(
+        widget=RadioSelect(),
+        choices=ExternalDatabase.DB_TYPE_CHOICES,
+        initial="none",
+        required=True,
+    )
+    cron_ingest = forms.BooleanField(initial=False, required=False)
+    ingest_table_name = forms.CharField(initial="", required=False, max_length=50)
+    ingest_schema = forms.CharField(initial="", required=False, max_length=50)
+    cron_export = forms.BooleanField(initial=False, required=False)
+    export_table_name = forms.CharField(initial="", required=False, max_length=1024)
+    export_schema = forms.CharField(initial="", required=False, max_length=1024)
+    export_verified_only = forms.BooleanField(initial=False, required=False)
+    username = forms.CharField(initial="", required=False, max_length=50)
+    password = forms.CharField(
+        initial="", required=False, max_length=200, widget=forms.PasswordInput()
+    )
+    host = forms.CharField(initial="", required=False, max_length=50)
+    port = forms.IntegerField(required=False)
+    dbname = forms.CharField(initial="", required=False, max_length=50)
+    driver = forms.CharField(
+        initial="ODBC Driver 17 for SQL Server", required=False, max_length=200
+    )
+
+    def __init__(self, *args, **kwargs):
+        super(ExternalDatabaseWizardForm, self).__init__(*args, **kwargs)
+
+    def clean(self):
+        required_for_all_db = [
+            "ingest_table_name",
+            "ingest_schema",
+            "cron_ingest",
+            "cron_export",
+            "export_table_name",
+            "export_schema",
+            "username",
+            "password",
+            "host",
+            "port",
+            "dbname",
+        ]
+        required_for_ms_sql = ["driver"]
+        db_type = self.cleaned_data.get("database_type")
+
+        field_error = False
+        if db_type != "none":
+            for field in required_for_all_db:
+                if self.cleaned_data.get(field) in ["", None]:
+                    self._errors[field] = self.error_class(
+                        ["This field is required for a database connection."]
+                    )
+                    field_error = True
+            if db_type == "microsoft":
+                for field in required_for_ms_sql:
+                    if self.cleaned_data.get(field) in ["", None]:
+                        self._errors[field] = self.error_class(
+                            ["This field is required for a MS SQL database connection."]
+                        )
+                        field_error = True
+
+            engine_database = get_connection(db_type, self.cleaned_data)
+
+            # Test if login credentials to db are valid
+            test_login(
+                db_type,
+                engine_database,
+                self.cleaned_data["ingest_schema"],
+                self.cleaned_data["ingest_table_name"],
+            )
+
+            self.cleaned_data["has_ingest"] = False
+            self.cleaned_data["has_export"] = False
+
+            # need to specify both schema and table for ingest/export if using it
+            if (
+                len(self.cleaned_data["ingest_schema"]) > 0
+                or len(self.cleaned_data["ingest_table_name"]) > 0
+            ):
+                if len(self.cleaned_data["ingest_table_name"]) == 0:
+                    self._errors["ingest_table_name"] = self.error_class(
+                        ["ERROR: need to specify import table if schema is set."]
+                    )
+                    field_error = True
+                if len(self.cleaned_data["ingest_schema"]) == 0:
+                    self._errors["ingest_schema"] = self.error_class(
+                        ["ERROR: need to specify import schema if table name is set."]
+                    )
+                    field_error = True
+
+                self.cleaned_data["has_ingest"] = True
+
+                # for ingest, schema and table should exist and table should have fields needed
+                if not check_if_schema_exists(
+                    engine_database, self.cleaned_data["ingest_schema"]
+                ):
+                    self._errors["ingest_schema"] = self.error_class(
+                        ["ERROR: export schema doesn't exist in the database."]
+                    )
+                    field_error = True
+                test_connection(
+                    engine_database,
+                    self.cleaned_data["ingest_schema"],
+                    self.cleaned_data["ingest_table_name"],
+                )
+
+            if (
+                len(self.cleaned_data["export_schema"]) > 0
+                or len(self.cleaned_data["export_table_name"]) > 0
+            ):
+                if len(self.cleaned_data["export_table_name"]) == 0:
+                    self._errors["export_table_name"] = self.error_class(
+                        ["ERROR: need to specify export table if schema is set."]
+                    )
+                    field_error = True
+                if len(self.cleaned_data["export_schema"]) == 0:
+                    self._errors["export_schema"] = self.error_class(
+                        ["ERROR: need to specify export schema if table name is set."]
+                    )
+                    field_error = True
+
+                self.cleaned_data["has_export"] = True
+
+                # for export, table may not exist but schema should exist
+                if not check_if_schema_exists(
+                    engine_database, self.cleaned_data["export_schema"]
+                ):
+                    self._errors["export_schema"] = self.error_class(
+                        ["ERROR: export schema doesn't exist in the database."]
+                    )
+                    field_error = True
+
+            if field_error:
+                raise ValidationError("Please fix field errors before resubmitting.")
+
+            self.cleaned_data["engine_database"] = engine_database

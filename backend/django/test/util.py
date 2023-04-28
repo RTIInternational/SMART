@@ -27,6 +27,17 @@ def assert_obj_exists(model, filter_):
     )
 
 
+def assert_num_obj(model, filter_, expected):
+    """See if there is exactly expected number of instances in the model given the
+    filter dict."""
+    matching_count = model.objects.filter(**filter_).count()
+    assert (
+        matching_count == expected
+    ), "Found {} instances of {} matching filter {}. Expected {}".format(
+        matching_count, model.__name__, filter_, expected
+    )
+
+
 def assert_redis_matches_db(test_redis):
     """Make sure all nonempty queues are present in the redis DB and have the correct
     amount of data, as determined by the DB."""

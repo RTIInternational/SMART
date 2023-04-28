@@ -7,64 +7,52 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
 from core.models import (
+    AssignedData,
     Data,
     DataLabel,
     DataPrediction,
     IRRLog,
     Label,
     Model,
+    Profile,
     Project,
     ProjectPermissions,
     TrainingSet,
 )
-from core.permissions import IsAdminOrCreator
-from core.utils.util import irr_heatmap_data, perc_agreement_table_data
+from core.permissions import IsAdminOrCreator, IsCoder
+from core.utils.util import irr_heatmap_data, perc_agreement_table_data, project_status
+from core.utils.utils_annotate import leave_coding_page, unassign_datum
 from core.utils.utils_model import cohens_kappa, fleiss_kappa
 
 
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))
 def label_distribution(request, project_pk):
-    """This function finds and returns the number of each label per user. This is used
-    by a graph on the front end admin page.
+    """This function finds and returns the number of all labels coded per user. This is
+    used by a graph on the front end admin page.
 
     Args:
         request: The POST request
         project_pk: Primary key of the project
     Returns:
-        a dictionary of the amount of labels per person per type
+        a dictionary of the amount of labels per person
     """
     project = Project.objects.get(pk=project_pk)
-    labels = [label for label in project.labels.all()]
     users = []
     users.append(project.creator)
     users.extend([perm.profile for perm in project.projectpermissions_set.all()])
 
-    # Sort labels by the count
-    labels.sort(
-        key=lambda label: DataLabel.objects.filter(label=label).count(), reverse=True
-    )
+    user_labels = []
 
-    dataset = []
-    # Get first labels
-    for label in labels[0:5]:
-        temp_values = []
-        for u in users:
-            label_count = DataLabel.objects.filter(profile=u, label=label).count()
-            if label_count > 0:
-                temp_values.append({"x": u.__str__(), "y": label_count})
-        if temp_values != []:
-            dataset.append({"key": label.name, "values": temp_values})
-
-    other_values = []
     for u in users:
-        other_count = 0
-        for label in labels[5:]:
-            other_count += DataLabel.objects.filter(profile=u, label=label).count()
-        if other_count > 0:
-            other_values.append({"x": u.__str__(), "y": other_count})
-    if other_values != []:
-        dataset.append({"key": "other labels", "values": other_values})
+        label_count = DataLabel.objects.filter(
+            profile=u, label__project=project_pk
+        ).count()
+
+        if label_count > 0:
+            user_labels.append({"x": u.__str__(), "y": label_count})
+
+    dataset = [{"key": "Count", "values": user_labels}]
 
     return Response(dataset)
 
@@ -311,15 +299,46 @@ def heat_map_data(request, project_pk):
     """
     project = Project.objects.get(pk=project_pk)
 
-    heatmap_data = irr_heatmap_data(project)
-    labels = list(
-        Label.objects.all().filter(project=project).values_list("name", flat=True)
-    )
-    labels.append("Skip")
+    heatmap_data, heatmap_labels = irr_heatmap_data(project)
+
     coders = []
     profiles = ProjectPermissions.objects.filter(project=project)
     coders.append({"name": str(project.creator), "pk": project.creator.pk})
     for p in profiles:
         coders.append({"name": str(p.profile), "pk": p.profile.pk})
 
-    return Response({"data": heatmap_data, "labels": labels, "coders": coders})
+    return Response({"data": heatmap_data, "labels": heatmap_labels, "coders": coders})
+
+
+@api_view(["GET"])
+@permission_classes((IsCoder,))
+def get_project_status(request, project_pk):
+    """This returns data information.
+
+    Args:
+        request: The GET request
+        project_pk: Primary key of the project
+    Returns:
+        data: a list of data information
+    """
+
+    project = Project.objects.get(pk=project_pk)
+    leave_coding_page(request.user.profile, project)
+    project_details = project_status(project)
+
+    return Response(project_details)
+
+
+@api_view(["GET"])
+@permission_classes((IsAdminOrCreator,))
+def unassign_coders(request, project_pk, profile_id):
+    """Unassigns all data from user for project."""
+    project = Project.objects.get(pk=project_pk)
+    profile = Profile.objects.get(pk=profile_id)
+
+    assigned_data = AssignedData.objects.filter(profile=profile, data__project=project)
+    datas = [d.data for d in assigned_data]
+    for d in datas:
+        unassign_datum(d, profile)
+
+    return Response(project_status(project))

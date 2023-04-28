@@ -5,30 +5,48 @@ from itertools import combinations
 
 import numpy as np
 import pandas as pd
+import pytz
 from celery import chord
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import connection, transaction
 from django.utils import timezone
+from sentence_transformers import SentenceTransformer
 
 from core import tasks
 from core.models import (
+    AssignedData,
     Data,
     DataLabel,
+    DataQueue,
     IRRLog,
     Label,
+    LabelEmbeddings,
     MetaData,
     MetaDataField,
     Profile,
     Project,
     ProjectPermissions,
+    RecycleBin,
     TrainingSet,
+    VerifiedDataLabel,
 )
 from core.utils.utils_queue import fill_queue
+from smart.settings import TIME_ZONE_FRONTEND
+
+# from string_grouper import compute_pairwise_similarities
+
 
 # https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
 # Disable warning for false positive warning that should only trigger on chained assignment
 pd.options.mode.chained_assignment = None  # default='warn'
+
+# Using a prebuilt model
+# How this model was built: https://github.com/dsteedRTI/csv-to-embeddings-model
+# Sbert Model can be found here: https://www.sbert.net/docs/pretrained_models.html
+# Sbert Model Card: https://huggingface.co/sentence-transformers/multi-qa-mpnet-base-dot-v1
+model_path = "core/smart_embeddings_model"
+embeddings_model = SentenceTransformer(model_path)
 
 
 def md5_hash(obj):
@@ -85,8 +103,16 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
     4. Create tf_idf file
     5. Check and Trigger model
     """
+
     new_df = add_data(project, form_data)
+
+    # only fill the queues if the queues are empty.
+    num_in_queues = 0
     if queue:
+        num_in_queues += DataQueue.objects.filter(queue_id=queue.id).count()
+    if irr_queue:
+        num_in_queues += DataQueue.objects.filter(queue_id=irr_queue.id).count()
+    if queue and num_in_queues == 0:
         fill_queue(
             queue=queue,
             irr_queue=irr_queue,
@@ -94,6 +120,14 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
             irr_percent=project.percentage_irr,
             batch_size=batch_size,
         )
+
+    # Celery and emebeddings wasn't working well together...
+    # transaction.on_commit(
+    #     lambda: tasks.send_label_embeddings_task.apply_async(
+    #         kwargs={"project_pk": project.pk}
+    #     )
+    # )
+    tasks.send_label_embeddings_task(project.pk)
 
     # Since User can upload Labeled Data and this data is added to current training_set
     # we need to check_and_trigger model.  However since training model requires
@@ -109,6 +143,7 @@ def upload_data(form_data, project, queue=None, irr_queue=None, batch_size=30):
                     tasks.send_check_and_trigger_model_task.si(project.pk),
                 ).apply_async()
             )
+    return len(new_df)
 
 
 def create_data_from_csv(df, project):
@@ -122,11 +157,15 @@ def create_data_from_csv(df, project):
 
     # Replace tabs since thats our delimiter, remove carriage returns since copy_from doesnt like them
     # escape all backslashes because it seems to fix "end-of-copy marker corrupt"
-    df["Text"] = df["Text"].apply(
-        lambda x: x.replace("\t", " ")
-        .replace("\r", " ")
-        .replace("\n", " ")
-        .replace("\\", "\\\\")
+    df["Text"] = (
+        df["Text"]
+        .astype(str)
+        .apply(
+            lambda x: x.replace("\t", " ")
+            .replace("\r", " ")
+            .replace("\n", " ")
+            .replace("\\", "\\\\")
+        )
     )
 
     df.to_csv(stream, sep="\t", header=False, index=False, columns=columns)
@@ -159,6 +198,7 @@ def create_labels_from_csv(df, project):
         "training_set_id",
         "time_to_label",
         "timestamp",
+        "pre_loaded",
     ]
     stream = StringIO()
 
@@ -175,6 +215,9 @@ def create_labels_from_csv(df, project):
     df["label_id"] = df["Label"].apply(lambda x: labels[x])
     df["profile_id"] = project.creator.pk
 
+    # these data are preloaded
+    df["pre_loaded"] = True
+
     df.to_csv(stream, sep="\t", header=False, index=False, columns=columns)
     stream.seek(0)
 
@@ -184,25 +227,94 @@ def create_labels_from_csv(df, project):
         )
 
 
-def create_metadata_objects(df, project):
-    """Insert metadata objects into database using bulk_create."""
-
+def create_metadata_objects_from_csv(df, project):
+    """Insert metadata objects into database."""
     metadataFields = MetaDataField.objects.filter(project=project)
-    df["data_id"] = df["hash"].apply(
-        lambda x: Data.objects.get(hash=x, project=project).pk
+    data_objects = pd.DataFrame(
+        list(Data.objects.filter(project=project).values("id", "hash"))
     )
+    df = df.merge(data_objects, on="hash", how="left")
 
     for meta in metadataFields:
         field_name = str(meta)
-        df_meta = df[["data_id", field_name]].rename(columns={field_name: "value"})
+        df_meta = df[["id", field_name]].rename(
+            columns={field_name: "value", "id": "data_id"}
+        )
         df_meta["value"] = df_meta["value"].fillna("")
         df_meta["metadata_field_id"] = meta.pk
 
-        metadata_objects = []
-        for index, row in df_meta.iterrows():
-            metadata_objects.append(MetaData(**row.to_dict()))
+        stream = StringIO()
+        df_meta.to_csv(
+            stream,
+            sep="\t",
+            header=False,
+            index=False,
+            columns=df_meta.columns.values.tolist(),
+        )
+        stream.seek(0)
+        with connection.cursor() as c:
+            c.copy_from(
+                stream,
+                MetaData._meta.db_table,
+                sep="\t",
+                null="",
+                columns=df_meta.columns.values.tolist(),
+            )
 
-        MetaData.objects.bulk_create(metadata_objects)
+
+def generate_label_embeddings(project):
+    """Create embeddings for each description of label."""
+
+    project_labels = Label.objects.filter(project=project)
+
+    if len(project_labels) > 5:
+        project_labels_descriptions = list(
+            project_labels.values_list("description", flat=True)
+        )
+
+        # Make manual embeddings. Prod settings made calling the api from the backend infeasible
+        embeddings = embeddings_model.encode(project_labels_descriptions)
+
+        label_embeddings = []
+
+        # We have to use tolist() since not calling API now to handle numpy arrays
+        # (JSON response from API originally handled this for us)
+        for embedding, label in zip(embeddings, project_labels):
+            label_embeddings.append(
+                LabelEmbeddings(embedding=embedding.tolist(), label=label)
+            )
+
+        LabelEmbeddings.objects.bulk_create(
+            label_embeddings, ignore_conflicts=True, batch_size=8000
+        )
+
+
+def update_label_embeddings(project):
+    """Update embeddings for each description of label."""
+
+    project_labels = Label.objects.filter(project=project)
+
+    if len(project_labels) > 5:
+        project_labels_descriptions = list(
+            project_labels.values_list("description", flat=True)
+        )
+        project_labels_ids = list(project_labels.values_list("id", flat=True))
+
+        # Make manual embeddings. Prod settings made calling the api from the backend infeasible
+        embeddings = embeddings_model.encode(project_labels_descriptions)
+
+        project_labels_embeddings = LabelEmbeddings.objects.filter(
+            label_id__in=project_labels_ids
+        )
+
+        # We have to use tolist() since not calling API now to handle numpy arrays
+        # (JSON response from API originally handled this for us)
+        for embedding, label_embedding in zip(embeddings, project_labels_embeddings):
+            label_embedding.embedding = embedding.tolist()
+
+        LabelEmbeddings.objects.bulk_update(
+            project_labels_embeddings, ["embedding"], batch_size=8000
+        )
 
 
 def add_data(project, df):
@@ -212,9 +324,19 @@ def add_data(project, df):
     and should have at least one null value.  Any row that has Label should be added to
     DataLabel
     """
-    # Create hash of text and drop duplicates
-    df["hash"] = df["Text"].apply(md5_hash)
-    df.drop_duplicates(subset="hash", keep="first", inplace=True)
+    # Create hash of (text + dedup fields). So each unique combination should have a different hash
+    dedup_on_fields = MetaDataField.objects.filter(
+        project=project, use_with_dedup=True
+    ).values_list("field_name", flat=True)
+
+    df["hash"] = ""
+    for f in dedup_on_fields:
+        df["hash"] += df[f].astype(str) + "_"
+
+    df["hash"] += df["Text"].astype(str)
+    df["hash"] = df["hash"].apply(md5_hash)
+
+    df.drop_duplicates(subset=["hash"], keep="first", inplace=True)
 
     # check that the data is not already in the system and drop duplicates
     df = df.loc[
@@ -236,8 +358,22 @@ def add_data(project, df):
     # if there is no ID column already, add it and hash it
     df.reset_index(drop=True, inplace=True)
     if "ID" not in df.columns:
+        # need to check what ID's are already in the data in case a previous upload DID have IDs
+        existing_ids = Data.objects.filter(project=project).values_list(
+            "upload_id", flat=True
+        )
+
+        # build a list of integers for the IDs. Skip any IDs already in use
+        counter = num_existing_data - 1
+        new_id_list = []
+        while len(new_id_list) < len(df):
+            counter += 1
+            if counter in existing_ids:
+                continue
+            new_id_list.append(counter)
+
         # should add to what already exists
-        df["ID"] = [x + num_existing_data for x in list(df.index.values)]
+        df["ID"] = new_id_list
         df["id_hash"] = df["ID"].astype(str).apply(md5_hash)
     else:
         # get the hashes from existing identifiers. Check that the new identifiers do not overlap
@@ -251,8 +387,7 @@ def add_data(project, df):
 
     # Create the data objects
     create_data_from_csv(df.copy(deep=True), project)
-
-    create_metadata_objects(df.copy(), project)
+    create_metadata_objects_from_csv(df.copy(deep=True), project)
 
     # Find the data that has labels
     labeled_df = df[~pd.isnull(df["Label"])]
@@ -361,24 +496,16 @@ def irr_heatmap_data(project):
         )
     )
     user_list.append(project.creator.pk)
-    label_list = list(
-        Label.objects.filter(project=project).values_list("name", flat=True)
-    )
-    label_list.append("Skip")
-
     irr_data = set(IRRLog.objects.values_list("data", flat=True))
 
     # Initialize the dictionary of dictionaries to use for the heatmap later
     user_label_counts = {}
     for user1 in user_list:
         for user2 in user_list:
-            user_label_counts[str(user1) + "_" + str(user2)] = {}
-            for label1 in label_list:
-                user_label_counts[str(user1) + "_" + str(user2)][str(label1)] = {}
-                for label2 in label_list:
-                    user_label_counts[str(user1) + "_" + str(user2)][str(label1)][
-                        str(label2)
-                    ] = 0
+            user_label_counts[str(user1) + "_" + str(user2)] = {
+                "data": {},
+                "labels": set(),
+            }
 
     for data_id in irr_data:
         # iterate over the data and count up labels
@@ -387,27 +514,49 @@ def irr_heatmap_data(project):
         for user1 in small_user_list:
             for user2 in small_user_list:
                 user_combo = str(user1) + "_" + str(user2)
-                label1 = data_log_list.get(profile__pk=user1).label
-                label2 = data_log_list.get(profile__pk=user2).label
-                user_label_counts[user_combo][str(label1).replace("None", "Skip")][
-                    str(label2).replace("None", "Skip")
-                ] += 1
+                label1 = str(data_log_list.get(profile__pk=user1).label).replace(
+                    "None", "Adjudicate"
+                )
+                user_label_counts[user_combo]["labels"].add(label1)
+                label2 = str(data_log_list.get(profile__pk=user2).label).replace(
+                    "None", "Adjudicate"
+                )
+                user_label_counts[user_combo]["labels"].add(label2)
+                if label1 not in user_label_counts[user_combo]["data"].keys():
+                    user_label_counts[user_combo]["data"][label1] = {}
+
+                if label2 not in user_label_counts[user_combo]["data"][label1].keys():
+                    user_label_counts[user_combo]["data"][str(label1)][label2] = 1
+                else:
+                    user_label_counts[user_combo]["data"][str(label1)][label2] += 1
+
+    # if label combinations didn't occur set them to 0
+    for user_combo in user_label_counts.keys():
+        for label1 in user_label_counts[user_combo]["labels"]:
+            for label2 in user_label_counts[user_combo]["labels"]:
+                if label1 not in user_label_counts[user_combo]["data"].keys():
+                    user_label_counts[user_combo]["data"][label1] = {}
+                if label2 not in user_label_counts[user_combo]["data"][label1].keys():
+                    user_label_counts[user_combo]["data"][label1][label2] = 0
+
     # get the results in the final format needed for the graph
     end_data = {}
+    end_data_labels = {}
     for user_combo in user_label_counts:
         end_data_list = []
-        for label1 in user_label_counts[user_combo]:
-            for label2 in user_label_counts[user_combo][label1]:
+        end_data_labels[user_combo] = list(user_label_counts[user_combo]["labels"])
+        for label1 in user_label_counts[user_combo]["data"]:
+            for label2 in user_label_counts[user_combo]["data"][label1]:
                 end_data_list.append(
                     {
                         "label1": label1,
                         "label2": label2,
-                        "count": user_label_counts[user_combo][label1][label2],
+                        "count": user_label_counts[user_combo]["data"][label1][label2],
                     }
                 )
         end_data[user_combo] = end_data_list
 
-    return end_data
+    return end_data, end_data_labels
 
 
 def save_data_file(df, project_pk):
@@ -453,11 +602,12 @@ def save_codebook_file(data, project_pk):
     return fpath.replace("/data/code_books/", "")
 
 
-def get_labeled_data(project):
+def get_labeled_data(project, unverified=True):
     """Given a project, get the list of labeled data.
 
     Args:
         project: Project object
+        unverified: bool. If true, then include unverified data in download.
     Returns:
         data: a list of the labeled data
     """
@@ -467,14 +617,136 @@ def get_labeled_data(project):
     labels = []
     for label in project_labels:
         labels.append({"Name": label.name, "Label_ID": label.pk})
-        labeled_data = DataLabel.objects.filter(label=label)
+        labeled_data = DataLabel.objects.filter(label=label, data__irr_ind=False)
+        if not unverified:
+            labeled_data = labeled_data.filter(verified__isnull=False)
         for d in labeled_data:
             temp = {}
             temp["ID"] = d.data.upload_id
             temp["Text"] = d.data.text
+            metadata = MetaData.objects.filter(data=d.data)
+            for m in metadata:
+                temp[m.metadata_field.field_name] = m.value
             temp["Label"] = label.name
+            if d.pre_loaded:
+                temp["Pre-Loaded"] = "Yes"
+            else:
+                temp["Pre-Loaded"] = "No"
+            if label.description:
+                temp["Description"] = label.description
+            temp["Profile"] = str(d.profile.user)
+            if d.timestamp:
+                temp["Timestamp"] = pytz.timezone(TIME_ZONE_FRONTEND).normalize(
+                    d.timestamp
+                )
+            else:
+                temp["Timestamp"] = None
+            if hasattr(d, "verified"):
+                v = VerifiedDataLabel.objects.get(data_label=d)
+                temp["Verified"] = "Yes"
+                temp["Verified By"] = v.verified_by
+                temp["Verified Timestamp"] = v.verified_timestamp
+            else:
+                temp["Verified"] = "No"
+                temp["Verified By"] = None
+                temp["Verified Timestamp"] = None
             data.append(temp)
     labeled_data_frame = pd.DataFrame(data)
     label_frame = pd.DataFrame(labels)
 
     return labeled_data_frame, label_frame
+
+
+def project_status(project):
+    """This returns data information.
+
+    Args:
+        project
+    Returns:
+        data: a list of data information
+    """
+    total_data_objs = project.data_set.all()
+
+    final_data_objs = list(
+        DataLabel.objects.filter(data__project=project, data__irr_ind=False)
+    )
+
+    final_verified = DataLabel.objects.filter(
+        data__project=project, data__irr_ind=False, verified__isnull=False
+    )
+    final_unverified = DataLabel.objects.filter(
+        data__project=project, data__irr_ind=False, verified__isnull=True
+    )
+
+    stuff_in_irrlog = IRRLog.objects.filter(data__project=project).values_list(
+        "data__pk", flat=True
+    )
+    stuff_in_queue = DataQueue.objects.filter(
+        queue__project=project, queue__type="admin"
+    ).values_list("data__pk", flat=True)
+    recycle_ids = RecycleBin.objects.filter(data__project=project).values_list(
+        "data__pk", flat=True
+    )
+    assigned_ids = AssignedData.objects.filter(data__project=project).values_list(
+        "data__pk", flat=True
+    )
+    unlabeled_data_objs = list(
+        project.data_set.filter(datalabel__isnull=True)
+        .exclude(id__in=stuff_in_queue)
+        .exclude(id__in=stuff_in_irrlog)
+        .exclude(id__in=assigned_ids)
+        .exclude(id__in=recycle_ids)
+    )
+
+    return {
+        "adjudication": len(stuff_in_queue),
+        "assigned": len(assigned_ids),
+        "final": len(final_data_objs),
+        "final_verified": len(final_verified),
+        "final_unverified": len(final_unverified),
+        "recycled": len(recycle_ids),
+        "total": len(total_data_objs),
+        "unlabeled": len(unlabeled_data_objs),
+        "badge": f"{len(final_data_objs)}/{len(total_data_objs) - len(recycle_ids)}",
+    }
+
+
+def get_projects(self, order_by_folders):
+    """Get all projects for a user.
+
+    Args:
+        self: from get_context_data/queryset
+        order_by_folders: sort projects into folders
+    Returns:
+        projects: a list of projects
+    """
+    # Projects profile created
+    qs1 = Project.objects.filter(creator=self.request.user.profile)
+
+    # Projects profile has permissions for
+    qs2 = Project.objects.filter(projectpermissions__profile=self.request.user.profile)
+
+    qs = qs1 | qs2
+    projects = qs.distinct()
+    if order_by_folders:
+        projects = projects.order_by(self.ordering).reverse()
+
+    return projects
+
+
+def get_projects_umbrellas(self):
+    """Get all projects' folders for a user (sorted alphabetically.)
+
+    Args:
+        self: from get_context_data
+    Returns:
+        projects_umbrellas: a list of projects' folders
+    """
+
+    projects = get_projects(self, False)
+    projects_umbrellas = (
+        projects.values_list("umbrella_string", flat=True)
+        .distinct()
+        .order_by("umbrella_string")
+    )
+    return projects_umbrellas

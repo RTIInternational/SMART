@@ -63,7 +63,7 @@ An important consideration in active learning is model performance. To assess yo
 .. math::
 	\frac{TP + TN}{TP + FN + TN + FP}
 
-* **Precision**: Indicates how precise the model is at correctly predciting a particular category.
+* **Precision**: Indicates how precise the model is at correctly predicting a particular category.
 
 .. math::
 	\frac{TP}{TP + FN}
@@ -109,10 +109,12 @@ As an example, if a project creator chooses 100% for the percentage of the batch
 IRR Data Flow
 *************
 
-If the project creator has enabled IRR, additional steps are added to the data pipeline. First, when the project provides a batch of unlabeled data to label, the previously specified IRR percentage is taken out and marked as IRR. When a user opens the annotation page to begin labeling, SMART first checks if there is any IRR data that SMART has not yet seen. This data is pulled first, and the rest of the deck is filled with non-IRR data. This deck is then shuffled before being presented to the user to make it harder to know what data is IRR. SMART tracks what IRR data has been labeled/skipped by which users. Skips are automatically recorded in the IRR Log table, while labels are placed in the same label table as non-IRR data (though the training set will not incorporate them as they are marked IRR). Once IRR data has sufficient skips or labels, two outcomes can happen:
+If the project creator has enabled IRR, additional steps are added to the data pipeline. First, when the project provides a batch of unlabeled data to label, the previously specified IRR percentage is taken out and marked as IRR. 
+When a user opens the annotation page to begin labeling, SMART first checks if there is any IRR data that SMART has not yet seen. This data is pulled first, and the rest of the deck is filled with non-IRR data. This deck is then shuffled before being presented to the user to make it harder to know what data is IRR. SMART tracks what IRR data has been labeled/sent for adjudication by which users. 
+"Sent to adjudication" is automatically recorded in the internal IRR Log table, while labels are placed in the same label table as non-IRR data (though the training set will not incorporate them as they are marked IRR). Once IRR data has enough people either code it or send it to adjudication, two outcomes can happen:
 
 1.	If everyone labeled the datum and these labels were the same, then the datum is added with the agreed upon label to the training set.
-2.	If any coder skipped the datum, or coders disagreed upon the label, the datum is sent to the admin for the final label.
+2.	If any coder sent the datum for adjudication, or coders disagreed on the label, the datum is sent to the admin table for the final label.
 
 After a datum is processed, the labels from all coders are recorded in the IRR Log table.
 
@@ -175,6 +177,31 @@ In many applied settings, the distribution of categories the user may be interes
 See :ref:`fixskew` for more information on using this feature.
 
 
+.. _label-embeddings:
+
+Label Embeddings
+----------------
+
+For projects with more than 5 labels, SMART automatically generates embeddings of the labels and their descriptions. 
+When a user goes to code items, SMART will present the top five label categories based on the cosine similiarty between the text and label embeddings.
+
+|annotate-cards|
+
+
+.. _embeddings-define:
+
+What are Text Embeddings?
+*************************
+
+A text embedding is a numerical representation of text which can be used for many downstream use cases.
+At its most basic, a text embedding could be a vector of length N where each dimension is the number of times a specific word appears in the text (i.e., a `bag-of-words <https://en.wikipedia.org/wiki/Bag-of-words_model>`_ model). 
+However, more advanced deep learning methods that do not rely solely on term counts have been shown to be able to effectively capture the semantic meaning of text. 
+For example, two sentences could be deemed similiar if they convey similiar meaning, even if they use completely different words.
+
+SMART uses a version of MPNet model [#song]_ from the `sentence-transformers <https://www.SBERT.net>`_ library to generate embeddings, mapping input documents and label text to 384 dimensional dense vectors. 
+
+
+.. |annotate-cards| image:: ./nstatic/img/smart-annotate-annotatedata-cards.png
 
 .. [#settles] Settles, B. (2012). Active learning. Synthesis Lectures on Artificial Intelligence and Machine Learning, 6(1), 1-114.
 
@@ -183,3 +210,5 @@ See :ref:`fixskew` for more information on using this feature.
 .. [#fleisswiki] https://en.wikipedia.org/wiki/Fleiss%27_kappa
 
 .. [#attenberg] Attenberg, J., & Provost, F. (2010). Why label when you can search?: Alternatives to active learning for applying human resources to build classification models under extreme class imbalance. In Proceedings of the 16th ACM SIGKDD international conference on Knowledge discovery and data mining (pp. 423-432). ACM.
+
+.. [#song] Song, K., Tan, X., Qin, T., Lu, J., & Liu, T. Y. (2020). Mpnet: Masked and permuted pre-training for language understanding. Advances in Neural Information Processing Systems, 33, 16857-16867.

@@ -35,15 +35,25 @@
           <ul class="list-group">
             <li class="list-group-item">SMART <strong>requires at least two category labels</strong> and the labels must be <strong>unique</strong>.</li>
             <li class="list-group-item">If you plan on uploading a data file that contains labels, the label categories in the file must match those provided on this page.</li>
+            <li class="list-group-item">You may add up to 10,000 labels to each project.</li>
             <li class="list-group-item">You cannot update the labels for a project after the project is created.</li>
           </ul>
           <div class="form-group">
             <label class="control-label" for="{{ wizard.form.data.id_for_label }}">You may also upload a .csv file containing labels and their descriptions (label and description columns required):</label>
             <label class="control-label" for="{{ wizard.form.data.id_for_label }}">Note: Any labels currently in the table will be overwritten by the file data.</label>
             <label class="control-label" for="{{ wizard.form.data.id_for_label }}">{{ wizard.form.data.label }}</label>
-            <p>An example dataset can be downloaded from <a href="{% static 'example-labels.csv' %}">here</a>.</p>
+            <p><a href="{% static 'example-labels.csv' %}">An example dataset can be downloaded from here</a>.</p>
             <hr>
             <input class="form-control" id="{{ wizard.form.data.id_for_label }}" maxlength="30" name="{{ wizard.form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" onChange="handleUpload(event)" onclick="this.value = null;" />
+            <button id="rmFileBtn" class="inline-btn">remove uploaded labels</button>
+          </div>
+          <br />
+          <div class="fixed-wiz">
+            <div class="wizard_nav_bar">
+              <button class="btn btn-info" name="wizard_goto_step" type="submit" value="project">1. Info</button>
+              <input class="btn btn-primary" type="submit" value="Next Step"/>
+              <p class="pull-right">Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
+            </div>
           </div>
           <br />
           <table class="table table-striped" id="form-table">
@@ -103,25 +113,66 @@
           var csv = event.target.result;
           var data = $.csv.toArrays(csv);
           if(data[0][0] === 'Label' && data[0][1] === 'Description') {
-            data.forEach((label, index) => {
-              if(index !== 0) {
-                if($('.formset_row_label').eq(index - 1).length > 0) {
-                  $('.formset_row_label').eq(index - 1).css('display', '');
-                  $('.formset_row_label').eq(index - 1).find('input[type=text]').eq(0).val(label[0]);
-                  if(label[1].length > 0) {
-                    $('.formset_row_label').eq(index - 1).find('textarea').eq(0).val(label[1]);
-                  } else {
-                    $('.formset_row_label').eq(index - 1).find('textarea').eq(0).val('');
-                  }
-                } else {
-                  $(':contains("add label")').click();
-                  $('.formset_row_label').last().find('input[type=text]').eq(0).val(label[0]);
-                  if(label[1].length > 0) {
-                    $('.formset_row_label').last().find('textarea').eq(0).val(label[1]);
-                  }
-                }
-              }
-            });
+            data.shift();
+
+            // remove existing labels (keep add button)
+            document.querySelectorAll('.formset-row-label').forEach(e => e.remove());
+
+            const tbody = $('#form-table > tbody');
+
+            $('#id_label_set-TOTAL_FORMS').val(`${data.length + 2}`);
+
+            // add 3 unecessary labels (Django keeps removing the last three inserted rows)
+
+            for (const index in [0, 1, 2]) {
+              data.push(["abc", "to be removed"]);
+            };
+
+            // add new labels
+            const appendHTML = data.map((label, index) => `<tr class="formset_row_label dynamic-form uploaded-label-row-${index + 2}">
+              <td>
+                <input type="hidden" name="label_set-${index + 2}-project" id="id_label_set-${index + 2}-project" value=""/></input>
+                <input type="hidden" name="label_set-${index + 2}-id" id="id_label_set-${index + 2}-id" value=""></input>
+                <div class="error-messages"></div>
+                <input type="text" name="label_set-${index + 2}-name" class="form-control" id="id_label_set-${index + 2}-name" value="${label[0]}"></input>
+              </td>
+              <td>
+                <div class="error-messages"></div>
+                <textarea name="label_set-${index + 2}-description" cols="40" rows="5" class="form-control" id="id_label_set-${index + 2}-description" value="${label[1]}">${label[1]}</textarea>
+              </td>
+              <td>
+                <div class="error-messages"></div>
+                <p class="delete-row delete-label" onClick="deleteLabel(${index + 2})" style="">remove label</p>
+              </td>
+            </tr>`);
+
+            // add two "dummy" labels at top
+            let dummyHTML = [0, 1].map((index) => 
+              `
+              <tr class="formset_row_label dynamic-form" style="display: none;">
+                <td>
+                  <input type="hidden" name="label_set-${index}-project" id="id_label_set-${index}-project">
+                  <input type="hidden" name="label_set-${index}-id" id="id_label_set-${index}-id">
+                  <div class="error-messages"></div>
+                  <input type="text" name="label_set-${index}-name" class="form-control" id="id_label_set-${index}-name" value="hidden-${index}">
+                </td>
+                <td>
+                  <div class="error-messages"></div>
+                  <textarea name="label_set-${index}-description" cols="40" rows="5" class="form-control" id="id_label_set-${index}-description"></textarea>
+                </td>
+                <td>
+                  <div class="error-messages"></div>
+                  <input type="hidden" name="label_set-${index}-DELETE" id="id_label_set-${index}-DELETE" value="on">
+                </td>
+              </tr>
+              `
+            ).join("");
+
+            $('#form-table > tbody').prepend(dummyHTML + appendHTML);
+
+            if(data.length > 100) {
+              $('.fixed-wiz').css({ 'display': 'flex' });
+            }
           } else {
             $('.error-messages').eq(1).append('<ul class="error-list"><li>There was an error processing your label file. Please make sure your .csv file only contains a Label and Description column and try again.</li></ul>');
           }
@@ -137,6 +188,9 @@
       $('.error-messages').eq(1).append('<ul class="error-list"><li>There was an error processing your label file. Please make sure your file is a .csv and has a Label and Description column.</li></ul>');
     }
   }
+  function deleteLabel(index) {
+    $(`.uploaded-label-row-${index}`).remove();
+  }
   $('.formset_row_label').formset({
     addText: 'add label',
     deleteText: 'remove label',
@@ -146,5 +200,35 @@
       $('tr.formset_row_label').last().children(':first').find('ul.errorlist li').empty();
     }
   });
+  $("#rmFileBtn").click(function(event) {
+    event.preventDefault();
+    // Remove uploaded file
+    $("input[type='file']").val("");
+
+    // Remove uploaded label fields
+    $('.formset_row_label').remove();
+    
+    // Reset form back to original state
+    let dummyHTML = [0, 1].map((index) => 
+      `
+      <tr class="formset_row_label dynamic-form">
+        <td>
+          <input type="hidden" name="label_set-0-project" id="id_label_set-${index}-project">
+          <input type="hidden" name="label_set-0-id" id="id_label_set-${index}-id">
+          <div class="error-messages"></div>
+          <input type="text" name="label_set-${index}-name" class="form-control" id="id_label_set-${index}-name">
+        </td>
+        <td>
+          <div class="error-messages"></div>
+          <textarea name="label_set-${index}-description" cols="40" rows="5" class="form-control" id="id_label_set-${index}-description"></textarea>
+        </td>
+        <td>
+          <div class="error-messages"></div>
+          <input type="hidden" name="label_set-${index}-DELETE" id="id_label_set-${index}-DELETE">
+        <a class="delete-row" href="javascript:void(0)" style="display: none;">remove label</a></td>
+      </tr>
+      `).join("");
+    $('#form-table > tbody').prepend(dummyHTML);
+  })
 </script>
 {% endblock %}

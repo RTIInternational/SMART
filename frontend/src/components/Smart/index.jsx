@@ -9,8 +9,8 @@ import RecycleBinContainer from '../../containers/recycleBin_container';
 import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
 import SmartProgressBarContainer from '../../containers/smartProgressBar_container';
 
-const ADMIN = window.ADMIN;
 
+const ADMIN = window.ADMIN;
 
 class Smart extends React.Component {
 
@@ -35,7 +35,7 @@ class Smart extends React.Component {
             adminTabSkew = (
                 <Tab eventKey={3} transition={false} title="Fix Skew" className="full card">
                     <div className="cardContent">
-                        <h2>Another admin is currently using this page. Please check back later.</h2>
+                        <h2>Another admin is currently using this page. This page will become available when the admin returns to the project list page, details page, changes projects, or logs out.</h2>
                     </div>
                 </Tab>
             );
@@ -56,7 +56,7 @@ class Smart extends React.Component {
                         <Badge className="tab-badge">
                             {admin_counts["IRR"]}
                         </Badge>
-                        | Skipped
+                        | Requires Adjudication
                         <Badge className="tab-badge">
                             {admin_counts["SKIP"]}
                         </Badge>
@@ -65,7 +65,7 @@ class Smart extends React.Component {
             } else {
                 badges = (
                     <div>
-                        Skipped
+                        Requires Adjudication
                         <Badge className="tab-badge">
                             {admin_counts["SKIP"]}
                         </Badge>
@@ -85,9 +85,9 @@ class Smart extends React.Component {
             );
         } else {
             adminTabAdminTable = (
-                <Tab eventKey={4} transition={false} title="Skipped Cards" className="full card">
+                <Tab eventKey={4} transition={false} title="Requires Adjudication" className="full card">
                     <div className="cardContent">
-                        <h2>Another admin is currently using this page. Please check back later.</h2>
+                        <h2>Another admin is currently using this page. This page will become available when the admin returns to the project list page, details page, changes projects, or logs out.</h2>
                     </div>
                 </Tab>
             );
@@ -102,7 +102,7 @@ class Smart extends React.Component {
 
         if (adminTabsAvailable) {
             adminTabRecycle = (
-                <Tab eventKey={5} transition={false} title={<span className="glyphicon glyphicon-trash" aria-hidden="true"></span>} className="full card">
+                <Tab eventKey={5} transition={false} title={<div><span id="trashCan" className="glyphicon glyphicon-trash" aria-hidden="true"></span> Discarded Data</div>} className="full card">
                     <div className="cardContent">
                         <RecycleBinContainer />
                     </div>
@@ -110,9 +110,9 @@ class Smart extends React.Component {
             );
         } else {
             adminTabRecycle = (
-                <Tab eventKey={5} transition={false} title={<span className="glyphicon glyphicon-trash" aria-hidden="true"></span>} className="full card">
+                <Tab eventKey={5} transition={false} title={<div><span id="trashCan" className="glyphicon glyphicon-trash" aria-hidden="true"></span> Discarded Data</div>} className="full card">
                     <div className="cardContent">
-                        <h2>Another admin is currently using this page. Please check back later.</h2>
+                        <h2>Another admin is currently using this page. This page will become available when the admin returns to the project list page, details page, changes projects, or logs out.</h2>
                     </div>
                 </Tab>
             );

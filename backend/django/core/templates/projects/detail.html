@@ -10,6 +10,9 @@
       <div class="col-md-12">
         <h2>{{ project.name }}</h2>
         <p>Created By: {{ project.creator }}</p>
+        {% if project.umbrella_string %}
+          <p>Group: {{ project.umbrella_string }}</p>
+        {% endif %}
       </div>
     </div>
     <div class="row">
@@ -29,6 +32,36 @@
               {% else %}
               <h5><strong>No Description Available</strong></h5>
               {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h5 class="panel-title">
+              <a data-toggle="collapse" href="#status-panel" class="accordion-toggle">
+                Project Status
+              </a>
+            </h5>
+          </div>
+          <div id="status-panel" class="panel-collapse collapse show">
+            <div class="panel-body">
+              <p>Fully Labeled: <span id="fully-labeled"></span></p>
+              <p>Fully Labeled (Verified): <span id="fully-labeled-verified"></span></p>
+              <p style="font-size: 0.65rem; margin-left: 8px;"><i>Note: </i>&nbsp;For non-IRR data, the verification feature is enabled to allow projects to add on an additional layer of oversight if needed.
+                Labeled data can be verified in the history table, while adjudicated data is automatically verified.
+                SMART does not prioritize verified data labels over unverified when training its models.
+              </p>
+              <p>Fully Labeled (Unverified): <span id="fully-labeled-unverified"></span></p>
+              <p>Unlabeled and Unassigned: <span id="unlabeled-unassigned"></span></p>
+              <p>Awaiting Adjudication: <span id="awaiting-adjudication"></span></p>
+              <p style="font-size: 0.65rem; margin-left: 8px;"><i>Note: </i>&nbsp;Data awaiting adjudication has either been skipped or is waiting on admin review because two or more coders disagreed on its label.</p>
+              <p>Recycle Bin: <span id="recycled"></span></p>
+              <p>Assigned/Partially Labeled IRR: <span id="other-labeled"></span></p>
+              <p style="font-size: 0.65rem; margin-left: 8px;"><i>Note: </i>&nbsp;Data that is assigned or in partially labeled IRR is in progress but waiting for coders to finish annotating.</p>
             </div>
           </div>
         </div>
@@ -89,6 +122,16 @@
           <div id="settings-panel" class="panel-collapse collapse show">
             <div class="panel-body">
               <ul class="list-group-flush">
+                {% if project.has_database_connection %}
+                <li class="list-group-item">
+                  <dt>Database connection:</dt>
+                  <dd>Import Table: {{ project.get_ingest_database }}</dd>
+                  <dd>Scheduled Import: {{ project.get_scheduled_ingest }}</dd>
+                  <dd>Export Table: {{ project.get_export_database }}</dd>
+                  <dd>Scheduled Export: {{ project.get_scheduled_export }}</dd>
+                  <dd>Export only Verified Labeled Data: {{ project.get_export_verified_only }}</dd>
+                </li>
+                {% endif %}
                 {% if project.classifier != None %}
                 <li class="list-group-item">
                   <dt>Classifier</dt>
@@ -121,6 +164,24 @@
                   <dd>{{ project.num_users_irr }}</dd>
                 </li>
                 {% endif %}
+                {% if project.metadatafields != None %}
+                <li class="list-group-item">
+                  <dt>Metadata Fields Displayed with Data</dt>
+                  {% for meta in project.metadatafields.all %}
+                      <dd>- {{ meta.field_name }}</dd>
+                  {% endfor %}
+                </li>
+                {% endif %}
+                <li class="list-group-item">
+                  <dt>Method for Identifying Duplicates in Data Upload</dt>
+                  {% if project.dedup_on == "Text" %}
+                  <dd>Matching text</dd>
+                  {% elif project.dedup_on == "Metadata_Text" %}
+                  <dd>Text and all metadata fields match.</dd>
+                  {% else %}
+                  <dd>Text and the following metadata fields match: {{ project.dedup_fields }}.</dd>
+                  {% endif %}
+                </li>
               </ul>
             </div>
           </div>
@@ -175,8 +236,8 @@
       </div>
     </div>
     <div class="row">
-      <div class="col-md-12">
-        <div class="btn-group" role="group" aria-label="Project Controls">
+      <div class="col-md-12" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+        <div class="btn-toolbar" style="flex: none; margin-left: -0.5rem;" role="group" aria-label="Project Controls">
           <a class="btn btn-primary" href="{% url 'projects:project_list' %}" role="button">
             Return to Projects
           </a>
@@ -190,7 +251,7 @@
           {% endif %}
         </div>
 
-        <div class="btn-group pull-right" role="group" aria-label="Admin Controls">
+        <div class="btn-toolbar pull-right" style="flex: none;" role="group" aria-label="Admin Controls">
           {% if project.codebook_file != "" %}
           <a class="btn btn-primary" href = "{% static project.codebook_file %}" target = "_blank" id="download_cb_btn">View CodeBook</a>
           {% endif %}
@@ -198,11 +259,27 @@
             <a class="btn btn-primary" href="{% url 'projects:project_admin' project.pk %}" role="button">
               Admin Page
             </a>
+            {% if project.get_ingest_database != "" %}
+            <a class="btn btn-primary" id="ingest_datatable_button">
+              Import new data from Database
+            </a>
+            {% endif %}
+            {% if project.get_export_database != "" %}
+            <a class="btn btn-primary" id="export_datatable_button">
+              Export labeled data to Database
+            </a>
+            {% endif %}
           {% if project.has_model %}
-            <a class="btn btn-primary" id="download_model_btn">Download Model and Labeled Data</a>
+            <a class="btn btn-primary" id="download_model_btn" onclick="download_model({{project.pk}},1)">Download Model and All Labeled Data</a>
+            {% if project.unverified_labeled_data_count > 0 %}
+              <a class="btn btn-primary" id="download_model_btn_verified" onclick="download_model({{project.pk}},0)">Download Model and Only Verified Labeled Data</a>
+            {% endif %}
           {% else %}
             {% if project.labeled_data_count > 0 %}
-            <a class="btn btn-primary" id="download_btn">Download Labeled Data</a>
+            <a class="btn btn-primary" id="download_btn" onclick="download_data({{project.pk}},1)">Download Labeled Data</a>
+            {% if project.unverified_labeled_data_count > 0 and project.labeled_data_count > project.unverified_labeled_data_count %}
+              <a class="btn btn-primary" id="download_btn_verified" onclick="download_data({{project.pk}},0)">Download Only Verified Labeled Data</a>
+            {% endif %}
             {% else %}
             <a class="btn btn-primary disabled" id="download_btn">No Labeled Data to Download</a>
             {% endif %}
@@ -219,35 +296,13 @@
 {% block scripts_body %}
 <script>
 /*
- *  When the download model button is pressed, download a zip file
- *  with a README, the model, labeled data, and tfidf matrix
- */
-$('#download_model_btn').on('click', function() {
-  xhttp = new XMLHttpRequest();
-  xhttp.onreadystatechange = function() {
-    var a, today;
-    if (xhttp.readyState === 4 && xhttp.status === 200) {
-      a = document.createElement('a');
-      a.href = window.URL.createObjectURL(xhttp.response);
-      today = new Date();
-      a.download = 'project_' + {{ project.pk }} + '_model_' + today.toDateString().split(' ').join('_') + '.zip';
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      return a.click();
-    }
-  };
-  xhttp.open('GET', '/api/download_model/' + {{ project.pk }} + '/', true);
-  xhttp.setRequestHeader('Content-Type', 'application/json');
-  xhttp.responseType = 'blob';
-  xhttp.send();
-});
-
-/*
  *  When download button is pressed request the csv file, add the data as a blob
  *  to a new anchor element, and trigger a click event on that anchor element
  *  to prompt the download file popup
+ *  NOTE: this function is also in detail.html, but edited to work for multiple
+ *  buttons on the same page
  */
-$('#download_btn').on('click', function() {
+ function download_data(pk, unverified) {
   xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
     var a, today;
@@ -255,16 +310,91 @@ $('#download_btn').on('click', function() {
       a = document.createElement('a');
       a.href = window.URL.createObjectURL(xhttp.response);
       today = new Date();
-      a.download = 'project_' + {{ project.pk }} + '_labels_' + today.toDateString().split(' ').join('_') + '.csv';
+      a.download = 'project_' + String(pk) + '_labels_' + today.toDateString().split(' ').join('_') + '.csv';
       a.style.display = 'none';
       document.body.appendChild(a);
       return a.click();
     }
   };
-  xhttp.open('GET', '/api/download_data/' + {{ project.pk }} + '/', true);
+  xhttp.open('GET', '/api/download_data/' + String(pk) + '/' + String(unverified) + '/', true);
   xhttp.setRequestHeader('Content-Type', 'application/json');
   xhttp.responseType = 'blob';
   xhttp.send();
+}
+
+/*
+ *  When the download model button is pressed, download a zip file
+ *  with a README, the model, labeled data, and tfidf matrix
+ */
+function download_model(pk, unverified) {
+  xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    var a, today;
+    if (xhttp.readyState === 4 && xhttp.status === 200) {
+      a = document.createElement('a');
+      a.href = window.URL.createObjectURL(xhttp.response);
+      today = new Date();
+      a.download = 'project_' + String(pk) + '_model_' + today.toDateString().split(' ').join('_') + '.zip';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      return a.click();
+    }
+  };
+  xhttp.open('GET', '/api/download_model/' + String(pk) + '/' + String(unverified) + '/', true);
+  xhttp.setRequestHeader('Content-Type', 'application/json');
+  xhttp.responseType = 'blob';
+  xhttp.send();
+}
+
+
+/*
+ *  When the ingest datatable button is pressed, SMART pulls the entire
+ *  database table and tries to load it in as data
+ */
+$('#ingest_datatable_button').on('click', function() {
+  $.ajax({
+    method: "POST",
+    url: '/api/import_database_table/' + {{ project.pk }} + '/',
+    success: function (response) {
+      alert("Datatable successfully imported. New data added: "+ response.num_added);
+    }
+  }).fail(function(response) {
+    alert('Error: datatable import failed with error ' + response.responseText);
+  });
+});
+
+
+/*
+ *  When the export datatable button is pressed, SMART exports labeled data to
+ *  a specified database table.
+ */
+$('#export_datatable_button').on('click', function() {
+  $.ajax({
+    method: "POST",
+    url: '/api/export_database_table/' + {{ project.pk }} + '/',
+    success: function (response) {
+      alert("Datatable successfully exported. "+ response.success_message);
+    }
+  }).fail(function(response) {
+    alert('Error: datatable import failed with error ' + response.responseText);
+  });
+});
+
+
+$(document).ready(function() {
+  $.ajax({
+    method: "GET",
+    url: '/api/project_status/' + {{ project.pk }} + '/',
+    success: function (response) {
+      $('#fully-labeled').append(response.final);
+      $('#fully-labeled-verified').append(response.final_verified);
+      $('#fully-labeled-unverified').append(response.final_unverified);
+      $('#unlabeled-unassigned').append(response.unlabeled);
+      $('#awaiting-adjudication').append(response.adjudication);
+      $('#recycled').append(response.recycled);
+      $('#other-labeled').append((response.total - response.final - response.adjudication - response.recycled) - response.unlabeled);
+    }
+  })
 });
 </script>
 {% endblock %}

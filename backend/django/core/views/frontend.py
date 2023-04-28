@@ -14,17 +14,35 @@ from formtools.wizard.views import SessionWizardView
 from core.forms import (
     AdvancedWizardForm,
     CodeBookWizardForm,
+    DataUpdateWizardForm,
     DataWizardForm,
+    ExternalDatabaseWizardForm,
     LabelDescriptionFormSet,
     LabelFormSet,
     PermissionsFormSet,
     ProjectUpdateOverviewForm,
     ProjectWizardForm,
 )
-from core.models import Data, Label, MetaDataField, Project, TrainingSet
+from core.models import (
+    AssignedData,
+    Data,
+    ExternalDatabase,
+    Label,
+    MetaDataField,
+    Project,
+    TrainingSet,
+)
 from core.templatetags import project_extras
-from core.utils.util import save_codebook_file, upload_data
-from core.utils.utils_annotate import batch_unassign
+from core.utils.util import (
+    get_projects,
+    get_projects_umbrellas,
+    project_status,
+    save_codebook_file,
+    update_label_embeddings,
+    upload_data,
+)
+from core.utils.utils_annotate import batch_unassign, leave_coding_page
+from core.utils.utils_external_db import delete_external_db_file, save_external_db_file
 from core.utils.utils_queue import add_queue, find_queue_length
 
 
@@ -56,6 +74,12 @@ class ProjectCode(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             ctx["admin"] = "false"
         ctx["project"] = Project.objects.get(pk=self.kwargs["pk"])
 
+        uses_irr = ctx["project"].percentage_irr > 0
+        if uses_irr:
+            ctx["project_uses_irr"] = "true"
+        else:
+            ctx["project_uses_irr"] = "false"
+
         return ctx
 
 
@@ -77,8 +101,11 @@ class ProjectAdmin(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super(ProjectAdmin, self).get_context_data(**kwargs)
 
-        ctx["project"] = Project.objects.get(pk=self.kwargs["pk"])
-
+        project = Project.objects.get(pk=self.kwargs["pk"])
+        ctx["project"] = project
+        users = AssignedData.objects.filter(data__project=project).distinct("profile")
+        coders = [d.profile for d in users]
+        ctx["coders"] = coders
         return ctx
 
 
@@ -89,17 +116,13 @@ class ProjectList(LoginRequiredMixin, ListView):
     ordering = "name"
 
     def get_queryset(self):
-        # Projects profile created
-        qs1 = Project.objects.filter(creator=self.request.user.profile)
+        projects = get_projects(self, True)
+        for project in projects:
+            project_details = project_status(project)
+            leave_coding_page(self.request.user.profile, project)
+            project.project_details = project_details
 
-        # Projects profile has permissions for
-        qs2 = Project.objects.filter(
-            projectpermissions__profile=self.request.user.profile
-        )
-
-        qs = qs1 | qs2
-
-        return qs.distinct().order_by(self.ordering)
+        return projects
 
 
 class ProjectDetail(LoginRequiredMixin, UserPassesTestMixin, DetailView):
@@ -122,17 +145,19 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         ("project", ProjectWizardForm),
         ("labels", LabelFormSet),
         ("permissions", PermissionsFormSet),
-        ("advanced", AdvancedWizardForm),
         ("codebook", CodeBookWizardForm),
+        ("external", ExternalDatabaseWizardForm),
         ("data", DataWizardForm),
+        ("advanced", AdvancedWizardForm),
     ]
     template_list = {
         "project": "projects/create/create_wizard_overview.html",
         "labels": "projects/create/create_wizard_labels.html",
         "permissions": "projects/create/create_wizard_permissions.html",
-        "advanced": "projects/create/create_wizard_advanced.html",
         "codebook": "projects/create/create_wizard_codebook.html",
+        "external": "projects/create/create_wizard_external_db.html",
         "data": "projects/create/create_wizard_data.html",
+        "advanced": "projects/create/create_wizard_advanced.html",
     }
 
     def get_template_names(self):
@@ -146,6 +171,15 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
                 if "name" in label.keys():
                     temp.append(label["name"])
             kwargs["labels"] = temp
+            external_data = self.get_cleaned_data_for_step("external")
+            if "engine_database" in external_data:
+                kwargs["database_type"] = external_data["database_type"]
+                kwargs["engine_database"] = external_data["engine_database"]
+                kwargs["ingest_table_name"] = external_data["ingest_table_name"]
+                kwargs["ingest_schema"] = external_data["ingest_schema"]
+            else:
+                kwargs["engine_database"] = None
+
         return kwargs
 
     def get_form_kwargs_special(self, step=None):
@@ -169,6 +203,19 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             prefix = "advanced"
 
         return prefix
+
+    def get_context_data(self, form, step=None, **kwargs):
+        context = super(ProjectCreateWizard, self).get_context_data(form=form, **kwargs)
+
+        if self.steps.current == "project":
+            projects_umbrellas = get_projects_umbrellas(self)
+            context["umbrella_choices"] = [
+                umbrella_choice
+                for umbrella_choice in projects_umbrellas
+                if umbrella_choice
+            ]
+
+        return context
 
     def get_form(self, step=None, data=None, files=None):
         """Overriding get_form.
@@ -212,6 +259,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         labels = form_dict["labels"]
         permissions = form_dict["permissions"]
         advanced = form_dict["advanced"]
+        external = form_dict["external"]
         data = form_dict["data"]
         codebook_data = form_dict["codebook"]
 
@@ -232,6 +280,35 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             else:
                 cb_filepath = ""
             proj_obj.codebook_file = cb_filepath
+
+            external_data = external.cleaned_data
+            if external_data["database_type"] != "none":
+                connection_dict = {
+                    k: v
+                    for k, v in external_data.items()
+                    if k in ["username", "password", "host", "port", "dbname", "driver"]
+                }
+                external_file = save_external_db_file(connection_dict, proj_pk)
+                ExternalDatabase.objects.create(
+                    project=proj_obj,
+                    env_file=external_file,
+                    database_type=external_data["database_type"],
+                    has_ingest=external_data["has_ingest"],
+                    cron_ingest=external_data["cron_ingest"],
+                    ingest_schema=external_data["ingest_schema"],
+                    ingest_table_name=external_data["ingest_table_name"],
+                    has_export=external_data["has_export"],
+                    cron_export=external_data["cron_export"],
+                    export_schema=external_data["export_schema"],
+                    export_table_name=external_data["export_table_name"],
+                    export_verified_only=external_data["export_verified_only"],
+                )
+            else:
+                # Create an empty database object
+                ExternalDatabase.objects.create(
+                    project=proj_obj, env_file="", database_type="none"
+                )
+
             if advanced_data["batch_size"] == 0:
                 batch_size = 10 * len(
                     [
@@ -248,6 +325,11 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             proj_obj.percentage_irr = advanced_data["percentage_irr"]
             proj_obj.num_users_irr = advanced_data["num_users_irr"]
             proj_obj.classifier = advanced_data["classifier"]
+
+            # use the data dedup choice to set dedup property of metadata fields
+            proj_obj.dedup_on = data.cleaned_data["dedup_on"]
+            proj_obj.dedup_fields = data.cleaned_data["dedup_fields"]
+
             proj_obj.save()
 
             # Training Set
@@ -282,10 +364,28 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
             # metatata fields
             metadata_fields = [
-                c for c in f_data if c.lower() not in ["text", "label", "id"]
+                c for c in f_data if c.lower() not in ["text", "label", "id", "id_hash"]
             ]
+            # get list of items to dedup on
+            if data.cleaned_data["dedup_on"] == "Text":
+                dedup_metadata_fields = []
+            elif data.cleaned_data["dedup_on"] == "Metadata_Text":
+                dedup_metadata_fields = metadata_fields
+            else:
+                dedup_metadata_fields = [
+                    d.strip()
+                    for d in data.cleaned_data["dedup_fields"].strip().split(";")
+                    if len(d.strip()) > 0
+                ]
+
             for field in metadata_fields:
-                MetaDataField.objects.create(project=proj_obj, field_name=field)
+                use_with_dedup = False
+                if field in dedup_metadata_fields:
+                    use_with_dedup = True
+
+                MetaDataField.objects.create(
+                    project=proj_obj, field_name=field, use_with_dedup=use_with_dedup
+                )
 
             add_queue(project=proj_obj, length=2000000, type="admin")
             irr_queue = add_queue(project=proj_obj, length=2000000, type="irr")
@@ -346,7 +446,7 @@ class ProjectUpdateOverview(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
 
 class ProjectUpdateData(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Project
-    form_class = DataWizardForm
+    form_class = DataUpdateWizardForm
     template_name = "projects/update/data.html"
     permission_denied_message = (
         "You must be an Admin or Project Creator to access the Project Update page."
@@ -375,6 +475,8 @@ class ProjectUpdateData(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
                 "field_name", flat=True
             )
         )
+        form_kwargs["dedup_on"] = form_kwargs["instance"].dedup_on
+        form_kwargs["dedup_fields"] = form_kwargs["instance"].dedup_fields
 
         del form_kwargs["instance"]
 
@@ -394,7 +496,15 @@ class ProjectUpdateData(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
             with transaction.atomic():
                 f_data = form.cleaned_data.get("data", False)
                 if isinstance(f_data, pd.DataFrame):
-                    upload_data(f_data, self.object, batch_size=self.object.batch_size)
+                    queue = self.object.queue_set.get(type="normal")
+                    irr_queue = self.object.queue_set.get(type="irr")
+                    upload_data(
+                        f_data,
+                        self.object,
+                        queue,
+                        irr_queue,
+                        batch_size=self.object.batch_size,
+                    )
 
                 return redirect(self.get_success_url())
         else:
@@ -438,6 +548,138 @@ class ProjectUpdateCodebook(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
                 return redirect(self.get_success_url())
         else:
             return self.render_to_response(context)
+
+
+class ProjectUpdateExternalDB(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    model = ExternalDatabase
+    form_class = ExternalDatabaseWizardForm
+    template_name = "projects/update/external_db.html"
+    permission_denied_message = (
+        "You must be an Admin or Project Creator to access the Project Update page."
+    )
+    raise_exception = True
+
+    def test_func(self):
+        project = Project.objects.get(pk=self.kwargs["pk"])
+
+        return (
+            project_extras.proj_permission_level(project, self.request.user.profile)
+            >= 2
+        )
+
+    def get_form_kwargs(self):
+        form_kwargs = super(ProjectUpdateExternalDB, self).get_form_kwargs()
+        return form_kwargs
+
+    def get_success_url(self):
+        context = self.get_context_data()
+        return context["project"].get_absolute_url()
+
+    def get_context_data(self, **kwargs):
+        context = super(ProjectUpdateExternalDB, self).get_context_data(**kwargs)
+        context["project"] = ExternalDatabase.objects.get(pk=self.kwargs["pk"]).project
+        return context
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        project = context["project"]
+        external_db = ExternalDatabase.objects.filter(project=project)
+        if form.is_valid():
+            with transaction.atomic():
+                external_data = form.cleaned_data
+
+                # either create or update existing external database connection
+                if external_data["database_type"] != "none":
+                    connection_dict = {
+                        k: v
+                        for k, v in external_data.items()
+                        if k
+                        in ["username", "password", "host", "port", "dbname", "driver"]
+                    }
+                    external_file = save_external_db_file(connection_dict, project.pk)
+
+                    external_db.update(
+                        env_file=external_file,
+                        database_type=external_data["database_type"],
+                        cron_ingest=external_data["cron_ingest"],
+                        has_ingest=external_data["has_ingest"],
+                        ingest_schema=external_data["ingest_schema"],
+                        ingest_table_name=external_data["ingest_table_name"],
+                        has_export=external_data["has_export"],
+                        cron_export=external_data["cron_export"],
+                        export_schema=external_data["export_schema"],
+                        export_table_name=external_data["export_table_name"],
+                        export_verified_only=external_data["export_verified_only"],
+                    )
+                elif project.has_database_connection():
+                    # remove existing database connection
+                    external_db.update(
+                        env_file="",
+                        database_type="none",
+                        has_ingest=False,
+                        ingest_schema=None,
+                        cron_ingest=False,
+                        ingest_table_name=None,
+                        has_export=False,
+                        cron_export=False,
+                        export_schema=None,
+                        export_table_name=None,
+                    )
+
+                    # delete credential file
+                    delete_external_db_file(project.pk)
+
+                return redirect(self.get_success_url())
+        else:
+            return self.render_to_response(context)
+
+
+class ProjectUpdateUmbrella(LoginRequiredMixin, UserPassesTestMixin, View):
+    model = Project
+    template_name = "projects/update/umbrella.html"
+    permission_denied_message = (
+        "You must be an Admin or Project Creator to access the Project Update page."
+    )
+    raise_exception = True
+    ordering = "name"
+
+    def test_func(self):
+        project = Project.objects.get(pk=self.kwargs["pk"])
+
+        return (
+            project_extras.proj_permission_level(project, self.request.user.profile)
+            >= 2
+        )
+
+    def get_context_data(self, **kwargs):
+        context = {}
+        project = Project.objects.get(pk=self.kwargs["pk"])
+        context["project"] = project
+
+        projects_umbrellas = get_projects_umbrellas(self)
+        context["umbrella_choices"] = [
+            umbrella_choice for umbrella_choice in projects_umbrellas if umbrella_choice
+        ]
+
+        context["umbrella"] = project.umbrella_string
+
+        return context
+
+    def get_success_url(self):
+        context = self.get_context_data()
+        return context["project"].get_absolute_url()
+
+    def get(self, request, *args, **kwargs):
+        return render(request, self.template_name, context=self.get_context_data())
+
+    def post(self, request, *args, **kwargs):
+        context = self.get_context_data()
+
+        Project.objects.filter(id=context["project"].id).update(
+            umbrella_string=request.POST.get("umbrella")
+        )
+
+        return redirect(self.get_success_url())
 
 
 class ProjectUpdatePermissions(LoginRequiredMixin, UserPassesTestMixin, View):
@@ -507,7 +749,7 @@ class ProjectUpdatePermissions(LoginRequiredMixin, UserPassesTestMixin, View):
 
                 return redirect(self.get_success_url())
         else:
-            return self.render_to_response(context)
+            return self.get(request)
 
 
 class ProjectUpdateLabel(LoginRequiredMixin, UserPassesTestMixin, View):
@@ -561,7 +803,9 @@ class ProjectUpdateLabel(LoginRequiredMixin, UserPassesTestMixin, View):
                 labels.instance = context["project"]
                 labels.save()
 
-                return redirect(self.get_success_url())
+            update_label_embeddings(context["project"])
+
+            return redirect(self.get_success_url())
         else:
             return self.render_to_response(context)
 
@@ -582,3 +826,40 @@ class ProjectDelete(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
             project_extras.proj_permission_level(project, self.request.user.profile)
             >= 2
         )
+
+
+class CreateFolder(LoginRequiredMixin, ListView):
+    model = Project
+    template_name = "projects/folder.html"
+
+    def get_context_data(self, **kwargs):
+        context = {}
+        admin_or_created_projects = []
+
+        # Only allow user to change folders of project they are the creator/have admin permissions
+        for project in get_projects(self, False):
+            if (
+                project_extras.proj_permission_level(project, self.request.user.profile)
+                >= 2
+            ):
+                admin_or_created_projects.append(project)
+        admin_or_created_projects.sort(key=lambda x: x.name)
+        context["projects"] = admin_or_created_projects
+
+        if self.request.POST:
+            context["project"] = self.request.POST["project"]
+            context["umbrella"] = self.request.POST["umbrella"]
+
+        return context
+
+    def get(self, request, *args, **kwargs):
+        return render(request, self.template_name, context=self.get_context_data())
+
+    def post(self, request, *args, **kwargs):
+        context = self.get_context_data()
+
+        Project.objects.filter(id=context["project"]).update(
+            umbrella_string=request.POST.get("umbrella")
+        )
+
+        return redirect("/projects")

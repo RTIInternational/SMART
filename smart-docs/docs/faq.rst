@@ -28,15 +28,12 @@ That being said, we recognize that determining meaningful categories for a new l
 I accidentally mislabeled an observation. How do I correct my mistake?
 ***********************************************************************
 
-If you accidentally mislabel a document during the coding process, you can re-label the observation in the "History" tab of the annotation page. Re-labelling is only unavailable if:
-
- * An Admin has provided a final label on a skipped document,
- * An Admin has provided a final label on an IRR document with coder disagreement.
+If you accidentally mislabel a document during the coding process, you can edit the observation in the "History" tab of the annotation page. Label editling is only unavailable if the data was used for IRR and was either resolved due to coder agreement, or an Admin provided a final label after coder disagreement.
 
 .. warning::
 	When using active learning, data labels modified on the History tab will not change the model accuracy metrics of past batches displayed on the Active Learning tab of the Admin page, but instead, will update the data for the next model re-training.
 
-What functionality do I get as a Coder? Admin?
+What functionality do I get as a coder? Admin?
 **********************************************
 
 .. _userroles:
@@ -84,6 +81,21 @@ Why support labeling data in batches?
 We implemented an option to label data in batches due to its practicality. While many active learning strategies assume a sequential back-and-forth between the model and the labeller, waiting for the model to train and predict new examples after every new labeled observation can be prohibitively slow when models are complex or when the underlying data set is large. Additionally, labeling observations in batches more easily allows the labeling process to be spread out among multiple people working on a batch in parallel.
 
 To provide assistance for just this scenario, researchers have developed *batch-mode active learning* algorithms that help assemble batches containing both informative and diverse examples, reducing the chance that observations within a batch will provide redundant information.  While effective on large batch sizes, initial tests comparing batch-mode active learning models against simpler non-batch active learning strategies showed similar performance on more modest batch sizes **[link to notebook]**.  Due to the complexity of many batch-mode active learning models and similar performance on smaller batch sizes, we forego including batch-mode active learning models in the initial release.
+
+
+Is the model used to generate embeddings the same as the classifier SMART iteratively trains?
+*********************************************************************************************
+
+No, while a model is also used to generate embeddings, they are static and do not update as more items are labeled. 
+
+
+Can I customize the label embeddings?
+*************************************
+
+Yes you can! SMART saves the embeddings model it uses in the `smart_embeddings_model folder <https://github.com/RTIInternational/SMART/tree/master/backend/django/core/smart_embeddings_model>`_. 
+Depending on the subject domain, you might want to update your model to associate certain phrases as being similar or dissimilar if they are uncommonly used outside of your field. 
+
+You can update the SMART embeddings model using the `csv to embeddings model repository <https://github.com/RTIInternational/csv-to-embeddings-model>`_.
 
 What's the tech stack used to build SMART?
 ******************************************

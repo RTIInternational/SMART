@@ -7,6 +7,7 @@ Feature Highlights
 ^^^^^^^^^^^^^^^^^^
 
 * **Active Learning** algorithms for selecting the next batch of data to label.
+* **Label Suggestions** to suggest likely labels for each data item, using embeddings.
 * **Inter-rater reliability** metrics to help determine a human-level baseline and the understand the test validity of your labeling task.
 * **Admin dashboard** and other project management tools to help oversee the labeling process and coder progress.
 * **Multi-user coding**, for parallel annotation efforts within a project.
@@ -21,7 +22,7 @@ Quick Start
 	$ docker-compose build
 	$ docker volume create --name=vol_smart_pgdata
 	$ docker volume create --name=vol_smart_data
-  $ docker-compose run --rm smart_backend ./migrate.sh
+	$ docker-compose run --rm backend ./migrate.sh
 	$ docker-compose up -d
 
 Open your browser to http://localhost:8000

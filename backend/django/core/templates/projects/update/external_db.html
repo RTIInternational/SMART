@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block page_title %}Update Project Database Connection{% endblock %}
+
+{% load static %}
+{% load render_bundle from webpack_loader %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 col-md-offset-2">
+        <div class="card">
+            <div class="cardface">
+                {{ form.media.css }}
+                <form action="." method="post" enctype="multipart/form-data" id="formObject">
+                    {% csrf_token %}
+                    <h1>External Database Connection</h1>
+                    <h3>Description</h3>
+                    <p>This page gives you the opportunity to set up or update a database connection to SMART. The import connection is used to import new unlabeled data into the SMART project to be labeled.</p>
+                    <div id="choose_db_type_box">
+                        <label class="control-label" for="{{ form.database_type.id_for_label }}">Type of Database Connection this Project should have</label>
+                        {% for radio in form.database_type %}
+                        <div class="choose_db_type" name="db_choice" id={{radio.value}}>
+                            {{radio}}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-group" id="database-fields-update">
+                        <p>Please provide the following fields for your Database Connection. </p>
+                        <div id="host_field_update">
+                            Host/Server: {{ form.host }}
+                        </div>
+                        <div class="error-messages">{{ form.host.errors }}</div>
+                        <div id="dbname_field_update">
+                            Database Name: {{ form.dbname }}
+                        </div>
+                        <div class="error-messages">{{ form.dbname.errors }}</div>
+                        <div id="user_field_update">
+                            Username: {{ form.username }}
+                        </div>
+                        <div class="error-messages">{{ form.username.errors }}</div>
+                        <div id="pwd_field_update">
+                            Password: {{ form.password }}
+                        </div>
+                        <div class="error-messages">{{ form.password.errors }}</div>
+                        <div id="port_field_update">
+                            Port: {{ form.port }}
+                        </div>
+                        <div class="error-messages">{{ form.port.errors }}</div>
+                    </div>
+                    <div class="form-group" id="ms-sql-fields-update">
+                        <div id="driver_field_update">
+                            Driver Type: {{ form.driver }}
+                        </div>
+                        <div class="error-messages">{{ form.driver.errors }}</div>
+                    </div>
+                    <div class="form-group" id="database-ingest-fields-update">
+                        <hr />
+                        <p>The following fields are the table name and schema for the database table you wish SMART to read new data from.
+                            At minimum the table must have a column "Text" with the text that needs to be labeled.</p>
+                        <div id="ingest_cron_fields">
+                            Enable scheduled ingest: {{ form.cron_ingest }}
+                        </div>
+                        <div id="ingest_table_fields_update">
+                            Import Table Name: {{ form.ingest_table_name }}
+                        </div>
+                        <div class="error-messages">{{ form.ingest_table_name.errors }}</div>
+                        <div id="ingest_schema_fields_update">
+                            Import Schema: {{ form.ingest_schema }}
+                        </div>
+                        <div class="error-messages">{{ form.ingest_schema.errors }}</div>
+                        <hr />
+                        <p>The following fields are the table name and schema for the database table you wish SMART to export labeled data to.
+                            <b>WARNING:</b> The export table cannot already exist in the database. Please note that SMART will completely drop and rewrite this table each time you export.</p>
+                        <div id="export_cron_fields">
+                            Enable scheduled export: {{ form.cron_export }}
+                        </div>
+                        <div id="export_table_fields_update">
+                            Export Table Name: {{ form.export_table_name }}
+                        </div>
+                        <div class="error-messages">{{ form.export_table_name.errors }}</div>
+                        <div id="export_schema_fields_update">
+                            Export Schema: {{ form.export_schema }}
+                        </div>
+                        <div id="export_unvalidated">
+                            Only export validated labeled data: {{ form.export_verified_only }}
+                        </div>
+                        <div class="error-messages">{{ form.export_schema.errors }}</div>
+                    </div>
+                    <div class="error-messages">{{ form.non_field_errors }}</div>
+                    <button class="btn btn-primary" type="submit" id="submitButton">Submit</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts_body %}
+<script type="text/javascript">
+    var sql_fields = $('#ms-sql-fields-update');
+    var database_fields = $('#database-fields-update');
+    var database_ingest_fields = $('#database-ingest-fields-update');
+
+    if ($('input#id_database_type_1').prop('checked') == true) {
+        sql_fields.show();
+        database_fields.show();
+        database_ingest_fields.show();
+    } else {
+        sql_fields.hide();
+        database_fields.hide();
+        database_ingest_fields.hide();
+    }
+
+    $('input#id_database_type_0').change(function() {
+        if ($(this).prop('checked') == true) {
+            sql_fields.hide();
+            database_fields.hide();
+            database_ingest_fields.hide();
+        } else {
+            sql_fields.show();
+            database_fields.show();
+            database_ingest_fields.show();
+        }
+    });
+
+    $('input#id_database_type_1').change(function() {
+        if ($(this).prop('checked') == true) {
+            sql_fields.show();
+            database_fields.show();
+            database_ingest_fields.show();
+        } else {
+            sql_fields.hide();
+            database_fields.hide();
+            database_ingest_fields.hide();
+        }
+    });
+
+    $('#submitButton').click(function(e) {
+        if ($('input#id_database_type_0').prop('checked') == true) {
+            if (!confirm('WARNING: submitting with the option "no database" will remove any existing data base connection. Are you sure you want to submit?')) {
+                e.preventDefault()
+            }
+        }
+    });
+</script>
+{% endblock %}

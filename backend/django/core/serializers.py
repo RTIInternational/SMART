@@ -1,8 +1,10 @@
+import pytz
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import User as AuthUser
 from rest_framework import serializers
 
 from core.models import (
+    AdjudicateDescription,
     AssignedData,
     Data,
     DataLabel,
@@ -15,6 +17,7 @@ from core.models import (
     Project,
     Queue,
 )
+from smart.settings import TIME_ZONE_FRONTEND
 
 
 class ProfileSerializer(serializers.HyperlinkedModelSerializer):
@@ -71,9 +74,40 @@ class DataSerializer(serializers.ModelSerializer):
         )
 
 
+class DataMetadataIDSerializer(serializers.ModelSerializer):
+    metadata = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+
+    class Meta:
+        model = Data
+        fields = ("metadata",)
+
+
+class DataLabelModelSerializer(serializers.ModelSerializer):
+    profile = serializers.StringRelatedField(many=False, read_only=True)
+    timestamp = serializers.DateTimeField(
+        default_timezone=pytz.timezone(TIME_ZONE_FRONTEND), format="%Y-%m-%d, %I:%m %p"
+    )
+    verified = serializers.StringRelatedField(many=False, read_only=True)
+
+    class Meta:
+        model = DataLabel
+        fields = ("data", "profile", "label", "timestamp", "pre_loaded", "verified")
+
+
 class DataLabelSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = DataLabel
+        fields = ("data", "profile", "label", "timestamp")
+
+
+class IRRLogModelSerializer(serializers.ModelSerializer):
+    profile = serializers.StringRelatedField(many=False, read_only=True)
+    timestamp = serializers.DateTimeField(
+        default_timezone=pytz.timezone(TIME_ZONE_FRONTEND), format="%Y-%m-%d, %I:%m %p"
+    )
+
+    class Meta:
+        model = IRRLog
         fields = ("data", "profile", "label", "timestamp")
 
 
@@ -114,3 +148,9 @@ class AssignedDataSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = AssignedData
         fields = ("profile", "data", "queue", "assigned_timestamp")
+
+
+class AdjudicateDescriptionSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = AdjudicateDescription
+        fields = ("project", "data", "message", "isResolved")

@@ -6,7 +6,14 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from core import tasks
-from core.models import Label, Profile, Project, ProjectPermissions, TrainingSet
+from core.models import (
+    ExternalDatabase,
+    Label,
+    Profile,
+    Project,
+    ProjectPermissions,
+    TrainingSet,
+)
 from core.utils.util import add_data, save_data_file
 from core.utils.utils_annotate import get_assignments, label_data
 from core.utils.utils_queue import add_queue, fill_queue, find_queue_length
@@ -41,6 +48,8 @@ def seed_project(
 
     TrainingSet.objects.create(project=project, set_number=0)
 
+    ExternalDatabase.objects.create(project=project, env_file="", database_type="none")
+
     labels = []
     for name in label_list:
         labels.append(Label.objects.create(name=name, project=project))
@@ -69,7 +78,13 @@ def seed_project(
     add_queue(project=project, length=data_length, type="admin")
     irr_queue = add_queue(project=project, length=2000000, type="irr")
     new_df = add_data(project, f_data)
-    fill_queue(queue, irr_queue=irr_queue, orderby="random", batch_size=batch_size)
+    fill_queue(
+        queue,
+        irr_queue=irr_queue,
+        orderby="random",
+        batch_size=batch_size,
+        irr_percent=project.percentage_irr,
+    )
     save_data_file(new_df, project.pk)
 
     tasks.send_tfidf_creation_task.apply(args=[project.pk])
@@ -92,6 +107,14 @@ def label_project(project, profile, num_labels):
     task_num = tasks.send_model_task.apply(args=[project.pk])
     current_training_set.celery_task_id = task_num
     current_training_set.save()
+
+    fill_queue(
+        project.queue_set.get(type="normal"),
+        irr_queue=project.queue_set.get(type="irr"),
+        orderby="random",
+        batch_size=project.batch_size,
+        irr_percent=project.percentage_irr,
+    )
 
 
 class Command(BaseCommand):

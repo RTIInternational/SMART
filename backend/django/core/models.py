@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import JSONField
@@ -40,6 +41,7 @@ class Project(models.Model):
     num_users_irr = models.IntegerField(default=2, validators=[MinValueValidator(2)])
     codebook_file = models.TextField(default="")
     batch_size = models.IntegerField(default=30)
+    umbrella_string = models.TextField(blank=True)
     """ Advanced options """
     # the current options are 'random', 'least confident', 'entropy', and 'margin sampling'
     ACTIVE_L_CHOICES = [
@@ -66,6 +68,24 @@ class Project(models.Model):
         null=True,
     )
 
+    DEDUP_CHOICES = (
+        ("Text", "Text only"),
+        ("Metadata_Text", "Text and all Metadata fields"),
+        ("Text_Some_Metadata", "Text and selected Metadata fields"),
+    )
+    dedup_on = models.CharField(
+        max_length=19,
+        default="Text",
+        choices=DEDUP_CHOICES,
+        null=False,
+    )
+
+    dedup_fields = models.CharField(
+        max_length=50,
+        default="",
+        null=True,
+    )
+
     def get_absolute_url(self):
         return reverse("projects:project_detail", kwargs={"pk": self.pk})
 
@@ -84,11 +104,60 @@ class Project(models.Model):
     def labeled_data_count(self):
         return self.data_set.all().filter(datalabel__isnull=False).count()
 
+    def unverified_labeled_data_count(self):
+        return (
+            self.data_set.all()
+            .filter(datalabel__isnull=False, datalabel__verified__isnull=False)
+            .count()
+        )
+
     def has_model(self):
         if self.model_set.count() > 0:
             return True
         else:
             return False
+
+    def has_database_connection(self):
+        return self.externaldatabase.env_file != ""
+
+    def get_ingest_database(self):
+        if self.externaldatabase.has_ingest:
+            return f"{self.externaldatabase.ingest_schema}.{self.externaldatabase.ingest_table_name}"
+        else:
+            return ""
+
+    def get_scheduled_ingest(self):
+        if self.externaldatabase.has_ingest:
+            if self.externaldatabase.cron_ingest:
+                return "On"
+            else:
+                return "Off"
+        else:
+            return "NaN"
+
+    def get_scheduled_export(self):
+        if self.externaldatabase.has_export:
+            if self.externaldatabase.cron_export:
+                return "On"
+            else:
+                return "Off"
+        else:
+            return "NaN"
+
+    def get_export_verified_only(self):
+        if self.externaldatabase.has_export:
+            if self.externaldatabase.export_verified_only:
+                return "On"
+            else:
+                return "Off"
+        else:
+            return "NaN"
+
+    def get_export_database(self):
+        if self.externaldatabase.has_export:
+            return f"{self.externaldatabase.export_schema}.{self.externaldatabase.export_table_name}"
+        else:
+            return ""
 
 
 class ProjectPermissions(models.Model):
@@ -131,8 +200,11 @@ class Data(models.Model):
 
 
 class MetaDataField(models.Model):
-    project = models.ForeignKey("Project", on_delete=models.CASCADE)
+    project = models.ForeignKey(
+        "Project", related_name="metadatafields", on_delete=models.CASCADE
+    )
     field_name = models.TextField()
+    use_with_dedup = models.BooleanField(default=True)
 
     def __str__(self):
         return self.field_name
@@ -150,8 +222,46 @@ class MetaData(models.Model):
         return f"{str(self.metadata_field)}: {self.value}"
 
 
+class ExternalDatabase(models.Model):
+    project = models.OneToOneField(
+        "Project", related_name="externaldatabase", on_delete=models.CASCADE
+    )
+    env_file = models.TextField()
+    DB_TYPE_CHOICES = (
+        ("none", "No Database Connection"),
+        ("microsoft", "MS SQL"),
+    )
+    database_type = models.CharField(
+        max_length=9,
+        default="none",
+        choices=DB_TYPE_CHOICES,
+        null=False,
+    )
+
+    has_ingest = models.BooleanField(default=False)
+    cron_ingest = models.BooleanField(default=False)
+    ingest_schema = models.CharField(max_length=50, null=True)
+    ingest_table_name = models.CharField(max_length=50, null=True)
+    has_export = models.BooleanField(default=False)
+    cron_export = models.BooleanField(default=False)
+    export_schema = models.CharField(max_length=1024, null=True)
+    export_table_name = models.CharField(max_length=1024, null=True)
+    export_verified_only = models.BooleanField(default=False)
+
+
+class LabelEmbeddings(models.Model):
+    class Meta:
+        ordering = ("label_id",)
+
+    label = models.OneToOneField(
+        "Label", on_delete=models.CASCADE, related_name="labelEmbedding"
+    )
+    embedding = ArrayField(models.FloatField())
+
+
 class Label(models.Model):
     class Meta:
+        ordering = ("id",)
         unique_together = ("name", "project")
 
     name = models.TextField()
@@ -184,6 +294,18 @@ class DataLabel(models.Model):
     training_set = models.ForeignKey("TrainingSet", on_delete=models.CASCADE)
     time_to_label = models.IntegerField(null=True)
     timestamp = models.DateTimeField(null=True, default=None)
+    pre_loaded = models.BooleanField(default=False)
+
+
+class VerifiedDataLabel(models.Model):
+    data_label = models.OneToOneField(
+        "DataLabel", on_delete=models.CASCADE, primary_key=True, related_name="verified"
+    )
+    verified_by = models.ForeignKey("Profile", on_delete=models.CASCADE)
+    verified_timestamp = models.DateTimeField(null=True, default=None)
+
+    def __str__(self):
+        return str(self.verified_by)
 
 
 class LabelChangeLog(models.Model):
@@ -260,3 +382,11 @@ class AdminProgress(models.Model):
     project = models.ForeignKey("Project", on_delete=models.CASCADE)
     profile = models.ForeignKey("Profile", on_delete=models.CASCADE)
     timestamp = models.DateTimeField(default=timezone.now)
+    last_action = models.DateTimeField(auto_now=True)
+
+
+class AdjudicateDescription(models.Model):
+    project = models.ForeignKey("Project", on_delete=models.CASCADE)
+    data = models.ForeignKey("Data", on_delete=models.CASCADE)
+    message = models.TextField()
+    isResolved = models.BooleanField(default=False)

@@ -28,7 +28,7 @@ class Dev(Configuration):
     # SECURITY WARNING: don't run with debug turned on in production!
     DEBUG = True
 
-    ALLOWED_HOSTS = ["0.0.0.0", "localhost"]
+    ALLOWED_HOSTS = ["0.0.0.0", "localhost", "backend", "smart-coding.rti.org"]
 
     # Application definition
 
@@ -139,6 +139,7 @@ class Dev(Configuration):
     LANGUAGE_CODE = "en-us"
 
     TIME_ZONE = "UTC"
+    TIME_ZONE_FRONTEND = "US/Eastern"
 
     USE_I18N = True
 
@@ -169,6 +170,7 @@ class Dev(Configuration):
     MODEL_PICKLE_PATH = os.path.join(DATA_DIR, "model_pickles")
     PROJECT_FILE_PATH = os.path.join(DATA_DIR, "data_files")
     CODEBOOK_FILE_PATH = os.path.join(DATA_DIR, "code_books")
+    ENV_FILE_PATH = os.path.join(DATA_DIR, "external_db")
 
     AUTH_USER_MODEL = "auth.User"
 
@@ -178,7 +180,9 @@ class Dev(Configuration):
 
     # This is temporary until we can get an email server setup
     # for registration emails
-    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = "rtismtp.rti.org"
+    EMAIL_PORT = 25
 
     REDIS_URL = "redis://redis:6379/0"
 
@@ -196,6 +200,7 @@ class Dev(Configuration):
     STATICFILES_DIRS = [
         os.path.join(BASE_DIR, "frontend", "dist"),
         os.path.join(BASE_DIR, "core/data"),
+        os.path.join(BASE_DIR, "core/templates/projects/static"),
         os.path.join(BASE_DIR, "smart/static"),
         "/data/code_books/",
     ]
@@ -212,6 +217,9 @@ class Dev(Configuration):
     }
 
     DATA_UPLOAD_MAX_NUMBER_FIELDS = None
+    DATA_UPLOAD_MAX_MEMORY_SIZE = None
+
+    ADMIN_TIMEOUT_MINUTES = 15
 
 
 class Prod(Dev):

@@ -24,9 +24,9 @@ copyright = "2018. Rob Chew, Michael Wenger, Caroline Kery, and contributors"
 author = "Rob Chew, Micheal Wenger, Caroline Kery, and contributors"
 
 # The short X.Y version
-version = ""
+version = "3.0"
 # The full version, including alpha/beta/rc tags
-release = "1.0.0"
+release = "3.0.0"
 
 
 # -- General configuration ---------------------------------------------------
