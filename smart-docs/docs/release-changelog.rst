@@ -30,7 +30,7 @@ Changes from 2.0.1
 * The project page now lists counts for the data left to code. This excludes items in the recycle bin.
 * The details page now provides counts for the data in the project and where the data is in the coding or IRR pipeline.
 * The Skip button has been changed so it merely un-assigns the card to be labeled later. Instead, there is a separate "Adjudicate" button which has the old skip functionality of sending the card to the Admin table. This button now also requires a reason for sending to the Admin.
-
+* Metadata values can now be updated by clicking the "edit" button on any of the cards.
 
 **Removed Features**
 
@@ -75,11 +75,11 @@ Changes from 1.0.0
 ******************
 
 * Upgrades frontend and backend packages to maintain usability and patch potential security issues found in older package versions. Several packages had not been maintained, and so had to be removed. The most notable is the package responsible for the loading bar which appears when the user is loading large data files into the software.
-* Adds in pre-commit hooks and automated formatting options to make the code cleaner and more readable
-* Replaces the default data from sentiment data challenge with new cleaner dataset
-* *Bug fix*: deck of cards for labeling will not duplicate itself if someone flips through tabs during annotation
-* *Bug fix*: admin charts now automatically resize to fit window when tab changes
-* *Bug fix*: IRR admin table search bar now functions for filtering the first coder field
+* Adds in pre-commit hooks and automated formatting options to make the code cleaner and more readable.
+* Replaces the default data from sentiment data challenge with new cleaner dataset.
+* *Bug fix*: deck of cards for labeling will not duplicate itself if someone flips through tabs during annotation.
+* *Bug fix*: admin charts now automatically resize to fit window when tab changes.
+* *Bug fix*: IRR admin table search bar now functions for filtering the first coder field.
 
 Release v.1.0.0
 ---------------

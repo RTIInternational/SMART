@@ -52,9 +52,9 @@ Refilling the Batch
 
 A user's card deck will continue to refill itself from the batch until it is empty. Once a batch has been coded or skipped, a new batch of unlabeled data will be requested from SMART. This batch will be selected using the chosen active learning algorithm, or randomly, depending on if Active Learning was enabled in :ref:`advancedsettings`. The batch may also be selected randomly in projects with active learning enabled for three other reasons:
 
-* It is the first batch
-* Each possible label has not been used at least once
-* There has not been a full batch worth of data marked as labeled (possibly some was skipped or is IRR and waiting for additional labels)
+* It is the first batch.
+* Each possible label has not been used at least once.
+* There has not been a full batch worth of data marked as labeled (possibly some was skipped or is IRR and waiting for additional labels).
 
 If a model is currently running, then the new batch will be delayed until the model has finished running, and you will be presented with the message in the image below. Note that this does not apply to projects that have disabled having a model. Projects that have disabled Active Learning but have a model will still have to wait for the model to run, but it will be done faster as predictions will not have to be generated for the unlabeled data (see :ref:`admindashboard` for more details). 
 |annotate-nocards|
@@ -81,10 +81,10 @@ Perhaps you have been happily coding your data and you accidentally click the wr
 
 This page includes all data that has been labeled by you personally, and provides the following fields:
 
-* **Data**: the text being labeled
-* **Old Label**: the current label assigned to the data
-* **User**: The username of the user who labeled the data (for pre-loaded labels this defaults to the project creator)
-* **Date/Time**: The date and time where the data was labeled
+* **Data**: the text being labeled.
+* **Old Label**: the current label assigned to the data.
+* **User**: The username of the user who labeled the data (for pre-loaded labels this defaults to the project creator).
+* **Date/Time**: The date and time where the data was labeled.
 * **[NEW] Verified**: This field indicates if the label has been verified. If it has, this field will say "Yes." If not, it will instead include a button to verify the data. Note that this feature is disabled for IRR data, as IRR data includes it's own form of verification through either coder agreement or admin adjudication if they don't agree.
 * **[NEW] Verified By**: This is the username of the user who verified the data label.
 * **[NEW] Pre-Loaded**: This field indicates if this labeled item was loaded into the system already labeled. Note that if you change the label in the history table, it will no longer be pre-loaded.

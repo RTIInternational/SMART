@@ -48,29 +48,29 @@ The Details page provides an overview of the information and settings for your p
 
 **The Details page lets you review:**
 
-* The project Description
+* The project Description.
 
 |details-description|
 
-* What permissions have been assigned to what users
-* The advanced settings (i.e. :ref:`active-learning`, :ref:`irr`, classifier, batch size, :ref:`projectmetadata`, deduplication settings)
+* What permissions have been assigned to what users.
+* The advanced settings (i.e. :ref:`active-learning`, :ref:`irr`, classifier, batch size, :ref:`projectmetadata`, deduplication settings).
 
 |details-advanced-permissions|
 
 * The status of the data currently loaded in your project. This splits into:
    * *Fully Labeled*: data which has been either labeled by one user (if not IRR data) or has received the required number of labels and they either agreed or the disagreement was resolved (if IRR data).
-   * *Unlabeled and Unassigned*: This data has not been touched since it was loaded into SMART
+   * *Unlabeled and Unassigned*: This data has not been touched since it was loaded into SMART.
    * *Awaiting Adjudication*: This data is sitting in the :ref:`adminannotate` table waiting review by an administrator. It was either IRR data where the coders did not agree, or the data was sent to an administrator by a coder.
    * *Recycle Bin*: This data was dropped from the project for some reason and is not included in the data totals. 
    * *Assigned/Partially Labeled IRR*: This data is in progress. Either it has been passed out to someone for coding (see :ref:`unassigncoders` on how to un-assign data from coders), or it is IRR data which has received some labels but not enough to be either adjudicated or resolved.
 
 |details-counts|
 
-* The labels being used and their descriptions (if applicable)
+* The labels being used and their descriptions (if applicable).
 
 |details-labels|
 
-* A sample of your data
+* A sample of your data.
 
 |details-data|
 
@@ -95,13 +95,13 @@ Updating a Project
 
 The Update Project page is accessible from the :ref:`details` of a project. This page can be used for the following operations:
 
-* Edit the project name and description
-* Add or remove an MSSQL database connection, or change settings (NOTE: you will be required to re-enter database credentials to make changes)
-* Add additional data to label
-* Add or change the codebook file
-* Add, remove, or change project permissions
-* Edit label descriptions
-* Add the project to an existing group
+* Edit the project name and description.
+* Add or remove an MSSQL database connection, or change settings (NOTE: you will be required to re-enter database credentials to make changes).
+* Add additional data to label.
+* Add or change the codebook file.
+* Add, remove, or change project permissions.
+* Edit label descriptions.
+* Add the project to an existing group.
 
 .. tip::
 
