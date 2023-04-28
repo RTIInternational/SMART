@@ -21,7 +21,7 @@ So you have been working hard labeling your data and have accumulated a respecta
 
 	 |annotate-downloadmodel-files|
 
-4. If your project has both verified and unverified labeled data, you will see an additional button which says "Download Only Verified Labeled Data" or "Download Model and Only Verified Labeled Data" depending on if you have a trained model to download. Using this button restricts the data downloaded to just data which has been verified (see :ref:`details-counts` for more information).
+4. If your project has both verified and unverified labeled data, you will see an additional button which says "Download Only Verified Labeled Data" or "Download Model and Only Verified Labeled Data" depending on if you have a trained model to download. Using this button restricts the data downloaded to just data which has been verified (see :ref:`details` for more information).
 
 
 This button is available in one of two places.
