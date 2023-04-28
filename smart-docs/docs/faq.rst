@@ -28,7 +28,7 @@ That being said, we recognize that determining meaningful categories for a new l
 I accidentally mislabeled an observation. How do I correct my mistake?
 ***********************************************************************
 
-If you accidentally mislabel a document during the coding process, you can re-label the observation in the "History" tab of the annotation page. Re-labelling is only unavailable if the data was used for IRR and was either resolved due to coder agreement, or an Admin provided a final label after coder disagreement.
+If you accidentally mislabel a document during the coding process, you can edit the observation in the "History" tab of the annotation page. Label editling is only unavailable if the data was used for IRR and was either resolved due to coder agreement, or an Admin provided a final label after coder disagreement.
 
 .. warning::
 	When using active learning, data labels modified on the History tab will not change the model accuracy metrics of past batches displayed on the Active Learning tab of the Admin page, but instead, will update the data for the next model re-training.
