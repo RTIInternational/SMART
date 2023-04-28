@@ -13,7 +13,7 @@ The projects page serves as the central page for a SMART user. The page provides
 The projects will also give a high level count of the portion of data in the project which has been fully labeled. Note that items in the :ref:`recyclebin` will not be counted in the denominator of the fraction.
 
 
-The image below is the project page for User1. We see that the user is a Coder for all projects except for the ``Hot Dog Classifier`` project, where it is an Admin.
+The image below is the project page for User1. We see that the user is a coder for all projects except for the ``Hot Dog Classifier`` project, where it is an Admin.
 
 |lotsofprojects|
 
@@ -30,8 +30,8 @@ Below we add our "About Cats Classifier" project to a new group.
 |projects-group|
 
 
-You can add more projects to that group by clicking "New Folder" and typing the same group name,
-but you can also add projects to the list of existing groups through selecting that project in the project page and then going to ``Details``-> ``Update Project`` -> ``Add Project to Folder``.
+You can add more projects to that group by clicking "New Group" and typing the same group name,
+but you can also add projects to the list of existing groups through selecting that project in the project page and then going to ``Details``-> ``Update Project`` -> ``Add Project to Group``.
 
 Below we add our "About Cats Labeling" project to the Group we made for the "About Cats Classifier" project.
 
@@ -60,9 +60,9 @@ The Details page provides an overview of the information and settings for your p
 * The status of the data currently loaded in your project. This splits into:
    * *Fully Labeled*: data which has been either labeled by one user (if not IRR data) or has received the required number of labels and they either agreed or the disagreement was resolved (if IRR data).
    * *Unlabeled and Unassigned*: This data has not been touched since it was loaded into SMART
-   * *Awaiting Adjudication*: This data is sitting in the :ref:`adminannotate` table waiting review by an administrator. It was either IRR data where the coders did not agree, or the data was sent to an administrator by a Coder.
+   * *Awaiting Adjudication*: This data is sitting in the :ref:`adminannotate` table waiting review by an administrator. It was either IRR data where the coders did not agree, or the data was sent to an administrator by a coder.
    * *Recycle Bin*: This data was dropped from the project for some reason and is not included in the data totals. 
-   * *Assigned/Partially Labeled IRR*: This data is in progress. Either it has been passed out to someone for coding, or it is IRR data which has received some labels but not enough to be either adjudicated or resolved.
+   * *Assigned/Partially Labeled IRR*: This data is in progress. Either it has been passed out to someone for coding (see :ref:`unassigncoders` on how to un-assign data from coders), or it is IRR data which has received some labels but not enough to be either adjudicated or resolved.
 
 |details-counts|
 

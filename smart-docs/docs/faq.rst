@@ -33,7 +33,7 @@ If you accidentally mislabel a document during the coding process, you can edit 
 .. warning::
 	When using active learning, data labels modified on the History tab will not change the model accuracy metrics of past batches displayed on the Active Learning tab of the Admin page, but instead, will update the data for the next model re-training.
 
-What functionality do I get as a Coder? Admin?
+What functionality do I get as a coder? Admin?
 **********************************************
 
 .. _userroles:

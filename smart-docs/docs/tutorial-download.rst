@@ -33,12 +33,16 @@ This button is available in one of two places.
 * The bottom of the :ref:`details`:
 
 |annotate-downloadmodel-nodatabutton|
+
 OR (if you have labeled data but no model)
 |annotate-downloadmodel-databutton|
+
 OR (if you have the same project above with a database connection set up)
 |annotate-downloadmodel-exportimportdatabutton|
+
 OR (if you have labeled data and a model)
 |annotate-downloadmodel-modelanddatabutton|
+
 OR (if you have the same project as above but you also have some verified labels)
 |annotate-downloadmodel-modelanddatabutton-verified|
 
