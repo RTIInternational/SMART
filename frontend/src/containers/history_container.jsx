@@ -11,11 +11,13 @@ import {
     setCurrentPage,
     filterHistoryTable
 } from '../actions/history';
-import History from '../components/History';
+// import History from '../components/History';
+import HistoryTable from '../components/History/HistoryTable';
 
 const PROJECT_ID = window.PROJECT_ID;
 
-const HistoryContainer = (props) => <History {...props} />;
+// const HistoryContainer = (props) => <History {...props} />;
+const HistoryContainer = (props) => <HistoryTable {...props} />;
 
 const mapStateToProps = (state) => {
     return {
