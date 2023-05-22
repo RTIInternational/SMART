@@ -591,11 +591,7 @@ def data_unlabeled_table(request, project_pk):
     unlabeled_data = get_unlabeled_data(project_pk)[:50]
     serialized_data = DataSerializer(unlabeled_data, many=True).data
     data = [
-        {
-            "Text": d["text"],
-            "metadata": d["metadata"],
-            "ID": d["pk"],
-        }
+        {"Text": d["text"], "metadata": d["metadata"], "ID": d["pk"]}
         for d in serialized_data
     ]
     return Response({"data": data})
@@ -1094,3 +1090,22 @@ def modify_metadata_values(request, data_pk):
         metadata.value = m["value"]
         metadata.save()
     return Response({})
+
+
+@api_view(["GET"])
+@permission_classes((IsCoder,))
+def get_labels(request, project_pk):
+    """Grab data using get_assignments and send it to the frontend react app.
+
+    Args:
+        request: The request to the endpoint
+        project_pk: Primary key of project
+    Returns:
+        labels: The project labels
+        data: The data in the queue
+    """
+    project = Project.objects.get(pk=project_pk)
+    labels = Label.objects.all().filter(project=project)
+
+    return Response({"labels": LabelSerializer(labels, many=True).data,})
+
