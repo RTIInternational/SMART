@@ -2,12 +2,13 @@ import React, { Fragment, useState } from "react";
 import {
     Button,
     Modal,
-    Tooltip,
-    OverlayTrigger
+    OverlayTrigger,
+    Tooltip
 } from "react-bootstrap";
-import Metadata from "./Metadata";
 
-export default function CardData({ card, onSkip, onUnassign, showAdjudicate = true, modifyMetadataValues }) {
+import DataCardMetadata from "./DataCardMetadata";
+
+const CardData = ({ card, onSkip, onUnassign, showAdjudicate = true }) => {
     return (
         <div className="cardface-info">
             {showAdjudicate && (
@@ -20,12 +21,15 @@ export default function CardData({ card, onSkip, onUnassign, showAdjudicate = tr
                 <h4>Text to Label</h4>
                 <p style={{ whiteSpace: "normal" }}>{card.text["text"] || card.text["data"]}</p>
             </div>
-            <Metadata card={card} modifyMetadataValues={modifyMetadataValues} />
+            <DataCardMetadata card={card} />
         </div>
     );
-}
+};
 
-function drawSkipButton(card, onSkip) {
+export default CardData;
+
+// TODO (IR&D): Migrate to DataCardAdjudicateButton
+const drawSkipButton = (card, onSkip) => {
     const [isOpen, setIsOpen] = useState(false);
     const [message, setMessage] = useState("");
 
@@ -69,9 +73,10 @@ function drawSkipButton(card, onSkip) {
             </Modal>
         </Fragment>
     );
-}
+};
 
-function drawSkipQueueButton(card, onUnassign) {
+// TODO (IR&D): Make DataCardSkipButton
+const drawSkipQueueButton = (card, onUnassign) => {
     if (!onUnassign) return null;
 
     return (
@@ -96,4 +101,4 @@ function drawSkipQueueButton(card, onUnassign) {
             </OverlayTrigger>
         </Fragment>
     );
-}
+};
