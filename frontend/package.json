@@ -83,5 +83,8 @@
     "webpack-bundle-tracker": "^1.0.0-alpha.1",
     "webpack-cli": "^4.6.0",
     "whatwg-fetch": "^3.6.2"
+  },
+  "engines": {
+    "node": ">=16"
   }
 }
