@@ -12,7 +12,7 @@ const mapStateToProps = (state) => {
     return {
         cards: state.card.cards,
         message: state.card.message,
-        labels: state.card.labels
+        labels: state.smart.labels
     };
 };
 
