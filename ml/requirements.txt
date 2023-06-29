@@ -1,0 +1,6 @@
+fastapi
+pandas
+python-multipart
+sentence_transformers
+torch
+uvicorn
