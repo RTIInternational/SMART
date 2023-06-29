@@ -44,6 +44,13 @@ services:
       - redis
       - backend
 
+  ml:
+    extends:
+      file: ../docker-common.yml
+      service: ml
+    build: ../../ml
+    image: rti/smart-ml:R_0_0_1
+
 volumes:
   smart_pgdata:
     external: true
