@@ -31,6 +31,7 @@ from core.models import (
     TrainingSet,
     VerifiedDataLabel,
 )
+from core.utils.utils_ml import encode
 from core.utils.utils_queue import fill_queue
 from smart.settings import TIME_ZONE_FRONTEND
 
@@ -40,13 +41,6 @@ from smart.settings import TIME_ZONE_FRONTEND
 # https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
 # Disable warning for false positive warning that should only trigger on chained assignment
 pd.options.mode.chained_assignment = None  # default='warn'
-
-# Using a prebuilt model
-# How this model was built: https://github.com/dsteedRTI/csv-to-embeddings-model
-# Sbert Model can be found here: https://www.sbert.net/docs/pretrained_models.html
-# Sbert Model Card: https://huggingface.co/sentence-transformers/multi-qa-mpnet-base-dot-v1
-model_path = "core/smart_embeddings_model"
-embeddings_model = SentenceTransformer(model_path)
 
 
 def md5_hash(obj):
@@ -272,17 +266,12 @@ def generate_label_embeddings(project):
             project_labels.values_list("description", flat=True)
         )
 
-        # Make manual embeddings. Prod settings made calling the api from the backend infeasible
-        embeddings = embeddings_model.encode(project_labels_descriptions)
+        embeddings = encode(project_labels_descriptions, project)
 
         label_embeddings = []
 
-        # We have to use tolist() since not calling API now to handle numpy arrays
-        # (JSON response from API originally handled this for us)
         for embedding, label in zip(embeddings, project_labels):
-            label_embeddings.append(
-                LabelEmbeddings(embedding=embedding.tolist(), label=label)
-            )
+            label_embeddings.append(LabelEmbeddings(embedding=embedding, label=label))
 
         LabelEmbeddings.objects.bulk_create(
             label_embeddings, ignore_conflicts=True, batch_size=8000
@@ -300,17 +289,14 @@ def update_label_embeddings(project):
         )
         project_labels_ids = list(project_labels.values_list("id", flat=True))
 
-        # Make manual embeddings. Prod settings made calling the api from the backend infeasible
-        embeddings = embeddings_model.encode(project_labels_descriptions)
+        embeddings = encode(project_labels_descriptions, project.id)
 
         project_labels_embeddings = LabelEmbeddings.objects.filter(
             label_id__in=project_labels_ids
         )
 
-        # We have to use tolist() since not calling API now to handle numpy arrays
-        # (JSON response from API originally handled this for us)
         for embedding, label_embedding in zip(embeddings, project_labels_embeddings):
-            label_embedding.embedding = embedding.tolist()
+            label_embedding.embedding = embedding
 
         LabelEmbeddings.objects.bulk_update(
             project_labels_embeddings, ["embedding"], batch_size=8000

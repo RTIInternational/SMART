@@ -1,7 +1,3 @@
-import math
-import random
-
-import pandas as pd
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
@@ -9,7 +5,6 @@ from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from sentence_transformers import SentenceTransformer, util
 
 from core.models import (
     AdjudicateDescription,
@@ -39,10 +34,8 @@ from core.serializers import (
 )
 from core.templatetags import project_extras
 from core.utils.utils_annotate import (
-    cache_embeddings,
     createUnresolvedAdjudicateMessage,
     get_assignments,
-    get_embeddings,
     get_unlabeled_data,
     label_data,
     leave_coding_page,
@@ -50,17 +43,15 @@ from core.utils.utils_annotate import (
     process_irr_label,
     update_last_action,
 )
+from core.utils.utils_ml import cache_embeddings, compare, encode, get_embeddings
 from core.utils.utils_model import check_and_trigger_model
 from core.utils.utils_queue import fill_queue
 from core.utils.utils_redis import redis_serialize_data, redis_serialize_set
 from smart.settings import ADMIN_TIMEOUT_MINUTES
 
-# Using a prebuilt model
-# How this model was built: https://github.com/dsteedRTI/csv-to-embeddings-model
-# Sbert Model can be found here: https://www.sbert.net/docs/pretrained_models.html
-# Sbert Model Card: https://huggingface.co/sentence-transformers/multi-qa-mpnet-base-dot-v1
-model_path = "core/smart_embeddings_model"
-embeddings_model = SentenceTransformer(model_path)
+import pandas as pd
+import math
+import random
 
 
 @api_view(["GET"])
@@ -628,23 +619,6 @@ def search_data_unlabeled_table(request, project_pk):
     return Response({"data": data[:50]})
 
 
-@api_view(["POST"])
-@permission_classes([AllowAny])
-def embeddings_calculations(request):
-    """This calculates embeddings for a given array of strings.
-
-    Args:
-        strings: The array of strings
-        request: The POST request
-    Returns:
-        data: a list of data information
-    """
-
-    embeddings = embeddings_model.encode(request.data["strings"])
-
-    return Response(embeddings)
-
-
 @api_view(["GET"])
 @permission_classes((IsCoder,))
 def embeddings_comparison(request, project_pk):
@@ -673,14 +647,12 @@ def embeddings_comparison(request, project_pk):
         )
         cache_embeddings(project_pk, project_labels_embeddings)
 
-    text = request.GET.get("text")
-    text_embedding = embeddings_model.encode(text)
-
-    cosine_scores = util.pytorch_cos_sim(text_embedding, project_labels_embeddings)
-    values, indices = cosine_scores[0].topk(5)
+    comparison = compare(
+        encode([request.GET.get("text")], project_pk)[0], project_labels_embeddings
+    )
 
     suggestions = []
-    for index in indices:
+    for index in comparison["indices"]:
         suggestions.append(LabelSerializer(project_labels[int(index)]).data)
 
     return Response({"suggestions": suggestions})
