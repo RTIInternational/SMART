@@ -82,7 +82,7 @@ const defaultColumns = {
 };
 
 const HistoryTable = () => {
-    const [columnResizeMode, setColumnResizeMode] = useState("onChange");
+    // const [columnResizeMode, setColumnResizeMode] = useState("onChange");
     const [columnVisibility, setColumnVisibility] = useState({});
     const [unlabeled, setUnlabeled] = useState(false);
 

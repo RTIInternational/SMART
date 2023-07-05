@@ -22,3 +22,6 @@ docs/node_modules/
 
 # Backups
 backup/*
+
+# ML
+__pycache__

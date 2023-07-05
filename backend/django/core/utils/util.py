@@ -266,7 +266,7 @@ def generate_label_embeddings(project):
             project_labels.values_list("description", flat=True)
         )
 
-        embeddings = encode(project_labels_descriptions, project)
+        embeddings = encode(project, project_labels_descriptions)
 
         label_embeddings = []
 
@@ -289,7 +289,7 @@ def update_label_embeddings(project):
         )
         project_labels_ids = list(project_labels.values_list("id", flat=True))
 
-        embeddings = encode(project_labels_descriptions, project.id)
+        embeddings = encode(project.id, project_labels_descriptions)
 
         project_labels_embeddings = LabelEmbeddings.objects.filter(
             label_id__in=project_labels_ids

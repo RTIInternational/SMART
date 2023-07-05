@@ -648,7 +648,7 @@ def embeddings_comparison(request, project_pk):
         cache_embeddings(project_pk, project_labels_embeddings)
 
     comparison = compare(
-        encode([request.GET.get("text")], project_pk)[0], project_labels_embeddings
+        encode(project_pk, [request.GET.get("text")])[0], project_labels_embeddings
     )
 
     suggestions = []
