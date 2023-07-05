@@ -5,8 +5,8 @@ import json
 import requests
 
 
-def cache_embeddings(project_pk, embeddings):
-    cache.set(project_pk, embeddings)
+def cache_embeddings(project, embeddings):
+    cache.set(project, embeddings)
 
 
 def compare(embedding, embeddings):
@@ -15,11 +15,11 @@ def compare(embedding, embeddings):
     return {"indices": indicies, "values": values}
 
 
-def get_embeddings(project_pk):
-    return cache.get(project_pk)
+def get_embeddings(project):
+    return cache.get(project)
 
 
-def encode(text, project):
+def encode(project, text):
     return json.loads(
         requests.get(
             f"http://ml:8001/encode/{project}",
@@ -27,3 +27,9 @@ def encode(text, project):
             headers={"Content-Type": "application/json"},
         ).content
     )["results"]
+
+
+def train(project, file):
+    return json.loads(
+        requests.post(f"http://ml:8001/train/{project}", files={"file": file}).content
+    )
