@@ -1,5 +1,6 @@
 import csv
 import io
+import mimetypes
 import os
 import tempfile
 import zipfile
@@ -191,3 +192,22 @@ def export_database_table(request, project_pk):
         return Response(response, status=status.HTTP_404_NOT_FOUND)
 
     return Response(response)
+
+
+@api_view(["GET"])
+def download_ml_example(request):
+    """This function gets the example ml file and makes it available for download.
+
+    Args:
+        request: The POST request
+    Returns:
+        an HttpResponse containing the requested data
+    """
+    filename = "example_pairs.csv"
+    filepath = os.path.join(settings.EXAMPLE_PATH, filename)
+
+    fl = open(filepath, "r")
+    mime_type, _ = mimetypes.guess_type(filepath)
+    response = HttpResponse(fl, content_type=mime_type)
+    response["Content-Disposition"] = "attachment; filename=%s" % filename
+    return response

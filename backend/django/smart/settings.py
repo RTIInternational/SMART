@@ -120,15 +120,9 @@ class Dev(Configuration):
         {
             "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
         },
-        {
-            "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-        },
-        {
-            "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-        },
-        {
-            "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-        },
+        {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",},
+        {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",},
+        {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",},
     ]
 
     ACCOUNT_LOGOUT_ON_GET = True
@@ -172,6 +166,8 @@ class Dev(Configuration):
     CODEBOOK_FILE_PATH = os.path.join(DATA_DIR, "code_books")
     ENV_FILE_PATH = os.path.join(DATA_DIR, "external_db")
 
+    EXAMPLE_DIR = "/example"
+
     AUTH_USER_MODEL = "auth.User"
 
     SITE_ID = 1
@@ -203,6 +199,7 @@ class Dev(Configuration):
         os.path.join(BASE_DIR, "core/templates/projects/static"),
         os.path.join(BASE_DIR, "smart/static"),
         "/data/code_books/",
+        os.path.join(BASE_DIR, "core/example"),
     ]
 
     WEBPACK_LOADER = {

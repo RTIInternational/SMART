@@ -100,4 +100,5 @@ urlpatterns = [
     re_path(r"^export_database_table/(?P<project_pk>\d+)/$", api.export_database_table),
     re_path(r"^", include(annotate_patterns)),
     re_path(r"^", include(adminpage_patterns)),
+    re_path(r"^download_ml_example/$", api.download_ml_example),
 ]
