@@ -74,17 +74,10 @@ class Project(models.Model):
         ("Text_Some_Metadata", "Text and selected Metadata fields"),
     )
     dedup_on = models.CharField(
-        max_length=19,
-        default="Text",
-        choices=DEDUP_CHOICES,
-        null=False,
+        max_length=19, default="Text", choices=DEDUP_CHOICES, null=False,
     )
 
-    dedup_fields = models.CharField(
-        max_length=50,
-        default="",
-        null=True,
-    )
+    dedup_fields = models.CharField(max_length=50, default="", null=True,)
 
     def get_absolute_url(self):
         return reverse("projects:project_detail", kwargs={"pk": self.pk})
@@ -232,10 +225,7 @@ class ExternalDatabase(models.Model):
         ("microsoft", "MS SQL"),
     )
     database_type = models.CharField(
-        max_length=9,
-        default="none",
-        choices=DB_TYPE_CHOICES,
-        null=False,
+        max_length=9, default="none", choices=DB_TYPE_CHOICES, null=False,
     )
 
     has_ingest = models.BooleanField(default=False)
@@ -390,3 +380,8 @@ class AdjudicateDescription(models.Model):
     data = models.ForeignKey("Data", on_delete=models.CASCADE)
     message = models.TextField()
     isResolved = models.BooleanField(default=False)
+
+
+class MlModel(models.Model):
+    project = models.ForeignKey("Project", on_delete=models.CASCADE)
+    status = models.TextField()
