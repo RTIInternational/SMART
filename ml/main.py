@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile
+from fastapi import FastAPI, File, UploadFile
 from pydantic import BaseModel
 from typing import List
 
@@ -15,17 +15,13 @@ class Encode(BaseModel):
 
 
 @app.get("/encode/{project}")
-async def encode(encode: Encode, project):
+def encode(encode: Encode, project):
     return {"results": utils.encode(project, encode.text).tolist()}
 
 
-class Train(BaseModel):
-    file: UploadFile
-
-
 @app.post("/train/{project}")
-async def train(train: Train, project):
-    files.write(paths.path_csv(train.file))
+def train(project, file: UploadFile = File(...)):
+    files.write(paths.path_csv(project), file)
     trainModule.train(project)
     utils.reload()
     return {"status": "trained"}

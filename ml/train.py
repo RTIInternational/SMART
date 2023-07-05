@@ -8,6 +8,7 @@ import paths
 
 def train(project):
     project_path_csv = paths.path_csv(project)
+
     with open(project_path_csv) as f:
         pairs = [
             {k: str(v) for k, v in row.items()}

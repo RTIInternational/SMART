@@ -1,4 +1,9 @@
+import shutil
+
+
 def write(path, file):
-    with open(path, "w") as w:
-        for row in file.file:
-            w.write(row)
+    try:
+        with open(path, "wb+") as file_object:
+            shutil.copyfileobj(file.file, file_object)
+    finally:
+        file.file.close()
