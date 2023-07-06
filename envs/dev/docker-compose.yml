@@ -58,3 +58,5 @@ volumes:
   smart_data:
     external: true
     name: vol_smart_data
+  ml_csv:
+  ml_models:
