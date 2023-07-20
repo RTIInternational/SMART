@@ -202,10 +202,7 @@ def create_labels_from_csv(df, project):
     ]
     stream = StringIO()
 
-    labels = {}
-    for label in project.labels.all():
-        labels[label.name] = label.pk
-
+    labels = {label.name: label.pk for label in project.labels.all()}
     df["data_id"] = df["hash"].apply(
         lambda x: Data.objects.get(hash=x, project=project).pk
     )
@@ -275,15 +272,12 @@ def generate_label_embeddings(project):
         # Make manual embeddings. Prod settings made calling the api from the backend infeasible
         embeddings = embeddings_model.encode(project_labels_descriptions)
 
-        label_embeddings = []
-
         # We have to use tolist() since not calling API now to handle numpy arrays
         # (JSON response from API originally handled this for us)
-        for embedding, label in zip(embeddings, project_labels):
-            label_embeddings.append(
-                LabelEmbeddings(embedding=embedding.tolist(), label=label)
-            )
-
+        label_embeddings = [
+            LabelEmbeddings(embedding=embedding.tolist(), label=label)
+            for embedding, label in zip(embeddings, project_labels)
+        ]
         LabelEmbeddings.objects.bulk_create(
             label_embeddings, ignore_conflicts=True, batch_size=8000
         )
