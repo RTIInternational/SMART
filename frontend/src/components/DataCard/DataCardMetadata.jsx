@@ -44,6 +44,8 @@ const DataCardMetadata = ({ card }) => {
         return <p></p>;
     
     const Element = edit ? "form" : "div";
+
+    if (Object.entries(metadata).length === 0) return null;
     
     return (
         <GrayBox>

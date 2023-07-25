@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Fragment } from "react";
 import { Card } from "react-bootstrap";
 
 import DataCardAdjudicateButton from "./DataCardAdjudicateButton";
@@ -6,11 +6,14 @@ import DataCardMetadata from "./DataCardMetadata";
 import DataCardSelectLabel from "./DataCardSelectLabel";
 import DataCardSuggestedLabels from "./DataCardSuggestedLabels";
 import DataCardText from "./DataCardText";
-import { useChangeLabel, useChangeToSkip } from "../../hooks";
+import { useModifyLabel, useChangeToSkip, useLabels } from "../../hooks";
+import DataCardLabelButtons from "./DataCardLabelButtons";
 
 const DataCard = ({ card, type }) => {
-    const { mutate: changeLabel } = useChangeLabel();
+    const { data: labels } = useLabels();
+
     const { mutate: changeToSkip } = useChangeToSkip();
+    const { mutate: modfiyLabel } = useModifyLabel();
 
     return (
         <Card className="d-flex flex-column m-0 p-3" style={{ gap: "1rem", maxWidth: "992px" }}>
@@ -23,14 +26,27 @@ const DataCard = ({ card, type }) => {
             </div>
             <DataCardText card={card} />
             <DataCardMetadata card={card} />
-            <DataCardSuggestedLabels
-                card={card}
-                fn={type === "history" ? changeLabel : () => { }}
-            />
-            <DataCardSelectLabel
-                card={card}
-                fn={type === "history" ? changeLabel : () => { }}
-            />
+            {labels && (
+                <Fragment>
+                    {labels.labels.length <= 5 ? (
+                        <DataCardLabelButtons
+                            card={card}
+                            fn={type === "history" ? modfiyLabel : () => { }}
+                        />
+                    ) : (
+                        <Fragment>
+                            <DataCardSuggestedLabels
+                                card={card}
+                                fn={type === "history" ? modfiyLabel : () => { }}
+                            />
+                            <DataCardSelectLabel
+                                card={card}
+                                fn={type === "history" ? modfiyLabel : () => { }}
+                            />
+                        </Fragment>
+                    )}
+                </Fragment>
+            )}
         </Card>
     );
 };

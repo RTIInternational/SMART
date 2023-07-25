@@ -82,11 +82,11 @@ const defaultColumns = {
 };
 
 const HistoryTable = () => {
-    const [columnResizeMode, setColumnResizeMode] = useState("onChange");
     const [columnVisibility, setColumnVisibility] = useState({});
+    const [page, setPage] = useState(0);
     const [unlabeled, setUnlabeled] = useState(false);
 
-    const { data: historyData } = useHistory(unlabeled);
+    const { data: historyData } = useHistory(page + 1, unlabeled);
     const { mutate: verifyLabel } = useVerifyLabel();
 
     const metadataColumnsAccessorKeys = [];
@@ -149,6 +149,12 @@ const HistoryTable = () => {
         getPaginationRowModel: getPaginationRowModel(),
         getRowCanExpand: () => true,
         getSortedRowModel: getSortedRowModel(),
+        initialState: {
+            pagination: {
+                pageSize: 100
+            }
+        },
+        pageCount: historyData ? historyData.total_pages : 1,
         onColumnVisibilityChange: setColumnVisibility,
         state: {
             columnVisibility,
@@ -178,7 +184,10 @@ const HistoryTable = () => {
                                 <Form.Label className="d-flex m-0 p-0">
                                     <Form.Check
                                         className="p-0"
-                                        onChange={() => setUnlabeled(!unlabeled)}
+                                        onChange={() => {
+                                            setUnlabeled(!unlabeled);
+                                            setPage(0);
+                                        }}
                                     />
                                     <span className="ml-2">Unlabeled Data</span>
                                 </Form.Label>
@@ -276,58 +285,46 @@ const HistoryTable = () => {
                     ))}
                 </tbody>
             </Table>
-            <div className="align-items-center d-flex justify-content-between">
-                <div className="align-items-center d-flex">
-                    <Button
-                        disabled={!table.getCanPreviousPage()}
-                        onClick={() => table.setPageIndex(0)}
-                        variant="info"
-                    >
-                        {"<<"}
-                    </Button>
-                    <Button
-                        className="ml-1"
-                        disabled={!table.getCanPreviousPage()}
-                        onClick={() => table.previousPage()}
-                        variant="info"
-                    >
-                        {"<"}
-                    </Button>
-                    <Button
-                        className="ml-1"
-                        disabled={!table.getCanNextPage()}
-                        onClick={() => table.nextPage()}
-                        variant="info"
-                    >
-                        {">"}
-                    </Button>
-                    <Button
-                        className="ml-1"
-                        disabled={!table.getCanNextPage()}
-                        onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                        variant="info"
-                    >
-                        {">>"}
-                    </Button>
+            {historyData && (
+                <div className="align-items-center d-flex justify-content-between">
+                    <div className="align-items-center d-flex">
+                        <Button
+                            disabled={page === 0}
+                            onClick={() => setPage(0)}
+                            variant="info"
+                        >
+                            {"<<"}
+                        </Button>
+                        <Button
+                            className="ml-1"
+                            disabled={page === 0}
+                            onClick={() => setPage(page - 1)}
+                            variant="info"
+                        >
+                            {"<"}
+                        </Button>
+                        <Button
+                            className="ml-1"
+                            disabled={page + 1 === (historyData ? historyData.total_pages : 1)}
+                            onClick={() => setPage(page + 1)}
+                            variant="info"
+                        >
+                            {">"}
+                        </Button>
+                        <Button
+                            className="ml-1"
+                            disabled={page + 1 === (historyData ? historyData.total_pages : 1)}
+                            onClick={() => setPage(historyData.total_pages - 1)}
+                            variant="info"
+                        >
+                            {">>"}
+                        </Button>
+                    </div>
+                    <div className="align-items-center d-flex ml-2">
+                        <span className="d-flex">Page&nbsp;<strong>{page + 1}</strong>&nbsp;of&nbsp;<strong>{table.getPageCount()}</strong></span>
+                    </div>
                 </div>
-                <div className="align-items-center d-flex ml-2">
-                    <span className="d-flex">Page&nbsp;<strong>{table.getState().pagination.pageIndex + 1}</strong>&nbsp;of&nbsp;<strong>{table.getPageCount()}</strong></span>
-                    <Form.Control
-                        as="select"
-                        className="ml-2"
-                        onChange={e => {
-                            table.setPageSize(Number(e.target.value));
-                        }}
-                    >
-                        {[25, 50, 100].map(pageSize => (
-                            <option key={pageSize} value={pageSize}>
-                                Show {pageSize}
-                            </option>
-                        ))}
-                        value={table.getState().pagination.pageSize}
-                    </Form.Control>
-                </div>
-            </div>
+            )}
         </Fragment>
     );
 };

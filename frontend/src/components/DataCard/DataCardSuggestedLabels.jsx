@@ -1,11 +1,14 @@
 import React from "react";
 import { Spinner } from "react-bootstrap";
 
-import { useSuggestedLabels } from "../../hooks";
+import { useLabels, useSuggestedLabels } from "../../hooks";
 import { H4 } from "../ui";
 
 const DataCardSuggestedLabels = ({ card, fn }) => {
+    const { data: labels } = useLabels();
     const { data: suggestions } = useSuggestedLabels(card.data);
+
+    if (!labels) return null;
 
     if (!suggestions) {
         return (
@@ -24,7 +27,7 @@ const DataCardSuggestedLabels = ({ card, fn }) => {
                     <button
                         className="suggested-label unstyled-button"
                         key={index}
-                        onClick={() => fn({ dataID: card.id, labelID: suggestion.pk, oldLabelID: card.labelID })}
+                        onClick={() => fn({ dataID: card.id, labelID: suggestion.pk, oldLabelID: card.labelID, startTime: card.start_time })}
                     >
                         {`${suggestion.name}: ${suggestion.description}`}
                     </button>
