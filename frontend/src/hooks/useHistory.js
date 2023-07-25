@@ -3,14 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { PROJECT_ID } from "../store";
 import { getConfig } from "../utils/fetch_configs";
 
-const useHistory = (unlabeled) =>
+const useHistory = (page, unlabeled) =>
     useQuery({
-        queryKey: ["history", PROJECT_ID, unlabeled],
-        queryFn: () => {
-            const baseURL = `/api/get_label_history/${PROJECT_ID}/`;
-            return fetch(`${baseURL}${unlabeled ? `?${new URLSearchParams({ unlabeled }).toString()}` : ""}`, getConfig)
-                .then((res) => res.json());
-        }
+        queryKey: ["history", PROJECT_ID, page, unlabeled],
+        queryFn: () =>
+            fetch(`/api/get_label_history/${PROJECT_ID}/?${new URLSearchParams({ page, unlabeled }).toString()}`, getConfig)
+                .then((res) => res.json())
     });
 
 export default useHistory;

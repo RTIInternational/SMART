@@ -8,6 +8,7 @@ const useChangeToSkip = () =>
         mutationFn: ({ dataID, message, oldLabelID }) =>
             fetch(`/api/modify_label_to_skip/${dataID}/`, postConfig({ dataID, message, oldLabelID })),
         onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["adminCounts", PROJECT_ID] });
             queryClient.invalidateQueries({ queryKey: ["history", PROJECT_ID] });
         }
     });
