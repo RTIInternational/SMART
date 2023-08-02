@@ -8,6 +8,8 @@ import AdminTableContainer from '../../containers/adminTable_container';
 import RecycleBinContainer from '../../containers/recycleBin_container';
 import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
 import SmartProgressBarContainer from '../../containers/smartProgressBar_container';
+import { useAdminCounts } from '../../hooks';
+import { BadgeRequiresAdjudication } from './badges';
 
 
 const ADMIN = window.ADMIN;
@@ -57,18 +59,14 @@ class Smart extends React.Component {
                             {admin_counts["IRR"]}
                         </Badge>
                         | Requires Adjudication
-                        <Badge className="tab-badge">
-                            {admin_counts["SKIP"]}
-                        </Badge>
+                        <BadgeRequiresAdjudication />
                     </div>
                 );
             } else {
                 badges = (
                     <div>
                         Requires Adjudication
-                        <Badge className="tab-badge">
-                            {admin_counts["SKIP"]}
-                        </Badge>
+                        <BadgeRequiresAdjudication />
                     </div>
                 );
             }

@@ -17,7 +17,7 @@ const DataCardSelectLabel = ({ card, fn }) => {
             dropdownHandle={false}
             labelField="dropdownLabel"
             onChange={(value) => {
-                fn({ dataID: card.id, labelID: value[0].value, oldLabelID: card.labelID });
+                fn({ dataID: card.id, labelID: value[0].value, oldLabelID: card.labelID, startTime: card.start_time });
             }}
             options={labelsOptions}
             placeholder="Select label..."

@@ -414,7 +414,7 @@ def modify_label(request, data_pk):
     label = Label.objects.get(pk=request.data["labelID"])
 
     if (
-        "oldLabelID" not in request.data
+        ("oldLabelID" not in request.data or request.data["oldLabelID"]  == "")
         and not DataLabel.objects.filter(data=data).exists()
     ):
         current_training_set = project.get_current_training_set()
@@ -920,10 +920,11 @@ def get_label_history(request, project_pk):
         total_data_list += unlabeled_data
 
     # return the page indicated in the query, get total pages
-    current_page = request.GET.get("current_page")
+    current_page = request.GET.get("page")
     if current_page is None:
         current_page = 1
     page = int(current_page) - 1
+
     page_size = 100
     all_data = Data.objects.filter(pk__in=total_data_list).order_by("text")
     metadata_objects = MetaDataField.objects.filter(project=project)
