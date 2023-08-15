@@ -3,7 +3,7 @@ import { Button, ButtonToolbar } from "react-bootstrap";
 
 import { useLabels } from "../../hooks";
 
-const DataCardLabelButtons = ({ card, fn }) => {
+const DataCardLabelButtons = ({ cardData, fn }) => {
     const { data: labels } = useLabels();
 
     if (!labels) return null;
@@ -14,7 +14,11 @@ const DataCardLabelButtons = ({ card, fn }) => {
             {labels.labels.map(label => (
                 <Button
                     key={label.name}
-                    onClick={() => fn({ dataID: card.id, labelID: label.pk, oldLabelID: card.labelID, startTime: card.start_time })}
+                    onClick={() => {
+                        // temporary stand-in for spread operator fn({ ...cardData, selectedLabelID: label.pk })
+                        const newCardData = Object.assign({}, cardData, { selectedLabelID: label.pk });
+                        fn(newCardData);
+                    }}
                     variant="primary"
                 >
                     {label["name"]}

@@ -6,7 +6,7 @@ import {
     Tooltip
 } from "react-bootstrap";
 
-import DataCardMetadata from "./DataCardMetadata";
+import DataCardMetadata from "./DataCardMetadataOld";
 
 const CardData = ({ card, onSkip, onUnassign, showAdjudicate = true }) => {
     return (

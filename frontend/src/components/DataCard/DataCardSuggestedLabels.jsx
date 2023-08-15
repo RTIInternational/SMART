@@ -4,9 +4,9 @@ import { Spinner } from "react-bootstrap";
 import { useLabels, useSuggestedLabels } from "../../hooks";
 import { H4 } from "../ui";
 
-const DataCardSuggestedLabels = ({ card, fn }) => {
+const DataCardSuggestedLabels = ({ cardData, fn }) => {
     const { data: labels } = useLabels();
-    const { data: suggestions } = useSuggestedLabels(card.data);
+    const { data: suggestions } = useSuggestedLabels(cardData.text);
 
     if (!labels) return null;
 
@@ -27,7 +27,11 @@ const DataCardSuggestedLabels = ({ card, fn }) => {
                     <button
                         className="suggested-label unstyled-button"
                         key={index}
-                        onClick={() => fn({ dataID: card.id, labelID: suggestion.pk, oldLabelID: card.labelID, startTime: card.start_time })}
+                        onClick={() => {
+                            // temporary stand-in for spread operator, should be fn({ ...cardData, selectedLabelID: suggestion.pk })
+                            const newCardData = Object.assign({}, cardData, { selectedLabelID: suggestion.pk });
+                            fn(newCardData);
+                        }}                    
                     >
                         {`${suggestion.name}: ${suggestion.description}`}
                     </button>

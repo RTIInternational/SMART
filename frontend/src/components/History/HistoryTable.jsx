@@ -11,7 +11,7 @@ import React, { Fragment, useState } from "react";
 import { Button, Form, OverlayTrigger, Table, Tooltip } from "react-bootstrap";
 
 import { DebouncedInput, GrayBox, H4 } from "../ui";
-import DataCard from "../DataCard/DataCard";
+import DataCard, { PAGES } from "../DataCard/DataCard";
 import { useHistory, useVerifyLabel } from "../../hooks";
 import { PROJECT_USES_IRR } from "../../store";
 
@@ -277,7 +277,7 @@ const HistoryTable = () => {
                             {row.getIsExpanded() && (
                                 <tr>
                                     <td className="pb-4 " colSpan={row.getVisibleCells().length}>
-                                        <DataCard card={row.original} type="history" />
+                                        <DataCard data={row.original} type={PAGES.HISTORY} />
                                     </td>
                                 </tr>
                             )}
