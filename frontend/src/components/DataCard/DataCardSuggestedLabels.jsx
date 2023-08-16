@@ -28,9 +28,7 @@ const DataCardSuggestedLabels = ({ cardData, fn }) => {
                         className="suggested-label unstyled-button"
                         key={index}
                         onClick={() => {
-                            // temporary stand-in for spread operator, should be fn({ ...cardData, selectedLabelID: suggestion.pk })
-                            const newCardData = Object.assign({}, cardData, { selectedLabelID: suggestion.pk });
-                            fn(newCardData);
+                            fn({ ...cardData, selectedLabelID: suggestion.pk });
                         }}                    
                     >
                         {`${suggestion.name}: ${suggestion.description}`}

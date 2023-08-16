@@ -122,20 +122,20 @@ const formatDataForCard = (item, page) => {
     switch (page) {
     case PAGES.ANNOTATE_DATA:
         return {
+            ...defaultData,
             dataID: item.text.pk,
             text: item.text.text,
-            labelID: null,
             metadata: item.text.metadata,
             start_time: item.start_time,
             num_cards_left: item.num_cards_left,
         };
     case PAGES.HISTORY:
         return {
+            ...defaultData,
             dataID: item.id,
             labelID: item.labelID,
             text: item.data,
             metadata: item.metadata,
-            start_time: null,
         };
     case PAGES.SKEW:
         break;

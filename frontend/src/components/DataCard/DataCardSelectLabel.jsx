@@ -17,9 +17,7 @@ const DataCardSelectLabel = ({ cardData, fn }) => {
             dropdownHandle={false}
             labelField="dropdownLabel"
             onChange={(value) => {
-                // temporary stand-in for spread operator, should be fn({ ...cardData, selectedLabelID: value[0].value })
-                const newCardData = Object.assign({}, cardData, { selectedLabelID: value[0].value });
-                fn(newCardData);
+                fn({ ...cardData, selectedLabelID: value[0].value });
             }}
             options={labelsOptions}
             placeholder="Select label..."

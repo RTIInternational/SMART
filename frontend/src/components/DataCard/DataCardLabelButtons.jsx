@@ -15,9 +15,7 @@ const DataCardLabelButtons = ({ cardData, fn }) => {
                 <Button
                     key={label.name}
                     onClick={() => {
-                        // temporary stand-in for spread operator fn({ ...cardData, selectedLabelID: label.pk })
-                        const newCardData = Object.assign({}, cardData, { selectedLabelID: label.pk });
-                        fn(newCardData);
+                        fn({ ...cardData, selectedLabelID: label.pk });
                     }}
                     variant="primary"
                 >

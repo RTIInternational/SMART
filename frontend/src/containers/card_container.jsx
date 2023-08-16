@@ -13,14 +13,10 @@ const CardContainer = (props) => {
     if (props.cards.length == 0) {
         props.fetchCards();
     }
-    // temp replacement because spread operator not working
-    const tempData = props.cards ? Object.assign({}, props.cards[0]) : {};
-    tempData.num_cards_left = props.cards.length;
     return (
         props.cards !== undefined && props.cards.length > 0 ? 
             <DataCard 
-                // data={{...props.cards[0], num_cards_left: props.cards.length}}
-                data = { tempData }
+                data={{ ...props.cards[0], num_cards_left: props.cards.length }}
                 type={PAGES.ANNOTATE_DATA} 
                 actions={{ onSelectLabel: props.annotateCard, onAdjudicate: props.passCard, onSkip: props.unassignCard }} /> : null
     );

@@ -8,9 +8,7 @@ const DataCardAdjudicateButton = ({ cardData, fn, }) => {
 
     const handleSkip = (event) => {
         event.preventDefault();
-        // temporary stand-in for spread operator, should be fn({ ...cardData, message });
-        const newCardData = Object.assign({}, cardData, { message });
-        fn(newCardData);
+        fn({ ...cardData, message });
         setIsOpen(false);
     };
 
