@@ -53,7 +53,7 @@ p, a, label, input, button, li, th, textarea, dt, dd, select, text, .progress-ba
 
 .button-group {
     @include flexbox;
-    @include justify-content(flex-end);
+    @include justify-content(flex-start);
     @include align-items(center);
 }
 
@@ -216,7 +216,7 @@ main {
     margin-left: auto;
 
     display: flex;
-    justify-content: flex-end;
+    justify-content: flex-start;
 
     flex: 0 0 100%;
 

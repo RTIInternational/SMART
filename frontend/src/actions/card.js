@@ -10,13 +10,12 @@ import { getAdminCounts } from './smart';
 
 export const POP_CARD = 'POP_CARD';
 export const PUSH_CARD = 'PUSH_CARD';
-export const SET_LABEL = 'SET_LABEL';
+
 export const SET_MESSAGE = 'SET_MESSAGE';
 export const CLEAR_DECK = 'CLEAR_DECK';
 
 export const popCard = createAction(POP_CARD);
 export const pushCard = createAction(PUSH_CARD);
-export const setLabel = createAction(SET_LABEL);
 export const setMessage = createAction(SET_MESSAGE);
 export const clearDeck = createAction(CLEAR_DECK);
 
@@ -37,9 +36,6 @@ export const fetchCards = (projectID) => {
             .then(response => {
                 // If error was in the response then set that message
                 if ('error' in response) return dispatch(setMessage(response.error));
-
-                dispatch(setLabel(response.labels));
-
                 for (let i = 0; i < response.data.length; i++) {
                     const card = {
                         id: i,
