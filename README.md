@@ -17,7 +17,7 @@ If you use SMART for a research publication, please consider citing:
 
 The simplest way to start developing is to go to the `envs/dev` directory and run the rebuild script with `./rebuild.sh`.  This will: clean up any old containers/volumes, rebuild the images, run all migrations, and seed the database with some testing data.
 
-The testing data includes three users `root`, `user1`, `test_user` and all of their passwords are `password555`. There is also a handful of projects with randomly labeled data by the various users.
+The testing data includes three users `root`, `tom`, `jade` and all of their passwords are `password555`. There is also a handful of projects with randomly labeled data by the various users.
 
 ### Docker containers
 

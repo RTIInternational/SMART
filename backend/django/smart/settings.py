@@ -172,7 +172,8 @@ class Dev(Configuration):
     CODEBOOK_FILE_PATH = os.path.join(DATA_DIR, "code_books")
     ENV_FILE_PATH = os.path.join(DATA_DIR, "external_db")
 
-    AUTH_USER_MODEL = "auth.User"
+    # Django default
+    # AUTH_USER_MODEL = "auth.User"
 
     SITE_ID = 1
 

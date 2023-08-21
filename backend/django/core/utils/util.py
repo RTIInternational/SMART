@@ -561,7 +561,7 @@ def irr_heatmap_data(project):
 
 def save_data_file(df, project_pk):
     """Given the df used to create and save objects save just the data to a file. Make
-    sure to count the number of files in directory assocaited with the project and save
+    sure to count the number of files in directory associated with the project and save
     as next incremented file name.
 
     Args:

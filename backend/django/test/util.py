@@ -12,6 +12,9 @@ from core.management.commands.seed import (
 from core.models import Profile, ProjectPermissions, Queue
 from core.utils.utils_queue import fill_queue
 
+"""
+This file contains assertion helpers and other utility functions for use in tests.
+"""
 
 class HashableDict(dict):
     # Need a hashable dict so we can put them in a set

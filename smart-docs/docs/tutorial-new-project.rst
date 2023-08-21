@@ -46,7 +46,7 @@ To help organize your labeling projects, you can assign special permissions to o
 
 In this panel, you can select project members and assign their role types. Clicking the "add permissions" link adds more rows to the form. If you decide that you want to remove a permission after adding it, click the "remove permission" link next to the inputs to remove the permission. If an intended project member is not listed below, please check to see if they have created an account.
 
-In the development environment, SMART includes three user profiles for testing purposes (``root``, ``user1``, and ``test_user``). Inviting additional users to a project is optional. For the purposes of this tutorial, we will add ``user1`` as a coder:
+In the development environment, SMART includes three user profiles for testing purposes (``root``, ``tom``, and ``jade``). Inviting additional users to a project is optional. For the purposes of this tutorial, we will add ``tom`` as a coder:
 
 |project-permissions|
 

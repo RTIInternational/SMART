@@ -23,9 +23,12 @@ urlpatterns = [
     re_path(r"^api/", include("core.urls.api")),
     re_path(r"^api-auth/", include("rest_framework.urls", namespace="rest_framework")),
     re_path(r"^admin/", admin.site.urls),
+
+    # https://dj-rest-auth.readthedocs.io/en/3.0.0/installation.html
     re_path(r"^dj-rest-auth/", include("dj_rest_auth.urls")),
     re_path(r"^dj-rest-auth/registration/", include("dj_rest_auth.registration.urls")),
     re_path(r"^accounts/", include("allauth.urls")),
+    
     re_path(r"^", include("core.urls.projects", namespace="projects")),
 ]
 

@@ -10,6 +10,7 @@ from django.utils import timezone
 
 
 class Profile(models.Model):
+    # https://docs.djangoproject.com/en/4.2/topics/auth/customizing/#extending-the-existing-user-model
     # Link to the auth user, since we're basically just extending it
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     labeled_data = models.ManyToManyField(
@@ -22,12 +23,14 @@ class Profile(models.Model):
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_user(sender, instance, created, **kwargs):
+    """Create a profile when a user is created."""
     if created:
         Profile.objects.create(user=instance)
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def save_user(sender, instance, **kwargs):
+    """Save a profile when a user is saved."""
     instance.profile.save()
 
 
