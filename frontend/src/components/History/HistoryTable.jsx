@@ -277,7 +277,7 @@ const HistoryTable = () => {
                             {row.getIsExpanded() && (
                                 <tr>
                                     <td className="pb-4 " colSpan={row.getVisibleCells().length}>
-                                        <DataCard data={row.original} type={PAGES.HISTORY} />
+                                        <DataCard data={row.original} page={PAGES.HISTORY} />
                                     </td>
                                 </tr>
                             )}

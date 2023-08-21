@@ -1,5 +1,5 @@
-import React from "react";
-import { Button, ButtonToolbar } from "react-bootstrap";
+import React, { Fragment } from "react";
+import { Button } from "react-bootstrap";
 
 import { useLabels } from "../../hooks";
 
@@ -9,7 +9,7 @@ const DataCardLabelButtons = ({ cardData, fn }) => {
     if (!labels) return null;
 
     return (
-        <ButtonToolbar className="btn-toolbar">
+        <Fragment>
             <div className="toolbar-gap" />
             {labels.labels.map(label => (
                 <Button
@@ -22,7 +22,7 @@ const DataCardLabelButtons = ({ cardData, fn }) => {
                     {label["name"]}
                 </Button>
             ))}
-        </ButtonToolbar>
+        </Fragment>
     );
 };
 

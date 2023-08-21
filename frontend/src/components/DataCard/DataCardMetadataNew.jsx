@@ -1,4 +1,4 @@
-import React, { Fragment, useState } from "react";
+import React, { Fragment, useState, useEffect } from "react";
 import { Button } from "react-bootstrap";
 
 import DataCardMetadataInput from "./DataCardMetadataInput";
@@ -8,13 +8,20 @@ import { GrayBox, H4 } from "../ui";
 const DataCardMetadata = ({ cardData }) => {
     const { dataID, metadata: initialMetadata } = cardData;
     const { mutate } = useMetadataValue();
-    const [edit, setEdit] = useState(false);
-    const [originalMetadata, setOriginalMetadata] = useState((initialMetadata).reduce((a, b) => {
+    const parseMetadata = (md) => md.reduce((a, b) => {
         const [key, value] = b.split(': ');
         a[key] = value;
         return a;
-    }, {}));
+    }, {});
+    const [edit, setEdit] = useState(false);
+
+    const [originalMetadata, setOriginalMetadata] = useState(parseMetadata(initialMetadata));
     const [metadata, setMetadata] = useState(originalMetadata || []);
+
+    useEffect(() => {
+        setOriginalMetadata(parseMetadata(initialMetadata));
+        setMetadata(parseMetadata(initialMetadata) || []);
+    }, [initialMetadata]);
 
     const handleSubmit = (event) => {
         event.preventDefault();

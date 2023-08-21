@@ -17,7 +17,7 @@ const CardContainer = (props) => {
         props.cards !== undefined && props.cards.length > 0 ? 
             <DataCard 
                 data={{ ...props.cards[0], num_cards_left: props.cards.length }}
-                type={PAGES.ANNOTATE_DATA} 
+                page={PAGES.ANNOTATE_DATA} 
                 actions={{ onSelectLabel: props.annotateCard, onAdjudicate: props.passCard, onSkip: props.unassignCard }} /> : null
     );
 };

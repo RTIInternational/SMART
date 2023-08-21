@@ -6,7 +6,7 @@ const DataCardText = ({ cardData }) => {
     return (
         <div>
             <H4>Text to Label</H4>
-            <p>{cardData.text}</p>
+            <p style={{ whiteSpace: "normal" }}>{cardData.text}</p>
         </div>
     );
 };

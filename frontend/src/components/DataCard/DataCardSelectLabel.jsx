@@ -12,18 +12,21 @@ const DataCardSelectLabel = ({ cardData, fn }) => {
     })) : [];
 
     return (
-        <Select
-            className="rounded"
-            dropdownHandle={false}
-            labelField="dropdownLabel"
-            onChange={(value) => {
-                fn({ ...cardData, selectedLabelID: value[0].value });
-            }}
-            options={labelsOptions}
-            placeholder="Select label..."
-            searchBy="dropdownLabel"
-            sortBy="dropdownLabel"
-        />
+        <div className="label-select-wrapper">
+            <Select
+                className="rounded"
+                dropdownHandle={false}
+                labelField="dropdownLabel"
+                onChange={(value) => {
+                    fn({ ...cardData, selectedLabelID: value[0].value });
+                }}
+                options={labelsOptions}
+                placeholder="Select label..."
+                searchBy="dropdownLabel"
+                sortBy="dropdownLabel"
+            />
+        </div>
+        
     );
 };
 

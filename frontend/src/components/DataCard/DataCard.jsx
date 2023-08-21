@@ -1,5 +1,5 @@
 import React, { Fragment } from "react";
-import { Card } from "react-bootstrap";
+import { Card, ButtonToolbar } from "react-bootstrap";
 
 import DataCardAdjudicateButton from "./DataCardAdjudicateButton";
 import DataCardSkipButton from "./DataCardSkipButton";
@@ -9,8 +9,9 @@ import DataCardSuggestedLabels from "./DataCardSuggestedLabels";
 import DataCardText from "./DataCardText";
 import { useModifyLabel, useChangeToSkip, useLabels } from "../../hooks";
 import DataCardLabelButtons from "./DataCardLabelButtons";
+import DataCardDiscardButton from "./DataCardDiscardButton";
 
-const DataCard = ({ data, type, actions }) => {
+const DataCard = ({ data, page, actions }) => {
     const { data: labels } = useLabels();
     const { mutate: changeToSkip } = useChangeToSkip();
     const { mutate: modifyLabel } = useModifyLabel();
@@ -19,47 +20,74 @@ const DataCard = ({ data, type, actions }) => {
         modifyLabel,
         actions,
     };
-    const cardData = formatDataForCard(data, type);
-    const handlers = getHandlers(allHandlers, type);
+    const cardData = formatDataForCard(data, page);
+    const handlers = getHandlers(allHandlers, page);
+
+    const labelCountLow = (labels) => labels.labels.length <= 5;
+
+    const show = {
+        skipButton: handlers.handleSkip != null,
+        adjudicateButton: handlers.handleAdjudicate != null,
+        text: true,
+        metadata: true,
+        labelButtons: labels && labelCountLow(labels),
+        labelSuggestions: labels && !labelCountLow(labels),
+        labelSelect: labels && !labelCountLow(labels),
+        discardButton: handlers.handleDiscard != null,
+    };
+    
     return (
         <Card className="d-flex flex-column m-0 p-3" style={{ gap: "1rem", maxWidth: "992px" }}>
             <div className="align-items-end d-flex justify-content-end mb-n2">
-                {handlers.handleSkip && (
+                { show.skipButton && (
                     <DataCardSkipButton 
                         cardData={cardData}
                         fn={handlers.handleSkip}
                     />
                 )}
-                {handlers.handleAdjudicate && (
+                { show.adjudicateButton && (
                     <DataCardAdjudicateButton
                         cardData={cardData}
                         fn={handlers.handleAdjudicate}
                     />
-                )} 
+                )}
             </div>
             <DataCardText cardData={cardData} />
             <DataCardMetadata cardData={cardData} />
-            {labels && handlers.handleSelectLabel && (
+            {show.labelButtons && (        
+                <ButtonToolbar>
+                    <DataCardLabelButtons
+                        cardData={cardData}
+                        fn={handlers.handleSelectLabel}
+                    />
+                    <DataCardDiscardButton 
+                        cardData={cardData} 
+                        fn={handlers.handleDiscard} 
+                        show={show.discardButton} 
+                    />
+                </ButtonToolbar>   
+
+            )}
+            {show.labelSuggestions && (
                 <Fragment>
-                    {labels.labels.length <= 5 ? (
-                        <DataCardLabelButtons
+                    <DataCardSuggestedLabels
+                        cardData={cardData}
+                        fn={handlers.handleSelectLabel}
+                    />
+                    <div className="select-discard-wrapper" >
+                        <div className="toolbar-gap" />
+                        <DataCardSelectLabel
                             cardData={cardData}
                             fn={handlers.handleSelectLabel}
                         />
-                    ) : (
-                        <Fragment>
-                            <DataCardSuggestedLabels
-                                cardData={cardData}
-                                fn={handlers.handleSelectLabel}
-                            />
-                            <DataCardSelectLabel
-                                cardData={cardData}
-                                fn={handlers.handleSelectLabel}
-                            />
-                        </Fragment>
-                    )}
+                        <DataCardDiscardButton 
+                            cardData={cardData} 
+                            fn={handlers.handleDiscard} 
+                            show={show.discardButton}
+                        />
+                    </div>
                 </Fragment>
-            )}
+            )}    
         </Card>
     );
 };
@@ -72,15 +100,6 @@ export const PAGES = {
     RECYCLE: 4,
 };
 
-// currently rendering components based on if handler function is null, but this might be more readable
-// const components = {
-//     ADJUDICATE: [PAGES.ANNOTATE_DATA, PAGES.HISTORY, PAGES.SKEW],
-//     SKIP: [PAGES.ANNOTATE_DATA],
-//     TEXT: "all",
-//     METADATA: "all",
-//     LABELS: [PAGES.ANNOTATE_DATA, PAGES.HISTORY, PAGES.SKEW, PAGES.ADMIN]
-// }
-
 // when all actions are hooks, this logic can be transferred to hooks.
 // the hooks will take in the page and determine the function
 const getHandlers = (fns, page) => {
@@ -90,17 +109,29 @@ const getHandlers = (fns, page) => {
             handleSelectLabel: fns.actions.onSelectLabel,
             handleAdjudicate: fns.actions.onAdjudicate,
             handleSkip: fns.actions.onSkip,
+            handleDiscard: null
         };
     case PAGES.HISTORY:
         return {
             handleSelectLabel: fns.modifyLabel,
             handleAdjudicate: fns.changeToSkip,
             handleSkip: null,
+            handleDiscard: null
         };
     case PAGES.SKEW:
-        break;
+        return {
+            handleSelectLabel: fns.actions.onSelectLabel,
+            handleAdjudicate: null,
+            handleSkip: null,
+            handleDiscard: null
+        };
     case PAGES.ADMIN:
-        break;
+        return {
+            handleSelectLabel: fns.actions.onSelectLabel,
+            handleAdjudicate: null,
+            handleSkip: null,
+            handleDiscard: fns.actions.onDiscard
+        };
     case PAGES.RECYCLE:
         break;
     default:
@@ -109,7 +140,6 @@ const getHandlers = (fns, page) => {
 };
 
 const formatDataForCard = (item, page) => {
-    // should use defaultData with spread because es-lint doesn't like it
     const defaultData = {
         dataID: null,
         labelID: null,
@@ -138,9 +168,19 @@ const formatDataForCard = (item, page) => {
             metadata: item.metadata,
         };
     case PAGES.SKEW:
-        break;
+        return {
+            ...defaultData,
+            dataID: item.id,
+            text: item.data,
+            metadata: item.metadata,
+        };
     case PAGES.ADMIN:
-        break;
+        return {
+            ...defaultData,
+            dataID: item.id,
+            text: item.data,
+            metadata: item.metadata,
+        };
     case PAGES.RECYCLE:
         break;
     default:

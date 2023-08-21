@@ -1,7 +1,7 @@
 import React, { Fragment } from "react";
 import { Button, OverlayTrigger, Tooltip } from "react-bootstrap";
 
-const DataCardSkipButton = ({ cardData, fn, }) => {
+const DataCardSkipButton = ({ cardData, fn }) => {
     return (
         <Fragment>
             <OverlayTrigger

@@ -1,8 +1,7 @@
 import React, { Fragment, useState } from "react";
 import { Button, Form, Modal, OverlayTrigger, Tooltip } from "react-bootstrap";
 
-const DataCardAdjudicateButton = ({ cardData, fn, }) => {
-
+const DataCardAdjudicateButton = ({ cardData, fn }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [message, setMessage] = useState("");
 

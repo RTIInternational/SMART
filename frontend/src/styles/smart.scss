@@ -674,6 +674,19 @@ li.disabled {
     }
 }
 
+.label-select-wrapper {
+    flex-grow: 1;
+    flex-shrink: 1;
+}
+
+.select-discard-wrapper {
+    display: flex;
+}
+
+.select-discard-wrapper > button {
+    margin-left: 10px
+}
+
 .delete-label {
     color: #568595;
     cursor: pointer;

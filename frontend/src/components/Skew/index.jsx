@@ -6,6 +6,7 @@ import NVD3Chart from "react-nvd3";
 import d3 from "d3";
 import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
 import AnnotateCard, { buildCard } from "../AnnotateCard";
+import DataCard, { PAGES } from "../DataCard/DataCard";
 
 const COLUMNS = [
     {
@@ -153,25 +154,12 @@ class Skew extends React.Component {
                         this.state.filteredData ? this.state.filteredData.length < 50 ? this.state.filteredData.length : 50 : unlabeled_data.length < 50 ? unlabeled_data.length : 50
                     }
                     SubComponent={row => {
-                        const card = buildCard(row.row.id, null, row.original);
-
                         return (
                             <div className="sub-row cardface clearfix">
-                                <AnnotateCard
-                                    card={card}
-                                    labels={labels}
-                                    onSelectLabel={(card, label) => {
-                                        skewLabel(
-                                            card.id,
-                                            label
-                                        );
-                                        if (this.state.filteredData) {
-                                            this.setState({ filteredData: this.state.filteredData.filter(d => d.id !== card.id) });
-                                        }
-                                    }}
-                                    onSkip={null}
-                                    showAdjudicate={false}
-                                    modifyMetadataValues={modifyMetadataValues}
+                                <DataCard 
+                                    data={row.original}
+                                    page={PAGES.SKEW} 
+                                    actions={{ onSelectLabel: skewLabel }} 
                                 />
                             </div>
                         );
