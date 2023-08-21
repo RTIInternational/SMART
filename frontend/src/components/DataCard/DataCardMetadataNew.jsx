@@ -5,7 +5,7 @@ import DataCardMetadataInput from "./DataCardMetadataInput";
 import { useMetadataValue } from "../../hooks";
 import { GrayBox, H4 } from "../ui";
 
-const DataCardMetadata = ({ cardData }) => {
+const DataCardMetadata = ({ cardData, showEdit }) => {
     const { dataID, metadata: initialMetadata } = cardData;
     const { mutate } = useMetadataValue();
     const parseMetadata = (md) => md.reduce((a, b) => {
@@ -55,40 +55,42 @@ const DataCardMetadata = ({ cardData }) => {
     return (
         <GrayBox>
             <Element onSubmit={handleSubmit}>
-                <div className="align-items-end d-flex">
-                    <div className="flex-fill">
-                        <H4>Respondent Data</H4>
-                    </div>
-                    {(initialMetadata) && !edit && (
-                        <Button
-                            className="ml-3"
-                            onClick={() => setEdit(true)}
-                            type="button"
-                            variant="info"
-                        >
-                            Edit
-                        </Button>
-                    )}
-                    {(initialMetadata) && edit && (
-                        <Fragment>
+                { showEdit && (
+                    <div className="align-items-end d-flex">
+                        <div className="flex-fill">
+                            <H4>Respondent Data</H4>
+                        </div>
+                        {(initialMetadata) && !edit && (
                             <Button
                                 className="ml-3"
-                                type="submit"
-                                variant="info"
-                            >
-                                Save
-                            </Button>
-                            <Button
-                                className="ml-2"
-                                onClick={() => reset()}
+                                onClick={() => setEdit(true)}
                                 type="button"
                                 variant="info"
                             >
-                                Cancel
+                        Edit
                             </Button>
-                        </Fragment>
-                    )}
-                </div>
+                        )}
+                        {(initialMetadata) && edit && (
+                            <Fragment>
+                                <Button
+                                    className="ml-3"
+                                    type="submit"
+                                    variant="info"
+                                >
+                            Save
+                                </Button>
+                                <Button
+                                    className="ml-2"
+                                    onClick={() => reset()}
+                                    type="button"
+                                    variant="info"
+                                >
+                            Cancel
+                                </Button>
+                            </Fragment>
+                        )}
+                    </div>
+                )}  
                 {Object.entries(metadata).map(([key, value]) => (
                     <Fragment key={key}>
                         {edit ? <DataCardMetadataInput label={key} value={value} updateMetadata={updateMetadata} /> : <p>{key}: {value}</p>}

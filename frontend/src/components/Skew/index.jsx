@@ -5,7 +5,6 @@ import { Card } from "react-bootstrap";
 import NVD3Chart from "react-nvd3";
 import d3 from "d3";
 import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
-import AnnotateCard, { buildCard } from "../AnnotateCard";
 import DataCard, { PAGES } from "../DataCard/DataCard";
 
 const COLUMNS = [

@@ -30,9 +30,10 @@ const DataCard = ({ data, page, actions }) => {
         adjudicateButton: handlers.handleAdjudicate != null,
         text: true,
         metadata: true,
-        labelButtons: labels && labelCountLow(labels),
-        labelSuggestions: labels && !labelCountLow(labels),
-        labelSelect: labels && !labelCountLow(labels),
+        metadataEdit: page !== PAGES.RECYCLE,
+        labelButtons: labels && labelCountLow(labels) && handlers.handleSelectLabel != null,
+        labelSuggestions: labels && !labelCountLow(labels) && handlers.handleSelectLabel != null,
+        labelSelect: labels && !labelCountLow(labels) && handlers.handleSelectLabel != null,
         discardButton: handlers.handleDiscard != null,
     };
     
@@ -53,7 +54,7 @@ const DataCard = ({ data, page, actions }) => {
                 )}
             </div>
             <DataCardText cardData={cardData} />
-            <DataCardMetadata cardData={cardData} />
+            <DataCardMetadata cardData={cardData} showEdit={show.metadataEdit} />
             {show.labelButtons && (        
                 <ButtonToolbar>
                     <DataCardLabelButtons
@@ -133,7 +134,12 @@ const getHandlers = (fns, page) => {
             handleDiscard: fns.actions.onDiscard
         };
     case PAGES.RECYCLE:
-        break;
+        return {
+            handleSelectLabel: null,
+            handleAdjudicate: null,
+            handleSkip: null,
+            handleDiscard: null,
+        };
     default:
         break;
     }
@@ -182,7 +188,12 @@ const formatDataForCard = (item, page) => {
             metadata: item.metadata,
         };
     case PAGES.RECYCLE:
-        break;
+        return {
+            ...defaultData,
+            dataID: item.id,
+            text: item.data,
+            metadata: item.metadata,
+        };
     default:
         break;
     }

@@ -7,7 +7,7 @@ const DataCardAdjudicateButton = ({ cardData, fn }) => {
 
     const handleSkip = (event) => {
         event.preventDefault();
-        fn({ ...cardData, message });
+        fn({ ...cardData, oldLabelID: cardData.labelID, message });
         setIsOpen(false);
     };
 
