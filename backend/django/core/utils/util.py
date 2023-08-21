@@ -644,8 +644,10 @@ def get_labeled_data(project, unverified=True):
             if hasattr(d, "verified"):
                 v = VerifiedDataLabel.objects.get(data_label=d)
                 temp["Verified"] = "Yes"
-                temp["Verified By"] = v.verified_by
-                temp["Verified Timestamp"] = v.verified_timestamp
+                temp["Verified By"] = str(v.verified_by.user)
+                temp["Verified Timestamp"] = pytz.timezone(
+                    TIME_ZONE_FRONTEND
+                ).normalize(v.verified_timestamp)
             else:
                 temp["Verified"] = "No"
                 temp["Verified By"] = None

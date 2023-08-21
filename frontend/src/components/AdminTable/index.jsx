@@ -49,6 +49,7 @@ class AdminTable extends React.Component {
                 Header: "Unlabeled Data",
                 accessor: "data",
                 Cell: row => {
+                    const card = buildCard(row.row.id, null, row.original);
                     return (
                         <div className="sub-row">
                             {row.original.message && (
@@ -58,7 +59,7 @@ class AdminTable extends React.Component {
                                 </div>
                             )}
                             <AnnotateCard
-                                card={buildCard(row.row.id, null, row.original)}
+                                card={card}
                                 hideAdjudicate={true}
                                 labels={labels}
                                 onSelectLabel={(card, label) => adminLabel(card.id, label)}

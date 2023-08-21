@@ -46,7 +46,7 @@ def label_distribution(request, project_pk):
 
     for u in users:
         label_count = DataLabel.objects.filter(
-            profile=u, label__project=project_pk
+            profile=u, label__project=project_pk, pre_loaded=False
         ).count()
 
         if label_count > 0:
@@ -79,7 +79,7 @@ def label_timing(request, project_pk):
     yDomain = 0
     for u in users:
         result = DataLabel.objects.filter(
-            data__project=project_pk, profile=u
+            data__project=project_pk, profile=u, pre_loaded=False
         ).aggregate(
             quartiles=Percentile(
                 "time_to_label",
@@ -157,7 +157,9 @@ def data_coded_table(request, project_pk):
     """
     project = Project.objects.get(pk=project_pk)
 
-    data_objs = DataLabel.objects.filter(data__project=project, data__irr_ind=False)
+    data_objs = DataLabel.objects.filter(
+        data__project=project, data__irr_ind=False, pre_loaded=False
+    )
 
     data = []
     for d in data_objs:
