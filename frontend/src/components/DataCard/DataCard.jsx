@@ -3,7 +3,7 @@ import { Card, ButtonToolbar } from "react-bootstrap";
 
 import DataCardAdjudicateButton from "./DataCardAdjudicateButton";
 import DataCardSkipButton from "./DataCardSkipButton";
-import DataCardMetadata from "./DataCardMetadataNew";
+import DataCardMetadata from "./DataCardMetadata";
 import DataCardSelectLabel from "./DataCardSelectLabel";
 import DataCardSuggestedLabels from "./DataCardSuggestedLabels";
 import DataCardText from "./DataCardText";
@@ -101,50 +101,7 @@ export const PAGES = {
     RECYCLE: 4,
 };
 
-// when all actions are hooks, this logic can be transferred to hooks.
-// the hooks will take in the page and determine the function
-const getHandlers = (fns, page) => {
-    switch (page) {
-    case PAGES.ANNOTATE_DATA:
-        return {
-            handleSelectLabel: fns.actions.onSelectLabel,
-            handleAdjudicate: fns.actions.onAdjudicate,
-            handleSkip: fns.actions.onSkip,
-            handleDiscard: null
-        };
-    case PAGES.HISTORY:
-        return {
-            handleSelectLabel: fns.modifyLabel,
-            handleAdjudicate: fns.changeToSkip,
-            handleSkip: null,
-            handleDiscard: null
-        };
-    case PAGES.SKEW:
-        return {
-            handleSelectLabel: fns.actions.onSelectLabel,
-            handleAdjudicate: null,
-            handleSkip: null,
-            handleDiscard: null
-        };
-    case PAGES.ADMIN:
-        return {
-            handleSelectLabel: fns.actions.onSelectLabel,
-            handleAdjudicate: null,
-            handleSkip: null,
-            handleDiscard: fns.actions.onDiscard
-        };
-    case PAGES.RECYCLE:
-        return {
-            handleSelectLabel: null,
-            handleAdjudicate: null,
-            handleSkip: null,
-            handleDiscard: null,
-        };
-    default:
-        break;
-    }
-};
-
+// format incoming data based on calling tab
 const formatDataForCard = (item, page) => {
     const defaultData = {
         dataID: null,
@@ -193,6 +150,50 @@ const formatDataForCard = (item, page) => {
             dataID: item.id,
             text: item.data,
             metadata: item.metadata,
+        };
+    default:
+        break;
+    }
+};
+
+// assign handlers based on page
+// when all actions ported to react-query, this logic can be transferred to the react-query functions.
+const getHandlers = (fns, page) => {
+    switch (page) {
+    case PAGES.ANNOTATE_DATA:
+        return {
+            handleSelectLabel: fns.actions.onSelectLabel,
+            handleAdjudicate: fns.actions.onAdjudicate,
+            handleSkip: fns.actions.onSkip,
+            handleDiscard: null
+        };
+    case PAGES.HISTORY:
+        return {
+            handleSelectLabel: fns.modifyLabel,
+            handleAdjudicate: fns.changeToSkip,
+            handleSkip: null,
+            handleDiscard: null
+        };
+    case PAGES.SKEW:
+        return {
+            handleSelectLabel: fns.actions.onSelectLabel,
+            handleAdjudicate: null,
+            handleSkip: null,
+            handleDiscard: null
+        };
+    case PAGES.ADMIN:
+        return {
+            handleSelectLabel: fns.actions.onSelectLabel,
+            handleAdjudicate: null,
+            handleSkip: null,
+            handleDiscard: fns.actions.onDiscard
+        };
+    case PAGES.RECYCLE:
+        return {
+            handleSelectLabel: null,
+            handleAdjudicate: null,
+            handleSkip: null,
+            handleDiscard: null,
         };
     default:
         break;
