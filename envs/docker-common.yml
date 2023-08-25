@@ -8,10 +8,11 @@ services:
       - POSTGRES_USER=smart
       - POSTGRES_DB=smart
       - POSTGRES_HOST=postgres
+      - POSTGRES_HOST_AUTH_METHOD=md5
     ports:
       - "${EXTERNAL_POSTGRES_PORT:-5432}:5432"
     volumes:
-      - smart_pgdata:/var/lib/postgresql/data
+      - smart_pgdata_15_2:/var/lib/postgresql/data
 
   redis:
     image: redis:6.0
@@ -28,8 +29,6 @@ services:
       - ../backend/docker:/code/docker
       - ../frontend:/code/frontend
       - smart_data:/data/
-    ports:
-      - "${EXTERNAL_BACKEND_PORT:-8000}:8000"
     command: ./runserver.sh
 
   smart_frontend:

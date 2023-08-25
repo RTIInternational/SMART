@@ -19,6 +19,8 @@ services:
       context: ../../backend/
       dockerfile: docker/Dockerfile
     image: rti/smart-backend:R_0_0_1
+    ports:
+      - "${EXTERNAL_BACKEND_PORT:-8000}:8000"
     depends_on:
       - postgres
       - redis

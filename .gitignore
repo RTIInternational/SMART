@@ -10,7 +10,7 @@ npm-debug.log
 
 # Mounted Docker volume
 backend/django/frontend/
-.env
+envs/dev/.env
 .cache
 .coverage
 
