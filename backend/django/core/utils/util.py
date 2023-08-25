@@ -661,49 +661,50 @@ def project_status(project):
     Returns:
         data: a list of data information
     """
-    total_data_objs = project.data_set.all()
+    total_labels = DataLabel.objects.filter(
+        data__project=project, data__irr_ind=False
+    ).count()
 
-    final_data_objs = list(
-        DataLabel.objects.filter(data__project=project, data__irr_ind=False)
-    )
+    total_data_objs = project.data_set.all().count()
 
     final_verified = DataLabel.objects.filter(
         data__project=project, data__irr_ind=False, verified__isnull=False
-    )
+    ).count()
+
     final_unverified = DataLabel.objects.filter(
         data__project=project, data__irr_ind=False, verified__isnull=True
+    ).count()
+
+    stuff_in_queue = (
+        DataQueue.objects.filter(queue__project=project, queue__type="admin")
+        .values_list("data__pk", flat=True)
+        .count()
     )
 
-    stuff_in_irrlog = IRRLog.objects.filter(data__project=project).values_list(
-        "data__pk", flat=True
+    recycle_ids = (
+        RecycleBin.objects.filter(data__project=project)
+        .values_list("data__pk", flat=True)
+        .count()
     )
-    stuff_in_queue = DataQueue.objects.filter(
-        queue__project=project, queue__type="admin"
-    ).values_list("data__pk", flat=True)
-    recycle_ids = RecycleBin.objects.filter(data__project=project).values_list(
-        "data__pk", flat=True
+
+    assigned_ids = (
+        AssignedData.objects.filter(data__project=project)
+        .values_list("data__pk", flat=True)
+        .count()
     )
-    assigned_ids = AssignedData.objects.filter(data__project=project).values_list(
-        "data__pk", flat=True
-    )
-    unlabeled_data_objs = list(
-        project.data_set.filter(datalabel__isnull=True)
-        .exclude(id__in=stuff_in_queue)
-        .exclude(id__in=stuff_in_irrlog)
-        .exclude(id__in=assigned_ids)
-        .exclude(id__in=recycle_ids)
-    )
+
+    unlabeled_data_objs = get_unlabelled_data_objs(project.id)
 
     return {
-        "adjudication": len(stuff_in_queue),
-        "assigned": len(assigned_ids),
-        "final": len(final_data_objs),
-        "final_verified": len(final_verified),
-        "final_unverified": len(final_unverified),
-        "recycled": len(recycle_ids),
-        "total": len(total_data_objs),
-        "unlabeled": len(unlabeled_data_objs),
-        "badge": f"{len(final_data_objs)}/{len(total_data_objs) - len(recycle_ids)}",
+        "adjudication": stuff_in_queue,
+        "assigned": assigned_ids,
+        "final": total_labels,
+        "final_verified": final_verified,
+        "final_unverified": final_unverified,
+        "recycled": recycle_ids,
+        "total": total_data_objs,
+        "unlabeled": unlabeled_data_objs,
+        "badge": f"{total_labels}/{total_data_objs - recycle_ids}",
     }
 
 
@@ -740,9 +741,76 @@ def get_projects_umbrellas(self):
     """
 
     projects = get_projects(self, False)
-    projects_umbrellas = (
+    return (
         projects.values_list("umbrella_string", flat=True)
         .distinct()
         .order_by("umbrella_string")
     )
-    return projects_umbrellas
+
+
+def get_unlabelled_data_objs(project_id: int) -> int:
+    """
+    Function to retrieve the total count of unlabelled data objects for a project.
+
+    This SQL query is comprised of 5 subqueries, each of which retrieves the ids of
+    data objects that are in a particular table. The first sub-query is the total list
+    of unlabbeled data entries for a given project, while the remaining four are tables
+    that we will be comparing against the list of ids from the first sub-query. The
+    remaining four sets of ids are then joined on the `project_ids`. We then return
+    the count of the rows that have `null` values.
+
+    Args:
+        project_id: The id of the project for which to retrieve the count of unlabelled
+            data objects.
+
+    Returns:
+        The count of unlabelled data objects for a project.
+    """
+    query = """
+        WITH project_ids AS (
+            SELECT cd.id
+            FROM core_data cd
+            LEFT JOIN core_datalabel cdl ON cd.id = cdl.data_id
+            WHERE cd.project_id = %s AND cdl.label_id IS NULL
+        ),
+        queue_ids AS (
+            SELECT cdq.id
+            FROM core_dataqueue cdq
+            LEFT JOIN core_queue cq ON cdq.queue_id = cq.id
+            WHERE cq.project_id = %s AND cq.type = 'admin'
+        ),
+        irr_log_ids AS (
+            SELECT ci.id
+            FROM core_irrlog ci
+            LEFT JOIN core_data cd ON ci.data_id = cd.id
+            WHERE cd.project_id = %s
+        ),
+        assigned_ids AS (
+            SELECT ca.id
+            FROM core_assigneddata ca
+            LEFT JOIN core_data cd ON ca.data_id = cd.id
+            WHERE cd.project_id = %s
+        ),
+        recycle_ids AS (
+            SELECT cr.id
+            FROM core_recyclebin cr
+            LEFT JOIN core_data cd ON cr.data_id = cd.id
+            WHERE cd.project_id = %s
+        )
+        SELECT COUNT(*)
+            FROM (
+                SELECT p.id 
+                FROM project_ids p
+                LEFT JOIN queue_ids q ON p.id = q.id
+                LEFT JOIN irr_log_ids irr ON p.id = irr.id
+                LEFT JOIN assigned_ids a ON p.id = a.id
+                LEFT JOIN recycle_ids r ON p.id = r.id
+                WHERE q.id IS NULL
+                    AND irr.id IS NULL
+                    AND a.id IS NULL
+                        AND r.id IS NULL
+            ) AS filtered_ids;
+    """
+    with connection.cursor() as cursor:
+        cursor.execute(query, [project_id] * 5)
+        return cursor.fetchone()[0]
