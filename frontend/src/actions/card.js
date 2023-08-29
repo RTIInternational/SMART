@@ -6,7 +6,8 @@ import { getConfig, postConfig } from '../utils/fetch_configs';
 import { getHistory } from './history';
 import { getAdmin } from './adminTables';
 import { getLabelCounts, getUnlabeled } from './skew';
-import { getAdminCounts } from './smart';
+
+import { queryClient } from "../store";
 
 export const POP_CARD = 'POP_CARD';
 export const PUSH_CARD = 'PUSH_CARD';
@@ -79,7 +80,7 @@ export const annotateCard = (dataID, labelID, num_cards_left, start_time, projec
 
                     if (is_admin) {
                         dispatch(getAdmin(projectID));
-                        dispatch(getAdminCounts(projectID));
+                        queryClient.invalidateQueries(["adminCounts", projectID]);
                         dispatch(getLabelCounts(projectID));
                     }
                     if (num_cards_left <= 1) dispatch(fetchCards(projectID));
@@ -137,7 +138,7 @@ export const passCard = (dataID, num_cards_left, is_admin, projectID, message) =
                     dispatch(getHistory(projectID));
                     if (is_admin) {
                         dispatch(getAdmin(projectID));
-                        dispatch(getAdminCounts(projectID));
+                        queryClient.invalidateQueries(["adminCounts", projectID]);
                     }
                     if (num_cards_left <= 1) dispatch(fetchCards(projectID));
                 }

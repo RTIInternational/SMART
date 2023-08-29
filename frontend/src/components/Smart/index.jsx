@@ -8,7 +8,6 @@ import AdminTableContainer from '../../containers/adminTable_container';
 import RecycleBinContainer from '../../containers/recycleBin_container';
 import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
 import SmartProgressBarContainer from '../../containers/smartProgressBar_container';
-import { useAdminCounts } from '../../hooks';
 import { BadgeRequiresAdjudication } from './badges';
 
 
@@ -18,7 +17,6 @@ class Smart extends React.Component {
 
     componentDidMount() {
         this.props.getAdminTabsAvailable();
-        this.props.getAdminCounts();
     }
 
     renderAdminTabSkew() {
@@ -145,7 +143,6 @@ class Smart extends React.Component {
 Smart.propTypes = {
     adminTabsAvailable: PropTypes.bool,
     admin_counts: PropTypes.arrayOf(PropTypes.object),
-    getAdminCounts: PropTypes.func.isRequired
 };
 
 export default Smart;
