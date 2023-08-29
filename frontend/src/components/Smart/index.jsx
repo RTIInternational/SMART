@@ -119,7 +119,7 @@ class Smart extends React.Component {
 
     render() {
         return (
-            <Tabs defaultActiveKey={1} id="data_tabs" mountOnEnter={true} unmountOnExit={true}>
+            <Tabs defaultActiveKey={2} id="data_tabs" mountOnEnter={true} unmountOnExit={true}>
                 <Tab eventKey={1} title="Annotate Data" className="full card" transition={false}>
                     <div className="cardContent">
                         <CodebookLabelMenuContainer />
