@@ -1,10 +1,12 @@
-import React from "react";
+import React, { Fragment, useState } from "react";
 import { Spinner } from "react-bootstrap";
 
 import { useLabels, useSuggestedLabels } from "../../hooks";
 import { H4 } from "../ui";
+import ConfirmationModal from "./ConfirmationModal";
 
-const DataCardSuggestedLabels = ({ cardData, fn }) => {
+const DataCardSuggestedLabels = ({ cardData, fn, includeModal }) => {
+    const [selectedLabelID, setSelectedLabelID] = useState(null);
     const { data: labels } = useLabels();
     const { data: suggestions } = useSuggestedLabels(cardData.text);
 
@@ -24,15 +26,24 @@ const DataCardSuggestedLabels = ({ cardData, fn }) => {
             <H4>Suggested Labels</H4>
             <div className="align-items-start d-flex flex-column">
                 {suggestions.suggestions.map((suggestion, index) => (
-                    <button
-                        className="suggested-label unstyled-button"
-                        key={index}
-                        onClick={() => {
-                            fn({ ...cardData, selectedLabelID: suggestion.pk });
-                        }}                    
-                    >
-                        {`${suggestion.name}: ${suggestion.description}`}
-                    </button>
+                    <Fragment key={index} >
+                        <button
+                            className="suggested-label unstyled-button"
+                            onClick={() => {
+                                if (includeModal) setSelectedLabelID(suggestion.pk);
+                                else fn({ ...cardData, selectedLabelID: suggestion.pk }); 
+                            }}                    
+                        >
+                            {`${suggestion.name}: ${suggestion.description}`}
+                        </button>
+                        <ConfirmationModal 
+                            showModal={selectedLabelID === suggestion.pk}
+                            setSelectedLabelID={setSelectedLabelID}
+                            fn={ () => {
+                                fn({ ...cardData, selectedLabelID });
+                            }}
+                        />
+                    </Fragment>
                 ))}
             </div>
         </div>

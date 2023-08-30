@@ -35,8 +35,8 @@ const DataCard = ({ data, page, actions }) => {
         labelSuggestions: labels && !labelCountLow(labels) && handlers.handleSelectLabel != null,
         labelSelect: labels && !labelCountLow(labels) && handlers.handleSelectLabel != null,
         discardButton: handlers.handleDiscard != null,
+        confirmationModal: page == PAGES.HISTORY
     };
-    
     return (
         <Card className="d-flex flex-column m-0 p-3" style={{ gap: "1rem", maxWidth: "992px" }}>
             <div className="align-items-end d-flex justify-content-end mb-n2">
@@ -60,6 +60,7 @@ const DataCard = ({ data, page, actions }) => {
                     <DataCardLabelButtons
                         cardData={cardData}
                         fn={handlers.handleSelectLabel}
+                        includeModal={show.confirmationModal}
                     />
                     <DataCardDiscardButton 
                         cardData={cardData} 
@@ -73,13 +74,15 @@ const DataCard = ({ data, page, actions }) => {
                 <Fragment>
                     <DataCardSuggestedLabels
                         cardData={cardData}
-                        fn={handlers.handleSelectLabel}
+                        fn= { handlers.handleSelectLabel }
+                        includeModal={show.confirmationModal}
                     />
                     <div className="select-discard-wrapper" >
                         <div className="toolbar-gap" />
                         <DataCardSelectLabel
                             cardData={cardData}
                             fn={handlers.handleSelectLabel}
+                            includeModal={show.confirmationModal}
                         />
                         <DataCardDiscardButton 
                             cardData={cardData} 
@@ -88,7 +91,7 @@ const DataCard = ({ data, page, actions }) => {
                         />
                     </div>
                 </Fragment>
-            )}    
+            )}
         </Card>
     );
 };
@@ -158,7 +161,7 @@ const formatDataForCard = (item, page) => {
 
 // assign handlers based on page
 // when all actions ported to react-query, this logic can be transferred to the react-query functions.
-const getHandlers = (fns, page) => {
+const getHandlers = (fns, page, showConfirm, setShowConfirm) => {
     switch (page) {
     case PAGES.ANNOTATE_DATA:
         return {
