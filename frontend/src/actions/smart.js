@@ -4,10 +4,8 @@ import 'whatwg-fetch';
 import { getConfig } from '../utils/fetch_configs';
 
 export const SET_AVAILABLE = 'SET_AVAILABLE';
-export const SET_ADMIN_COUNTS = 'SET_ADMIN_COUNTS';
 
 export const set_available = createAction(SET_AVAILABLE);
-export const set_admin_counts = createAction(SET_ADMIN_COUNTS);
 
 //check if another admin is already using the admin tabs
 export const getAdminTabsAvailable = (projectID) => {

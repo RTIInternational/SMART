@@ -3,20 +3,21 @@ import { Badge } from "react-bootstrap";
 
 import { useAdminCounts } from "../../../hooks";
 
-const BadgeRequiresAdjudication = () => {
+const BadgeIrr = () => {
     const { data: adminCounts } = useAdminCounts();
 
-    if (!adminCounts) return null;
+    if (!adminCounts || !adminCounts.data.IRR) return null;
 
     return (
         <Fragment>
-            Requires Adjudication
+            IRR
             <Badge className="tab-badge">
-                {adminCounts.data.SKIP}
+                {adminCounts.data.IRR}
             </Badge>
+            | 
+            <span> </span>
         </Fragment>
     );
 };
 
-export default BadgeRequiresAdjudication;
-
+export default BadgeIrr;
