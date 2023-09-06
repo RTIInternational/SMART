@@ -35,7 +35,7 @@ const DataCard = ({ data, page, actions }) => {
         labelSuggestions: labels && !labelCountLow(labels) && handlers.handleSelectLabel != null,
         labelSelect: labels && !labelCountLow(labels) && handlers.handleSelectLabel != null,
         discardButton: handlers.handleDiscard != null,
-        confirmationModal: page == PAGES.HISTORY
+        confirmationModal: page == PAGES.HISTORY && cardData.labelID // excludes unlabeled data
     };
     return (
         <Card className="d-flex flex-column m-0 p-3" style={{ gap: "1rem", maxWidth: "992px" }}>

@@ -423,7 +423,7 @@ def modify_label(request, data_pk):
     label = Label.objects.get(pk=request.data["labelID"])
 
     if (
-        ("oldLabelID" not in request.data or request.data["oldLabelID"]  == "")
+        not request.data.get("oldLabelID")
         and not DataLabel.objects.filter(data=data).exists()
     ):
         current_training_set = project.get_current_training_set()
@@ -482,7 +482,7 @@ def modify_label_to_skip(request, data_pk):
     createUnresolvedAdjudicateMessage(project, data, request.data["message"])
 
     with transaction.atomic():
-        if "oldLabelID" not in request.data:
+        if not request.data.get("oldLabelID"):
             # since it wasn't labeled, it isn't IRR and we don't need to change a label
             DataQueue.objects.create(data=data, queue=queue)
             # update redis
