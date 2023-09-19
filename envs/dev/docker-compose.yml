@@ -47,9 +47,9 @@ services:
       - backend
 
 volumes:
-  smart_pgdata:
+  smart_pgdata_15_2:
     external: true
-    name: vol_smart_pgdata
+    name: vol_smart_pgdata_15_2
   smart_data:
     external: true
     name: vol_smart_data
