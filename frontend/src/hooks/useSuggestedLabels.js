@@ -7,7 +7,7 @@ const useSuggestedLabels = (text) =>
     useQuery({
         queryKey: ["suggestedLabels", PROJECT_ID],
         queryFn: () =>
-            fetch(`/api/comparisons/${PROJECT_ID}?text=${text}`, getConfig())
+            fetch(`/api/comparisons/${PROJECT_ID}/?text=${text}`, getConfig())
                 .then((res) => res.json())
     });
 

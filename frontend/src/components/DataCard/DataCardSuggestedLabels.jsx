@@ -1,4 +1,4 @@
-import React, { Fragment, useState } from "react";
+import React, { Fragment, useState, useEffect } from "react";
 import { Spinner } from "react-bootstrap";
 
 import { useLabels, useSuggestedLabels } from "../../hooks";
@@ -8,7 +8,11 @@ import ConfirmationModal from "./ConfirmationModal";
 const DataCardSuggestedLabels = ({ cardData, fn, includeModal }) => {
     const [selectedLabelID, setSelectedLabelID] = useState(null);
     const { data: labels } = useLabels();
-    const { data: suggestions } = useSuggestedLabels(cardData.text);
+    const { data: suggestions, refetch } = useSuggestedLabels(cardData.text);
+
+    useEffect(() => {
+        refetch();
+    }, [cardData.text]);
 
     if (!labels) return null;
 
