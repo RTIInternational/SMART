@@ -7,11 +7,12 @@ import {
     getSortedRowModel,
     useReactTable 
 } from "@tanstack/react-table";
-import React, { Fragment, useState } from "react";
+import React, { Fragment, useState, useEffect } from "react";
 import { Button, Form, OverlayTrigger, Table, Tooltip } from "react-bootstrap";
 
 import { DebouncedInput, GrayBox, H4 } from "../ui";
 import DataCard, { PAGES } from "../DataCard/DataCard";
+import FilterForm from "./FilterForm";
 import { useHistory, useVerifyLabel } from "../../hooks";
 import { PROJECT_USES_IRR } from "../../store";
 
@@ -85,8 +86,11 @@ const HistoryTable = () => {
     const [columnVisibility, setColumnVisibility] = useState({});
     const [page, setPage] = useState(0);
     const [unlabeled, setUnlabeled] = useState(false);
+    const [filters, setFilters] = useState({ Text: "" });
+    const [filtersInitialized, setFiltersInitialized] = useState(false);
+    const [shouldRefetch, setShouldRefetch] = useState(false);
 
-    const { data: historyData } = useHistory(page + 1, unlabeled);
+    const { data: historyData, refetch: refetchHistory } = useHistory(page + 1, unlabeled, filters);
     const { mutate: verifyLabel } = useVerifyLabel();
 
     const metadataColumnsAccessorKeys = [];
@@ -98,6 +102,49 @@ const HistoryTable = () => {
                 );
         });
     }
+
+    const getFilterDefault = (metadataFields = []) => {
+        const filterObj = { Text: "" };
+        for (let field of metadataFields) filterObj[field] = "";
+        return filterObj;
+    };
+    
+    const resetFilters = () => {
+        if (!historyData) return;
+        const metadataFields = historyData.metadata_fields || [];
+        const filterDefault = getFilterDefault(metadataFields);
+        setFilters(filterDefault);
+        setShouldRefetch(true);
+    };
+
+    const handleApplyFilter = (event) => {
+        event.preventDefault();
+        setPage(0);
+        setShouldRefetch(true);
+    };
+
+    const handleFilterInputChange = (event) => {
+        const { name, value } = event.target;
+        setFilters(prevFilters => ({
+            ...prevFilters,
+            [name]: value
+        }));
+    };
+
+    useEffect(() => { // initialize filters
+        if (historyData && !filtersInitialized) {
+            const metadataFields = historyData.metadata_fields || [];
+            setFilters(getFilterDefault(metadataFields));
+            setFiltersInitialized(true);
+        }
+    }, [historyData]);
+
+    useEffect(() => { // explicit refetch
+        if (shouldRefetch) {
+            refetchHistory();
+            setShouldRefetch(false);
+        }
+    }, [shouldRefetch]);
 
     const table = useReactTable({
         columns: [...defaultColumns.first, ...metadataColumnsAccessorKeys.map((column) => {
@@ -194,6 +241,12 @@ const HistoryTable = () => {
                             </GrayBox>
                         </div>
                     )}
+                    < FilterForm 
+                        filters={filters} 
+                        handleInputChange={handleFilterInputChange}
+                        resetFilters={resetFilters}
+                        handleSubmit={handleApplyFilter}
+                    />
                 </div>
                 <div className="ml-3" style={{ minWidth: "fit-content" }}>
                     <GrayBox>

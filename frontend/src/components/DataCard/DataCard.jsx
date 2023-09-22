@@ -37,6 +37,7 @@ const DataCard = ({ data, page, actions }) => {
         discardButton: handlers.handleDiscard != null,
         confirmationModal: page == PAGES.HISTORY && cardData.labelID // excludes unlabeled data
     };
+    
     return (
         <Card className="d-flex flex-column m-0 p-3" style={{ gap: "1rem", maxWidth: "992px" }}>
             <div className="align-items-end d-flex justify-content-end mb-n2">
