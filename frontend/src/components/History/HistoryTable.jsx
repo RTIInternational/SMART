@@ -40,7 +40,8 @@ const defaultColumns = {
             filterFn: "includesString",
             header: "Data",
             id: "Data",
-            sortingFn: "alphanumeric"
+            sortingFn: "alphanumeric",
+            width: 250
         },
         {
             accessorKey: "label",
@@ -255,6 +256,7 @@ const HistoryTable = () => {
                 </div>
                 <div className="ml-3" style={{ minWidth: "fit-content" }}>
                     <GrayBox>
+                        <H4>Columns</H4>
                         {table.getAllLeafColumns().map(column => {
                             if (column.id !== "Expander") {
                                 return (
@@ -290,7 +292,12 @@ const HistoryTable = () => {
                     {table.getHeaderGroups().map(headerGroup => (
                         <tr key={headerGroup.id}>
                             {headerGroup.headers.map(header => (
-                                <th key={header.id} colSpan={header.colSpan}>
+                                <th 
+                                    key={header.id} 
+                                    colSpan={header.colSpan}
+                                    style={{
+                                        width: header.column.columnDef.width
+                                    }}>
                                     <Fragment>
                                         <div
                                             className="font-weight-bolder pb-1"
@@ -308,14 +315,14 @@ const HistoryTable = () => {
                                                 desc: "  ▼",
                                             }[header.column.getIsSorted()] || null}
                                         </div>
-                                        {header.column.getCanFilter() ? (
+                                        {/* {header.column.getCanFilter() ? (
                                             <DebouncedInput
                                                 type="text"
                                                 value={header.column.getFilterValue()}
                                                 onChange={(value) => header.column.setFilterValue(value)}
                                                 placeholder="Search..."
                                             />
-                                        ) : null}
+                                        ) : null} */}
                                     </Fragment>
                                 </th>
                             ))}
