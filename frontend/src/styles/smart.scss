@@ -744,22 +744,10 @@ li.disabled {
     border-color: rgba(0,0,0,0.1);
 }
 
-.history-filters {
-    margin: 1.5rem 0;
-    background-color: #F5F5F5;
-    border-radius: 4px;
-    padding: 16px;
+.history-filter-row {
+    display: flex;
 
-    h4 {
-        border-bottom: 1px solid $table-border-color;
-    }
-
-    .history-filter {
-        display: flex;
-        align-items: center;
-
-        .form-control {
-            width: fit-content;
-        }
+    label {
+        margin-right: 5px;
     }
 }

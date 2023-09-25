@@ -241,12 +241,17 @@ const HistoryTable = () => {
                             </GrayBox>
                         </div>
                     )}
-                    < FilterForm 
-                        filters={filters} 
-                        handleInputChange={handleFilterInputChange}
-                        resetFilters={resetFilters}
-                        handleSubmit={handleApplyFilter}
-                    />
+                    <div className="mt-3">
+                        <GrayBox>
+                            <H4>Filters</H4>
+                            < FilterForm 
+                                filters={filters} 
+                                handleInputChange={handleFilterInputChange}
+                                resetFilters={resetFilters}
+                                handleSubmit={handleApplyFilter}
+                            />
+                        </GrayBox>
+                    </div>
                 </div>
                 <div className="ml-3" style={{ minWidth: "fit-content" }}>
                     <GrayBox>
