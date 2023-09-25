@@ -8,7 +8,7 @@ import ConfirmationModal from "./ConfirmationModal";
 const DataCardSuggestedLabels = ({ cardData, fn, includeModal }) => {
     const [selectedLabelID, setSelectedLabelID] = useState(null);
     const { data: labels } = useLabels();
-    const { data: suggestions, refetch } = useSuggestedLabels(cardData.text);
+    const { data: suggestions, refetch } = useSuggestedLabels(cardData.text, cardData.dataID);
 
     useEffect(() => {
         refetch();
