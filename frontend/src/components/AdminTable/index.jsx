@@ -2,7 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import ReactTable from "react-table-6";
 import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
-import AnnotateCard, { buildCard } from "../AnnotateCard";
+import DataCard, { PAGES } from "../DataCard/DataCard";
 
 class AdminTable extends React.Component {
     componentDidMount() {
@@ -57,14 +57,11 @@ class AdminTable extends React.Component {
                                     <p style={{ whiteSpace: "normal" }}>{row.original.message}</p>
                                 </div>
                             )}
-                            <AnnotateCard
-                                card={buildCard(row.row.id, null, row.original)}
-                                hideAdjudicate={true}
-                                labels={labels}
-                                onSelectLabel={(card, label) => adminLabel(card.id, label)}
-                                onDiscard={(id) => discardData(id)}
-                                showAdjudicate={false}
-                            />
+                            <DataCard 
+                                data={row.original}
+                                page={PAGES.ADMIN} 
+                                actions={{ onSelectLabel: adminLabel, onDiscard: discardData }} 
+                            /> 
                         </div>
                     );
                 }

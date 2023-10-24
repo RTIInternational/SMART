@@ -3,8 +3,9 @@ import 'whatwg-fetch';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
 import { getAdmin } from './adminTables';
-import { getAdminCounts } from './smart';
 import { getLabelCounts } from './skew';
+
+import { queryClient } from '../store';
 
 export const SET_HIST_DATA = 'SET_HIST_DATA';
 export const SET_UNLABELED = 'SET_UNLABELED';
@@ -148,7 +149,8 @@ export const changeToSkip = (dataID, oldLabelID, projectID, message) => {
             .then(() => {
                 dispatch(getHistory(projectID));
                 dispatch(getAdmin(projectID));
-                dispatch(getAdminCounts(projectID));
+                queryClient.invalidateQueries(["adminCounts", projectID]);
+
             });
     };
 };

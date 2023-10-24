@@ -5,8 +5,8 @@ import { postConfig } from "../utils/fetch_configs";
 
 const useModifyLabel = () =>
     useMutation({
-        mutationFn: ({ dataID, labelID, oldLabelID }) =>
-            fetch(`/api/modify_label/${dataID}/`, postConfig({ dataID, labelID, oldLabelID })),
+        mutationFn: ({ dataID, labelID, selectedLabelID, }) =>
+            fetch(`/api/modify_label/${dataID}/`, postConfig({ dataID, labelID: selectedLabelID, oldLabelID: labelID })),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["history", PROJECT_ID] });
         }

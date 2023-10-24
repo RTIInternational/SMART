@@ -23,8 +23,8 @@ const mapDispatchToProps = (dispatch) => {
         getUnlabeled: () => {
             dispatch(getUnlabeled(PROJECT_ID));
         },
-        skewLabel: (dataID, labelID) => {
-            dispatch(skewLabel(dataID, labelID, PROJECT_ID));
+        skewLabel: ({ dataID, selectedLabelID }) => {
+            dispatch(skewLabel(dataID, selectedLabelID, PROJECT_ID));
         },
         getLabelCounts: () => {
             dispatch(getLabelCounts(PROJECT_ID));

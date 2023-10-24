@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Tabs, Tab, Badge } from "react-bootstrap";
+import { Tabs, Tab } from "react-bootstrap";
 import CardContainer from '../../containers/card_container';
 import HistoryContainer from '../../containers/history_container';
 import SkewContainer from '../../containers/skew_container';
@@ -8,8 +8,9 @@ import AdminTableContainer from '../../containers/adminTable_container';
 import RecycleBinContainer from '../../containers/recycleBin_container';
 import CodebookLabelMenuContainer from '../../containers/codebookLabelMenu_container';
 import SmartProgressBarContainer from '../../containers/smartProgressBar_container';
-import { useAdminCounts } from '../../hooks';
-import { BadgeRequiresAdjudication } from './badges';
+import BadgeRequiresAdjudication from './badges/BadgeRequiresAdjudication';
+import BadgeIrr from './badges/BadgeIrr';
+
 
 
 const ADMIN = window.ADMIN;
@@ -18,7 +19,6 @@ class Smart extends React.Component {
 
     componentDidMount() {
         this.props.getAdminTabsAvailable();
-        this.props.getAdminCounts();
     }
 
     renderAdminTabSkew() {
@@ -48,28 +48,14 @@ class Smart extends React.Component {
 
     renderAdminTabAdminTable() {
         let adminTabAdminTable, badges;
-        const { adminTabsAvailable, admin_counts } = this.props;
-
+        const { adminTabsAvailable } = this.props;
         if (adminTabsAvailable) {
-            if (Object.keys(admin_counts).length > 1) {
-                badges = (
-                    <div>
-                        IRR
-                        <Badge className="tab-badge">
-                            {admin_counts["IRR"]}
-                        </Badge>
-                        | Requires Adjudication
-                        <BadgeRequiresAdjudication />
-                    </div>
-                );
-            } else {
-                badges = (
-                    <div>
-                        Requires Adjudication
-                        <BadgeRequiresAdjudication />
-                    </div>
-                );
-            }
+            badges = (
+                <div> 
+                    <BadgeIrr />
+                    <BadgeRequiresAdjudication />
+                </div>
+            );
 
             adminTabAdminTable = (
                 <Tab eventKey={4}
@@ -121,7 +107,7 @@ class Smart extends React.Component {
 
     render() {
         return (
-            <Tabs defaultActiveKey={1} id="data_tabs" mountOnEnter={true} unmountOnExit={true}>
+            <Tabs defaultActiveKey={2} id="data_tabs" mountOnEnter={true} unmountOnExit={true}>
                 <Tab eventKey={1} title="Annotate Data" className="full card" transition={false}>
                     <div className="cardContent">
                         <CodebookLabelMenuContainer />
@@ -144,8 +130,6 @@ class Smart extends React.Component {
 
 Smart.propTypes = {
     adminTabsAvailable: PropTypes.bool,
-    admin_counts: PropTypes.arrayOf(PropTypes.object),
-    getAdminCounts: PropTypes.func.isRequired
 };
 
 export default Smart;
