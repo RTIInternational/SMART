@@ -65,6 +65,27 @@ embeddings_model = SentenceTransformer(model_path)
 
 @api_view(["GET"])
 @permission_classes((IsCoder,))
+def get_labels(request, project_pk):
+    """Get the set of labels in the project.
+
+    Args:
+        request: The request to the endpoint
+        project_pk: Primary key of project
+    Returns:
+        labels: The project labels
+    """
+    project = Project.objects.get(pk=project_pk)
+    labels = Label.objects.all().filter(project=project)
+
+    return Response(
+        {
+            "labels": LabelSerializer(labels, many=True).data,
+        }
+    )
+
+
+@api_view(["GET"])
+@permission_classes((IsCoder,))
 def get_card_deck(request, project_pk):
     """Grab data using get_assignments and send it to the frontend react app.
 
@@ -72,7 +93,6 @@ def get_card_deck(request, project_pk):
         request: The request to the endpoint
         project_pk: Primary key of project
     Returns:
-        labels: The project labels
         data: The data in the queue
     """
     profile = request.user.profile
@@ -96,11 +116,9 @@ def get_card_deck(request, project_pk):
 
     # shuffle so the irr is not all at the front
     random.shuffle(data)
-    labels = Label.objects.all().filter(project=project)
 
     return Response(
         {
-            "labels": LabelSerializer(labels, many=True).data,
             "data": DataSerializer(data, many=True).data,
         }
     )
@@ -121,11 +139,11 @@ def label_distribution_inverted(request, project_pk):
         a dictionary of the amount each label has been used
     """
     project = Project.objects.get(pk=project_pk)
-    labels = [label for label in project.labels.all()]
-    users = []
-    users.append(project.creator)
-    users.extend([perm.profile for perm in project.projectpermissions_set.all()])
-
+    labels = list(project.labels.all())
+    users = [
+        project.creator,
+        *[perm.profile for perm in project.projectpermissions_set.all()],
+    ]
     dataset = []
     all_counts = []
     for u in users:
@@ -136,7 +154,7 @@ def label_distribution_inverted(request, project_pk):
             temp_values.append({"x": label.name, "y": label_count})
         dataset.append({"key": u.__str__(), "values": temp_values})
 
-    if not any(count > 0 for count in all_counts):
+    if all(count <= 0 for count in all_counts):
         dataset = []
 
     return Response(dataset)

@@ -21,7 +21,7 @@ const mapStateToProps = (state) => {
     return {
         history_data: state.history.history_data,
         unlabeled: state.history.unlabeled,
-        labels: state.card.labels,
+        labels: state.smart.labels,
         num_pages: state.history.num_pages,
         current_page: state.history.current_page,
         filterChoices: state.history.filter_choices,

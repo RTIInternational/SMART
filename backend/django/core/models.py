@@ -32,6 +32,9 @@ def save_user(sender, instance, **kwargs):
 
 
 class Project(models.Model):
+    class Meta:
+        indexes = [models.Index(fields=["id"])]
+
     name = models.TextField()
     description = models.TextField(blank=True)
     creator = models.ForeignKey("Profile", on_delete=models.CASCADE)
@@ -187,6 +190,7 @@ class Model(models.Model):
 class Data(models.Model):
     class Meta:
         unique_together = ("hash", "upload_id_hash", "project")
+        indexes = [models.Index(fields=["project"])]
 
     text = models.TextField()
     hash = models.CharField(max_length=128)
