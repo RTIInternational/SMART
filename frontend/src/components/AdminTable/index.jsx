@@ -49,7 +49,6 @@ class AdminTable extends React.Component {
                 Header: "Unlabeled Data",
                 accessor: "data",
                 Cell: row => {
-                    const card = buildCard(row.row.id, null, row.original);
                     return (
                         <div className="sub-row">
                             {row.original.message && (
