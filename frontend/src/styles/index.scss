@@ -1,0 +1,16 @@
+$gray: #F5F5F5;
+
+.bg-gray {
+    background-color: $gray;
+}
+
+.unstyled-button {
+    background: none;
+    border: 0;
+    padding: 0;
+}
+
+// DataCardSuggestedLabels
+.suggested-label:hover {
+    text-decoration: underline;
+}

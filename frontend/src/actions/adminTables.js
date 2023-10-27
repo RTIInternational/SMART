@@ -2,11 +2,11 @@ import { createAction } from 'redux-actions';
 import 'whatwg-fetch';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
-import { getAdminCounts } from './smart';
 import { setMessage } from './card';
-import { getHistory } from './history';
 import { getUnlabeled, getLabelCounts } from './skew';
 import { getDiscarded } from './recycleBin';
+
+import { queryClient } from "../store";
 
 export const SET_ADMIN_DATA = 'SET_ADMIN_DATA';
 export const SET_DISCARDED_DATA = 'SET_DISCARDED_DATA';
@@ -71,10 +71,10 @@ export const adminLabel = (dataID, labelID, projectID) => {
                     return dispatch(setMessage(response.error));
                 } else {
                     dispatch(getUnlabeled(projectID));
-                    dispatch(getHistory(projectID));
+                    queryClient.invalidateQueries(["history", projectID]); // is this necessary?
                     dispatch(getLabelCounts(projectID));
                     dispatch(getAdmin(projectID));
-                    dispatch(getAdminCounts(projectID));
+                    queryClient.invalidateQueries(["adminCounts", projectID]);
                 }
             });
     };
@@ -99,7 +99,7 @@ export const discardData = (dataID, projectID) => {
                     return dispatch(setMessage(response.error));
                 } else {
                     dispatch(getAdmin(projectID));
-                    dispatch(getAdminCounts(projectID));
+                    queryClient.invalidateQueries(["adminCounts", projectID]);
                     dispatch(getDiscarded(projectID));
                     dispatch(getUnlabeled(projectID));
                 }

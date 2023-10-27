@@ -3,10 +3,10 @@ import 'whatwg-fetch';
 import moment from 'moment';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
-import { getHistory } from './history';
 import { getAdmin } from './adminTables';
 import { getLabelCounts, getUnlabeled } from './skew';
-import { getAdminCounts } from './smart';
+
+import { queryClient } from "../store";
 
 export const POP_CARD = 'POP_CARD';
 export const PUSH_CARD = 'PUSH_CARD';
@@ -48,12 +48,12 @@ export const fetchCards = (projectID) => {
     };
 };
 
-export const annotateCard = (card, labelID, num_cards_left, projectID, is_admin) => {
+export const annotateCard = (dataID, labelID, num_cards_left, start_time, projectID, is_admin) => {
     let payload = {
         labelID: labelID,
-        labeling_time: moment().diff(card['start_time'], 'seconds') // now - start_time rounded to whole seconds
+        labeling_time: moment().diff(start_time, 'seconds') // now - start_time rounded to whole seconds
     };
-    let apiURL = `/api/annotate_data/${card.text.pk}/`;
+    let apiURL = `/api/annotate_data/${dataID}/`;
     return dispatch => {
         return fetch(apiURL, postConfig(payload))
             .then(response => {
@@ -71,11 +71,9 @@ export const annotateCard = (card, labelID, num_cards_left, projectID, is_admin)
                     return dispatch(setMessage(response.error));
                 } else {
                     dispatch(popCard());
-                    dispatch(getHistory(projectID));
-
                     if (is_admin) {
                         dispatch(getAdmin(projectID));
-                        dispatch(getAdminCounts(projectID));
+                        queryClient.invalidateQueries(["adminCounts", projectID]);
                         dispatch(getLabelCounts(projectID));
                     }
                     if (num_cards_left <= 1) dispatch(fetchCards(projectID));
@@ -85,8 +83,8 @@ export const annotateCard = (card, labelID, num_cards_left, projectID, is_admin)
 };
 
 //unassign a card
-export const unassignCard = (card, num_cards_left, is_admin, projectID) => {
-    let apiURL = `/api/unassign_data/${card.text.pk}/`;
+export const unassignCard = (dataID, num_cards_left, is_admin, projectID) => {
+    let apiURL = `/api/unassign_data/${dataID}/`;
     return dispatch => {
         return fetch(apiURL, postConfig())
             .then(response => {
@@ -111,8 +109,8 @@ export const unassignCard = (card, num_cards_left, is_admin, projectID) => {
 };
 
 //skip a card and put it in the admin table
-export const passCard = (card, num_cards_left, is_admin, projectID, message) => {
-    let apiURL = `/api/skip_data/${card.text.pk}/`;
+export const passCard = (dataID, num_cards_left, is_admin, projectID, message) => {
+    let apiURL = `/api/skip_data/${dataID}/`;
     return dispatch => {
         return fetch(apiURL, postConfig({ message }))
             .then(response => {
@@ -130,10 +128,9 @@ export const passCard = (card, num_cards_left, is_admin, projectID, message) => 
                     return dispatch(setMessage(response.error));
                 } else {
                     dispatch(popCard());
-                    dispatch(getHistory(projectID));
                     if (is_admin) {
                         dispatch(getAdmin(projectID));
-                        dispatch(getAdminCounts(projectID));
+                        queryClient.invalidateQueries(["adminCounts", projectID]);
                     }
                     if (num_cards_left <= 1) dispatch(fetchCards(projectID));
                 }
@@ -156,7 +153,6 @@ export const modifyMetadataValues = (dataPk, metadatas, projectPk) => {
                 }
             })
             .then(() => {
-                dispatch(getHistory(projectPk));
                 dispatch(getUnlabeled(projectPk));
             });
     };
