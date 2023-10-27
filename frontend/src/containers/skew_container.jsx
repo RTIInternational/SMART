@@ -13,7 +13,7 @@ const mapStateToProps = (state) => {
     return {
         unlabeled_data: state.skew.unlabeled_data,
         label_counts: state.skew.label_counts,
-        labels: state.card.labels,
+        labels: state.smart.labels,
         message: state.card.message
     };
 };
@@ -23,8 +23,8 @@ const mapDispatchToProps = (dispatch) => {
         getUnlabeled: () => {
             dispatch(getUnlabeled(PROJECT_ID));
         },
-        skewLabel: (dataID, labelID) => {
-            dispatch(skewLabel(dataID, labelID, PROJECT_ID));
+        skewLabel: ({ dataID, selectedLabelID }) => {
+            dispatch(skewLabel(dataID, selectedLabelID, PROJECT_ID));
         },
         getLabelCounts: () => {
             dispatch(getLabelCounts(PROJECT_ID));

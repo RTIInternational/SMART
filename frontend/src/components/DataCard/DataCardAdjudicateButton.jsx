@@ -1,13 +1,13 @@
 import React, { Fragment, useState } from "react";
 import { Button, Form, Modal, OverlayTrigger, Tooltip } from "react-bootstrap";
 
-const DataCardAdjudicateButton = ({ dataID, fn, oldLabelID }) => {
+const DataCardAdjudicateButton = ({ cardData, fn }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [message, setMessage] = useState("");
 
     const handleSkip = (event) => {
         event.preventDefault();
-        fn({ dataID, message, oldLabelID });
+        fn({ ...cardData, oldLabelID: cardData.labelID, message });
         setIsOpen(false);
     };
 

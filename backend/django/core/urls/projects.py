@@ -77,6 +77,8 @@ urlpatterns = [
         name="project_admin",
     ),
     re_path(
-        r"^projects/folder/$", frontend.CreateFolder.as_view(), name="folder_create",
+        r"^projects/folder/$",
+        frontend.CreateFolder.as_view(),
+        name="folder_create",
     ),
 ]

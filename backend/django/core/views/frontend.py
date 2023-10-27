@@ -1,6 +1,4 @@
 import pandas as pd
-
-from core.utils.utils_ml import train
 from django import forms
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -46,6 +44,7 @@ from core.utils.util import (
 )
 from core.utils.utils_annotate import batch_unassign, leave_coding_page
 from core.utils.utils_external_db import delete_external_db_file, save_external_db_file
+from core.utils.utils_ml import train
 from core.utils.utils_queue import add_queue, find_queue_length
 
 

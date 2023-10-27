@@ -8,7 +8,7 @@ const SmartProgressBarContainer = (props) => <SmartProgressBar {...props} />;
 
 const mapStateToProps = (state) => {
     return {
-        labels: state.card.labels,
+        labels: state.smart.labels,
         cards: state.card.cards
     };
 };

@@ -64,7 +64,11 @@ def read_data_file(data_file):
         elif data_file.content_type.startswith(
             "application/vnd"
         ) and data_file.name.endswith(".xlsx"):
-            data = pd.read_excel(data_file, dtype=str).dropna(axis=0, how="all")
+            data = (
+                pd.read_excel(data_file, dtype=str)
+                .dropna(axis=0, how="all")
+                .replace(r"\n", " ", regex=True)
+            )
         else:
             raise ValidationError(
                 "File type is not supported.  Received {0} but only {1} are supported.".format(

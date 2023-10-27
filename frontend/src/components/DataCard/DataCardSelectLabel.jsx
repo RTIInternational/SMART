@@ -1,9 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import Select from "react-dropdown-select";
 
 import { useLabels } from "../../hooks";
+import ConfirmationModal from "./ConfirmationModal";
 
-const DataCardSelectLabel = ({ card, fn }) => {
+
+const DataCardSelectLabel = ({ cardData, fn, includeModal }) => {
+    const [selectedLabelID, setSelectedLabelID] = useState(null);
     const { data: labels } = useLabels();
 
     const labelsOptions = labels ? labels.labels.map(label => ({
@@ -12,18 +15,29 @@ const DataCardSelectLabel = ({ card, fn }) => {
     })) : [];
 
     return (
-        <Select
-            className="rounded"
-            dropdownHandle={false}
-            labelField="dropdownLabel"
-            onChange={(value) => {
-                fn({ dataID: card.id, labelID: value[0].value, oldLabelID: card.labelID, startTime: card.start_time });
-            }}
-            options={labelsOptions}
-            placeholder="Select label..."
-            searchBy="dropdownLabel"
-            sortBy="dropdownLabel"
-        />
+        <div className="label-select-wrapper">
+            <Select
+                className="rounded"
+                dropdownHandle={false}
+                labelField="dropdownLabel"
+                onChange={(value) => {
+                    if (includeModal) setSelectedLabelID(value[0].value);
+                    else fn({ ...cardData, selectedLabelID: value[0].value });
+                }}
+                options={labelsOptions}
+                placeholder="Select label..."
+                searchBy="dropdownLabel"
+                sortBy="dropdownLabel"
+            />
+            <ConfirmationModal 
+                showModal={selectedLabelID !== null}
+                setSelectedLabelID={setSelectedLabelID}
+                fn={ () => {
+                    fn({ ...cardData, selectedLabelID });
+                }}
+            />
+        </div>
+        
     );
 };
 

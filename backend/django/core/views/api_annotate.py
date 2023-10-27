@@ -1,9 +1,12 @@
+import math
+import random
+
+import pandas as pd
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from core.models import (
@@ -49,9 +52,26 @@ from core.utils.utils_queue import fill_queue
 from core.utils.utils_redis import redis_serialize_data, redis_serialize_set
 from smart.settings import ADMIN_TIMEOUT_MINUTES
 
-import pandas as pd
-import math
-import random
+
+@api_view(["GET"])
+@permission_classes((IsCoder,))
+def get_labels(request, project_pk):
+    """Get the set of labels in the project.
+
+    Args:
+        request: The request to the endpoint
+        project_pk: Primary key of project
+    Returns:
+        labels: The project labels
+    """
+    project = Project.objects.get(pk=project_pk)
+    labels = Label.objects.all().filter(project=project)
+
+    return Response(
+        {
+            "labels": LabelSerializer(labels, many=True).data,
+        }
+    )
 
 
 @api_view(["GET"])
@@ -63,7 +83,6 @@ def get_card_deck(request, project_pk):
         request: The request to the endpoint
         project_pk: Primary key of project
     Returns:
-        labels: The project labels
         data: The data in the queue
     """
     profile = request.user.profile
@@ -87,11 +106,9 @@ def get_card_deck(request, project_pk):
 
     # shuffle so the irr is not all at the front
     random.shuffle(data)
-    labels = Label.objects.all().filter(project=project)
 
     return Response(
         {
-            "labels": LabelSerializer(labels, many=True).data,
             "data": DataSerializer(data, many=True).data,
         }
     )
@@ -112,11 +129,11 @@ def label_distribution_inverted(request, project_pk):
         a dictionary of the amount each label has been used
     """
     project = Project.objects.get(pk=project_pk)
-    labels = [label for label in project.labels.all()]
-    users = []
-    users.append(project.creator)
-    users.extend([perm.profile for perm in project.projectpermissions_set.all()])
-
+    labels = list(project.labels.all())
+    users = [
+        project.creator,
+        *[perm.profile for perm in project.projectpermissions_set.all()],
+    ]
     dataset = []
     all_counts = []
     for u in users:
@@ -127,7 +144,7 @@ def label_distribution_inverted(request, project_pk):
             temp_values.append({"x": label.name, "y": label_count})
         dataset.append({"key": u.__str__(), "values": temp_values})
 
-    if not any(count > 0 for count in all_counts):
+    if all(count <= 0 for count in all_counts):
         dataset = []
 
     return Response(dataset)
@@ -414,7 +431,7 @@ def modify_label(request, data_pk):
     label = Label.objects.get(pk=request.data["labelID"])
 
     if (
-        ("oldLabelID" not in request.data or request.data["oldLabelID"]  == "")
+        not request.data.get("oldLabelID")
         and not DataLabel.objects.filter(data=data).exists()
     ):
         current_training_set = project.get_current_training_set()
@@ -473,7 +490,7 @@ def modify_label_to_skip(request, data_pk):
     createUnresolvedAdjudicateMessage(project, data, request.data["message"])
 
     with transaction.atomic():
-        if "oldLabelID" not in request.data:
+        if not request.data.get("oldLabelID"):
             # since it wasn't labeled, it isn't IRR and we don't need to change a label
             DataQueue.objects.create(data=data, queue=queue)
             # update redis
@@ -1063,22 +1080,3 @@ def modify_metadata_values(request, data_pk):
         metadata.value = m["value"]
         metadata.save()
     return Response({})
-
-
-@api_view(["GET"])
-@permission_classes((IsCoder,))
-def get_labels(request, project_pk):
-    """Grab data using get_assignments and send it to the frontend react app.
-
-    Args:
-        request: The request to the endpoint
-        project_pk: Primary key of project
-    Returns:
-        labels: The project labels
-        data: The data in the queue
-    """
-    project = Project.objects.get(pk=project_pk)
-    labels = Label.objects.all().filter(project=project)
-
-    return Response({"labels": LabelSerializer(labels, many=True).data,})
-

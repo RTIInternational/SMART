@@ -1,8 +1,8 @@
+import json
+
+import requests
 from django.core.cache import cache
 from sentence_transformers import util
-
-import json
-import requests
 
 
 def cache_embeddings(project, embeddings):

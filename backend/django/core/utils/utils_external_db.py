@@ -219,7 +219,10 @@ def export_table(project_pk, response):
                             schema=external_db.export_schema,
                             if_exists="replace",
                             index=False,
-                            dtype={"Timestamp": DateTime},
+                            dtype={
+                                "Timestamp": DateTime,
+                                "Verified Timestamp": DateTime,
+                            },
                         )
 
                     else:
@@ -231,7 +234,10 @@ def export_table(project_pk, response):
                             schema=external_db.export_schema,
                             if_exists="fail",
                             index=False,
-                            dtype={"Timestamp": DateTime},
+                            dtype={
+                                "Timestamp": DateTime,
+                                "Verified Timestamp": DateTime,
+                            },
                         )
                 else:
                     response["success_message"] = "No data to export."

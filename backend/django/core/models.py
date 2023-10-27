@@ -32,6 +32,9 @@ def save_user(sender, instance, **kwargs):
 
 
 class Project(models.Model):
+    class Meta:
+        indexes = [models.Index(fields=["id"])]
+
     name = models.TextField()
     description = models.TextField(blank=True)
     creator = models.ForeignKey("Profile", on_delete=models.CASCADE)
@@ -74,10 +77,17 @@ class Project(models.Model):
         ("Text_Some_Metadata", "Text and selected Metadata fields"),
     )
     dedup_on = models.CharField(
-        max_length=19, default="Text", choices=DEDUP_CHOICES, null=False,
+        max_length=19,
+        default="Text",
+        choices=DEDUP_CHOICES,
+        null=False,
     )
 
-    dedup_fields = models.CharField(max_length=50, default="", null=True,)
+    dedup_fields = models.CharField(
+        max_length=50,
+        default="",
+        null=True,
+    )
 
     def get_absolute_url(self):
         return reverse("projects:project_detail", kwargs={"pk": self.pk})
@@ -180,6 +190,7 @@ class Model(models.Model):
 class Data(models.Model):
     class Meta:
         unique_together = ("hash", "upload_id_hash", "project")
+        indexes = [models.Index(fields=["project"])]
 
     text = models.TextField()
     hash = models.CharField(max_length=128)
@@ -225,7 +236,10 @@ class ExternalDatabase(models.Model):
         ("microsoft", "MS SQL"),
     )
     database_type = models.CharField(
-        max_length=9, default="none", choices=DB_TYPE_CHOICES, null=False,
+        max_length=9,
+        default="none",
+        choices=DB_TYPE_CHOICES,
+        null=False,
     )
 
     has_ingest = models.BooleanField(default=False)
