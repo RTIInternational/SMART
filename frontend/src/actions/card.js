@@ -3,7 +3,6 @@ import 'whatwg-fetch';
 import moment from 'moment';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
-import { getHistory } from './history';
 import { getAdmin } from './adminTables';
 import { getLabelCounts, getUnlabeled } from './skew';
 
@@ -72,8 +71,6 @@ export const annotateCard = (dataID, labelID, num_cards_left, start_time, projec
                     return dispatch(setMessage(response.error));
                 } else {
                     dispatch(popCard());
-                    dispatch(getHistory(projectID));
-
                     if (is_admin) {
                         dispatch(getAdmin(projectID));
                         queryClient.invalidateQueries(["adminCounts", projectID]);
@@ -131,7 +128,6 @@ export const passCard = (dataID, num_cards_left, is_admin, projectID, message) =
                     return dispatch(setMessage(response.error));
                 } else {
                     dispatch(popCard());
-                    dispatch(getHistory(projectID));
                     if (is_admin) {
                         dispatch(getAdmin(projectID));
                         queryClient.invalidateQueries(["adminCounts", projectID]);
@@ -157,7 +153,6 @@ export const modifyMetadataValues = (dataPk, metadatas, projectPk) => {
                 }
             })
             .then(() => {
-                dispatch(getHistory(projectPk));
                 dispatch(getUnlabeled(projectPk));
             });
     };

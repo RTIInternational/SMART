@@ -3,7 +3,6 @@ import 'whatwg-fetch';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
 import { setMessage } from './card';
-import { getHistory } from './history';
 import { getUnlabeled, getLabelCounts } from './skew';
 import { getDiscarded } from './recycleBin';
 
@@ -72,7 +71,7 @@ export const adminLabel = (dataID, labelID, projectID) => {
                     return dispatch(setMessage(response.error));
                 } else {
                     dispatch(getUnlabeled(projectID));
-                    dispatch(getHistory(projectID));
+                    queryClient.invalidateQueries(["history", projectID]); // is this necessary?
                     dispatch(getLabelCounts(projectID));
                     dispatch(getAdmin(projectID));
                     queryClient.invalidateQueries(["adminCounts", projectID]);
