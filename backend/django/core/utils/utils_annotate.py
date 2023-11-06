@@ -1,7 +1,6 @@
 from random import randrange
 
 from django.conf import settings
-from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
 
@@ -285,14 +284,6 @@ def get_unlabeled_data(project_pk):
 
 def createUnresolvedAdjudicateMessage(project, data, message):
     AdjudicateDescription.objects.create(project=project, data=data, message=message)
-
-
-def cache_embeddings(project_pk, embeddings):
-    cache.set(project_pk, embeddings)
-
-
-def get_embeddings(project_pk):
-    return cache.get(project_pk)
 
 
 def update_last_action(project, profile):

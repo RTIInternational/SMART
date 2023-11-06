@@ -29,6 +29,7 @@ from core.models import (
     ExternalDatabase,
     Label,
     MetaDataField,
+    MlModel,
     Project,
     TrainingSet,
 )
@@ -43,6 +44,7 @@ from core.utils.util import (
 )
 from core.utils.utils_annotate import batch_unassign, leave_coding_page
 from core.utils.utils_external_db import delete_external_db_file, save_external_db_file
+from core.utils.utils_ml import train
 from core.utils.utils_queue import add_queue, find_queue_length
 
 
@@ -678,6 +680,60 @@ class ProjectUpdateUmbrella(LoginRequiredMixin, UserPassesTestMixin, View):
         Project.objects.filter(id=context["project"].id).update(
             umbrella_string=request.POST.get("umbrella")
         )
+
+        return redirect(self.get_success_url())
+
+
+class ProjectUpdateMl(LoginRequiredMixin, UserPassesTestMixin, View):
+    model = Project
+    template_name = "projects/update/ml.html"
+    permission_denied_message = (
+        "You must be an Admin or Project Creator to access the Project Update page."
+    )
+    raise_exception = True
+    ordering = "name"
+
+    def test_func(self):
+        project = Project.objects.get(pk=self.kwargs["pk"])
+
+        return (
+            project_extras.proj_permission_level(project, self.request.user.profile)
+            >= 2
+        )
+
+    def get_context_data(self, **kwargs):
+        context = {}
+        project = Project.objects.get(pk=self.kwargs["pk"])
+        context["project"] = project
+
+        ml_model = MlModel.objects.filter(project=self.kwargs["pk"]).first()
+        context["ml_model"] = ml_model
+
+        return context
+
+    def get_success_url(self):
+        context = self.get_context_data()
+        return context["project"].get_absolute_url()
+
+    def get(self, request, *args, **kwargs):
+        return render(request, self.template_name, context=self.get_context_data())
+
+    def post(self, request, *args, **kwargs):
+        context = self.get_context_data()
+
+        MlModel.objects.filter(project=context["project"]).update_or_create(
+            project=context["project"], status="Training"
+        )
+
+        file = request.FILES["file"].file.getvalue()
+
+        train(context["project"].id, file)
+
+        MlModel.objects.filter(project=context["project"]).update_or_create(
+            project=context["project"], status="Trained"
+        )
+
+        update_label_embeddings(context["project"])
 
         return redirect(self.get_success_url())
 

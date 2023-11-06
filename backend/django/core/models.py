@@ -394,3 +394,8 @@ class AdjudicateDescription(models.Model):
     data = models.ForeignKey("Data", on_delete=models.CASCADE)
     message = models.TextField()
     isResolved = models.BooleanField(default=False)
+
+
+class MlModel(models.Model):
+    project = models.ForeignKey("Project", on_delete=models.CASCADE)
+    status = models.TextField()

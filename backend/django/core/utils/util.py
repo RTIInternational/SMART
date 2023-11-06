@@ -11,7 +11,6 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import connection, transaction
 from django.utils import timezone
-from sentence_transformers import SentenceTransformer
 
 from core import tasks
 from core.models import (
@@ -31,6 +30,7 @@ from core.models import (
     TrainingSet,
     VerifiedDataLabel,
 )
+from core.utils.utils_ml import encode
 from core.utils.utils_queue import fill_queue
 from smart.settings import TIME_ZONE_FRONTEND
 
@@ -40,13 +40,6 @@ from smart.settings import TIME_ZONE_FRONTEND
 # https://stackoverflow.com/questions/20625582/how-to-deal-with-settingwithcopywarning-in-pandas
 # Disable warning for false positive warning that should only trigger on chained assignment
 pd.options.mode.chained_assignment = None  # default='warn'
-
-# Using a prebuilt model
-# How this model was built: https://github.com/dsteedRTI/csv-to-embeddings-model
-# Sbert Model can be found here: https://www.sbert.net/docs/pretrained_models.html
-# Sbert Model Card: https://huggingface.co/sentence-transformers/multi-qa-mpnet-base-dot-v1
-model_path = "core/smart_embeddings_model"
-embeddings_model = SentenceTransformer(model_path)
 
 
 def md5_hash(obj):
@@ -269,13 +262,12 @@ def generate_label_embeddings(project):
             project_labels.values_list("description", flat=True)
         )
 
-        # Make manual embeddings. Prod settings made calling the api from the backend infeasible
-        embeddings = embeddings_model.encode(project_labels_descriptions)
+        embeddings = encode(project, project_labels_descriptions)
 
         # We have to use tolist() since not calling API now to handle numpy arrays
         # (JSON response from API originally handled this for us)
         label_embeddings = [
-            LabelEmbeddings(embedding=embedding.tolist(), label=label)
+            LabelEmbeddings(embedding=embedding, label=label)
             for embedding, label in zip(embeddings, project_labels)
         ]
         LabelEmbeddings.objects.bulk_create(
@@ -294,17 +286,14 @@ def update_label_embeddings(project):
         )
         project_labels_ids = list(project_labels.values_list("id", flat=True))
 
-        # Make manual embeddings. Prod settings made calling the api from the backend infeasible
-        embeddings = embeddings_model.encode(project_labels_descriptions)
+        embeddings = encode(project.id, project_labels_descriptions)
 
         project_labels_embeddings = LabelEmbeddings.objects.filter(
             label_id__in=project_labels_ids
         )
 
-        # We have to use tolist() since not calling API now to handle numpy arrays
-        # (JSON response from API originally handled this for us)
         for embedding, label_embedding in zip(embeddings, project_labels_embeddings):
-            label_embedding.embedding = embedding.tolist()
+            label_embedding.embedding = embedding
 
         LabelEmbeddings.objects.bulk_update(
             project_labels_embeddings, ["embedding"], batch_size=8000
@@ -749,8 +738,7 @@ def get_projects_umbrellas(self):
 
 
 def get_unlabelled_data_objs(project_id: int) -> int:
-    """
-    Function to retrieve the total count of unlabelled data objects for a project.
+    """Function to retrieve the total count of unlabelled data objects for a project.
 
     This SQL query is comprised of 5 subqueries, each of which retrieves the ids of
     data objects that are in a particular table. The first sub-query is the total list
@@ -799,7 +787,7 @@ def get_unlabelled_data_objs(project_id: int) -> int:
         )
         SELECT COUNT(*)
             FROM (
-                SELECT p.id 
+                SELECT p.id
                 FROM project_ids p
                 LEFT JOIN queue_ids q ON p.id = q.id
                 LEFT JOIN irr_log_ids irr ON p.id = irr.id

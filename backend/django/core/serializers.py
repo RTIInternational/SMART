@@ -12,6 +12,7 @@ from core.models import (
     IRRLog,
     Label,
     LabelChangeLog,
+    MlModel,
     Model,
     Profile,
     Project,
@@ -154,3 +155,9 @@ class AdjudicateDescriptionSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = AdjudicateDescription
         fields = ("project", "data", "message", "isResolved")
+
+
+class MlModelSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = MlModel
+        fields = ("project", "status")

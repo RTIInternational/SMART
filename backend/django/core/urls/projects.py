@@ -22,6 +22,11 @@ urlpatterns = [
         name="project_update_umbrella",
     ),
     re_path(
+        r"^projects/(?P<pk>\d+)/update/ml/$",
+        frontend.ProjectUpdateMl.as_view(),
+        name="project_update_ml",
+    ),
+    re_path(
         r"^projects/(?P<pk>\d+)/update/$",
         frontend.ProjectUpdateLanding.as_view(),
         name="project_update_landing",

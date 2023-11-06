@@ -1,4 +1,4 @@
-version: '2.1'
+version: "2.1"
 
 services:
   postgres:
@@ -39,3 +39,12 @@ services:
       - ../backend/django:/code
       - smart_data:/data/
     command: ./runcelery.sh
+
+  ml:
+    container_name: ml
+    volumes:
+      - ../ml:/code
+      - ml_csv:/code/csv
+      - ml_models:/code/models
+    ports:
+      - "${EXTERNAL_ML_PORT:-8001}:8001"

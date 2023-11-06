@@ -23,5 +23,7 @@ docs/node_modules/
 # Backups
 backup/*
 
+# ML
+__pycache__
 # IDE specific
 .vscode/

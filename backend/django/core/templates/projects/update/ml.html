@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block page_title %}Update Project{% endblock %}
+{% load static %}
+{% load render_bundle from webpack_loader %}
+
+{% block content %}
+<div class="overlay">
+    <div class="overlay_contents">
+        <div id="second_progress"></div>
+        <span id="loading_text"></span>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-8 col-md-offset-2">
+        <div class="card">
+            <div class="cardface">
+                {{ form.media.css }}
+                <form action="." method="post" enctype="multipart/form-data" onsubmit="addASpinner()">
+                {% csrf_token %}
+                <h1>ML Settings</h1>
+                <h3>Description</h3>
+                <p>By default, SMART uses a trained machine-learning model to find the best label suggestions for data.</p>
+                <p>If you would like to add weighted text pairs to further train the SMART model for this project, upload a .csv file:</p>
+                <h3>Instructions</h3>
+                <p>Upload a .csv file with weighted text pairs:</p>
+                <p><a href="{% static 'example_ml.csv' %}">An example pairs file can be downloaded from here</a>.</p>
+                {{ form.errors.as_ul }}
+                <input id="file"  name="file" required="True" type="file">
+                <br />
+                <div class="form-group">
+                    <button class="btn btn-primary" type="submit">Submit</button>
+                </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts_body %}
+<script type="text/javascript">
+    function addASpinner() {
+        $('.overlay').show();
+        $('#loading_text').html("Please wait. Training model and updating project...");
+        $("#second_progress").addClass("loader");
+
+        //after 30 seconds, update the message
+        setTimeout(function() {
+            $('#loading_text').html("STILL Training...");
+        }, 30000)
+    }
+</script>
+{% endblock %}
