@@ -17,6 +17,8 @@
     "url": "git@gitlab.rtp.rti.org:cds/smart.git"
   },
   "dependencies": {
+    "@tanstack/react-query": "^4.29.7",
+    "@tanstack/react-table": "^8.9.1",
     "app-module-path": "^2.2.0",
     "babel-cli": "^6.26.0",
     "babel-core": "^6.26.3",
@@ -58,10 +60,10 @@
     "optimize-css-assets-webpack-plugin": "^5.0.4",
     "popper.js": "^1.14.3",
     "prop-types": "^15.7.2",
-    "react": "^16.14.0",
+    "react": "16.14.0",
     "react-bootstrap": "^1.5.2",
     "react-debounce-input": "^3.3.0",
-    "react-dom": "^16.14.0",
+    "react-dom": "16.14.0",
     "react-dropdown-select": "^4.7.4",
     "react-nvd3": "^0.5.7",
     "react-redux": "^7.2.4",
@@ -81,5 +83,8 @@
     "webpack-bundle-tracker": "^1.0.0-alpha.1",
     "webpack-cli": "^4.6.0",
     "whatwg-fetch": "^3.6.2"
+  },
+  "engines": {
+    "node": ">=16"
   }
 }
