@@ -139,11 +139,11 @@ def label_distribution_inverted(request, project_pk):
         a dictionary of the amount each label has been used
     """
     project = Project.objects.get(pk=project_pk)
-    labels = [label for label in project.labels.all()]
-    users = []
-    users.append(project.creator)
-    users.extend([perm.profile for perm in project.projectpermissions_set.all()])
-
+    labels = list(project.labels.all())
+    users = [
+        project.creator,
+        *[perm.profile for perm in project.projectpermissions_set.all()],
+    ]
     dataset = []
     all_counts = []
     for u in users:
@@ -154,7 +154,7 @@ def label_distribution_inverted(request, project_pk):
             temp_values.append({"x": label.name, "y": label_count})
         dataset.append({"key": u.__str__(), "values": temp_values})
 
-    if not any(count > 0 for count in all_counts):
+    if all(count <= 0 for count in all_counts):
         dataset = []
 
     return Response(dataset)
@@ -441,7 +441,7 @@ def modify_label(request, data_pk):
     label = Label.objects.get(pk=request.data["labelID"])
 
     if (
-        "oldLabelID" not in request.data
+        not request.data.get("oldLabelID")
         and not DataLabel.objects.filter(data=data).exists()
     ):
         current_training_set = project.get_current_training_set()
@@ -500,7 +500,7 @@ def modify_label_to_skip(request, data_pk):
     createUnresolvedAdjudicateMessage(project, data, request.data["message"])
 
     with transaction.atomic():
-        if "oldLabelID" not in request.data:
+        if not request.data.get("oldLabelID"):
             # since it wasn't labeled, it isn't IRR and we don't need to change a label
             DataQueue.objects.create(data=data, queue=queue)
             # update redis
@@ -609,11 +609,7 @@ def data_unlabeled_table(request, project_pk):
     unlabeled_data = get_unlabeled_data(project_pk)[:50]
     serialized_data = DataSerializer(unlabeled_data, many=True).data
     data = [
-        {
-            "Text": d["text"],
-            "metadata": d["metadata"],
-            "ID": d["pk"],
-        }
+        {"Text": d["text"], "metadata": d["metadata"], "ID": d["pk"]}
         for d in serialized_data
     ]
     return Response({"data": data})
@@ -970,10 +966,11 @@ def get_label_history(request, project_pk):
         total_data_list += unlabeled_data
 
     # return the page indicated in the query, get total pages
-    current_page = request.GET.get("current_page")
+    current_page = request.GET.get("page")
     if current_page is None:
         current_page = 1
     page = int(current_page) - 1
+
     page_size = 100
     all_data = Data.objects.filter(pk__in=total_data_list).order_by("text")
     metadata_objects = MetaDataField.objects.filter(project=project)
@@ -1112,3 +1109,22 @@ def modify_metadata_values(request, data_pk):
         metadata.value = m["value"]
         metadata.save()
     return Response({})
+
+
+@api_view(["GET"])
+@permission_classes((IsCoder,))
+def get_labels(request, project_pk):
+    """Grab data using get_assignments and send it to the frontend react app.
+
+    Args:
+        request: The request to the endpoint
+        project_pk: Primary key of project
+    Returns:
+        labels: The project labels
+        data: The data in the queue
+    """
+    project = Project.objects.get(pk=project_pk)
+    labels = Label.objects.all().filter(project=project)
+
+    return Response({"labels": LabelSerializer(labels, many=True).data,})
+

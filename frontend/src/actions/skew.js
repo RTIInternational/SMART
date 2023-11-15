@@ -3,7 +3,6 @@ import 'whatwg-fetch';
 
 import { getConfig, postConfig } from '../utils/fetch_configs';
 import { setMessage } from './card';
-import { getHistory } from './history';
 
 export const SET_UNLABELED_DATA = 'SET_UNLABELED_DATA';
 export const SET_LABEL_COUNTS = 'SET_LABEL_COUNTS';
@@ -88,7 +87,6 @@ export const skewLabel = (dataID, labelID, projectID) => {
                     dispatch(setMessage(response.error));
                 } else {
                     dispatch(getUnlabeled(projectID));
-                    dispatch(getHistory(projectID));
                     dispatch(getLabelCounts(projectID));
                 }
             });

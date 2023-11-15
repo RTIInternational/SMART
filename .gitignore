@@ -23,3 +23,6 @@ docs/node_modules/
 
 # Backups
 backup/*
+
+# IDE specific
+.vscode/
