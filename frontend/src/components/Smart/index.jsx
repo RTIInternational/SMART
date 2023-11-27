@@ -19,6 +19,7 @@ class Smart extends React.Component {
 
     componentDidMount() {
         this.props.getAdminTabsAvailable();
+        this.props.getLabels();
     }
 
     renderAdminTabSkew() {
@@ -130,6 +131,7 @@ class Smart extends React.Component {
 
 Smart.propTypes = {
     adminTabsAvailable: PropTypes.bool,
+    getLabels: PropTypes.func.isRequired,
 };
 
 export default Smart;

@@ -749,8 +749,7 @@ def get_projects_umbrellas(self):
 
 
 def get_unlabelled_data_objs(project_id: int) -> int:
-    """
-    Function to retrieve the total count of unlabelled data objects for a project.
+    """Function to retrieve the total count of unlabelled data objects for a project.
 
     This SQL query is comprised of 5 subqueries, each of which retrieves the ids of
     data objects that are in a particular table. The first sub-query is the total list
@@ -799,7 +798,7 @@ def get_unlabelled_data_objs(project_id: int) -> int:
         )
         SELECT COUNT(*)
             FROM (
-                SELECT p.id 
+                SELECT p.id
                 FROM project_ids p
                 LEFT JOIN queue_ids q ON p.id = q.id
                 LEFT JOIN irr_log_ids irr ON p.id = irr.id
