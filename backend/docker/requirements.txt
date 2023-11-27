@@ -8,17 +8,19 @@ amqp==5.1.1
     # via kombu
 asgiref==3.6.0
     # via django
-attrs==21.2.0
-    # via pytest
+async-timeout==4.0.3
+    # via redis
 backports-entry-points-selectable==1.1.1
     # via virtualenv
+backports-zoneinfo==0.2.1
+    # via django
 billiard==3.6.4.0
     # via celery
 black==21.11b1
-    # via -r docker/requirements.in
+    # via -r requirements.in
 celery==5.2.7
     # via
-    #   -r docker/requirements.in
+    #   -r requirements.in
     #   django-celery-results
 certifi==2021.10.8
     # via requests
@@ -51,7 +53,7 @@ coreapi==2.3.3
 coreschema==0.0.4
     # via coreapi
 coverage==6.1.2
-    # via -r docker/requirements.in
+    # via -r requirements.in
 cryptography==35.0.0
     # via pyjwt
 defusedxml==0.7.1
@@ -60,8 +62,9 @@ distlib==0.3.3
     # via virtualenv
 django==4.2
     # via
-    #   -r docker/requirements.in
+    #   -r requirements.in
     #   django-allauth
+    #   django-celery-results
     #   django-configurations
     #   django-extensions
     #   django-formtools
@@ -69,40 +72,42 @@ django==4.2
     #   django-rest-auth
     #   djangorestframework
 django-allauth==0.54.0
-    # via -r docker/requirements.in
+    # via -r requirements.in
 django-celery-results==2.5.0
-    # via -r docker/requirements.in
+    # via -r requirements.in
 django-configurations==2.4.1
-    # via -r docker/requirements.in
+    # via -r requirements.in
 django-extensions==3.2.1
-    # via -r docker/requirements.in
+    # via -r requirements.in
 django-formtools==2.4
-    # via -r docker/requirements.in
+    # via -r requirements.in
 django-postgres-stats==1.0.0
-    # via -r docker/requirements.in
-dj-rest-auth==3.0.0
-    # via -r docker/requirements.in
-# django-rest-swagger==2.2.0
-    # via -r docker/requirements.in
+    # via -r requirements.in
+django-rest-auth==0.9.5
+    # via -r requirements.in
+django-rest-swagger==2.2.0
+    # via -r requirements.in
 django-webpack-loader==1.8.1
-    # via -r docker/requirements.in
+    # via -r requirements.in
 djangorestframework==3.14.0
     # via
     #   django-rest-auth
     #   django-rest-swagger
-drf-jwt==1.19.2
-    # via -r docker/requirements.in
+djangorestframework-jwt==1.11.0
+    # via -r requirements.in
 docformatter==1.4
-    # via -r docker/requirements.in
+    # via -r requirements.in
 et-xmlfile==1.1.0
     # via openpyxl
+exceptiongroup==1.2.0
+    # via pytest
 filelock==3.4.0
     # via
     #   huggingface-hub
     #   transformers
     #   virtualenv
 flake8==4.0.1
-    # via -r docker/requirements.in
+    # via -r requirements.in
 greenlet==1.1.2
     # via sqlalchemy
 huggingface-hub==0.2.1
@@ -116,7 +121,7 @@ idna==3.3
 iniconfig==1.1.1
     # via pytest
 isort==5.10.1
-    # via -r docker/requirements.in
+    # via -r requirements.in
 itypes==1.2.0
     # via coreapi
 jinja2==3.0.3
@@ -153,7 +158,7 @@ oauthlib==3.1.1
 openapi-codec==1.3.2
     # via django-rest-swagger
 openpyxl==3.0.9
-    # via -r docker/requirements.in
+    # via -r requirements.in
 packaging==21.2
     # via
     #   huggingface-hub
@@ -161,7 +166,7 @@ packaging==21.2
     #   transformers
 pandas==1.4.3
     # via
-    #   -r docker/requirements.in
+    #   -r requirements.in
     #   statsmodels
 pathspec==0.9.0
     # via black
@@ -172,7 +177,7 @@ pep517==0.12.0
 pillow==8.4.0
     # via torchvision
 pip-tools==6.5.1
-    # via -r docker/requirements.in
+    # via -r requirements.in
 platformdirs==2.4.0
     # via
     #   black
@@ -180,13 +185,11 @@ platformdirs==2.4.0
 pluggy==1.0.0
     # via pytest
 pre-commit==2.15.0
-    # via -r docker/requirements.in
+    # via -r requirements.in
 prompt-toolkit==3.0.22
     # via click-repl
 psycopg2==2.9.2
     # via django-postgres-stats
-py==1.11.0
-    # via pytest
 pycodestyle==2.8.0
     # via flake8
 pycparser==2.21
@@ -197,14 +200,15 @@ pyjwt[crypto]==1.7.1
     # via
     #   django-allauth
     #   djangorestframework-jwt
+    #   pyjwt
 pyodbc==4.0.35
-    # via -r docker/requirements.in
+    # via -r requirements.in
 pyparsing==2.4.7
     # via packaging
 pytest==7.3.1
     # via pytest-django
 pytest-django==4.5.2
-    # via -r docker/requirements.in
+    # via -r requirements.in
 python-dateutil==2.8.2
     # via pandas
 python3-openid==3.2.0
@@ -212,15 +216,15 @@ python3-openid==3.2.0
 pytz==2021.3
     # via
     #   celery
-    #   django
+    #   djangorestframework
     #   pandas
 pyyaml==6.0
     # via
     #   huggingface-hub
     #   pre-commit
     #   transformers
-redis==4.5.4
-    # via -r docker/requirements.in
+redis==5.0.1
+    # via -r requirements.in
 regex==2021.11.10
     # via
     #   black
@@ -229,7 +233,7 @@ regex==2021.11.10
     #   transformers
 requests==2.28.2
     # via
-    #   -r docker/requirements.in
+    #   -r requirements.in
     #   coreapi
     #   django-allauth
     #   huggingface-hub
@@ -239,9 +243,9 @@ requests-oauthlib==1.3.0
     # via django-allauth
 sacremoses==0.0.46
     # via transformers
-scikit-learn==1.1.3
+scikit-learn==0.24.1
     # via
-    #   -r docker/requirements.in
+    #   -r requirements.in
     #   sentence-transformers
 scipy==1.9.1
     # via
@@ -249,7 +253,7 @@ scipy==1.9.1
     #   sentence-transformers
     #   statsmodels
 sentence-transformers==2.1.0
-    # via -r docker/requirements.in
+    # via -r requirements.in
 sentencepiece==0.1.96
     # via sentence-transformers
 simplejson==3.17.6
@@ -263,11 +267,11 @@ six==1.16.0
     #   sacremoses
     #   virtualenv
 sqlalchemy==1.4.28
-    # via -r docker/requirements.in
+    # via -r requirements.in
 sqlparse==0.4.2
     # via django
 statsmodels==0.13.1
-    # via -r docker/requirements.in
+    # via -r requirements.in
 threadpoolctl==3.0.0
     # via scikit-learn
 tokenizers==0.10.3
@@ -275,13 +279,12 @@ tokenizers==0.10.3
     #   sentence-transformers
     #   transformers
 toml==0.10.2
-    # via
-    #   pre-commit
-    #   pytest
+    # via pre-commit
 tomli==1.2.2
     # via
     #   black
     #   pep517
+    #   pytest
 torch==1.10.1
     # via
     #   sentence-transformers
@@ -320,7 +323,7 @@ wcwidth==0.2.5
 wheel==0.37.0
     # via pip-tools
 xlrd==2.0.1
-    # via -r docker/requirements.in
+    # via -r requirements.in
 
 # The following packages are considered to be unsafe in a requirements file:
 # pip
