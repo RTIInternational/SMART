@@ -1,7 +1,7 @@
 import React from 'react';
 import { connect } from 'react-redux';
 
-import { getAdminTabsAvailable } from '../actions/smart';
+import { getAdminTabsAvailable, getLabels } from '../actions/smart';
 import Smart from '../components/Smart';
 
 const PROJECT_ID = window.PROJECT_ID;
@@ -20,6 +20,9 @@ const mapDispatchToProps = (dispatch) => {
         getAdminTabsAvailable: () => {
             dispatch(getAdminTabsAvailable(PROJECT_ID));
         },
+        getLabels: () => {
+            dispatch(getLabels(PROJECT_ID));
+        }
     };
 };
 
