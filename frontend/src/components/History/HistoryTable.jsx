@@ -273,7 +273,7 @@ const HistoryTable = () => {
                                 );
                             }
                         })}                            
-                        <Form.Label className="d-flex m-0 p-0">
+                        {/* <Form.Label className="d-flex m-0 p-0">
                             <Form.Check
                                 className="p-0"
                                 {...{
@@ -282,8 +282,8 @@ const HistoryTable = () => {
                                     onChange: table.getToggleAllColumnsVisibilityHandler(),
                                 }}
                             />
-                            <span className="ml-2">All</span>
-                        </Form.Label>
+                            <span className="ml-2">Select/Deselect All</span>
+                        </Form.Label> */}
                     </GrayBox>
                 </div>
             </div>
