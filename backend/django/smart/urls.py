@@ -13,9 +13,10 @@ Including another URLconf
     1. Import the include() function: from django.urls import re_path, include
     2. Add a URL to urlpatterns:  re_path(r'^blog/', include('blog.urls'))
 """
-from django.urls import include, re_path
 from django.contrib import admin
 from django.http import HttpResponseRedirect
+from django.urls import include, re_path
+
 # from rest_framework_swagger.views import get_swagger_view
 
 urlpatterns = [
