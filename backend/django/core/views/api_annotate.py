@@ -1109,22 +1109,3 @@ def modify_metadata_values(request, data_pk):
         metadata.value = m["value"]
         metadata.save()
     return Response({})
-
-
-@api_view(["GET"])
-@permission_classes((IsCoder,))
-def get_labels(request, project_pk):
-    """Grab data using get_assignments and send it to the frontend react app.
-
-    Args:
-        request: The request to the endpoint
-        project_pk: Primary key of project
-    Returns:
-        labels: The project labels
-        data: The data in the queue
-    """
-    project = Project.objects.get(pk=project_pk)
-    labels = Label.objects.all().filter(project=project)
-
-    return Response({"labels": LabelSerializer(labels, many=True).data,})
-

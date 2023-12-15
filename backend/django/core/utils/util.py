@@ -630,8 +630,8 @@ def get_labeled_data(project, unverified=True):
                 temp["Description"] = label.description
             temp["Profile"] = str(d.profile.user)
             if d.timestamp:
-                temp["Timestamp"] = pytz.timezone(TIME_ZONE_FRONTEND).normalize(
-                    d.timestamp
+                temp["Timestamp"] = d.timestamp.astimezone(
+                    pytz.timezone(TIME_ZONE_FRONTEND)
                 )
             else:
                 temp["Timestamp"] = None
@@ -639,9 +639,9 @@ def get_labeled_data(project, unverified=True):
                 v = VerifiedDataLabel.objects.get(data_label=d)
                 temp["Verified"] = "Yes"
                 temp["Verified By"] = str(v.verified_by.user)
-                temp["Verified Timestamp"] = pytz.timezone(
-                    TIME_ZONE_FRONTEND
-                ).normalize(v.verified_timestamp)
+                temp["Verified Timestamp"] = v.verified_timestamp.astimezone(
+                    pytz.timezone(TIME_ZONE_FRONTEND)
+                )
             else:
                 temp["Verified"] = "No"
                 temp["Verified By"] = None
@@ -749,8 +749,7 @@ def get_projects_umbrellas(self):
 
 
 def get_unlabelled_data_objs(project_id: int) -> int:
-    """
-    Function to retrieve the total count of unlabelled data objects for a project.
+    """Function to retrieve the total count of unlabelled data objects for a project.
 
     This SQL query is comprised of 5 subqueries, each of which retrieves the ids of
     data objects that are in a particular table. The first sub-query is the total list
@@ -799,7 +798,7 @@ def get_unlabelled_data_objs(project_id: int) -> int:
         )
         SELECT COUNT(*)
             FROM (
-                SELECT p.id 
+                SELECT p.id
                 FROM project_ids p
                 LEFT JOIN queue_ids q ON p.id = q.id
                 LEFT JOIN irr_log_ids irr ON p.id = irr.id
