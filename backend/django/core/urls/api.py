@@ -1,4 +1,4 @@
-from django.urls import include, re_path
+from django.conf.urls import include, re_path
 from rest_framework import routers
 
 from core.views import api, api_admin, api_annotate, api_viewsets

@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 python:3.8-buster
+FROM python:3.8-buster
 ENV PYTHONUNBUFFERED 1
 
 RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -

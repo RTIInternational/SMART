@@ -1,5 +1,4 @@
 .DS_Store
-__pycache__/
 *.pyc
 
 # Frontend
@@ -10,7 +9,7 @@ npm-debug.log
 
 # Mounted Docker volume
 backend/django/frontend/
-envs/dev/.env
+.env
 .cache
 .coverage
 

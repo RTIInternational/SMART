@@ -630,8 +630,8 @@ def get_labeled_data(project, unverified=True):
                 temp["Description"] = label.description
             temp["Profile"] = str(d.profile.user)
             if d.timestamp:
-                temp["Timestamp"] = d.timestamp.astimezone(
-                    pytz.timezone(TIME_ZONE_FRONTEND)
+                temp["Timestamp"] = pytz.timezone(TIME_ZONE_FRONTEND).normalize(
+                    d.timestamp
                 )
             else:
                 temp["Timestamp"] = None
@@ -639,9 +639,9 @@ def get_labeled_data(project, unverified=True):
                 v = VerifiedDataLabel.objects.get(data_label=d)
                 temp["Verified"] = "Yes"
                 temp["Verified By"] = str(v.verified_by.user)
-                temp["Verified Timestamp"] = v.verified_timestamp.astimezone(
-                    pytz.timezone(TIME_ZONE_FRONTEND)
-                )
+                temp["Verified Timestamp"] = pytz.timezone(
+                    TIME_ZONE_FRONTEND
+                ).normalize(v.verified_timestamp)
             else:
                 temp["Verified"] = "No"
                 temp["Verified By"] = None

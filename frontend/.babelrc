@@ -1,16 +1,11 @@
 {
     "presets": [
-        "@babel/preset-env",
-        "@babel/preset-react"
+        "es2015",
+        "react"
     ],
     "plugins": [
-        [
-            "@babel/plugin-transform-runtime",
-            {
-                "corejs": 2
-            }
-        ],
-        "@babel/plugin-proposal-object-rest-spread",
+        "transform-runtime",
+        "transform-object-rest-spread",
         "transform-react-remove-prop-types"
     ]
 }
