@@ -28,7 +28,13 @@ class Dev(Configuration):
     # SECURITY WARNING: don't run with debug turned on in production!
     DEBUG = True
 
-    ALLOWED_HOSTS = ["0.0.0.0", "localhost", "backend", "smart-coding.rti.org"]
+    ALLOWED_HOSTS = [
+        "0.0.0.0",
+        "localhost",
+        "backend",
+        "smart-coding.rti.org",
+        "cds-mallard.rtp.rti.org",
+    ]
 
     # Application definition
 
@@ -44,14 +50,14 @@ class Dev(Configuration):
         "django_celery_results",
         "rest_framework",
         "rest_framework.authtoken",
-        "rest_auth",
+        "dj_rest_auth",
         "django.contrib.sites",
         "allauth",
         "allauth.account",
         "postgres_stats",
         "formtools",
-        "rest_auth.registration",
-        "rest_framework_swagger",
+        "dj_rest_auth.registration",
+        # "rest_framework_swagger",
         "webpack_loader",
     ]
 
