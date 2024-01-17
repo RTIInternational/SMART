@@ -4,7 +4,7 @@ Django
 django-allauth
 django-configurations
 django-extensions
-django-rest-auth
+dj-rest-auth
 django-celery-results
 django-postgres-stats
 django-formtools
@@ -13,11 +13,12 @@ django-webpack-loader
 djangorestframework-jwt
 openpyxl
 pandas
+Pillow
 pyodbc
-redis==3.5.3
+redis
 requests
-scikit-learn==0.24.1
-sentence_transformers==2.1.0
+scikit-learn
+sentence_transformers
 statsmodels
 sqlalchemy
 xlrd
