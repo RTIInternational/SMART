@@ -55,7 +55,7 @@ coreschema==0.0.4
     # via coreapi
 coverage==6.1.2
     # via -r requirements.in
-cryptography==42.0.2
+cryptography==42.0.4
     # via
     #   -r requirements.in
     #   pyjwt
