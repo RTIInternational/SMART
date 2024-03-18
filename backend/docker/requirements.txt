@@ -65,7 +65,7 @@ distlib==0.3.3
     # via virtualenv
 dj-rest-auth==3.0.0
     # via -r requirements.in
-django==4.2.9
+django==4.2.11
     # via
     #   -r requirements.in
     #   dj-rest-auth
@@ -210,7 +210,6 @@ pyjwt[crypto]==1.7.1
     # via
     #   django-allauth
     #   djangorestframework-jwt
-    #   pyjwt
 pyodbc==4.0.35
     # via -r requirements.in
 pyparsing==2.4.7
