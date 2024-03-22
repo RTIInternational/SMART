@@ -1,15 +1,16 @@
 import React, { useState } from "react";
 import Select from "react-dropdown-select";
 
-import { useLabels } from "../../hooks";
+import { useSearchLabels } from "../../hooks";
 import ConfirmationModal from "./ConfirmationModal";
 
 
 const DataCardSelectLabel = ({ cardData, fn, includeModal }) => {
     const [selectedLabelID, setSelectedLabelID] = useState(null);
-    const { data: labels } = useLabels();
+    const { data: labels } = useSearchLabels("", 2);
+    console.log(labels);
 
-    const labelsOptions = labels ? labels.labels.map(label => ({
+    const labelsOptions = labels ? labels.results.map(label => ({
         value: label["pk"],
         dropdownLabel: `${label["name"]} ${label["description"] !== '' ? '(' + label["description"] + ')' : ''}`
     })) : [];
