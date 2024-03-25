@@ -1,34 +1,54 @@
 import React, { useState } from "react";
-import Select from "react-dropdown-select";
 
-import { useSearchLabels } from "../../hooks";
 import ConfirmationModal from "./ConfirmationModal";
+import { AsyncPaginate } from 'react-select-async-paginate';
 
 
 const DataCardSelectLabel = ({ cardData, fn, includeModal }) => {
     const [selectedLabelID, setSelectedLabelID] = useState(null);
-    const { data: labels } = useSearchLabels("", 2);
-    console.log(labels);
 
-    const labelsOptions = labels ? labels.results.map(label => ({
-        value: label["pk"],
-        dropdownLabel: `${label["name"]} ${label["description"] !== '' ? '(' + label["description"] + ')' : ''}`
-    })) : [];
+    async function loadOptions(searchString, loadedOptions, { page }) {
+        const response = await fetch(
+            `/api/search_labels/${window.PROJECT_ID}/?${new URLSearchParams({ searchString, page }).toString()}`
+        );
+        const labels = await response.json();
+
+        console.log(labels);
+        let hasMore = true;
+        if (labels.next == null){
+            hasMore = false;
+        }
+        const labelsOptions = labels ? labels.results.map(label => ({
+            value: label["pk"],
+            dropdownLabel: `${label["name"]} ${label["description"] !== '' ? '(' + label["description"] + ')' : ''}`
+        })) : [];
+      
+        return {
+            options: labelsOptions,
+            hasMore: hasMore,
+            additional: {
+                page: page + 1,
+            },
+        };
+    }
 
     return (
         <div className="label-select-wrapper">
-            <Select
+            <AsyncPaginate
+                placeholder="Select label..."
+                value=""
                 className="rounded"
-                dropdownHandle={false}
-                labelField="dropdownLabel"
+                loadOptions={loadOptions}
+                getOptionValue={(option) => option.value}
+                getOptionLabel={(option) => option.dropdownLabel}
+                isSearchable={true}
                 onChange={(value) => {
                     if (includeModal) setSelectedLabelID(value[0].value);
                     else fn({ ...cardData, selectedLabelID: value[0].value });
                 }}
-                options={labelsOptions}
-                placeholder="Select label..."
-                searchBy="dropdownLabel"
-                sortBy="dropdownLabel"
+                additional={{
+                    page: 1,
+                }}
             />
             <ConfirmationModal 
                 showModal={selectedLabelID !== null}
