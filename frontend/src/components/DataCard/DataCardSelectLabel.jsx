@@ -13,7 +13,6 @@ const DataCardSelectLabel = ({ cardData, fn, includeModal }) => {
         );
         const labels = await response.json();
 
-        console.log(labels);
         let hasMore = true;
         if (labels.next == null){
             hasMore = false;
