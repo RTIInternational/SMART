@@ -42,8 +42,8 @@ const DataCardSelectLabel = ({ cardData, fn, includeModal }) => {
                 getOptionLabel={(option) => option.dropdownLabel}
                 isSearchable={true}
                 onChange={(value) => {
-                    if (includeModal) setSelectedLabelID(value[0].value);
-                    else fn({ ...cardData, selectedLabelID: value[0].value });
+                    if (includeModal) setSelectedLabelID(value.value);
+                    else fn({ ...cardData, selectedLabelID: value.value });
                 }}
                 additional={{
                     page: 1,
