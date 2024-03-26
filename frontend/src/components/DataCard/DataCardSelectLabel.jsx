@@ -1,33 +1,53 @@
 import React, { useState } from "react";
-import Select from "react-dropdown-select";
 
-import { useLabels } from "../../hooks";
 import ConfirmationModal from "./ConfirmationModal";
+import { AsyncPaginate } from 'react-select-async-paginate';
 
 
 const DataCardSelectLabel = ({ cardData, fn, includeModal }) => {
     const [selectedLabelID, setSelectedLabelID] = useState(null);
-    const { data: labels } = useLabels();
 
-    const labelsOptions = labels ? labels.labels.map(label => ({
-        value: label["pk"],
-        dropdownLabel: `${label["name"]} ${label["description"] !== '' ? '(' + label["description"] + ')' : ''}`
-    })) : [];
+    async function loadOptions(searchString, loadedOptions, { page }) {
+        const response = await fetch(
+            `/api/search_labels/${window.PROJECT_ID}/?${new URLSearchParams({ searchString, page }).toString()}`
+        );
+        const labels = await response.json();
+
+        let hasMore = true;
+        if (labels.next == null){
+            hasMore = false;
+        }
+        const labelsOptions = labels ? labels.results.map(label => ({
+            value: label["pk"],
+            dropdownLabel: `${label["name"]} ${label["description"] !== '' ? '(' + label["description"] + ')' : ''}`
+        })) : [];
+      
+        return {
+            options: labelsOptions,
+            hasMore: hasMore,
+            additional: {
+                page: page + 1,
+            },
+        };
+    }
 
     return (
         <div className="label-select-wrapper">
-            <Select
-                className="rounded"
-                dropdownHandle={false}
-                labelField="dropdownLabel"
-                onChange={(value) => {
-                    if (includeModal) setSelectedLabelID(value[0].value);
-                    else fn({ ...cardData, selectedLabelID: value[0].value });
-                }}
-                options={labelsOptions}
+            <AsyncPaginate
                 placeholder="Select label..."
-                searchBy="dropdownLabel"
-                sortBy="dropdownLabel"
+                value=""
+                className="rounded"
+                loadOptions={loadOptions}
+                getOptionValue={(option) => option.value}
+                getOptionLabel={(option) => option.dropdownLabel}
+                isSearchable={true}
+                onChange={(value) => {
+                    if (includeModal) setSelectedLabelID(value.value);
+                    else fn({ ...cardData, selectedLabelID: value.value });
+                }}
+                additional={{
+                    page: 1,
+                }}
             />
             <ConfirmationModal 
                 showModal={selectedLabelID !== null}

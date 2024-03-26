@@ -7,6 +7,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.generics import ListAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from sentence_transformers import SentenceTransformer, util
@@ -29,6 +30,7 @@ from core.models import (
     RecycleBin,
     VerifiedDataLabel,
 )
+from core.pagination import LabelViewPagination
 from core.permissions import IsAdminOrCreator, IsCoder
 from core.serializers import (
     DataLabelModelSerializer,
@@ -63,6 +65,22 @@ model_path = "core/smart_embeddings_model"
 embeddings_model = SentenceTransformer(model_path)
 
 
+@permission_classes((IsCoder,))
+class SearchLabelsView(ListAPIView):
+    serializer_class = LabelSerializer
+    pagination_class = LabelViewPagination
+
+    def get_queryset(self):
+        """This view should return a list of all the labels which contain a particular
+        string."""
+        project = Project.objects.get(pk=self.kwargs["project_pk"])
+        filter_text = self.request.GET.get("searchString")
+
+        return Label.objects.filter(project=project).filter(
+            Q(name__icontains=filter_text) | Q(description__icontains=filter_text)
+        )
+
+
 @api_view(["GET"])
 @permission_classes((IsCoder,))
 def get_labels(request, project_pk):
@@ -77,9 +95,14 @@ def get_labels(request, project_pk):
     project = Project.objects.get(pk=project_pk)
     labels = Label.objects.all().filter(project=project)
 
+    # If the number of labels is > 100, just return the first 100
+    serialized_labels = LabelSerializer(labels, many=True).data
+    if len(serialized_labels) > 100:
+        serialized_labels = serialized_labels[:100]
+
     return Response(
         {
-            "labels": LabelSerializer(labels, many=True).data,
+            "labels": serialized_labels,
         }
     )
 

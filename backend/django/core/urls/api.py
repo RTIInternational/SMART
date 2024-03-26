@@ -69,6 +69,9 @@ annotate_patterns = [
     re_path(r"^embeddings", api_annotate.embeddings_calculations),
     re_path(r"^comparisons/(?P<project_pk>\d+)/$", api_annotate.embeddings_comparison),
     re_path(r"^get_labels/(?P<project_pk>\d+)/$", api_annotate.get_labels),
+    re_path(
+        r"^search_labels/(?P<project_pk>\d+)/$", api_annotate.SearchLabelsView.as_view()
+    ),
 ]
 
 adminpage_patterns = [
