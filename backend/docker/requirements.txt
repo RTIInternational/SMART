@@ -182,7 +182,7 @@ pathspec==0.9.0
     # via black
 patsy==0.5.2
     # via statsmodels
-pillow==10.2.0
+pillow==10.3.0
     # via
     #   -r requirements.in
     #   torchvision
@@ -210,7 +210,6 @@ pyjwt[crypto]==1.7.1
     # via
     #   django-allauth
     #   djangorestframework-jwt
-    #   pyjwt
 pyodbc==4.0.35
     # via -r requirements.in
 pyparsing==2.4.7
