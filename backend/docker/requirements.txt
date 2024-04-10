@@ -210,7 +210,6 @@ pyjwt[crypto]==1.7.1
     # via
     #   django-allauth
     #   djangorestframework-jwt
-    #   pyjwt
 pyodbc==4.0.35
     # via -r requirements.in
 pyparsing==2.4.7
@@ -306,7 +305,7 @@ tqdm==4.62.3
     #   nltk
     #   sentence-transformers
     #   transformers
-transformers==4.37.2
+transformers==4.38.0
     # via
     #   -r requirements.in
     #   sentence-transformers
