@@ -8,9 +8,7 @@ describe('<CodebookLabelMenu />', () => {
         it('renders properly if all props provided', () => {
             const labels = [];
             const wrapper = shallow(
-                <CodebookLabelMenu
-                    labels={labels}
-                /> 
+                <CodebookLabelMenu /> 
             );
         });
     });

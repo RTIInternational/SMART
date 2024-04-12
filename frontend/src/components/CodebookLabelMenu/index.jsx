@@ -1,5 +1,4 @@
 import React from 'react';
-import PropTypes from 'prop-types';
 import { Button, ButtonGroup, Modal } from "react-bootstrap";
 
 const CODEBOOK_URL = window.CODEBOOK_URL;
@@ -10,11 +9,8 @@ class CodebookLabelMenu extends React.Component {
     constructor(props){
         super(props);
         this.toggleCodebook = this.toggleCodebook.bind(this);
-        this.toggleLabel = this.toggleLabel.bind(this);
-        this.getLabels = this.getLabels.bind(this);
         this.state = {
-            codebook_open: false,
-            labels_open: false
+            codebook_open: false
         };
     }
 
@@ -23,32 +19,8 @@ class CodebookLabelMenu extends React.Component {
         this.setState({ codebook_open: !this.state.codebook_open });
     }
 
-    toggleLabel(){
-        this.setState({ labels_open: !this.state.labels_open });
-    }
-
-    getLabels(labels) {
-        if (this.state.labels_open) {
-            return (
-                <div className="row">
-                    <div className="col-md-12">
-                        <ul className="list-group-flush">
-                            {labels.map( (label) => (
-                                <li className="list-group-item" key={label.pk}>
-                                    <dt>{label.name}</dt>
-                                    <dd>{label.description}</dd>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                </div>
-            );
-        }
-    }
-
     render() {
-        const { labels } = this.props;
-        let codebook_module, codebook_button, label_button;
+        let codebook_module, codebook_button;
 
         if (CODEBOOK_URL != "") {
             codebook_module = (
@@ -74,45 +46,21 @@ class CodebookLabelMenu extends React.Component {
             codebook_button = (<div />);
         }
 
-        if (this.state.labels_open) {
-            label_button = (
-                <Button
-                    onClick={this.toggleLabel}
-                    className="menu-down"
-                    variant="danger">
-                    <span className="glyphicon glyphicon-menu-down" aria-hidden="true"></span> Label Guide
-                </Button>
-            );
-        } else {
-            label_button = (
-                <Button
-                    onClick={this.toggleLabel}
-                    className="menu-right"
-                    variant="success">
-                    <span className="glyphicon glyphicon-menu-right" aria-hidden="true"></span> Label Guide
-                </Button>
-            );
-        }
-
         return (
             <div className="margin-bottom-15 no-overflow">
                 <div className="row" id="label_group_buttons">
                     {CODEBOOK_URL != "" ? (
                         <ButtonGroup className="pull-left">
-                            {label_button}
                             {codebook_button}
                         </ButtonGroup>
-                    ) : label_button}
+                    ) : null}
                 </div>
-                {this.getLabels(labels, this.state.labels_open)}
                 {codebook_module}
             </div>
         );
     }
 }
 
-CodebookLabelMenu.propTypes = {
-    labels: PropTypes.arrayOf(PropTypes.object)
-};
+CodebookLabelMenu.propTypes = {};
 
 export default CodebookLabelMenu;
