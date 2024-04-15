@@ -210,7 +210,6 @@ pyjwt[crypto]==1.7.1
     # via
     #   django-allauth
     #   djangorestframework-jwt
-    #   pyjwt
 pyodbc==4.0.35
     # via -r requirements.in
 pyparsing==2.4.7
@@ -277,7 +276,7 @@ six==1.16.0
     #   virtualenv
 sqlalchemy==1.4.28
     # via -r requirements.in
-sqlparse==0.4.2
+sqlparse==0.5.0
     # via django
 statsmodels==0.13.1
     # via -r requirements.in
