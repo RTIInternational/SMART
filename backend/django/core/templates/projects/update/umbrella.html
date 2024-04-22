@@ -20,7 +20,7 @@
             <select class="form-control" name="umbrella">
               <option value="">Other Projects</option>
               {% for umbrella_choice in umbrella_choices %}
-                <option {% ifequal umbrella umbrella_choice %}selected="selected"{% endifequal %} value="{{ umbrella_choice }}">{{ umbrella_choice }}</option>
+                <option {% if umbrella == umbrella_choice %}selected="selected"{% endif %} value="{{ umbrella_choice }}">{{ umbrella_choice }}</option>
               {% endfor %}
             </select>
             <br />
