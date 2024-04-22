@@ -460,6 +460,7 @@ def modify_label(request, data_pk):
     profile = request.user.profile
     response = {}
     project = data.project
+    normal_queue = Queue.objects.get(project=project, type="normal")
 
     label = Label.objects.get(pk=request.data["labelID"])
 
@@ -478,6 +479,9 @@ def modify_label(request, data_pk):
                 training_set=current_training_set,
                 pre_loaded=False,
             )
+            if DataQueue.objects.filter(data=data, queue=normal_queue).exists():
+                DataQueue.objects.get(data=data, queue=normal_queue).delete()
+
     elif "oldLabelID" in request.data:
         old_label = Label.objects.get(pk=request.data["oldLabelID"])
         with transaction.atomic():
@@ -842,6 +846,7 @@ def label_skew_label(request, data_pk):
     label = Label.objects.get(pk=request.data["labelID"])
     profile = request.user.profile
     update_last_action(project, profile)
+    normal_queue = Queue.objects.get(project=project, type="normal")
     response = {}
 
     # check if they have the admin lock still.
@@ -866,6 +871,8 @@ def label_skew_label(request, data_pk):
                 time_to_label=None,
                 timestamp=timezone.now(),
             )
+            if DataQueue.objects.filter(data=datum, queue=normal_queue).exists():
+                DataQueue.objects.get(data=datum, queue=normal_queue).delete()
             VerifiedDataLabel.objects.create(
                 data_label=dl, verified_timestamp=timezone.now(), verified_by=profile
             )
