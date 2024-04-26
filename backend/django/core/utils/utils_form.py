@@ -68,18 +68,9 @@ def clean_data_helper(
 
     labels_in_data = data["Label"].dropna(inplace=False).unique()
     if len(labels_in_data) > 0 and len(set(labels_in_data) - set(supplied_labels)) > 0:
+        just_in_data = set(labels_in_data) - set(supplied_labels)
         raise ValidationError(
-            "There are extra labels in the file which were not created in step 2.  File supplied {0} "
-            "but step 2 was given {1}".format(
-                ", ".join(labels_in_data), ", ".join(supplied_labels)
-            )
-        )
-
-    num_unlabeled_data = len(data[pd.isnull(data["Label"])])
-    if num_unlabeled_data < 1:
-        raise ValidationError(
-            "All text in the file already has a label.  SMART needs unlabeled data "
-            "to do active learning.  Please upload a file that has less labels."
+            f"There are extra labels in the file which were not created in step 2: {just_in_data}"
         )
 
     if "ID" in data.columns:
