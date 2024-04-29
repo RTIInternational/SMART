@@ -229,6 +229,7 @@ const HistoryTable = () => {
                                 <p>
                                     Toggle the checkbox below to show/hide unlabeled data:
                                 </p>
+                                <i>NOTE: Data assigned to someone in the Annotate Data tab will not be returned. Admin can go to the Unassign Coder tab on the Admin page to un-assign data from individual coders.</i>
                                 <Form.Label className="d-flex m-0 p-0">
                                     <Form.Check
                                         className="p-0"
