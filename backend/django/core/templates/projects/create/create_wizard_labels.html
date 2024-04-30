@@ -31,19 +31,22 @@
           <p>In the <strong>Labels</strong> section, we will create categories for labeling. These labeled observations will be used to train a classification model that predicts which of these categories a new observation is most likely to be.</p>
           <h3>Instructions</h3>
           <p>Please fill-in below the names of the categories you are interested in predicting.  If you have more than two labels, use the <code>add label</code> button to add more rows to the form. If you decide that you want to remove a label after adding it, use the <code>remove label</code> button to remove the label name.</p>
+          <p>You may also upload a .csv file containing labels and their descriptions (label and description columns required).</p>
+          
           <p><i>Labeling Notes:</i></p>
           <ul class="list-group">
             <li class="list-group-item">SMART <strong>requires at least two category labels</strong> and the labels must be <strong>unique</strong>.</li>
             <li class="list-group-item">If you plan on uploading a data file that contains labels, the label categories in the file must match those provided on this page.</li>
-            <li class="list-group-item">You may add up to 10,000 labels to each project.</li>
+            <li class="list-group-item">SMART has been tested with up to 50,000 labels.</li>
             <li class="list-group-item">You cannot update the labels for a project after the project is created.</li>
+            <li class="list-group-item">Any labels currently in the table will be overwritten by the file data if you upload a .csv file.</li>
+            <li class="list-group-item">.csv's use commas to split fields. If you are using the .csv upload and have commas in your label descriptions please put double quotes "" around the description text to ensure the file reader parses it correctly.</li>
           </ul>
           <div class="form-group">
-            <label class="control-label" for="{{ wizard.form.data.id_for_label }}">You may also upload a .csv file containing labels and their descriptions (label and description columns required):</label>
-            <label class="control-label" for="{{ wizard.form.data.id_for_label }}">Note: Any labels currently in the table will be overwritten by the file data.</label>
+            <label class="control-label" for="{{ wizard.form.data.id_for_label }}"></label>
             <label class="control-label" for="{{ wizard.form.data.id_for_label }}">{{ wizard.form.data.label }}</label>
-            <p><a href="{% static 'example-labels.csv' %}">An example dataset can be downloaded from here</a>.</p>
             <hr>
+            <p><a href="{% static 'example-labels.csv' %}">An example dataset can be downloaded from here</a>.</p>
             <input class="form-control" id="{{ wizard.form.data.id_for_label }}" maxlength="30" name="{{ wizard.form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" onChange="handleUpload(event)" onclick="this.value = null;" />
             <button id="rmFileBtn" class="inline-btn">remove uploaded labels</button>
           </div>
