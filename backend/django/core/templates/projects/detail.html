@@ -389,7 +389,7 @@ $(document).ready(function() {
       $('#fully-labeled').append(response.final);
       $('#fully-labeled-verified').append(response.final_verified);
       $('#fully-labeled-unverified').append(response.final_unverified);
-      $('#unlabeled-unassigned').append(response.unlabeled - response.assigned);
+      $('#unlabeled-unassigned').append(response.unlabeled);
       $('#awaiting-adjudication').append(response.adjudication);
       $('#recycled').append(response.recycled);
       $('#other-labeled').append((response.total - response.final - response.adjudication - response.recycled) - response.unlabeled);

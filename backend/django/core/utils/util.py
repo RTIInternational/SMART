@@ -773,25 +773,25 @@ def get_unlabelled_data_objs(project_id: int) -> int:
             WHERE cd.project_id = %s AND cdl.label_id IS NULL
         ),
         queue_ids AS (
-            SELECT cdq.id
+            SELECT cdq.id, cdq.data_id
             FROM core_dataqueue cdq
             LEFT JOIN core_queue cq ON cdq.queue_id = cq.id
             WHERE cq.project_id = %s AND cq.type = 'admin'
         ),
         irr_log_ids AS (
-            SELECT ci.id
+            SELECT ci.id, ci.data_id
             FROM core_irrlog ci
             LEFT JOIN core_data cd ON ci.data_id = cd.id
             WHERE cd.project_id = %s
         ),
         assigned_ids AS (
-            SELECT ca.id
+            SELECT ca.id, ca.data_id
             FROM core_assigneddata ca
             LEFT JOIN core_data cd ON ca.data_id = cd.id
             WHERE cd.project_id = %s
         ),
         recycle_ids AS (
-            SELECT cr.id
+            SELECT cr.id, cr.data_id
             FROM core_recyclebin cr
             LEFT JOIN core_data cd ON cr.data_id = cd.id
             WHERE cd.project_id = %s
@@ -800,10 +800,10 @@ def get_unlabelled_data_objs(project_id: int) -> int:
             FROM (
                 SELECT p.id
                 FROM project_ids p
-                LEFT JOIN queue_ids q ON p.id = q.id
-                LEFT JOIN irr_log_ids irr ON p.id = irr.id
-                LEFT JOIN assigned_ids a ON p.id = a.id
-                LEFT JOIN recycle_ids r ON p.id = r.id
+                LEFT JOIN queue_ids q ON p.id = q.data_id
+                LEFT JOIN irr_log_ids irr ON p.id = irr.data_id
+                LEFT JOIN assigned_ids a ON p.id = a.data_id
+                LEFT JOIN recycle_ids r ON p.id = r.data_id
                 WHERE q.id IS NULL
                     AND irr.id IS NULL
                     AND a.id IS NULL
