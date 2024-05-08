@@ -460,6 +460,7 @@ def modify_label(request, data_pk):
     profile = request.user.profile
     response = {}
     project = data.project
+    normal_queue = Queue.objects.get(project=project, type="normal")
 
     label = Label.objects.get(pk=request.data["labelID"])
 
@@ -468,6 +469,9 @@ def modify_label(request, data_pk):
         and not DataLabel.objects.filter(data=data).exists()
     ):
         current_training_set = project.get_current_training_set()
+        data_in_normal_queue = DataQueue.objects.filter(
+            data=data, queue=normal_queue
+        ).exists()
         with transaction.atomic():
             DataLabel.objects.create(
                 data=data,
@@ -478,6 +482,14 @@ def modify_label(request, data_pk):
                 training_set=current_training_set,
                 pre_loaded=False,
             )
+            if data_in_normal_queue:
+                DataQueue.objects.get(data=data, queue=normal_queue).delete()
+
+        if data_in_normal_queue:
+            settings.REDIS.srem(
+                redis_serialize_set(normal_queue), redis_serialize_data(data)
+            )
+
     elif "oldLabelID" in request.data:
         old_label = Label.objects.get(pk=request.data["oldLabelID"])
         with transaction.atomic():
@@ -842,6 +854,7 @@ def label_skew_label(request, data_pk):
     label = Label.objects.get(pk=request.data["labelID"])
     profile = request.user.profile
     update_last_action(project, profile)
+    normal_queue = Queue.objects.get(project=project, type="normal")
     response = {}
 
     # check if they have the admin lock still.
@@ -857,6 +870,9 @@ def label_skew_label(request, data_pk):
 
     current_training_set = project.get_current_training_set()
     if project_extras.proj_permission_level(datum.project, profile) >= 2:
+        data_in_normal_queue = DataQueue.objects.filter(
+            data=datum, queue=normal_queue
+        ).exists()
         with transaction.atomic():
             dl = DataLabel.objects.create(
                 data=datum,
@@ -866,8 +882,14 @@ def label_skew_label(request, data_pk):
                 time_to_label=None,
                 timestamp=timezone.now(),
             )
+            if data_in_normal_queue:
+                DataQueue.objects.get(data=datum, queue=normal_queue).delete()
             VerifiedDataLabel.objects.create(
                 data_label=dl, verified_timestamp=timezone.now(), verified_by=profile
+            )
+        if data_in_normal_queue:
+            settings.REDIS.srem(
+                redis_serialize_set(normal_queue), redis_serialize_data(datum)
             )
 
     else:
