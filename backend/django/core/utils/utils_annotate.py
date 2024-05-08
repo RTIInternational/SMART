@@ -267,15 +267,23 @@ def process_irr_label(data, label):
 def get_unlabeled_data(project_pk):
     project = Project.objects.get(pk=project_pk)
 
-    stuff_in_queue = DataQueue.objects.filter(queue__project=project)
-    queued_ids = [queued.data.id for queued in stuff_in_queue]
+    stuff_in_queue = DataQueue.objects.filter(
+        queue__project=project, queue__type="admin"
+    )
+    in_admin_queue_ids = [queued.data.id for queued in stuff_in_queue]
 
     recycle_ids = RecycleBin.objects.filter(data__project=project).values_list(
         "data__pk", flat=True
     )
+
+    assigned_ids = AssignedData.objects.filter(data__project=project).values_list(
+        "data__pk", flat=True
+    )
+
     unlabeled_data = (
         project.data_set.filter(datalabel__isnull=True)
-        .exclude(id__in=queued_ids)
+        .exclude(id__in=in_admin_queue_ids)
+        .exclude(id__in=assigned_ids)
         .exclude(id__in=recycle_ids)
         .exclude(irr_ind=True)
     )
