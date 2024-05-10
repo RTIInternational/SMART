@@ -9,16 +9,19 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         ingest_projects = ExternalDatabase.objects.filter(cron_ingest=True).values_list(
-            flat=True
+            "project_id", flat=True
         )
         if len(ingest_projects) == 0:
             print("No projects have cron_ingest set to True.")
         for pk in ingest_projects:
             print("Ingesting project", pk)
-            project = Project.objects.get(pk=pk)
-            response = {}
-            response = load_ingest_table(project, response)
-            if "num_added" in response:
-                print("Imported", response["num_added"], "new items")
-            if "error" in response:
-                print(response["error"])
+            try:
+                project = Project.objects.get(pk=pk)
+                response = {}
+                response = load_ingest_table(project, response)
+                if "num_added" in response:
+                    print("Imported", response["num_added"], "new items")
+                if "error" in response:
+                    print(response["error"])
+            except Exception as e:
+                print("ERROR:", e)

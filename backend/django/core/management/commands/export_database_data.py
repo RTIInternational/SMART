@@ -9,15 +9,18 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         export_projects = ExternalDatabase.objects.filter(cron_export=True).values_list(
-            flat=True
+            "project_id", flat=True
         )
         if len(export_projects) == 0:
             print("No projects have cron_export set to True.")
         for pk in export_projects:
             print("Exporting project", pk)
-            response = {}
-            export_table(pk, response)
-            if "success_message" in response:
-                print(response["success_message"])
-            if "error" in response:
-                print(response["error"])
+            try:
+                response = {}
+                export_table(pk, response)
+                if "success_message" in response:
+                    print(response["success_message"])
+                if "error" in response:
+                    print(response["error"])
+            except Exception as e:
+                print("ERROR:", e)
