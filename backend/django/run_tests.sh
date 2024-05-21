@@ -20,5 +20,5 @@ else
   echo "Flake8 Good. Running Tests..."
 fi
 
-coverage run -m py.test "$@"
+coverage run -m pytest "$@"
 coverage report -m --skip-covered
