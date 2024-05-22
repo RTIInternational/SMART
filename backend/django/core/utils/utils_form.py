@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 from django.core.exceptions import ValidationError
 
 from core.utils.util import md5_hash
