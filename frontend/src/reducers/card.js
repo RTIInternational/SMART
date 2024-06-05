@@ -19,6 +19,11 @@ const card = handleActions({
     },
     [PUSH_CARD]: (state, action) => {
         // Set the start time of the new top card to the current time
+        for (let i = 0; i < state.cards.length; i++) {
+            if (state.cards[i].id == action.payload.id) {
+                return state;
+            }
+        }
         if (state.cards.length > 0) {
             state.cards[0]['start_time'] = moment();
         }
