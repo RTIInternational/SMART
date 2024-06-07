@@ -30,12 +30,13 @@ const card = handleActions({
         return update(state, { cards: { $splice: [[0, 1]] } } );
     },
     [PUSH_CARD]: (state, action) => {
-        // Set the start time of the new top card to the current time
+        // only push the card if it's not already in the stack - failsafe
         for (let i = 0; i < state.cards.length; i++) {
             if (state.cards[i].id == action.payload.id) {
                 return state;
             }
         }
+        // Set the start time of the new top card to the current time
         if (state.cards.length > 0) {
             state.cards[0]['start_time'] = moment();
         }
