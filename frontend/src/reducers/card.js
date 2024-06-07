@@ -10,7 +10,19 @@ const initialState = {
 };
 
 const card = handleActions({
-    [POP_CARD]: (state) => {
+    [POP_CARD]: (state, action) => {
+        // if the card isn't in the deck don't pop it off
+        // This handles double-clicking of Skip
+        let found_card = false;
+        for (let i = 0; i < state.cards.length; i++) {
+            if (state.cards[i].text.pk == action.payload) {
+                found_card = true;
+            }
+        }
+        if (! found_card) {
+            return state;
+        }
+
         // Set the start time of the new top card to the current time
         if (state.cards.length > 1) {
             state.cards[1]['start_time'] = moment();

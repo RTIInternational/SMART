@@ -169,6 +169,9 @@ def label_data(label, datum, profile, time):
     irr_data = datum.irr_ind
 
     with transaction.atomic():
+        if DataLabel.objects.filter(data=datum,profile=profile).exists():
+            return
+
         DataLabel.objects.create(
             data=datum,
             label=label,
