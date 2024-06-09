@@ -8,13 +8,13 @@ import { getLabelCounts, getUnlabeled } from './skew';
 
 import { queryClient } from "../store";
 
-export const POP_CARD = 'POP_CARD';
+export const REMOVE_CARD = 'REMOVE_CARD';
 export const PUSH_CARD = 'PUSH_CARD';
 
 export const SET_MESSAGE = 'SET_MESSAGE';
 export const CLEAR_DECK = 'CLEAR_DECK';
 
-export const popCard = createAction(POP_CARD);
+export const removeCard = createAction(REMOVE_CARD);
 export const pushCard = createAction(PUSH_CARD);
 export const setMessage = createAction(SET_MESSAGE);
 export const clearDeck = createAction(CLEAR_DECK);
@@ -70,7 +70,7 @@ export const annotateCard = (dataID, labelID, num_cards_left, start_time, projec
                     dispatch(clearDeck());
                     return dispatch(setMessage(response.error));
                 } else {
-                    dispatch(popCard(dataID));
+                    dispatch(removeCard(dataID));
                     if (is_admin) {
                         dispatch(getAdmin(projectID));
                         queryClient.invalidateQueries(["adminCounts", projectID]);
@@ -100,7 +100,7 @@ export const unassignCard = (dataID, num_cards_left, is_admin, projectID) => {
                     dispatch(clearDeck());
                     return dispatch(setMessage(response.error));
                 } else {
-                    dispatch(popCard(dataID));
+                    dispatch(removeCard(dataID));
                 }
             });
     };
@@ -125,7 +125,7 @@ export const passCard = (dataID, num_cards_left, is_admin, projectID, message) =
                     dispatch(clearDeck());
                     return dispatch(setMessage(response.error));
                 } else {
-                    dispatch(popCard(dataID));
+                    dispatch(removeCard(dataID));
                     if (is_admin) {
                         dispatch(getAdmin(projectID));
                         queryClient.invalidateQueries(["adminCounts", projectID]);

@@ -2,7 +2,7 @@ import { handleActions } from 'redux-actions';
 import update from 'immutability-helper';
 import moment from 'moment';
 
-import { POP_CARD, PUSH_CARD, SET_MESSAGE, CLEAR_DECK } from '../actions/card';
+import { REMOVE_CARD, PUSH_CARD, SET_MESSAGE, CLEAR_DECK } from '../actions/card';
 
 const initialState = {
     cards: [],
@@ -10,24 +10,22 @@ const initialState = {
 };
 
 const card = handleActions({
-    [POP_CARD]: (state, action) => {
-        // if the card isn't in the deck don't pop it off
-        // This handles double-clicking of Skip
-        let found_card = false;
+    [REMOVE_CARD]: (state, action) => {
+        let indexToRemove = -1;
         for (let i = 0; i < state.cards.length; i++) {
             if (state.cards[i].text.pk == action.payload) {
-                found_card = true;
+                indexToRemove = i; 
+                break;
             }
         }
-        if (! found_card) {
-            return state;
+        if (indexToRemove === -1) {
+            return state; 
         }
-
-        // Set the start time of the new top card to the current time
-        if (state.cards.length > 1) {
-            state.cards[1]['start_time'] = moment();
+        const newState = update(state, { cards: { $splice: [[indexToRemove, 1]] } });
+        if (newState.cards.length > 0) {
+            newState.cards[0].start_time = moment();
         }
-        return update(state, { cards: { $splice: [[0, 1]] } } );
+        return newState;
     },
     [PUSH_CARD]: (state, action) => {
         // Set the start time of the new top card to the current time
