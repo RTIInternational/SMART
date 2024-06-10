@@ -169,14 +169,18 @@ def label_data(label, datum, profile, time):
     irr_data = datum.irr_ind
 
     with transaction.atomic():
-        DataLabel.objects.create(
+        dl, created = DataLabel.objects.get_or_create(
             data=datum,
             label=label,
             profile=profile,
             training_set=current_training_set,
-            time_to_label=time,
-            timestamp=timezone.now(),
         )
+        # was not created because it already existed
+        if not created:
+            return
+        dl.time_to_label = time
+        dl.timestamp = timezone.now()
+        dl.save()
         # There's a unique constraint on data/profile, so this is
         # guaranteed to return one object
         assignment = AssignedData.objects.filter(data=datum, profile=profile).get()

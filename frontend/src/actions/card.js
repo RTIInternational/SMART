@@ -70,13 +70,12 @@ export const annotateCard = (dataID, labelID, num_cards_left, start_time, projec
                     dispatch(clearDeck());
                     return dispatch(setMessage(response.error));
                 } else {
-                    dispatch(popCard());
+                    dispatch(popCard(dataID));
                     if (is_admin) {
                         dispatch(getAdmin(projectID));
                         queryClient.invalidateQueries(["adminCounts", projectID]);
                         dispatch(getLabelCounts(projectID));
                     }
-                    if (num_cards_left <= 1) dispatch(fetchCards(projectID));
                 }
             });
     };
@@ -101,8 +100,7 @@ export const unassignCard = (dataID, num_cards_left, is_admin, projectID) => {
                     dispatch(clearDeck());
                     return dispatch(setMessage(response.error));
                 } else {
-                    dispatch(popCard());
-                    if (num_cards_left <= 1) dispatch(fetchCards(projectID));
+                    dispatch(popCard(dataID));
                 }
             });
     };
@@ -127,12 +125,11 @@ export const passCard = (dataID, num_cards_left, is_admin, projectID, message) =
                     dispatch(clearDeck());
                     return dispatch(setMessage(response.error));
                 } else {
-                    dispatch(popCard());
+                    dispatch(popCard(dataID));
                     if (is_admin) {
                         dispatch(getAdmin(projectID));
                         queryClient.invalidateQueries(["adminCounts", projectID]);
                     }
-                    if (num_cards_left <= 1) dispatch(fetchCards(projectID));
                 }
             });
     };

@@ -10,9 +10,11 @@ import DataCard, { PAGES } from "../components/DataCard/DataCard";
 const PROJECT_ID = window.PROJECT_ID;
 
 const CardContainer = (props) => {
-    if (props.cards.length == 0) {
-        props.fetchCards();
-    }
+    React.useEffect(() => {
+        if (props.cards.length === 0) {
+            props.fetchCards();
+        }
+    }, [props.cards.length]);
     return (
         props.cards !== undefined && props.cards.length > 0 ? 
             <DataCard 

@@ -208,9 +208,9 @@ def export_table(project_pk, response):
                         external_db.export_schema,
                         external_db.export_table_name,
                     ):
-                        response[
-                            "success_message"
-                        ] = "Table exists. Dropping and replacing with new output data."
+                        response["success_message"] = (
+                            "Table exists. Dropping and replacing with new output data."
+                        )
 
                         # drop the table and then replace the data
                         data.to_sql(

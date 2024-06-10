@@ -26,3 +26,5 @@ backup/*
 
 # IDE specific
 .vscode/
+
+venv

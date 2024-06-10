@@ -6,6 +6,7 @@ from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
+from psycopg2.errors import UniqueViolation
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import AllowAny
@@ -220,9 +221,9 @@ def verify_label(request, data_pk):
     response = {}
     # if the coder has been un-assigned from the data
     if not DataLabel.objects.filter(data=data).exists():
-        response[
-            "error"
-        ] = "ERROR: This data has no label to verify. Something must have gone wrong."
+        response["error"] = (
+            "ERROR: This data has no label to verify. Something must have gone wrong."
+        )
         return Response(response)
     elif DataLabel.objects.filter(data=data).count() > 1:
         response["error"] = (
@@ -316,7 +317,9 @@ def annotate_data(request, data_pk):
     labeling_time = request.data["labeling_time"]
 
     # if the coder has been un-assigned from the data
-    if not AssignedData.objects.filter(data=data, profile=profile).exists():
+    if (
+        not AssignedData.objects.filter(data=data, profile=profile).exists()
+    ) or DataLabel.objects.filter(data=data, profile=profile).exists():
         response["error"] = (
             "ERROR: this card was no longer assigned. Either "
             "your cards were un-assigned by an administrator or the label was clicked twice. "
@@ -339,10 +342,18 @@ def annotate_data(request, data_pk):
         assignment = AssignedData.objects.get(data=data, profile=profile)
         assignment.delete()
     else:
-        label_data(label, data, profile, labeling_time)
-        if data.irr_ind:
-            # if it is reliability data, run processing step
-            process_irr_label(data, label)
+        try:
+            label_data(label, data, profile, labeling_time)
+            if data.irr_ind:
+                # if it is reliability data, run processing step
+                process_irr_label(data, label)
+        except UniqueViolation:
+            response["error"] = (
+                "ERROR: this card was no longer assigned. Either "
+                "your cards were un-assigned by an administrator or the label was clicked twice. "
+                "Please refresh the page to get new assigned items to annotate."
+            )
+            return Response(response)
 
     # for all data, check if we need to refill queue
     check_and_trigger_model(data, profile)
@@ -1089,9 +1100,9 @@ def get_label_history(request, project_pk):
     if len(irr_data_df) > 0:
         irr_data_df["edit"] = "no"
         irr_data_df["label"] = irr_data_df["labelID"].apply(lambda x: label_dict[x])
-        irr_data_df[
-            "verified"
-        ] = "N/A (IRR)"  # Technically resolved IRR is verified but perhaps not this user's specific label so just NA
+        irr_data_df["verified"] = (
+            "N/A (IRR)"  # Technically resolved IRR is verified but perhaps not this user's specific label so just NA
+        )
         irr_data_df["verified_by"] = None
         irr_data_df["pre_loaded"] = "No"  # IRR only looks at unlabeled data
 
