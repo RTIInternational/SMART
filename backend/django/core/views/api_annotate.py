@@ -6,6 +6,7 @@ from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
+from psycopg2.errors import UniqueViolation
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import AllowAny
@@ -316,7 +317,9 @@ def annotate_data(request, data_pk):
     labeling_time = request.data["labeling_time"]
 
     # if the coder has been un-assigned from the data
-    if not AssignedData.objects.filter(data=data, profile=profile).exists():
+    if (
+        not AssignedData.objects.filter(data=data, profile=profile).exists()
+    ) or DataLabel.objects.filter(data=data, profile=profile).exists():
         response["error"] = (
             "ERROR: this card was no longer assigned. Either "
             "your cards were un-assigned by an administrator or the label was clicked twice. "
@@ -339,10 +342,18 @@ def annotate_data(request, data_pk):
         assignment = AssignedData.objects.get(data=data, profile=profile)
         assignment.delete()
     else:
-        label_data(label, data, profile, labeling_time)
-        if data.irr_ind:
-            # if it is reliability data, run processing step
-            process_irr_label(data, label)
+        try:
+            label_data(label, data, profile, labeling_time)
+            if data.irr_ind:
+                # if it is reliability data, run processing step
+                process_irr_label(data, label)
+        except UniqueViolation:
+            response["error"] = (
+                "ERROR: this card was no longer assigned. Either "
+                "your cards were un-assigned by an administrator or the label was clicked twice. "
+                "Please refresh the page to get new assigned items to annotate."
+            )
+            return Response(response)
 
     # for all data, check if we need to refill queue
     check_and_trigger_model(data, profile)
