@@ -325,6 +325,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             proj_obj.percentage_irr = advanced_data["percentage_irr"]
             proj_obj.num_users_irr = advanced_data["num_users_irr"]
             proj_obj.classifier = advanced_data["classifier"]
+            proj_obj.allow_coders_view_labels = advanced_data["allow_coders_view_labels"]
 
             # use the data dedup choice to set dedup property of metadata fields
             proj_obj.dedup_on = data.cleaned_data["dedup_on"]

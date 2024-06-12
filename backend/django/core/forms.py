@@ -263,6 +263,9 @@ class AdvancedWizardForm(forms.ModelForm):
         required=False,
     )
 
+    allow_coders_view_labels = forms.BooleanField(initial=False, required=False)
+
+
     def clean(self):
         use_active_learning = self.cleaned_data.get("use_active_learning")
         use_default_batch_size = self.cleaned_data.get("use_default_batch_size")
