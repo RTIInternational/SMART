@@ -136,6 +136,12 @@ class ProjectUpdateOverviewForm(forms.ModelForm):
     description = forms.CharField(required=False)
 
 
+class ProjectUpdateAdvancedForm(forms.ModelForm):
+    class Meta:
+        model = Project
+        fields = ["allow_coders_view_labels"]
+        
+
 class LabelForm(forms.ModelForm):
     class Meta:
         model = Label

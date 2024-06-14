@@ -32,6 +32,11 @@ urlpatterns = [
         name="project_update_overview",
     ),
     re_path(
+        r"^projects/(?P<pk>\d+)/update/advanced/$",
+        frontend.ProjectUpdateAdvanced.as_view(),
+        name="project_update_advanced",
+    ),
+    re_path(
         r"^projects/(?P<pk>\d+)/update/data/$",
         frontend.ProjectUpdateData.as_view(),
         name="project_update_data",

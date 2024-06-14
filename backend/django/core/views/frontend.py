@@ -21,6 +21,7 @@ from core.forms import (
     LabelFormSet,
     PermissionsFormSet,
     ProjectUpdateOverviewForm,
+    ProjectUpdateAdvancedForm,
     ProjectWizardForm,
 )
 from core.models import (
@@ -443,6 +444,33 @@ class ProjectUpdateOverview(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
                 return redirect(self.get_success_url())
         else:
             return self.render_to_response(context)
+
+class ProjectUpdateAdvanced(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    model = Project
+    form_class = ProjectUpdateAdvancedForm
+    template_name = "projects/update/advanced.html"
+    permission_denied_message = (
+        "You must be an Admin or Project Creator to access the Advanced Project Settings Update page."
+    )
+    raise_exception = True
+
+    def test_func(self):
+        project = Project.objects.get(pk=self.kwargs["pk"])
+
+        return (
+            project_extras.proj_permission_level(project, self.request.user.profile)
+            >= 2
+        )
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        if form.is_valid():
+            with transaction.atomic():
+                self.object = form.save()
+                return redirect(self.get_success_url())
+        else:
+            return self.render_to_response(context)
+
 
 
 class ProjectUpdateData(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
