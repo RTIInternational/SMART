@@ -140,7 +140,12 @@ class ProjectUpdateAdvancedForm(forms.ModelForm):
     class Meta:
         model = Project
         fields = ["allow_coders_view_labels"]
-        
+
+    def __init__(self, *args, **kwargs):
+        percentage_irr = kwargs.pop('percentage_irr')
+        super(ProjectUpdateAdvancedForm, self).__init__(*args, **kwargs)
+        if percentage_irr > 0:
+            self.fields['allow_coders_view_labels'].widget.attrs['disabled'] = 'disabled'
 
 class LabelForm(forms.ModelForm):
     class Meta:

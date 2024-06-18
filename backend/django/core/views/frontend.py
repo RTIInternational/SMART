@@ -462,6 +462,13 @@ class ProjectUpdateAdvanced(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
             >= 2
         )
 
+    def get_form_kwargs(self):
+        # pass the percentage_irr to the form
+        kwargs = super().get_form_kwargs()
+        project = self.get_object()
+        kwargs['percentage_irr'] = project.percentage_irr
+        return kwargs
+
     def form_valid(self, form):
         context = self.get_context_data()
         if form.is_valid():
