@@ -112,7 +112,6 @@ class ProjectAdmin(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 class ProjectList(LoginRequiredMixin, ListView):
     model = Project
     template_name = "projects/list.html"
-    paginate_by = 10
     ordering = "name"
 
     def get_queryset(self):
