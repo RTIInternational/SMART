@@ -996,7 +996,10 @@ def get_label_history(request, project_pk):
     finalized_irr_data = IRRLog.objects.filter(data__irr_ind=False).values_list(
         "data__pk", flat=True
     )
-    if project_extras.proj_permission_level(project, profile) >= 2:
+    if (
+        project_extras.proj_permission_level(project, profile) >= 2
+        or project.allow_coders_view_labels
+    ):
         labeled_data = DataLabel.objects.filter(
             data__project=project_pk, label__in=labels
         ).exclude(data__in=finalized_irr_data)

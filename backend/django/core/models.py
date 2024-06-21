@@ -44,6 +44,7 @@ class Project(models.Model):
     num_users_irr = models.IntegerField(default=2, validators=[MinValueValidator(2)])
     codebook_file = models.TextField(default="")
     batch_size = models.IntegerField(default=30)
+    allow_coders_view_labels = models.BooleanField(default=False)
     umbrella_string = models.TextField(blank=True)
     """ Advanced options """
     # the current options are 'random', 'least confident', 'entropy', and 'margin sampling'

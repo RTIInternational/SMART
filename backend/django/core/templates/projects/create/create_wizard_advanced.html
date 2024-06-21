@@ -34,7 +34,7 @@
                 <div class="panel-body">
                   <div id="choose_classifier_box">
                     <div id="use_model_div">
-                      <p>Train and display results for a model: {{ wizard.form.use_model }}</p>
+                      <p>{{ wizard.form.use_model }} Train and display results for a model</p>
                       <p>NOTE: This option must be checked to use Active Learning</p>
                       <br />
                     </div>
@@ -85,15 +85,23 @@
               </div>
               <div id="irr-panel" class="panel-collapse collapse hide">
                 <div class="panel-body">
+                  <p>Under IRR, a certain percentage of the data is labeled by
+                    multiple coders. The project admin can then examine the
+                    consistency of the labels across different coders. The options
+                    below allow you to set what percentage of the data is coded
+                    multiple times, and how many coders must code data designated
+                    for IRR before it is analyzed.
+                  </p>
                   <div id = "choose_irr_or_not">
-                    <p>Under IRR, a certain percentage of the data is labeled by
-                      multiple coders. The project admin can then examine the
-                      consistency of the labels across different coders. The options
-                      below allow you to set what percentage of the data is coded
-                      multiple times, and how many coders must code data designated
-                      for IRR before it is analyzed.
-                    </p>
                     {{ wizard.form.use_irr }} Use Inter-rater Reliability
+                  </div>
+                  <div id="choose_irr_or_not_disabled" style="display: none">
+                    <input disabled type="checkbox" />
+                    Use Inter-rater Reliability
+                    <br />
+                    <p> <i>
+                        *This option is only enabled if project does not use IRR
+                    </i></p>
                   </div>
                   <div id="IRR_options">
                     Percent of batch marked IRR (must be between 0 and 100):{{ wizard.form.percentage_irr }}%
@@ -116,6 +124,30 @@
                   <div id="choose_batch_size">
                     Batch size (must be between 10 and 1000): {{ wizard.form.batch_size}}
                   </div>
+                </div>
+              </div>
+              
+            </div>
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h5 class="panel-title">
+                  <a data-toggle="collapse" href="#coders-view-labels-panel" class="accordion-toggle collapsed">
+                    Coder Label Viewing Permissions
+                  </a>
+                </h5>
+              </div>
+              <div id="coders-view-labels-panel" class="panel-collapse collapse hide">
+                <div class="panel-body">
+                  <div id="allow_coders_view_labels">
+                    {{ wizard.form.allow_coders_view_labels }} Allow coders to view other users' labels in history table
+                  </div>
+                  <div id="allow_coders_view_labels_disabled" style="display: none">
+                    <input disabled type="checkbox" />
+                    Allow coders to view other users' labels in history table
+                    <br />
+                    <p><i>*This option is disabled when IRR is enabled</i></p>
+                  </div>
+
                 </div>
               </div>
             </div>
@@ -145,10 +177,14 @@
  */
 var methods_box = $('div#choose_method_box');
 var irr_box = $('div#IRR_options');
+var irr_or_not_box = $('div#choose_irr_or_not');
+var irr_or_not_box_disabled = $('div#choose_irr_or_not_disabled');
 var batch_field = $('#choose_batch_size');
 var use_model = $('#use_model_div');
 var class_choice = $('#classifier_radios');
 var al_tab = $('#al_tab');
+var allow_coders_box = $('#allow_coders_view_labels');
+var allow_coders_box_disabled = $('#allow_coders_view_labels_disabled');
 
 if ($('input#id_advanced-use_irr').prop('checked') == true) {
   irr_box.show();
@@ -208,8 +244,22 @@ $('input#id_advanced-use_model').change(function() {
 $('input#id_advanced-use_irr').change(function() {
   if ($(this).prop('checked') == true) {
     irr_box.show();
+    allow_coders_box.hide();
+    allow_coders_box_disabled.show();
   } else {
     irr_box.hide();
+    allow_coders_box.show()
+    allow_coders_box_disabled.hide();
+  }
+});
+
+$('input#id_advanced-allow_coders_view_labels').change(function() {
+  if ($(this).prop('checked') == true) {
+    irr_or_not_box.hide();
+    irr_or_not_box_disabled.show();
+  } else {
+    irr_or_not_box.show();
+    irr_or_not_box_disabled.hide();
   }
 });
 </script>
