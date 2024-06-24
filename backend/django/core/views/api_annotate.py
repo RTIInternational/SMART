@@ -1033,7 +1033,6 @@ def get_label_history(request, project_pk):
     reverse = request.GET.get("reverse", "false").lower() == "true"
     order_field = "-text" if reverse else "text"
     all_data = Data.objects.filter(pk__in=total_data_list).order_by(order_field)
-    metadata_objects = MetaDataField.objects.filter(project=project)
     
     # filter the results by the search terms
     text_filter = request.GET.get("Text")
@@ -1045,11 +1044,12 @@ def get_label_history(request, project_pk):
     sort_by = request.GET.get("sort-by")
     pre_sorted = False
     if sort_by == "data":
-        # if sorting by data text we can sort and filter early
-        # otherwise we must wait until other columns are joined to sort and filter
+        # if sorting by data text we can sort and paginate early
+        # otherwise we must wait until other columns are joined to sort and paginate
         pre_sorted = True
         all_data = all_data[page * page_size : min((page + 1) * page_size, len(all_data))]
 
+    metadata_objects = MetaDataField.objects.filter(project=project)
     for m in metadata_objects:
         m_filter = request.GET.get(str(m))
         if m_filter is not None and m_filter != "":
