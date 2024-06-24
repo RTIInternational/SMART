@@ -1030,13 +1030,25 @@ def get_label_history(request, project_pk):
         current_page = 1
     page = int(current_page) - 1
 
-    all_data = Data.objects.filter(pk__in=total_data_list)
+    reverse = request.GET.get("reverse", "false").lower() == "true"
+    order_field = "-text" if reverse else "text"
+    all_data = Data.objects.filter(pk__in=total_data_list).order_by(order_field)
     metadata_objects = MetaDataField.objects.filter(project=project)
-
+    
     # filter the results by the search terms
     text_filter = request.GET.get("Text")
     if text_filter is not None and text_filter != "":
         all_data = all_data.filter(text__icontains=text_filter)
+
+    page_size = 100
+    total_pages = math.ceil(len(all_data) / page_size)
+    sort_by = request.GET.get("sort-by")
+    pre_sorted = False
+    if sort_by == "data":
+        # if sorting by data text we can sort and filter early
+        # otherwise we must wait until other columns are joined to sort and filter
+        pre_sorted = True
+        all_data = all_data[page * page_size : min((page + 1) * page_size, len(all_data))]
 
     for m in metadata_objects:
         m_filter = request.GET.get(str(m))
@@ -1126,21 +1138,11 @@ def get_label_history(request, project_pk):
     # TODO: annotate uses pk while everything else uses ID. Let's fix this
     data_df["pk"] = data_df["id"]
 
-    sort_by = request.GET.get("sort-by")
-    reverse = request.GET.get("reverse")
-    if sort_by is not None:
-        if data_df[sort_by].dtype == "object":  # check if the column is of string type
-            df_sorted = data_df.sort_values(by=sort_by, key=lambda col: col.str.lower(), ascending=(reverse == "false"))
-        else:
-            df_sorted = data_df.sort_values(by=sort_by, ascending=(reverse == "false"))
+    if pre_sorted:
+        page_data = data_df
     else:
-        df_sorted = data_df.sort_values(by="data", key=lambda col: col.str.lower(), ascending=(reverse == "false"))
-
-    # Paginate after sorting
-    page_size = 100
-    total_pages = math.ceil(len(all_data) / page_size)
-
-    page_data = df_sorted.iloc[page * page_size : min((page + 1) * page_size, len(data_df))]
+        df_sorted = data_df.sort_values(by=[sort_by, "data"], key=lambda col: col.str.lower(), ascending=(not reverse))
+        page_data = df_sorted.iloc[page * page_size : min((page + 1) * page_size, len(data_df))]
 
     results = page_data.fillna("").to_dict(orient="records")
 

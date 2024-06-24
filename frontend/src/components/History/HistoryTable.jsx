@@ -128,6 +128,7 @@ const HistoryTable = () => {
         setFilters(filterDefault);
         setSortBy("data");
         setReverseSort(false);
+        setPage(0);
         setShouldRefetch(true);
     };
 
