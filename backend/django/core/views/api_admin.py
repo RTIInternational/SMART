@@ -286,6 +286,34 @@ def perc_agree_table(request, project_pk):
     user_agree = perc_agreement_table_data(project)
     return Response({"data": user_agree})
 
+@api_view(["GET"])
+@permission_classes((IsAdminOrCreator,))
+def irr_log(request, project_pk):
+    """Gets IRR user labels for a project. 
+    Only gets IRR logs with label disagreements i.e. data in the admin queue."""
+    project = Project.objects.get(pk=project_pk)
+
+    irr_logs = IRRLog.objects.filter(
+        data__project=project,
+        data__queues__type='admin'
+    )
+
+    data_labels = {}
+
+    for log in irr_logs:
+        data_id = log.data_id
+        username = log.profile.user.username
+        label = log.label.name
+
+        if data_id not in data_labels:
+            data_labels[data_id] = {"data_id": data_id} 
+        data_labels[data_id][username] = label
+
+    response_data = list(data_labels.values())
+
+    return Response({"data": response_data})
+
+
 
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))

@@ -3,10 +3,12 @@ import PropTypes from "prop-types";
 import ReactTable from "react-table-6";
 import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
 import DataCard, { PAGES } from "../DataCard/DataCard";
+import IRRtable from "./IRRtable";
 
 class AdminTable extends React.Component {
     componentDidMount() {
         this.props.getAdmin();
+        this.props.getIrrLog();
     }
 
     getText(row) {
@@ -26,7 +28,13 @@ class AdminTable extends React.Component {
     }
 
     render() {
-        const { admin_data, labels, message, adminLabel, discardData } = this.props;
+        const { admin_data, irr_log, labels, message, adminLabel, discardData } = this.props;
+
+        const getIrrEntry = data_id => {
+            const irr_entry = irr_log.find(entry => entry.data_id === data_id);
+            if (irr_entry) return irr_entry;
+            return {};
+        };
 
         const columns = [
             {
@@ -57,15 +65,22 @@ class AdminTable extends React.Component {
                                     <p style={{ whiteSpace: "normal" }}>{row.original.message}</p>
                                 </div>
                             )}
-                            <DataCard 
-                                data={row.original}
-                                page={PAGES.ADMIN} 
-                                actions={{ onSelectLabel: adminLabel, onDiscard: discardData }} 
-                            /> 
+                            <div className="admin-data-card-wrapper">                            
+                                <DataCard 
+                                    data={row.original}
+                                    page={PAGES.ADMIN} 
+                                    actions={{ onSelectLabel: adminLabel, onDiscard: discardData }} 
+                                />
+                                { row.original.reason === "IRR" &&
+                                    <IRRtable irrEntry={getIrrEntry(row.original.id)} />
+                                }
+                            </div>
                         </div>
                     );
                 }
-            }
+            },
+            // column for coder, label table
+            
         ];
 
         let page_sizes = [1];

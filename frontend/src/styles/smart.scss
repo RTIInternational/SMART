@@ -751,3 +751,21 @@ li.disabled {
         margin-right: 5px;
     }
 }
+
+.admin-data-card-wrapper {
+    display: flex;
+
+    > :first-child {
+        flex-grow: 1;
+        display: block !important;
+    }
+
+    .irr-card {
+        width: 425px;
+        overflow-x: scroll
+    }
+  
+    .btn-toolbar {
+        display: block;
+    }
+}
