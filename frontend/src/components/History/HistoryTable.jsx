@@ -195,7 +195,13 @@ const HistoryTable = () => {
         getExpandedRowModel: getExpandedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
-        getRowCanExpand: () => true,
+        getRowCanExpand: (data) => {
+            if (data.original.edit === "yes") {
+                return true;
+            } else {
+                return false;
+            }
+        },
         getSortedRowModel: getSortedRowModel(),
         initialState: {
             pagination: {
