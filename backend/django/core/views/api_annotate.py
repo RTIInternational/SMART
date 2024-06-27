@@ -242,6 +242,37 @@ def verify_label(request, data_pk):
 
 @api_view(["POST"])
 @permission_classes((IsCoder,))
+def unverify_label(request, data_pk):
+    """Take a data label that was verified, and un-verify it.
+
+    Args:
+        request: The POST request
+        data_pk: Primary key of the data
+    Returns:
+        {}
+    """
+    data = Data.objects.get(pk=data_pk)
+    response = {}
+    # if the coder has been un-assigned from the data
+    if not DataLabel.objects.filter(data=data).exists():
+        response["error"] = (
+            "ERROR: This data has no label. Something must have gone wrong."
+        )
+        return Response(response)
+    else:
+        datalabel = DataLabel.objects.get(data=data)
+        if not VerifiedDataLabel.objects.filter(data_label=datalabel).exists():
+            response["error"] = "ERROR: This data label is not verified."
+        else:
+            VerifiedDataLabel.objects.filter(
+                data_label=datalabel,
+            ).delete()
+
+    return Response(response)
+
+
+@api_view(["POST"])
+@permission_classes((IsCoder,))
 def skip_data(request, data_pk):
     """Take a datum that is in the assigneddata queue for that user and place it in the
     admin queue. Remove it from the assignedData queue.

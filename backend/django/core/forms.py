@@ -142,10 +142,13 @@ class ProjectUpdateAdvancedForm(forms.ModelForm):
         fields = ["allow_coders_view_labels"]
 
     def __init__(self, *args, **kwargs):
-        percentage_irr = kwargs.pop('percentage_irr')
+        percentage_irr = kwargs.pop("percentage_irr")
         super(ProjectUpdateAdvancedForm, self).__init__(*args, **kwargs)
         if percentage_irr > 0:
-            self.fields['allow_coders_view_labels'].widget.attrs['disabled'] = 'disabled'
+            self.fields["allow_coders_view_labels"].widget.attrs[
+                "disabled"
+            ] = "disabled"
+
 
 class LabelForm(forms.ModelForm):
     class Meta:
@@ -275,7 +278,6 @@ class AdvancedWizardForm(forms.ModelForm):
     )
 
     allow_coders_view_labels = forms.BooleanField(initial=False, required=False)
-
 
     def clean(self):
         use_active_learning = self.cleaned_data.get("use_active_learning")
