@@ -1126,13 +1126,15 @@ def get_label_history(request, project_pk):
         labeled_data_df["pre_loaded"] = labeled_data_df["pre_loaded"].apply(
             lambda x: "Yes" if x else "No"
         )
-        labeled_data_df["edit"] = "yes"
+        labeled_data_df["edit"] = labeled_data_df["verified"].apply(
+            lambda verified: "No" if verified == "Yes" else "Yes"
+        )
         labeled_data_df["label"] = labeled_data_df["labelID"].apply(
             lambda x: label_dict[x]
         )
 
     if len(irr_data_df) > 0:
-        irr_data_df["edit"] = "no"
+        irr_data_df["edit"] = "No"
         irr_data_df["label"] = irr_data_df["labelID"].apply(lambda x: label_dict[x])
         irr_data_df["verified"] = (
             "N/A (IRR)"  # Technically resolved IRR is verified but perhaps not this user's specific label so just NA
@@ -1147,9 +1149,9 @@ def get_label_history(request, project_pk):
     # merge the data info with the label info
     if len(all_labeled_stuff) > 0:
         data_df = data_df.merge(all_labeled_stuff, on=["id"], how="left")
-        data_df["edit"] = data_df["edit"].fillna("yes")
+        data_df["edit"] = data_df["edit"].fillna("Yes")
     else:
-        data_df["edit"] = "yes"
+        data_df["edit"] = "Yes"
         data_df["label"] = ""
         data_df["profile"] = ""
         data_df["timestamp"] = ""
