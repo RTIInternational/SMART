@@ -303,11 +303,11 @@ def irr_log(request, project_pk):
     for log in irr_logs:
         data_id = log.data_id
         username = log.profile.user.username
-        label = log.label.name
+        label_id = log.label_id
 
         if data_id not in data_labels:
             data_labels[data_id] = {"data_id": data_id} 
-        data_labels[data_id][username] = label
+        data_labels[data_id][username] = label_id
 
     response_data = list(data_labels.values())
 

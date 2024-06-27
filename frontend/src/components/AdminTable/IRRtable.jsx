@@ -5,7 +5,6 @@ const IRRtable = ({ irrEntry }) => {
     if (!irrEntry || !Object.keys(irrEntry).length){
         return <Fragment>Error loading IRR data</Fragment>;
     }
-    const { data_id, ...irrData } = irrEntry;
     return (
         <Card className="irr-card d-flex flex-column m-0 p-3" >
             <Table striped bordered hover>
@@ -13,13 +12,15 @@ const IRRtable = ({ irrEntry }) => {
                     <tr>
                         <th>User</th>
                         <th>Label</th>
+                        <th>Description</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {Object.entries(irrData).map(([user, label], index) => (
+                    {Object.entries(irrEntry).map(([user, label], index) => (
                         <tr key={index}>
                             <td style={{ wordWrap: "break-word", whiteSpace: "normal" }}>{user}</td>
-                            <td style={{ wordWrap: "break-word", whiteSpace: "normal" }}>{label}</td>
+                            <td style={{ wordWrap: "break-word", whiteSpace: "normal" }}>{label.name}</td>
+                            <td style={{ wordWrap: "break-word", whiteSpace: "normal" }}>{label.description}</td>
                         </tr>
                     ))}
                 </tbody>

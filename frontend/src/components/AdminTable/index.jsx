@@ -32,8 +32,18 @@ class AdminTable extends React.Component {
 
         const getIrrEntry = data_id => {
             const irr_entry = irr_log.find(entry => entry.data_id === data_id);
-            if (irr_entry) return irr_entry;
-            return {};
+            const irr_entry_formatted = {};
+            for (let user in irr_entry) {
+                if (user === "data_id") continue;
+                const label_id = irr_entry[user];
+                if (!label_id) {
+                    // situation where the irr data was adjudicated instead of labeled
+                    irr_entry_formatted[user] = { name: "", description: "" };
+                } else {
+                    irr_entry_formatted[user] = labels.find(label => label.pk === label_id);
+                }
+            }
+            return irr_entry_formatted;
         };
 
         const columns = [
@@ -71,7 +81,7 @@ class AdminTable extends React.Component {
                                     page={PAGES.ADMIN} 
                                     actions={{ onSelectLabel: adminLabel, onDiscard: discardData }} 
                                 />
-                                { row.original.reason === "IRR" &&
+                                { row.original.reason === "IRR" && irr_log.length &&
                                     <IRRtable irrEntry={getIrrEntry(row.original.id)} />
                                 }
                             </div>
