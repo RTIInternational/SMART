@@ -6,7 +6,7 @@ import { postConfig } from "../utils/fetch_configs";
 const useVerifyLabel = () =>
     useMutation({
         mutationFn: ({ dataID }) =>
-            fetch(`/api/verify_label/${dataID}/`, postConfig({ dataID })),
+            fetch(`/api/toggle_verify_label/${dataID}/`, postConfig({ dataID })),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["history", PROJECT_ID] });
         }

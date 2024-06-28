@@ -92,7 +92,7 @@ const HistoryTable = () => {
     const [shouldRefetch, setShouldRefetch] = useState(false);
 
     const { data: historyData, refetch: refetchHistory } = useHistory(page + 1, unlabeled, filters);
-    const { mutate: verifyLabel } = useVerifyLabel();
+    const { mutate: toggleVerifyLabel } = useVerifyLabel();
 
     const metadataColumnsAccessorKeys = [];
     if (historyData) {
@@ -171,17 +171,30 @@ const HistoryTable = () => {
             accessorKey: "verified",
             cell: (info) => {
                 if (info.getValue() == "Yes") {
-                    return (<p>Yes</p>);
+                    return (
+                        <div>
+                            <p>Yes</p>
+                            <Button
+                                onClick={() => toggleVerifyLabel({ dataID: info.row.original.id })}
+                                variant="danger"
+                            >
+                                X
+                            </Button>
+                        </div>
+                    );
                 } else if (info.getValue() != "No") {
                     return (<p>{info.getValue()}</p>);
                 } else {
                     return (
-                        <Button
-                            onClick={() => verifyLabel({ dataID: info.row.original.id })}
-                            variant="success"
-                        >
-                            Verify
-                        </Button>
+                        <div>
+                            <p>No</p>
+                            <Button
+                                onClick={() => toggleVerifyLabel({ dataID: info.row.original.id })}
+                                variant="success"
+                            >
+                                ✓
+                            </Button>
+                        </div>
                     );
                 }
             },

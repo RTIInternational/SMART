@@ -208,8 +208,8 @@ def unassign_data(request, data_pk):
 
 @api_view(["POST"])
 @permission_classes((IsCoder,))
-def verify_label(request, data_pk):
-    """Take a data label that was not verified, and verify it.
+def toggle_verify_label(request, data_pk):
+    """Either verify or unverify a data item.
 
     Args:
         request: The POST request
@@ -227,46 +227,22 @@ def verify_label(request, data_pk):
         return Response(response)
     elif DataLabel.objects.filter(data=data).count() > 1:
         response["error"] = (
-            "ERROR: This data has multiple labels. This shouldn't "
-            "be possible with unverified data as it is pre-labeled."
+            "ERROR: This data has multiple labels which only occurs for incomplete IRR data which cannot be verified."
         )
-    else:
-        VerifiedDataLabel.objects.create(
-            data_label=DataLabel.objects.get(data=data),
-            verified_timestamp=timezone.now(),
-            verified_by=request.user.profile,
-        )
-
-    return Response(response)
-
-
-@api_view(["POST"])
-@permission_classes((IsCoder,))
-def unverify_label(request, data_pk):
-    """Take a data label that was verified, and un-verify it.
-
-    Args:
-        request: The POST request
-        data_pk: Primary key of the data
-    Returns:
-        {}
-    """
-    data = Data.objects.get(pk=data_pk)
-    response = {}
-    # if the coder has been un-assigned from the data
-    if not DataLabel.objects.filter(data=data).exists():
-        response["error"] = (
-            "ERROR: This data has no label. Something must have gone wrong."
-        )
-        return Response(response)
     else:
         datalabel = DataLabel.objects.get(data=data)
-        if not VerifiedDataLabel.objects.filter(data_label=datalabel).exists():
-            response["error"] = "ERROR: This data label is not verified."
-        else:
+        # if it's verified, un-verify it.
+        if VerifiedDataLabel.objects.filter(data_label=datalabel).exists():
             VerifiedDataLabel.objects.filter(
                 data_label=datalabel,
             ).delete()
+        else:
+            # the data is not verified so we verify it
+            VerifiedDataLabel.objects.create(
+                data_label=DataLabel.objects.get(data=data),
+                verified_timestamp=timezone.now(),
+                verified_by=request.user.profile,
+            )
 
     return Response(response)
 
