@@ -1030,24 +1030,29 @@ def get_label_history(request, project_pk):
         current_page = 1
     page = int(current_page) - 1
 
+    sort_by = request.GET.get("sort-by")
     reverse = request.GET.get("reverse", "false").lower() == "true"
-    order_field = "-text" if reverse else "text"
-    all_data = Data.objects.filter(pk__in=total_data_list).order_by(order_field)
+    sort_options = {
+        'data': 'text',
+        'label': 'datalabel__label__name',
+        'profile': 'datalabel__profile__user__username',
+        'timestamp': 'datalabel__timestamp',
+        'verified': 'datalabel__verified__pk',
+        'verified_by': 'datalabel__verified__verified_by__user__username',
+        'pre_loaded': 'datalabel__pre_loaded'
+    }
     
+    order_field = sort_options.get(sort_by, 'text')  
+    
+    if reverse:
+        order_field = '-' + order_field
+        
+    all_data = Data.objects.filter(pk__in=total_data_list).order_by(order_field)
+
     # filter the results by the search terms
     text_filter = request.GET.get("Text")
     if text_filter is not None and text_filter != "":
         all_data = all_data.filter(text__icontains=text_filter)
-
-    page_size = 100
-    total_pages = math.ceil(len(all_data) / page_size)
-    sort_by = request.GET.get("sort-by")
-    pre_sorted = False
-    if sort_by == "data":
-        # if sorting by data text we can sort and paginate early
-        # otherwise we must wait until other columns are joined to sort and paginate
-        pre_sorted = True
-        all_data = all_data[page * page_size : min((page + 1) * page_size, len(all_data))]
 
     metadata_objects = MetaDataField.objects.filter(project=project)
     for m in metadata_objects:
@@ -1058,21 +1063,26 @@ def get_label_history(request, project_pk):
             ).values_list("data__pk", flat=True)
             all_data = all_data.filter(pk__in=data_with_metadata_filter)
 
-    all_data_metadata_ids = [
-        d["metadata"] for d in DataMetadataIDSerializer(all_data, many=True).data
+    page_size = 100
+    total_pages = math.ceil(len(all_data) / page_size)
+    pre_sorted = False
+    page_data = all_data[page * page_size : min((page + 1) * page_size, len(all_data))]
+
+    page_data_metadata_ids = [
+        d["metadata"] for d in DataMetadataIDSerializer(page_data, many=True).data
     ]
-    all_data = DataSerializer(all_data, many=True).data
+    page_data = DataSerializer(page_data, many=True).data
     # derive the metadata fields in the forms needed for the table
-    all_metadata = [c.popitem("metadata")[1] for c in all_data]
-    all_metadata_formatted = [
+    page_metadata = [c.popitem("metadata")[1] for c in page_data]
+    page_metadata_formatted = [
         {c.split(":")[0].replace(" ", "_"): c.split(":")[1] for c in inner_list}
-        for inner_list in all_metadata
+        for inner_list in page_metadata
     ]
 
-    data_df = pd.DataFrame(all_data).rename(columns={"pk": "id", "text": "data"})
-    data_df["metadataIDs"] = all_data_metadata_ids
-    data_df["metadata"] = all_metadata
-    data_df["formattedMetadata"] = all_metadata_formatted
+    data_df = pd.DataFrame(page_data).rename(columns={"pk": "id", "text": "data"})
+    data_df["metadataIDs"] = page_data_metadata_ids
+    data_df["metadata"] = page_metadata
+    data_df["formattedMetadata"] = page_metadata_formatted
 
     if len(data_df) == 0:
         return Response(
@@ -1138,13 +1148,7 @@ def get_label_history(request, project_pk):
     # TODO: annotate uses pk while everything else uses ID. Let's fix this
     data_df["pk"] = data_df["id"]
 
-    if pre_sorted:
-        page_data = data_df
-    else:
-        df_sorted = data_df.sort_values(by=[sort_by, "data"], key=lambda col: col.str.lower(), ascending=(not reverse))
-        page_data = df_sorted.iloc[page * page_size : min((page + 1) * page_size, len(data_df))]
-
-    results = page_data.fillna("").to_dict(orient="records")
+    results = data_df.fillna("").to_dict(orient="records")
 
     return Response(
         {
