@@ -10,10 +10,9 @@ import {
 import React, { Fragment, useState, useEffect } from "react";
 import { Button, Form, OverlayTrigger, Table, Tooltip } from "react-bootstrap";
 
-import { DebouncedInput, GrayBox, H4 } from "../ui";
+import { GrayBox, H4 } from "../ui";
 import DataCard, { PAGES } from "../DataCard/DataCard";
-import FilterForm from "./FilterForm";
-import { useHistory, useVerifyLabel } from "../../hooks";
+import { useHistory, useToggleVerifyLabel } from "../../hooks";
 import { PROJECT_USES_IRR } from "../../store";
 
 const defaultColumns = {
@@ -88,11 +87,23 @@ const HistoryTable = () => {
     const [page, setPage] = useState(0);
     const [unlabeled, setUnlabeled] = useState(false);
     const [filters, setFilters] = useState({ Text: "" });
+    const [sortBy, setSortBy] = useState("data");
+    const [reverseSort, setReverseSort] = useState(false);
     const [filtersInitialized, setFiltersInitialized] = useState(false);
     const [shouldRefetch, setShouldRefetch] = useState(false);
 
-    const { data: historyData, refetch: refetchHistory } = useHistory(page + 1, unlabeled, filters);
-    const { mutate: toggleVerifyLabel } = useVerifyLabel();
+    const { data: historyData, refetch: refetchHistory } = useHistory(page + 1, unlabeled, filters, sortBy, reverseSort);
+    const { mutate: toggleVerifyLabel } = useToggleVerifyLabel();
+
+    const sortOptions = {
+        data: "Data",
+        label: "Label",
+        profile: "Labeled By",
+        timestamp: "Timestamp",
+        verified: "Verified",
+        verified_by: "Verified By",
+        pre_loaded: "Pre-Loaded",
+    };
 
     const metadataColumnsAccessorKeys = [];
     if (historyData) {
@@ -115,11 +126,8 @@ const HistoryTable = () => {
         const metadataFields = historyData.metadata_fields || [];
         const filterDefault = getFilterDefault(metadataFields);
         setFilters(filterDefault);
-        setShouldRefetch(true);
-    };
-
-    const handleApplyFilter = (event) => {
-        event.preventDefault();
+        setSortBy("data");
+        setReverseSort(false);
         setPage(0);
         setShouldRefetch(true);
     };
@@ -131,6 +139,17 @@ const HistoryTable = () => {
             [name]: value
         }));
     };
+
+    const handleSortInputChange = (event) => {
+        const { value } = event.target;
+        setSortBy(value);
+    };
+
+    function handleApply(event) {
+        event.preventDefault();
+        setPage(0); 
+        setShouldRefetch(true);     
+    }
 
     useEffect(() => { // initialize filters
         if (historyData && !filtersInitialized) {
@@ -262,15 +281,64 @@ const HistoryTable = () => {
                             </GrayBox>
                         </div>
                     )}
-                    <div className="mt-3">
+                    <div className="mt-3 d-flex">
                         <GrayBox>
-                            <H4>Filters</H4>
-                            < FilterForm 
-                                filters={filters} 
-                                handleInputChange={handleFilterInputChange}
-                                resetFilters={resetFilters}
-                                handleSubmit={handleApplyFilter}
-                            />
+                            <form onSubmit={handleApply}>
+                                <H4>Filters</H4>
+                                <div className="form-group history-filter-row">
+                                    <label className="control-label history-filter-label">Data</label>
+                                    <input
+                                        className="form-control"
+                                        type="text"
+                                        name="Text"
+                                        style={{ width: "fit-content" }}
+                                        value={filters.Text}
+                                        onChange={handleFilterInputChange}
+                                    />
+                                </div>
+                                {Object.keys(filters).map(field => {
+                                    return field !== "Text" ? (
+                                        <div className="form-group history-filter-row" key={field}>
+                                            <label className="control-label history-filter-label">{field}</label>
+                                            <input
+                                                className="form-control"
+                                                style={{ width: "fit-content" }}
+                                                type="text"
+                                                name={field}
+                                                value={filters[field] || ""}
+                                                onChange={handleFilterInputChange}
+                                            />
+                                        </div>
+                                    ) : null;
+                                })}
+                                <H4>Sorting</H4>
+                                <div className="form-group history-filter-row">
+                                    <label className="control-label history-filter-label">Sort By:</label>
+                                    <select
+                                        className="form-control"
+                                        style={{ width: "fit-content" }}
+                                        name="sort-by"
+                                        onChange={handleSortInputChange}
+                                        value={sortBy}
+                                    >
+                                        {Object.entries(sortOptions).map(([key, value]) => (
+                                            <option key={key} value={key}>{value}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="form-group history-filter-row">
+                                    <input 
+                                        type="checkbox"
+                                        className="m-0"
+                                        checked={reverseSort}
+                                        aria-checked={reverseSort} 
+                                        onChange={() => setReverseSort(!reverseSort)}
+                                    />
+                                    <label className="control-label history-filter-label ml-1 m-0">Reverse sort order</label>
+                                </div>
+                                <Button className="mr-3" variant="primary" type="submit">Apply</Button>
+                                <Button variant="secondary" onClick={resetFilters}>Reset</Button>
+                            </form>
                         </GrayBox>
                     </div>
                 </div>
