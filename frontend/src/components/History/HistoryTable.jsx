@@ -12,7 +12,7 @@ import { Button, Form, OverlayTrigger, Table, Tooltip } from "react-bootstrap";
 
 import { GrayBox, H4 } from "../ui";
 import DataCard, { PAGES } from "../DataCard/DataCard";
-import { useHistory, useVerifyLabel } from "../../hooks";
+import { useHistory, useToggleVerifyLabel } from "../../hooks";
 import { PROJECT_USES_IRR } from "../../store";
 
 const defaultColumns = {
@@ -93,7 +93,7 @@ const HistoryTable = () => {
     const [shouldRefetch, setShouldRefetch] = useState(false);
 
     const { data: historyData, refetch: refetchHistory } = useHistory(page + 1, unlabeled, filters, sortBy, reverseSort);
-    const { mutate: verifyLabel } = useVerifyLabel();
+    const { mutate: toggleVerifyLabel } = useToggleVerifyLabel();
 
     const sortOptions = {
         data: "Data",
@@ -190,17 +190,30 @@ const HistoryTable = () => {
             accessorKey: "verified",
             cell: (info) => {
                 if (info.getValue() == "Yes") {
-                    return (<p>Yes</p>);
+                    return (
+                        <div>
+                            <p>Yes</p>
+                            <Button
+                                onClick={() => toggleVerifyLabel({ dataID: info.row.original.id })}
+                                variant="danger"
+                            >
+                                X
+                            </Button>
+                        </div>
+                    );
                 } else if (info.getValue() != "No") {
                     return (<p>{info.getValue()}</p>);
                 } else {
                     return (
-                        <Button
-                            onClick={() => verifyLabel({ dataID: info.row.original.id })}
-                            variant="success"
-                        >
-                            Verify
-                        </Button>
+                        <div>
+                            <p>No</p>
+                            <Button
+                                onClick={() => toggleVerifyLabel({ dataID: info.row.original.id })}
+                                variant="success"
+                            >
+                                ✓
+                            </Button>
+                        </div>
                     );
                 }
             },
@@ -214,7 +227,13 @@ const HistoryTable = () => {
         getExpandedRowModel: getExpandedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
-        getRowCanExpand: () => true,
+        getRowCanExpand: (data) => {
+            if (data.original.edit === "Yes") {
+                return true;
+            } else {
+                return false;
+            }
+        },
         getSortedRowModel: getSortedRowModel(),
         initialState: {
             pagination: {
