@@ -325,7 +325,9 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             proj_obj.percentage_irr = advanced_data["percentage_irr"]
             proj_obj.num_users_irr = advanced_data["num_users_irr"]
             proj_obj.classifier = advanced_data["classifier"]
-            proj_obj.allow_coders_view_labels = advanced_data["allow_coders_view_labels"]
+            proj_obj.allow_coders_view_labels = advanced_data[
+                "allow_coders_view_labels"
+            ]
 
             # use the data dedup choice to set dedup property of metadata fields
             proj_obj.dedup_on = data.cleaned_data["dedup_on"]
@@ -444,13 +446,12 @@ class ProjectUpdateOverview(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
         else:
             return self.render_to_response(context)
 
+
 class ProjectUpdateAdvanced(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Project
     form_class = ProjectUpdateAdvancedForm
     template_name = "projects/update/advanced.html"
-    permission_denied_message = (
-        "You must be an Admin or Project Creator to access the Advanced Project Settings Update page."
-    )
+    permission_denied_message = "You must be an Admin or Project Creator to access the Advanced Project Settings Update page."
     raise_exception = True
 
     def test_func(self):
@@ -465,7 +466,7 @@ class ProjectUpdateAdvanced(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
         # pass the percentage_irr to the form
         kwargs = super().get_form_kwargs()
         project = self.get_object()
-        kwargs['percentage_irr'] = project.percentage_irr
+        kwargs["percentage_irr"] = project.percentage_irr
         return kwargs
 
     def form_valid(self, form):
@@ -476,7 +477,6 @@ class ProjectUpdateAdvanced(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
                 return redirect(self.get_success_url())
         else:
             return self.render_to_response(context)
-
 
 
 class ProjectUpdateData(LoginRequiredMixin, UserPassesTestMixin, UpdateView):

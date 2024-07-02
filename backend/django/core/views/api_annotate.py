@@ -208,8 +208,8 @@ def unassign_data(request, data_pk):
 
 @api_view(["POST"])
 @permission_classes((IsCoder,))
-def verify_label(request, data_pk):
-    """Take a data label that was not verified, and verify it.
+def toggle_verify_label(request, data_pk):
+    """Either verify or unverify a data item.
 
     Args:
         request: The POST request
@@ -227,15 +227,22 @@ def verify_label(request, data_pk):
         return Response(response)
     elif DataLabel.objects.filter(data=data).count() > 1:
         response["error"] = (
-            "ERROR: This data has multiple labels. This shouldn't "
-            "be possible with unverified data as it is pre-labeled."
+            "ERROR: This data has multiple labels which only occurs for incomplete IRR data which cannot be verified."
         )
     else:
-        VerifiedDataLabel.objects.create(
-            data_label=DataLabel.objects.get(data=data),
-            verified_timestamp=timezone.now(),
-            verified_by=request.user.profile,
-        )
+        datalabel = DataLabel.objects.get(data=data)
+        # if it's verified, un-verify it.
+        if VerifiedDataLabel.objects.filter(data_label=datalabel).exists():
+            VerifiedDataLabel.objects.filter(
+                data_label=datalabel,
+            ).delete()
+        else:
+            # the data is not verified so we verify it
+            VerifiedDataLabel.objects.create(
+                data_label=DataLabel.objects.get(data=data),
+                verified_timestamp=timezone.now(),
+                verified_by=request.user.profile,
+            )
 
     return Response(response)
 
@@ -1095,13 +1102,15 @@ def get_label_history(request, project_pk):
         labeled_data_df["pre_loaded"] = labeled_data_df["pre_loaded"].apply(
             lambda x: "Yes" if x else "No"
         )
-        labeled_data_df["edit"] = "yes"
+        labeled_data_df["edit"] = labeled_data_df["verified"].apply(
+            lambda verified: "No" if verified == "Yes" else "Yes"
+        )
         labeled_data_df["label"] = labeled_data_df["labelID"].apply(
             lambda x: label_dict[x]
         )
 
     if len(irr_data_df) > 0:
-        irr_data_df["edit"] = "no"
+        irr_data_df["edit"] = "No"
         irr_data_df["label"] = irr_data_df["labelID"].apply(lambda x: label_dict[x])
         irr_data_df["verified"] = (
             "N/A (IRR)"  # Technically resolved IRR is verified but perhaps not this user's specific label so just NA
@@ -1116,9 +1125,9 @@ def get_label_history(request, project_pk):
     # merge the data info with the label info
     if len(all_labeled_stuff) > 0:
         data_df = data_df.merge(all_labeled_stuff, on=["id"], how="left")
-        data_df["edit"] = data_df["edit"].fillna("yes")
+        data_df["edit"] = data_df["edit"].fillna("Yes")
     else:
-        data_df["edit"] = "yes"
+        data_df["edit"] = "Yes"
         data_df["label"] = ""
         data_df["profile"] = ""
         data_df["timestamp"] = ""
