@@ -285,6 +285,9 @@
             {% endif %}
           {% endif %}
           {% endif %}
+          {% if project.percentage_irr > 0 %}
+          <button id="download-irr-log-btn" class="btn btn-primary" onclick="downloadIRRLog({{ project.pk }})">Download IRR Log</button>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -346,6 +349,32 @@ function download_model(pk, unverified) {
   xhttp.send();
 }
 
+/*
+ *  When the download IRR log button is pressed, download the IRR log as a csv file
+ */
+function downloadIRRLog(projectId) {
+    var url = `/api/download_irr_log/${projectId}/`;
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+        if (xhttp.readyState === 4 && xhttp.status === 200) {
+            var blob = new Blob([xhttp.response], {type: 'text/csv'});
+            var downloadUrl = window.URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = 'irr_log_' + projectId + '.csv';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(downloadUrl);
+        } else if (xhttp.readyState === 4 && xhttp.status !== 200) {
+            console.error('Error downloading the file:', xhttp.statusText);
+        }
+    };
+    xhttp.open('GET', url, true);
+    xhttp.responseType = 'blob'; // Set the response type to blob for binary data
+    xhttp.send();
+}
+
 
 /*
  *  When the ingest datatable button is pressed, SMART pulls the entire
@@ -396,5 +425,7 @@ $(document).ready(function() {
     }
   })
 });
+
+
 </script>
 {% endblock %}
