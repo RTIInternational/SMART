@@ -31,16 +31,16 @@ class AdminTable extends React.Component {
         const { admin_data, irr_log, labels, message, adminLabel, discardData } = this.props;
 
         const getIrrEntry = data_id => {
-            const irr_entry = irr_log.find(entry => entry.data_id === data_id);
+            const relevant_irr_entries = irr_log.filter(entry => entry.data === data_id);
             const irr_entry_formatted = {};
-            for (let user in irr_entry) {
-                if (user === "data_id") continue;
-                const label_id = irr_entry[user];
+            for (let entry of relevant_irr_entries) {
+                const username = entry.profile;
+                const label_id = entry.label;
                 if (!label_id) {
                     // situation where the irr data was adjudicated instead of labeled
-                    irr_entry_formatted[user] = { name: "", description: "" };
+                    irr_entry_formatted[username] = { name: "", description: "" };
                 } else {
-                    irr_entry_formatted[user] = labels.find(label => label.pk === label_id);
+                    irr_entry_formatted[username] = labels.find(label => label.pk === label_id);
                 }
             }
             return irr_entry_formatted;

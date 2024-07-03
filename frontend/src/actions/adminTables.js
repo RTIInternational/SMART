@@ -54,8 +54,11 @@ export const getAdmin = (projectID) => {
     };
 };
 
-export const getIrrLog = (projectID) => {
+export const getIrrLog = (projectID, adminOnly = false) => {
     let apiURL = `/api/irr_log/${projectID}/`;
+
+    if (adminOnly) apiURL += '?admin=true';
+
     return dispatch => {
         return fetch(apiURL, getConfig())
             .then(response => {
@@ -71,7 +74,7 @@ export const getIrrLog = (projectID) => {
                 if ('error' in response) {
                     return dispatch(setMessage(response.error));
                 } else {
-                    dispatch(set_irr_log(response.data));
+                    dispatch(set_irr_log(response.irr_log));
                 }
             });
     };

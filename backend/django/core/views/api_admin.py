@@ -5,6 +5,7 @@ from django.utils.html import escape
 from postgres_stats.aggregates import Percentile
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+from core.serializers import IRRLogModelSerializer
 
 from core.models import (
     AssignedData,
@@ -289,29 +290,21 @@ def perc_agree_table(request, project_pk):
 @api_view(["GET"])
 @permission_classes((IsAdminOrCreator,))
 def irr_log(request, project_pk):
-    """Gets IRR user labels for a project. 
-    Only gets IRR logs with label disagreements i.e. data in the admin queue."""
+    """
+    Gets IRR user labels for a project. Optionally filters to include only
+    logs with label disagreements (i.e., data in the admin queue) based on a query parameter.
+    """
     project = Project.objects.get(pk=project_pk)
 
-    irr_logs = IRRLog.objects.filter(
-        data__project=project,
-        data__queues__type='admin'
-    )
+    admin_queue_only = request.query_params.get('admin', 'false').lower() == 'true'
 
-    data_labels = {}
+    irr_log = IRRLog.objects.filter(data__project=project)
+    if admin_queue_only:
+        irr_log = irr_log.filter(data__queues__type='admin')
 
-    for log in irr_logs:
-        data_id = log.data_id
-        username = log.profile.user.username
-        label_id = log.label_id
+    irr_log_serialized = IRRLogModelSerializer(irr_log, many=True).data
 
-        if data_id not in data_labels:
-            data_labels[data_id] = {"data_id": data_id} 
-        data_labels[data_id][username] = label_id
-
-    response_data = list(data_labels.values())
-
-    return Response({"data": response_data})
+    return Response({"irr_log": irr_log_serialized})
 
 
 

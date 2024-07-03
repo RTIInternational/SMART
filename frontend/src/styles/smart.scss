@@ -758,6 +758,10 @@ li.disabled {
     > :first-child {
         flex-grow: 1;
         display: block !important;
+
+        p {
+            max-width: 500px;
+        }
     }
 
     .irr-card {

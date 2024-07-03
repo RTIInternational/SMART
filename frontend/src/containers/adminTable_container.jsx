@@ -27,7 +27,7 @@ const mapDispatchToProps = (dispatch) => {
             dispatch(getAdmin(PROJECT_ID));
         },
         getIrrLog: () => {
-            dispatch(getIrrLog(PROJECT_ID));
+            dispatch(getIrrLog(PROJECT_ID, true));
         },
         discardData: (dataID) => {
             dispatch(discardData(dataID, PROJECT_ID));
