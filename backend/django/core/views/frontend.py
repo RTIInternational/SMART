@@ -21,6 +21,7 @@ from core.forms import (
     LabelFormSet,
     PermissionsFormSet,
     ProjectUpdateOverviewForm,
+    ProjectUpdateAdvancedForm,
     ProjectWizardForm,
 )
 from core.models import (
@@ -112,7 +113,6 @@ class ProjectAdmin(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 class ProjectList(LoginRequiredMixin, ListView):
     model = Project
     template_name = "projects/list.html"
-    paginate_by = 10
     ordering = "name"
 
     def get_queryset(self):
@@ -325,6 +325,9 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             proj_obj.percentage_irr = advanced_data["percentage_irr"]
             proj_obj.num_users_irr = advanced_data["num_users_irr"]
             proj_obj.classifier = advanced_data["classifier"]
+            proj_obj.allow_coders_view_labels = advanced_data[
+                "allow_coders_view_labels"
+            ]
 
             # use the data dedup choice to set dedup property of metadata fields
             proj_obj.dedup_on = data.cleaned_data["dedup_on"]
@@ -433,6 +436,38 @@ class ProjectUpdateOverview(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
             project_extras.proj_permission_level(project, self.request.user.profile)
             >= 2
         )
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        if form.is_valid():
+            with transaction.atomic():
+                self.object = form.save()
+                return redirect(self.get_success_url())
+        else:
+            return self.render_to_response(context)
+
+
+class ProjectUpdateAdvanced(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    model = Project
+    form_class = ProjectUpdateAdvancedForm
+    template_name = "projects/update/advanced.html"
+    permission_denied_message = "You must be an Admin or Project Creator to access the Advanced Project Settings Update page."
+    raise_exception = True
+
+    def test_func(self):
+        project = Project.objects.get(pk=self.kwargs["pk"])
+
+        return (
+            project_extras.proj_permission_level(project, self.request.user.profile)
+            >= 2
+        )
+
+    def get_form_kwargs(self):
+        # pass the percentage_irr to the form
+        kwargs = super().get_form_kwargs()
+        project = self.get_object()
+        kwargs["percentage_irr"] = project.percentage_irr
+        return kwargs
 
     def form_valid(self, form):
         context = self.get_context_data()

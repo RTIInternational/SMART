@@ -208,8 +208,8 @@ def unassign_data(request, data_pk):
 
 @api_view(["POST"])
 @permission_classes((IsCoder,))
-def verify_label(request, data_pk):
-    """Take a data label that was not verified, and verify it.
+def toggle_verify_label(request, data_pk):
+    """Either verify or unverify a data item.
 
     Args:
         request: The POST request
@@ -227,15 +227,22 @@ def verify_label(request, data_pk):
         return Response(response)
     elif DataLabel.objects.filter(data=data).count() > 1:
         response["error"] = (
-            "ERROR: This data has multiple labels. This shouldn't "
-            "be possible with unverified data as it is pre-labeled."
+            "ERROR: This data has multiple labels which only occurs for incomplete IRR data which cannot be verified."
         )
     else:
-        VerifiedDataLabel.objects.create(
-            data_label=DataLabel.objects.get(data=data),
-            verified_timestamp=timezone.now(),
-            verified_by=request.user.profile,
-        )
+        datalabel = DataLabel.objects.get(data=data)
+        # if it's verified, un-verify it.
+        if VerifiedDataLabel.objects.filter(data_label=datalabel).exists():
+            VerifiedDataLabel.objects.filter(
+                data_label=datalabel,
+            ).delete()
+        else:
+            # the data is not verified so we verify it
+            VerifiedDataLabel.objects.create(
+                data_label=DataLabel.objects.get(data=data),
+                verified_timestamp=timezone.now(),
+                verified_by=request.user.profile,
+            )
 
     return Response(response)
 
@@ -996,7 +1003,10 @@ def get_label_history(request, project_pk):
     finalized_irr_data = IRRLog.objects.filter(data__irr_ind=False).values_list(
         "data__pk", flat=True
     )
-    if project_extras.proj_permission_level(project, profile) >= 2:
+    if (
+        project_extras.proj_permission_level(project, profile) >= 2
+        or project.allow_coders_view_labels
+    ):
         labeled_data = DataLabel.objects.filter(
             data__project=project_pk, label__in=labels
         ).exclude(data__in=finalized_irr_data)
@@ -1027,15 +1037,31 @@ def get_label_history(request, project_pk):
         current_page = 1
     page = int(current_page) - 1
 
-    page_size = 100
-    all_data = Data.objects.filter(pk__in=total_data_list).order_by("text")
-    metadata_objects = MetaDataField.objects.filter(project=project)
+    sort_by = request.GET.get("sort-by")
+    reverse = request.GET.get("reverse", "false").lower() == "true"
+    sort_options = {
+        'data': 'text',
+        'label': 'datalabel__label__name',
+        'profile': 'datalabel__profile__user__username',
+        'timestamp': 'datalabel__timestamp',
+        'verified': 'datalabel__verified__pk',
+        'verified_by': 'datalabel__verified__verified_by__user__username',
+        'pre_loaded': 'datalabel__pre_loaded'
+    }
+    
+    order_field = sort_options.get(sort_by, 'text')  
+    
+    if reverse:
+        order_field = '-' + order_field
+        
+    all_data = Data.objects.filter(pk__in=total_data_list).order_by(order_field)
 
     # filter the results by the search terms
     text_filter = request.GET.get("Text")
     if text_filter is not None and text_filter != "":
         all_data = all_data.filter(text__icontains=text_filter)
 
+    metadata_objects = MetaDataField.objects.filter(project=project)
     for m in metadata_objects:
         m_filter = request.GET.get(str(m))
         if m_filter is not None and m_filter != "":
@@ -1044,24 +1070,27 @@ def get_label_history(request, project_pk):
             ).values_list("data__pk", flat=True)
             all_data = all_data.filter(pk__in=data_with_metadata_filter)
 
+    page_size = 100
     total_pages = math.ceil(len(all_data) / page_size)
-
+    pre_sorted = False
     page_data = all_data[page * page_size : min((page + 1) * page_size, len(all_data))]
-    # get the metadata IDs needed for metadata editing
+
     page_data_metadata_ids = [
         d["metadata"] for d in DataMetadataIDSerializer(page_data, many=True).data
     ]
-
     page_data = DataSerializer(page_data, many=True).data
-
     # derive the metadata fields in the forms needed for the table
-    all_metadata = [c.popitem("metadata")[1] for c in page_data]
-    all_metadata_formatted = [
+    page_metadata = [c.popitem("metadata")[1] for c in page_data]
+    page_metadata_formatted = [
         {c.split(":")[0].replace(" ", "_"): c.split(":")[1] for c in inner_list}
-        for inner_list in all_metadata
+        for inner_list in page_metadata
     ]
 
     data_df = pd.DataFrame(page_data).rename(columns={"pk": "id", "text": "data"})
+    data_df["metadataIDs"] = page_data_metadata_ids
+    data_df["metadata"] = page_metadata
+    data_df["formattedMetadata"] = page_metadata_formatted
+
     if len(data_df) == 0:
         return Response(
             {
@@ -1092,13 +1121,15 @@ def get_label_history(request, project_pk):
         labeled_data_df["pre_loaded"] = labeled_data_df["pre_loaded"].apply(
             lambda x: "Yes" if x else "No"
         )
-        labeled_data_df["edit"] = "yes"
+        labeled_data_df["edit"] = labeled_data_df["verified"].apply(
+            lambda verified: "No" if verified == "Yes" else "Yes"
+        )
         labeled_data_df["label"] = labeled_data_df["labelID"].apply(
             lambda x: label_dict[x]
         )
 
     if len(irr_data_df) > 0:
-        irr_data_df["edit"] = "no"
+        irr_data_df["edit"] = "No"
         irr_data_df["label"] = irr_data_df["labelID"].apply(lambda x: label_dict[x])
         irr_data_df["verified"] = (
             "N/A (IRR)"  # Technically resolved IRR is verified but perhaps not this user's specific label so just NA
@@ -1113,9 +1144,9 @@ def get_label_history(request, project_pk):
     # merge the data info with the label info
     if len(all_labeled_stuff) > 0:
         data_df = data_df.merge(all_labeled_stuff, on=["id"], how="left")
-        data_df["edit"] = data_df["edit"].fillna("yes")
+        data_df["edit"] = data_df["edit"].fillna("Yes")
     else:
-        data_df["edit"] = "yes"
+        data_df["edit"] = "Yes"
         data_df["label"] = ""
         data_df["profile"] = ""
         data_df["timestamp"] = ""
@@ -1126,12 +1157,7 @@ def get_label_history(request, project_pk):
     # TODO: annotate uses pk while everything else uses ID. Let's fix this
     data_df["pk"] = data_df["id"]
 
-    # now add back on the metadata fields
     results = data_df.fillna("").to_dict(orient="records")
-    for i in range(len(results)):
-        results[i]["metadata"] = all_metadata[i]
-        results[i]["formattedMetadata"] = all_metadata_formatted[i]
-        results[i]["metadataIDs"] = page_data_metadata_ids[i]
 
     return Response(
         {
