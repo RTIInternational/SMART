@@ -102,12 +102,7 @@ def get_labels(request, project_pk):
     if len(serialized_labels) > 100:
         serialized_labels = serialized_labels[:100]
 
-    return Response(
-        {
-            "labels": serialized_labels,
-            "total_labels":total_labels
-        }
-    )
+    return Response({"labels": serialized_labels, "total_labels": total_labels})
 
 
 @api_view(["GET"])

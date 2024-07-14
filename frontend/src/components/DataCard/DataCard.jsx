@@ -10,6 +10,7 @@ import DataCardText from "./DataCardText";
 import { useModifyLabel, useChangeToSkip, useLabels } from "../../hooks";
 import DataCardLabelButtons from "./DataCardLabelButtons";
 import DataCardDiscardButton from "./DataCardDiscardButton";
+import { PROJECT_SUGGESTION_MAX } from "../../store";
 
 const DataCard = ({ data, page, actions }) => {
     const { data: labels } = useLabels();
@@ -24,7 +25,7 @@ const DataCard = ({ data, page, actions }) => {
     const handlers = getHandlers(allHandlers, page);
 
     const labelCountLow = (labels) => labels.labels.length <= 5;
-    const labelCountHigh = (labels) => labels.total_labels >= 500;
+    const labelCountHigh = (labels) => labels.total_labels >= PROJECT_SUGGESTION_MAX;
 
     const show = {
         skipButton: handlers.handleSkip != null,

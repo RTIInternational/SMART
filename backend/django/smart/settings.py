@@ -227,6 +227,7 @@ class Dev(Configuration):
     DATA_UPLOAD_MAX_MEMORY_SIZE = None
 
     ADMIN_TIMEOUT_MINUTES = 15
+    PROJECT_SUGGESTION_MAX = os.environ.get("PROJECT_SUGGESTION_MAX", 1000)
 
 
 class Prod(Dev):
