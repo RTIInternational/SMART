@@ -24,6 +24,7 @@ const DataCard = ({ data, page, actions }) => {
     const handlers = getHandlers(allHandlers, page);
 
     const labelCountLow = (labels) => labels.labels.length <= 5;
+    const labelCountHigh = (labels) => labels.total_labels >= 500;
 
     const show = {
         skipButton: handlers.handleSkip != null,
@@ -31,9 +32,9 @@ const DataCard = ({ data, page, actions }) => {
         text: true,
         metadata: true,
         metadataEdit: page !== PAGES.RECYCLE,
-        labelButtons: labels && labelCountLow(labels) && handlers.handleSelectLabel != null,
-        labelSuggestions: labels && !labelCountLow(labels) && handlers.handleSelectLabel != null,
-        labelSelect: labels && !labelCountLow(labels) && handlers.handleSelectLabel != null,
+        labelButtons: labels && labelCountLow(labels) && (handlers.handleSelectLabel != null),
+        labelSuggestions: labels && (!labelCountLow(labels)) && (!labelCountHigh(labels)) && (handlers.handleSelectLabel != null),
+        labelSelect: labels && (!labelCountLow(labels)) && (handlers.handleSelectLabel != null),
         discardButton: handlers.handleDiscard != null,
         confirmationModal: page == PAGES.HISTORY && cardData.labelID // excludes unlabeled data
     };
@@ -78,6 +79,10 @@ const DataCard = ({ data, page, actions }) => {
                         fn= { handlers.handleSelectLabel }
                         includeModal={show.confirmationModal}
                     />
+                </Fragment>
+            )}
+            {show.labelSelect && (
+                <Fragment>
                     <div className="select-discard-wrapper" >
                         <div className="toolbar-gap" />
                         <DataCardSelectLabel

@@ -94,7 +94,8 @@ def get_labels(request, project_pk):
         labels: The project labels
     """
     project = Project.objects.get(pk=project_pk)
-    labels = Label.objects.all().filter(project=project)
+    labels = Label.objects.filter(project=project)
+    total_labels = Label.objects.filter(project=project).count()
 
     # If the number of labels is > 100, just return the first 100
     serialized_labels = LabelSerializer(labels, many=True).data
@@ -104,6 +105,7 @@ def get_labels(request, project_pk):
     return Response(
         {
             "labels": serialized_labels,
+            "total_labels":total_labels
         }
     )
 
