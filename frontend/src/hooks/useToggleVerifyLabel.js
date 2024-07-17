@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { PROJECT_ID, queryClient } from "../store";
 import { postConfig } from "../utils/fetch_configs";
 
-const useVerifyLabel = () =>
+const useToggleVerifyLabel = () =>
     useMutation({
         mutationFn: ({ dataID }) =>
             fetch(`/api/toggle_verify_label/${dataID}/`, postConfig({ dataID })),
@@ -12,4 +12,4 @@ const useVerifyLabel = () =>
         }
     });
 
-export default useVerifyLabel;
+export default useToggleVerifyLabel;
