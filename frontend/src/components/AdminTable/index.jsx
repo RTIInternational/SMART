@@ -3,10 +3,12 @@ import PropTypes from "prop-types";
 import ReactTable from "react-table-6";
 import CodebookLabelMenuContainer from "../../containers/codebookLabelMenu_container";
 import DataCard, { PAGES } from "../DataCard/DataCard";
+import IRRtable from "./IRRtable";
 
 class AdminTable extends React.Component {
     componentDidMount() {
         this.props.getAdmin();
+        this.props.getIrrLog();
     }
 
     getText(row) {
@@ -26,7 +28,23 @@ class AdminTable extends React.Component {
     }
 
     render() {
-        const { admin_data, labels, message, adminLabel, discardData } = this.props;
+        const { admin_data, irr_log, labels, message, adminLabel, discardData } = this.props;
+
+        const getIrrEntry = data_id => {
+            const relevant_irr_entries = irr_log.filter(entry => entry.data === data_id);
+            const irr_entry_formatted = {};
+            for (let entry of relevant_irr_entries) {
+                const username = entry.profile;
+                const label_id = entry.label;
+                if (!label_id) {
+                    // situation where the irr data was adjudicated instead of labeled
+                    irr_entry_formatted[username] = { name: "", description: "" };
+                } else {
+                    irr_entry_formatted[username] = labels.find(label => label.pk === label_id);
+                }
+            }
+            return irr_entry_formatted;
+        };
 
         const columns = [
             {
@@ -57,15 +75,22 @@ class AdminTable extends React.Component {
                                     <p style={{ whiteSpace: "normal" }}>{row.original.message}</p>
                                 </div>
                             )}
-                            <DataCard 
-                                data={row.original}
-                                page={PAGES.ADMIN} 
-                                actions={{ onSelectLabel: adminLabel, onDiscard: discardData }} 
-                            /> 
+                            <div className="admin-data-card-wrapper">                            
+                                <DataCard 
+                                    data={row.original}
+                                    page={PAGES.ADMIN} 
+                                    actions={{ onSelectLabel: adminLabel, onDiscard: discardData }} 
+                                />
+                                { row.original.reason === "IRR" && irr_log.length &&
+                                    <IRRtable irrEntry={getIrrEntry(row.original.id)} />
+                                }
+                            </div>
                         </div>
                     );
                 }
-            }
+            },
+            // column for coder, label table
+            
         ];
 
         let page_sizes = [1];

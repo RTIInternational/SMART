@@ -11,10 +11,12 @@ import { queryClient } from "../store";
 export const SET_ADMIN_DATA = 'SET_ADMIN_DATA';
 export const SET_DISCARDED_DATA = 'SET_DISCARDED_DATA';
 export const SET_ADMIN_COUNTS = 'SET_ADMIN_COUNTS';
+export const SET_IRR_LOG = 'SET_IRR_LOG';
 
 export const set_admin_data = createAction(SET_ADMIN_DATA);
 export const set_discarded_data = createAction(SET_DISCARDED_DATA);
 export const set_admin_counts = createAction(SET_ADMIN_COUNTS);
+export const set_irr_log = createAction(SET_IRR_LOG);
 
 
 //get the skipped data for the admin Table
@@ -49,6 +51,32 @@ export const getAdmin = (projectID) => {
                 dispatch(set_admin_data(all_data));
             })
             .catch(err => console.log("Error: ", err));
+    };
+};
+
+export const getIrrLog = (projectID, adminOnly = false) => {
+    let apiURL = `/api/irr_log/${projectID}/`;
+
+    if (adminOnly) apiURL += '?admin=true';
+
+    return dispatch => {
+        return fetch(apiURL, getConfig())
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    const error = new Error(response.statusText);
+                    error.response = response;
+                    throw error;
+                }
+            })
+            .then(response => {
+                if ('error' in response) {
+                    return dispatch(setMessage(response.error));
+                } else {
+                    dispatch(set_irr_log(response.irr_log));
+                }
+            });
     };
 };
 
