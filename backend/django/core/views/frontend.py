@@ -17,8 +17,7 @@ from core.forms import (
     DataUpdateWizardForm,
     DataWizardForm,
     ExternalDatabaseWizardForm,
-    LabelDescriptionFormSet,
-    LabelFormSet,
+    LabelWizardForm,
     PermissionsFormSet,
     ProjectUpdateOverviewForm,
     ProjectUpdateAdvancedForm,
@@ -32,6 +31,8 @@ from core.models import (
     MetaDataField,
     Project,
     TrainingSet,
+    LabelMetaDataField,
+    LabelMetaData,
 )
 from core.templatetags import project_extras
 from core.utils.util import (
@@ -143,7 +144,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
     file_storage = FileSystemStorage(location=settings.DATA_DIR)
     form_list = [
         ("project", ProjectWizardForm),
-        ("labels", LabelFormSet),
+        ("labels", LabelWizardForm),
         ("permissions", PermissionsFormSet),
         ("codebook", CodeBookWizardForm),
         ("external", ExternalDatabaseWizardForm),
@@ -165,12 +166,10 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
     def get_form_kwargs(self, step):
         kwargs = {}
+
         if step == "data":
-            temp = []
-            for label in self.get_cleaned_data_for_step("labels"):
-                if "name" in label.keys():
-                    temp.append(label["name"])
-            kwargs["labels"] = temp
+            all_labels = self.get_cleaned_data_for_step("labels").get("label_data_file")
+            kwargs["labels"] = all_labels["Label"].tolist()
             external_data = self.get_cleaned_data_for_step("external")
             if "engine_database" in external_data:
                 kwargs["database_type"] = external_data["database_type"]
@@ -194,9 +193,6 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
     def get_form_prefix(self, step=None, form=None):
         prefix = ""
-
-        if step == "labels":
-            prefix = "label_set"
         if step == "permissions":
             prefix = "permission_set"
         if step == "advanced":
@@ -338,9 +334,32 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             # Training Set
             TrainingSet.objects.create(project=proj_obj, set_number=0)
 
-            # Labels
-            labels.instance = proj_obj
-            labels.save()
+            label_data = labels.cleaned_data["label_data_file"]
+            label_data["Label"] = label_data["Label"].astype(str)
+            label_objects = [
+                Label(name=d["Label"], description=d["Description"], project=proj_obj)
+                for d in label_data.to_dict(orient="records")
+            ]
+            Label.objects.bulk_create(label_objects)
+
+            label_metadata = [
+                c for c in label_data if c not in ["Label", "Description"]
+            ]
+            if len(label_metadata) > 0:
+                for metadata_col in label_metadata:
+                    label_metadata_field = LabelMetaDataField.objects.create(
+                        project=proj_obj, field_name=metadata_col
+                    )
+                    all_metadata_values = label_data[metadata_col].tolist()
+                    all_label_metadata_objects = [
+                        LabelMetaData(
+                            label=label_objects[i],
+                            label_metadata_field=label_metadata_field,
+                            value=all_metadata_values[i],
+                        )
+                        for i in range(len(all_metadata_values))
+                    ]
+                    LabelMetaData.objects.bulk_create(all_label_metadata_objects)
 
             # Permissions
             permissions.instance = proj_obj
@@ -808,19 +827,19 @@ class ProjectUpdateLabel(LoginRequiredMixin, UserPassesTestMixin, View):
         project = Project.objects.get(pk=self.kwargs["pk"])
         context["project"] = project
 
-        if self.request.POST:
-            context["label_descriptions"] = LabelDescriptionFormSet(
-                self.request.POST,
-                instance=project,
-                prefix="label_descriptions_set",
-                form_kwargs={"action": "update"},
-            )
-        else:
-            context["label_descriptions"] = LabelDescriptionFormSet(
-                instance=project,
-                prefix="label_descriptions_set",
-                form_kwargs={"action": "update"},
-            )
+        # if self.request.POST:
+        #     context["label_descriptions"] = LabelDescriptionFormSet(
+        #         self.request.POST,
+        #         instance=project,
+        #         prefix="label_descriptions_set",
+        #         form_kwargs={"action": "update"},
+        #     )
+        # else:
+        #     context["label_descriptions"] = LabelDescriptionFormSet(
+        #         instance=project,
+        #         prefix="label_descriptions_set",
+        #         form_kwargs={"action": "update"},
+        #     )
         return context
 
     def get_success_url(self):

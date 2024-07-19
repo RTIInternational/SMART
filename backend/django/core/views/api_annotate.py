@@ -1040,20 +1040,20 @@ def get_label_history(request, project_pk):
     sort_by = request.GET.get("sort-by")
     reverse = request.GET.get("reverse", "false").lower() == "true"
     sort_options = {
-        'data': 'text',
-        'label': 'datalabel__label__name',
-        'profile': 'datalabel__profile__user__username',
-        'timestamp': 'datalabel__timestamp',
-        'verified': 'datalabel__verified__pk',
-        'verified_by': 'datalabel__verified__verified_by__user__username',
-        'pre_loaded': 'datalabel__pre_loaded'
+        "data": "text",
+        "label": "datalabel__label__name",
+        "profile": "datalabel__profile__user__username",
+        "timestamp": "datalabel__timestamp",
+        "verified": "datalabel__verified__pk",
+        "verified_by": "datalabel__verified__verified_by__user__username",
+        "pre_loaded": "datalabel__pre_loaded",
     }
-    
-    order_field = sort_options.get(sort_by, 'text')  
-    
+
+    order_field = sort_options.get(sort_by, "text")
+
     if reverse:
-        order_field = '-' + order_field
-        
+        order_field = "-" + order_field
+
     all_data = Data.objects.filter(pk__in=total_data_list).order_by(order_field)
 
     # filter the results by the search terms
@@ -1072,7 +1072,6 @@ def get_label_history(request, project_pk):
 
     page_size = 100
     total_pages = math.ceil(len(all_data) / page_size)
-    pre_sorted = False
     page_data = all_data[page * page_size : min((page + 1) * page_size, len(all_data))]
 
     page_data_metadata_ids = [

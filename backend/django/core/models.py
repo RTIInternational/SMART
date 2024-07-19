@@ -395,3 +395,39 @@ class AdjudicateDescription(models.Model):
     data = models.ForeignKey("Data", on_delete=models.CASCADE)
     message = models.TextField()
     isResolved = models.BooleanField(default=False)
+
+
+class LabelMetaDataField(models.Model):
+    class Meta:
+        unique_together = ("project", "field_name")
+
+    project = models.ForeignKey(
+        "Project", related_name="labelmetadatafields", on_delete=models.CASCADE
+    )
+    field_name = models.TextField()
+
+    def __str__(self):
+        return self.field_name
+
+
+class LabelMetaData(models.Model):
+    class Meta:
+        unique_together = ("label", "label_metadata_field")
+
+    label = models.ForeignKey(
+        "Label", on_delete=models.CASCADE, related_name="labelmetadata"
+    )
+    label_metadata_field = models.ForeignKey(
+        "LabelMetaDataField", on_delete=models.CASCADE
+    )
+    value = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{str(self.label_metadata_field)}: {self.value}"
+
+
+class Category(models.Model):
+    project = models.OneToOneField(
+        "Project", related_name="category", on_delete=models.CASCADE
+    )
+    name = models.TextField()
