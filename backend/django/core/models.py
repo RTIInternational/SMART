@@ -430,4 +430,12 @@ class Category(models.Model):
     project = models.OneToOneField(
         "Project", related_name="category", on_delete=models.CASCADE
     )
-    name = models.TextField()
+    field_name = models.TextField()
+    label_metadata_field = models.ForeignKey(
+        "LabelMetaDataField",
+        on_delete=models.CASCADE,
+        related_name="labelmetadatacategory",
+    )
+    data_metadata_field = models.ForeignKey(
+        "MetaDataField", on_delete=models.CASCADE, related_name="metadatacategory"
+    )

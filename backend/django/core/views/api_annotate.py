@@ -30,6 +30,7 @@ from core.models import (
     Queue,
     RecycleBin,
     VerifiedDataLabel,
+    LabelMetaData,
 )
 from core.pagination import LabelViewPagination
 from core.permissions import IsAdminOrCreator, IsCoder
@@ -732,8 +733,39 @@ def embeddings_comparison(request, project_pk):
     project = Project.objects.get(pk=project_pk)
     project_labels = Label.objects.filter(project=project)
 
+    data_pk = request.GET.get("dataID")
+    data_obj = Data.objects.get(pk=data_pk)
+    print(data_obj)
+
+    embeddings_category = None
+
+    if hasattr(project, "category"):
+        print("This project has the following category:", project.category.field_name)
+
+        # filter the labels to be the same category value as the data
+        if MetaData.objects.filter(
+            data=data_obj, metadata_field=project.category.data_metadata_field
+        ).exists():
+            data_metadata_obj = MetaData.objects.get(
+                data=data_obj, metadata_field=project.category.data_metadata_field
+            )
+            embeddings_category = data_metadata_obj.value
+            label_metadata_obj = LabelMetaData.objects.filter(
+                label_metadata_field=project.category.label_metadata_field,
+                value=data_metadata_obj.value,
+            )
+            project_labels = project_labels.filter(
+                pk__in=label_metadata_obj.values_list("label__pk", flat=True)
+            )
+
+    # if the subset is less than 5 just return everything
+    if len(project_labels) <= 5:
+        return Response(
+            {"suggestions": LabelSerializer(project_labels, many=True).data}
+        )
+
     # Request and cache label embeddings
-    cached_embeddings = get_embeddings(project_pk)
+    cached_embeddings = get_embeddings(project_pk, embeddings_category)
     if cached_embeddings:
         project_labels_embeddings = cached_embeddings
     else:
@@ -742,7 +774,7 @@ def embeddings_comparison(request, project_pk):
                 "embedding", flat=True
             )
         )
-        cache_embeddings(project_pk, project_labels_embeddings)
+        cache_embeddings(project_pk, embeddings_category, project_labels_embeddings)
 
     text = request.GET.get("text")
     text_embedding = embeddings_model.encode(text)

@@ -33,6 +33,7 @@ from core.models import (
     TrainingSet,
     LabelMetaDataField,
     LabelMetaData,
+    Category,
 )
 from core.templatetags import project_extras
 from core.utils.util import (
@@ -359,7 +360,9 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
                         )
                         for i in range(len(all_metadata_values))
                     ]
-                    LabelMetaData.objects.bulk_create(all_label_metadata_objects)
+                    LabelMetaData.objects.bulk_create(
+                        all_label_metadata_objects, batch_size=8000
+                    )
 
             # Permissions
             permissions.instance = proj_obj
@@ -407,6 +410,28 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
                 MetaDataField.objects.create(
                     project=proj_obj, field_name=field, use_with_dedup=use_with_dedup
+                )
+
+            # set project category
+            metadata_both = list(set(metadata_fields) & set(label_metadata))
+            if len(metadata_both) > 0:
+                # pick the overlapping field with the fewest label categories by default
+                min_field = metadata_both[0]
+                if len(metadata_both) > 1:
+                    for field in metadata_both[1:]:
+                        if len(label_data[min_field].unique()) > len(
+                            label_data[field].unique()
+                        ):
+                            min_field = field
+                Category.objects.create(
+                    project=proj_obj,
+                    field_name=min_field,
+                    label_metadata_field=LabelMetaDataField.objects.get(
+                        field_name=min_field, project=proj_obj
+                    ),
+                    data_metadata_field=MetaDataField.objects.get(
+                        field_name=min_field, project=proj_obj
+                    ),
                 )
 
             add_queue(project=proj_obj, length=2000000, type="admin")
@@ -826,20 +851,6 @@ class ProjectUpdateLabel(LoginRequiredMixin, UserPassesTestMixin, View):
         context = {}
         project = Project.objects.get(pk=self.kwargs["pk"])
         context["project"] = project
-
-        # if self.request.POST:
-        #     context["label_descriptions"] = LabelDescriptionFormSet(
-        #         self.request.POST,
-        #         instance=project,
-        #         prefix="label_descriptions_set",
-        #         form_kwargs={"action": "update"},
-        #     )
-        # else:
-        #     context["label_descriptions"] = LabelDescriptionFormSet(
-        #         instance=project,
-        #         prefix="label_descriptions_set",
-        #         form_kwargs={"action": "update"},
-        #     )
         return context
 
     def get_success_url(self):

@@ -7,7 +7,7 @@ const useSuggestedLabels = (text, dataID) =>
     useQuery({
         queryKey: ["suggestedLabels", PROJECT_ID, dataID],
         queryFn: () =>
-            fetch(`/api/comparisons/${PROJECT_ID}/?text=${text}`, getConfig())
+            fetch(`/api/comparisons/${PROJECT_ID}/?${new URLSearchParams({ text, dataID }).toString()}`, getConfig())
                 .then((res) => res.json())
     });
 
