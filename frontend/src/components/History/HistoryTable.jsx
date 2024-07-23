@@ -50,6 +50,13 @@ const defaultColumns = {
             sortingFn: "alphanumeric"
         },
         {
+            accessorKey: "type",
+            filterFn: "includesString",
+            header: "Type",
+            id: "Type",
+            sortingFn: "alphanumeric"
+        },
+        {
             accessorKey: "profile",
             filterFn: "includesString",
             header: "Labeled By",

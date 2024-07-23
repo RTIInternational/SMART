@@ -999,37 +999,54 @@ def get_label_history(request, project_pk):
     project = Project.objects.get(pk=project_pk)
 
     labels = Label.objects.all().filter(project=project)
-    # irr data gets set to not IRR once it's finalized
-    finalized_irr_data = IRRLog.objects.filter(data__irr_ind=False).values_list(
-        "data__pk", flat=True
-    )
+
+    permission_filter = Q()
+    if project_extras.proj_permission_level(project, profile) < 2:
+        permission_filter &= Q(profile=profile)
+
+    incomplete_irr_data =  DataLabel.objects.filter(data__project=project_pk, data__irr_ind=True).values_list("data__pk", flat=True)
+    pending_irr_data = IRRLog.objects.filter(permission_filter & Q(data__project=project_pk, data__irr_ind=True)).values_list("data__pk", flat=True)
+    # finalized and historic IRR data have the same data pk's - we distinguish them later in this function
+    finalized_irr_data = IRRLog.objects.filter(permission_filter & Q(data__project=project_pk, data__irr_ind=False)).values_list("data__pk", flat=True)
+    
+    all_irr_data_pks = list(set(incomplete_irr_data) | set(pending_irr_data) | set(finalized_irr_data))
+
     if (
         project_extras.proj_permission_level(project, profile) >= 2
         or project.allow_coders_view_labels
     ):
         labeled_data = DataLabel.objects.filter(
             data__project=project_pk, label__in=labels
-        ).exclude(data__in=finalized_irr_data)
+        ).exclude(data__in=all_irr_data_pks) 
     else:
         labeled_data = DataLabel.objects.filter(
             profile=profile, data__project=project_pk, label__in=labels
-        ).exclude(data__in=finalized_irr_data)
+        ).exclude(data__in=all_irr_data_pks)
 
     labeled_data_list = list(labeled_data.values_list("data__pk", flat=True))
 
-    # even for an admin, we only get personal IRR data
-    personal_irr_data = IRRLog.objects.filter(
-        profile=profile, data__project=project_pk, label__isnull=False
-    ).exclude(data__pk__in=labeled_data_list)
-    irr_data_list = list(personal_irr_data.values_list("data__pk", flat=True))
+    # Incomplete and Finalized IRR are in Label table, not IRR Log table
+    all_relevant_irr_datalabels = DataLabel.objects.filter(data__pk__in=all_irr_data_pks)
 
     # add the unlabeled data if selected
-    total_data_list = labeled_data_list + irr_data_list
+    unlabeled_data_list = []
     if request.GET.get("unlabeled") == "true":
-        unlabeled_data = list(
+        unlabeled_data_list = list(
             get_unlabeled_data(project_pk).values_list("pk", flat=True)
         )
-        total_data_list += unlabeled_data
+    total_data_list = list(set(labeled_data_list + unlabeled_data_list + all_irr_data_pks))
+
+    data_types_dict = {}
+    for pk in total_data_list:
+        data_types_dict[pk] = "labeled"
+    for pk in unlabeled_data_list:
+        data_types_dict[pk] = "unlabeled"
+    for pk in incomplete_irr_data:
+        data_types_dict[pk] = "IRR Incomplete"
+    for pk in pending_irr_data:
+        data_types_dict[pk] = "IRR Pending"
+    for pk in finalized_irr_data: # some "IRR Finalized" will be changed to "IRR Historic" later in this function
+        data_types_dict[pk] = "IRR Finalized"
 
     # return the page indicated in the query, get total pages
     current_page = request.GET.get("page")
@@ -1054,7 +1071,7 @@ def get_label_history(request, project_pk):
     if reverse:
         order_field = '-' + order_field
         
-    all_data = Data.objects.filter(pk__in=total_data_list).order_by(order_field)
+    all_data = Data.objects.filter(pk__in=data_types_dict.keys()).order_by(order_field)
 
     # filter the results by the search terms
     text_filter = request.GET.get("Text")
@@ -1074,6 +1091,7 @@ def get_label_history(request, project_pk):
     total_pages = math.ceil(len(all_data) / page_size)
     pre_sorted = False
     page_data = all_data[page * page_size : min((page + 1) * page_size, len(all_data))]
+    page_data_types = [{"pk": d.pk, "type": data_types_dict[d.pk]} for d in page_data]
 
     page_data_metadata_ids = [
         d["metadata"] for d in DataMetadataIDSerializer(page_data, many=True).data
@@ -1087,6 +1105,8 @@ def get_label_history(request, project_pk):
     ]
 
     data_df = pd.DataFrame(page_data).rename(columns={"pk": "id", "text": "data"})
+    data_types_df = pd.DataFrame(page_data_types).rename(columns={"pk": "id"})
+    data_df = pd.merge(data_df, data_types_df, on="id")
     data_df["metadataIDs"] = page_data_metadata_ids
     data_df["metadata"] = page_metadata
     data_df["formattedMetadata"] = page_metadata_formatted
@@ -1108,11 +1128,34 @@ def get_label_history(request, project_pk):
         ).data
     ).rename(columns={"data": "id", "label": "labelID", "verified": "verified_by"})
 
+    all_relevant_irr_logs = IRRLog.objects.filter(data__pk__in=all_irr_data_pks, label__isnull=False)
+
+    # contains all irr data that can be found in the IRR Log table ie pending and historic irr
     irr_data_df = pd.DataFrame(
         IRRLogModelSerializer(
-            personal_irr_data.filter(data__pk__in=data_df["id"].tolist()), many=True
+            all_relevant_irr_logs.filter(permission_filter & Q(data__pk__in=data_df["id"].tolist())), many=True
         ).data
     ).rename(columns={"data": "id", "label": "labelID"})
+
+    if not irr_data_df.empty:
+        # finalized_irr_data contains both finalized and historic irr data. It's historic if in this df.
+        irr_data_df["is_historic"] = irr_data_df["id"].apply(lambda x: x in finalized_irr_data)
+    else:
+        irr_data_df["is_historic"] = pd.Series(dtype=bool)
+    
+    irr_incomplete_df = pd.DataFrame(
+        DataLabelModelSerializer(
+            all_relevant_irr_datalabels.filter(profile=profile, data__pk__in=list(set(incomplete_irr_data))), many=True
+        ).data
+    ).rename(columns={"data": "id", "label": "labelID"}) 
+
+    irr_finalized_df = pd.DataFrame(
+        DataLabelModelSerializer(
+            all_relevant_irr_datalabels.filter(data__pk__in=list(set(finalized_irr_data))), many=True
+        ).data
+    ).rename(columns={"data": "id", "label": "labelID"})
+
+    irr_data_df = pd.concat([irr_data_df, irr_incomplete_df, irr_finalized_df], axis=0).reset_index(drop=True)
 
     if len(labeled_data_df) > 0:
         labeled_data_df["verified"] = labeled_data_df["verified_by"].apply(
@@ -1132,7 +1175,7 @@ def get_label_history(request, project_pk):
         irr_data_df["edit"] = "No"
         irr_data_df["label"] = irr_data_df["labelID"].apply(lambda x: label_dict[x])
         irr_data_df["verified"] = (
-            "N/A (IRR)"  # Technically resolved IRR is verified but perhaps not this user's specific label so just NA
+            "N/A (IRR)"  # Technically finalized IRR is verified but perhaps not this user's specific label so just NA
         )
         irr_data_df["verified_by"] = None
         irr_data_df["pre_loaded"] = "No"  # IRR only looks at unlabeled data
@@ -1144,7 +1187,12 @@ def get_label_history(request, project_pk):
     # merge the data info with the label info
     if len(all_labeled_stuff) > 0:
         data_df = data_df.merge(all_labeled_stuff, on=["id"], how="left")
+        data_df.loc[data_df["is_historic"] == True, "type"] = "IRR Historic"
+        data_df.drop(columns=["is_historic"], inplace=True)
         data_df["edit"] = data_df["edit"].fillna("Yes")
+        # User's can't edit Incomplete IRR that isn't their own, even admin. Profile will be na because of left join above.
+        data_df.loc[(data_df["type"] == "IRR Incomplete"), "edit"] = "Yes"
+        data_df.loc[(data_df["type"] == "IRR Incomplete") & (data_df["profile"].isna()), "edit"] = "No"
     else:
         data_df["edit"] = "Yes"
         data_df["label"] = ""
