@@ -1193,6 +1193,7 @@ def get_label_history(request, project_pk):
         # User's can't edit Incomplete IRR that isn't their own, even admin. Profile will be na because of left join above.
         data_df.loc[(data_df["type"] == "IRR Incomplete"), "edit"] = "Yes"
         data_df.loc[(data_df["type"] == "IRR Incomplete") & (data_df["profile"].isna()), "edit"] = "No"
+        data_df.loc[(data_df["type"] == "IRR Pending") & (data_df["profile"].isna()), "edit"] = "No"
     else:
         data_df["edit"] = "Yes"
         data_df["label"] = ""
