@@ -92,13 +92,19 @@ def clean_data_helper(
     return data
 
 
-def clean_label_data_helper(data):
+def clean_label_data_helper(data, existing_labels=[]):
     # correct for differences in capitalization
     required_fields = ["Label", "Description"]
     data.rename({c: c.lower().capitalize() for c in data.columns}, inplace=True)
     for field in required_fields:
         if field not in data.columns:
             raise ValidationError(f"File is missing required field '{field}'.")
+
+    new_labels = list(set(data["Label"].unique()) - set(existing_labels))
+    if len(new_labels) > 0 and len(existing_labels) > 0:
+        raise ValidationError(
+            f"New labels were found in this file: {', '.join(new_labels)}"
+        )
 
     if len(data) < 2:
         raise ValidationError("At least two labels are required.")

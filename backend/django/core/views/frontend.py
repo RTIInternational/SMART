@@ -22,6 +22,7 @@ from core.forms import (
     ProjectUpdateOverviewForm,
     ProjectUpdateAdvancedForm,
     ProjectWizardForm,
+    LabelUpdateWizardForm,
 )
 from core.models import (
     AssignedData,
@@ -31,9 +32,6 @@ from core.models import (
     MetaDataField,
     Project,
     TrainingSet,
-    LabelMetaDataField,
-    LabelMetaData,
-    Category,
 )
 from core.templatetags import project_extras
 from core.utils.util import (
@@ -41,8 +39,10 @@ from core.utils.util import (
     get_projects_umbrellas,
     project_status,
     save_codebook_file,
-    update_label_embeddings,
     upload_data,
+    create_label_metadata,
+    update_label_descriptions_metadata,
+    create_or_update_project_category,
 )
 from core.utils.utils_annotate import batch_unassign, leave_coding_page
 from core.utils.utils_external_db import delete_external_db_file, save_external_db_file
@@ -343,26 +343,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             ]
             Label.objects.bulk_create(label_objects)
 
-            label_metadata = [
-                c for c in label_data if c not in ["Label", "Description"]
-            ]
-            if len(label_metadata) > 0:
-                for metadata_col in label_metadata:
-                    label_metadata_field = LabelMetaDataField.objects.create(
-                        project=proj_obj, field_name=metadata_col
-                    )
-                    all_metadata_values = label_data[metadata_col].tolist()
-                    all_label_metadata_objects = [
-                        LabelMetaData(
-                            label=label_objects[i],
-                            label_metadata_field=label_metadata_field,
-                            value=all_metadata_values[i],
-                        )
-                        for i in range(len(all_metadata_values))
-                    ]
-                    LabelMetaData.objects.bulk_create(
-                        all_label_metadata_objects, batch_size=8000
-                    )
+            create_label_metadata(proj_obj, label_data, label_objects)
 
             # Permissions
             permissions.instance = proj_obj
@@ -413,26 +394,10 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
                 )
 
             # set project category
-            metadata_both = list(set(metadata_fields) & set(label_metadata))
-            if len(metadata_both) > 0:
-                # pick the overlapping field with the fewest label categories by default
-                min_field = metadata_both[0]
-                if len(metadata_both) > 1:
-                    for field in metadata_both[1:]:
-                        if len(label_data[min_field].unique()) > len(
-                            label_data[field].unique()
-                        ):
-                            min_field = field
-                Category.objects.create(
-                    project=proj_obj,
-                    field_name=min_field,
-                    label_metadata_field=LabelMetaDataField.objects.get(
-                        field_name=min_field, project=proj_obj
-                    ),
-                    data_metadata_field=MetaDataField.objects.get(
-                        field_name=min_field, project=proj_obj
-                    ),
-                )
+            label_metadata = [
+                c for c in label_data if c not in ["Label", "Description"]
+            ]
+            create_or_update_project_category(proj_obj, label_metadata, metadata_fields)
 
             add_queue(project=proj_obj, length=2000000, type="admin")
             irr_queue = add_queue(project=proj_obj, length=2000000, type="irr")
@@ -563,9 +528,7 @@ class ProjectUpdateData(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         data = super(ProjectUpdateData, self).get_context_data(**kwargs)
-
         data["num_data"] = Data.objects.filter(project=data["project"]).count()
-
         return data
 
     def form_valid(self, form):
@@ -831,8 +794,9 @@ class ProjectUpdatePermissions(LoginRequiredMixin, UserPassesTestMixin, View):
             return self.get(request)
 
 
-class ProjectUpdateLabel(LoginRequiredMixin, UserPassesTestMixin, View):
+class ProjectUpdateLabel(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Project
+    form_class = LabelUpdateWizardForm
     template_name = "projects/update/labels.html"
     permission_denied_message = (
         "You must be an Admin or Project Creator to access the Project Update page."
@@ -847,29 +811,38 @@ class ProjectUpdateLabel(LoginRequiredMixin, UserPassesTestMixin, View):
             >= 2
         )
 
+    def get_form_kwargs(self):
+        form_kwargs = super(ProjectUpdateLabel, self).get_form_kwargs()
+
+        form_kwargs["labels"] = list(
+            Label.objects.filter(project=form_kwargs["instance"]).values_list(
+                "name", flat=True
+            )
+        )
+
+        del form_kwargs["instance"]
+
+        return form_kwargs
+
     def get_context_data(self, **kwargs):
-        context = {}
+        context = super(ProjectUpdateLabel, self).get_context_data(**kwargs)
         project = Project.objects.get(pk=self.kwargs["pk"])
         context["project"] = project
+        context["labels"] = list(
+            Label.objects.filter(project=project).values_list("name", flat=True)
+        )
         return context
 
     def get_success_url(self):
         context = self.get_context_data()
         return context["project"].get_absolute_url()
 
-    def get(self, request, *args, **kwargs):
-        return render(request, self.template_name, context=self.get_context_data())
-
-    def post(self, request, *args, **kwargs):
+    def form_valid(self, form):
         context = self.get_context_data()
-        labels = context["label_descriptions"]
-        if labels.is_valid():
-            with transaction.atomic():
-                labels.instance = context["project"]
-                labels.save()
 
-            update_label_embeddings(context["project"])
-
+        if form.is_valid():
+            # update label descriptions
+            update_label_descriptions_metadata(context["project"], form.cleaned_data)
             return redirect(self.get_success_url())
         else:
             return self.render_to_response(context)

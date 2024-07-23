@@ -379,6 +379,26 @@ class LabelWizardForm(forms.Form):
             raise ValidationError("ERROR: no file provided")
 
 
+class LabelUpdateWizardForm(forms.Form):
+    data = forms.FileField()
+
+    def __init__(self, *args, **kwargs):
+        self.supplied_labels = kwargs.pop("labels", None)
+        super(LabelUpdateWizardForm, self).__init__(*args, **kwargs)
+
+    def clean(self):
+        data = self.cleaned_data.get("data", False)
+        if data:
+            try:
+                data_file = read_data_file(data)
+                existing_labels = self.supplied_labels
+                return clean_label_data_helper(data_file, existing_labels)
+            except pd.errors.EmptyDataError:
+                return pd.DataFrame({"Label": []})
+        else:
+            raise ValidationError("ERROR: no file provided")
+
+
 class ExternalDatabaseWizardForm(forms.ModelForm):
     class Meta:
         model = ExternalDatabase
