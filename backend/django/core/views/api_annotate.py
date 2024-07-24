@@ -1004,7 +1004,7 @@ def get_label_history(request, project_pk):
     if project_extras.proj_permission_level(project, profile) < 2:
         permission_filter &= Q(profile=profile)
 
-    incomplete_irr_data =  DataLabel.objects.filter(data__project=project_pk, data__irr_ind=True).values_list("data__pk", flat=True)
+    incomplete_irr_data =  DataLabel.objects.filter(profile=profile, data__project=project_pk, data__irr_ind=True).values_list("data__pk", flat=True)
     pending_irr_data = IRRLog.objects.filter(permission_filter & Q(data__project=project_pk, data__irr_ind=True)).values_list("data__pk", flat=True)
     # finalized and historic IRR data have the same data pk's - we distinguish them later in this function
     finalized_irr_data = IRRLog.objects.filter(permission_filter & Q(data__project=project_pk, data__irr_ind=False)).values_list("data__pk", flat=True)
@@ -1016,11 +1016,11 @@ def get_label_history(request, project_pk):
         or project.allow_coders_view_labels
     ):
         labeled_data = DataLabel.objects.filter(
-            data__project=project_pk, label__in=labels
+            data__project=project_pk, label__in=labels, data__irr_ind=False
         ).exclude(data__in=all_irr_data_pks) 
     else:
         labeled_data = DataLabel.objects.filter(
-            profile=profile, data__project=project_pk, label__in=labels
+            profile=profile, data__project=project_pk, label__in=labels, data__irr_ind=False
         ).exclude(data__in=all_irr_data_pks)
 
     labeled_data_list = list(labeled_data.values_list("data__pk", flat=True))
@@ -1128,7 +1128,7 @@ def get_label_history(request, project_pk):
         ).data
     ).rename(columns={"data": "id", "label": "labelID", "verified": "verified_by"})
 
-    all_relevant_irr_logs = IRRLog.objects.filter(data__pk__in=all_irr_data_pks, label__isnull=False)
+    all_relevant_irr_logs = IRRLog.objects.filter(data__pk__in=all_irr_data_pks)
 
     # contains all irr data that can be found in the IRR Log table ie pending and historic irr
     irr_data_df = pd.DataFrame(
@@ -1151,7 +1151,7 @@ def get_label_history(request, project_pk):
 
     irr_finalized_df = pd.DataFrame(
         DataLabelModelSerializer(
-            all_relevant_irr_datalabels.filter(data__pk__in=list(set(finalized_irr_data))), many=True
+            all_relevant_irr_datalabels.filter(permission_filter & Q(data__pk__in=list(set(finalized_irr_data)))), many=True
         ).data
     ).rename(columns={"data": "id", "label": "labelID"})
 
@@ -1173,7 +1173,7 @@ def get_label_history(request, project_pk):
 
     if len(irr_data_df) > 0:
         irr_data_df["edit"] = "No"
-        irr_data_df["label"] = irr_data_df["labelID"].apply(lambda x: label_dict[x])
+        irr_data_df["label"] = irr_data_df["labelID"].apply(lambda x: label_dict[x] if x in label_dict else "")
         irr_data_df["verified"] = (
             "N/A (IRR)"  # Technically finalized IRR is verified but perhaps not this user's specific label so just NA
         )
@@ -1194,6 +1194,7 @@ def get_label_history(request, project_pk):
         data_df.loc[(data_df["type"] == "IRR Incomplete"), "edit"] = "Yes"
         data_df.loc[(data_df["type"] == "IRR Incomplete") & (data_df["profile"].isna()), "edit"] = "No"
         data_df.loc[(data_df["type"] == "IRR Pending") & (data_df["profile"].isna()), "edit"] = "No"
+        data_df.loc[(data_df["type"] == "IRR Finalized"), "edit"] = "Yes"
     else:
         data_df["edit"] = "Yes"
         data_df["label"] = ""
