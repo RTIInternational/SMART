@@ -35,6 +35,13 @@ const defaultColumns = {
             id: "Expander"
         },
         {
+            accessorKey: "type",
+            filterFn: "includesString",
+            header: "Type",
+            id: "Type",
+            sortingFn: "alphanumeric"
+        },
+        {
             accessorKey: "data",
             filterFn: "includesString",
             header: "Data",
@@ -47,13 +54,6 @@ const defaultColumns = {
             filterFn: "includesString",
             header: "Label",
             id: "Current Label",
-            sortingFn: "alphanumeric"
-        },
-        {
-            accessorKey: "type",
-            filterFn: "includesString",
-            header: "Type",
-            id: "Type",
             sortingFn: "alphanumeric"
         },
         {

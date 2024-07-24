@@ -1038,9 +1038,9 @@ def get_label_history(request, project_pk):
 
     data_types_dict = {}
     for pk in total_data_list:
-        data_types_dict[pk] = "labeled"
+        data_types_dict[pk] = "Labeled"
     for pk in unlabeled_data_list:
-        data_types_dict[pk] = "unlabeled"
+        data_types_dict[pk] = "Unlabeled"
     for pk in incomplete_irr_data:
         data_types_dict[pk] = "IRR Incomplete"
     for pk in pending_irr_data:
