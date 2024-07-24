@@ -144,9 +144,26 @@ class ProjectUpdateAdvancedForm(forms.ModelForm):
         model = Project
         fields = ["allow_coders_view_labels"]
 
+    category = forms.ChoiceField(
+        required=True,
+    )
+
     def __init__(self, *args, **kwargs):
+        project = Project.objects.get(pk=kwargs.pop("project"))
+        if hasattr(project, "category"):
+            start_val = project.category.field_name
+        else:
+            start_val = "None"
+        data_metadata = project.metadatafields.values_list("field_name", flat=True)
+        label_metadata = project.labelmetadatafields.values_list(
+            "field_name", flat=True
+        )
+        options = list(set(data_metadata) & set(label_metadata)) + ["None"]
+
         percentage_irr = kwargs.pop("percentage_irr")
         super(ProjectUpdateAdvancedForm, self).__init__(*args, **kwargs)
+        self.fields["category"].choices = [(opt, opt) for opt in options]
+        self.fields["category"].initial = start_val
         if percentage_irr > 0:
             self.fields["allow_coders_view_labels"].widget.attrs[
                 "disabled"

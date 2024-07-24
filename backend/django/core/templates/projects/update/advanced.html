@@ -31,9 +31,27 @@
                   </div>
                 </div>
               </div>
+              <div class="panel panel-default">
+                <div class="panel-heading">
+                  <h5 class="panel-title">
+                    <a data-toggle="collapse" href="#choose-category-panel" class="accordion-toggle">
+                      Choose Project Category
+                    </a>
+                  </h5>
+                </div>
+                <div id="coders-view-labels-panel" class="panel-collapse">
+                  <p>If both the label and data files uploaded included metadata fields in common, then you can choose one of these fields as the project "Category."
+                    If the project category is set then only labels from the same category will be suggested for data items.</p>
+                  <div class="panel-body">
+                    <select id="{{ form.category.id_for_label }}" name="{{ form.category.html_name }}" class="form-control">
+                      {% for opt in form.category %}
+                        <p {% if form.category.initial == opt %}selected="selected"{% endif %}>{{ opt }}</p>
+                      {% endfor %}
+                    </select>    
+                  </div>
+                </div>
+              </div>
           </div>
-          
-
           <button class="btn btn-primary" type="submit">Submit</button>
         </form>
       </div>

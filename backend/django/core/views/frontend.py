@@ -32,6 +32,8 @@ from core.models import (
     MetaDataField,
     Project,
     TrainingSet,
+    Category,
+    LabelMetaDataField,
 )
 from core.templatetags import project_extras
 from core.utils.util import (
@@ -476,14 +478,53 @@ class ProjectUpdateAdvanced(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
         kwargs = super().get_form_kwargs()
         project = self.get_object()
         kwargs["percentage_irr"] = project.percentage_irr
+        kwargs["project"] = project.pk
         return kwargs
 
     def form_valid(self, form):
         context = self.get_context_data()
+        cleaned_data = form.cleaned_data
         if form.is_valid():
-            with transaction.atomic():
-                self.object = form.save()
-                return redirect(self.get_success_url())
+            self.object.allow_coders_view_labels = cleaned_data[
+                "allow_coders_view_labels"
+            ]
+            chosen_category = cleaned_data["category"]
+            project_category = Category.objects.filter(project=self.object)
+            if chosen_category == "None":
+                # delete the project category if it exists
+                if project_category.exists():
+                    project_category.delete()
+            else:
+                if project_category.exists():
+                    existing_category = Category.objects.get(project=self.object)
+                    if existing_category.field_name != chosen_category:
+                        # update the category
+                        label_field = LabelMetaDataField.objects.get(
+                            project=self.object, field_name=chosen_category
+                        )
+                        data_field = MetaDataField.objects.get(
+                            project=self.object, field_name=chosen_category
+                        )
+                        Category.objects.filter(project=self.object).update(
+                            field_name=chosen_category,
+                            label_metadata_field=label_field,
+                            data_metadata_field=data_field,
+                        )
+                else:
+                    label_field = LabelMetaDataField.objects.get(
+                        project=self.object, field_name=chosen_category
+                    )
+                    data_field = MetaDataField.objects.get(
+                        project=self.object, field_name=chosen_category
+                    )
+                    Category.objects.create(
+                        project=self.object,
+                        field_name=chosen_category,
+                        label_metadata_field=label_field,
+                        data_metadata_field=data_field,
+                    )
+
+            return redirect(self.get_success_url())
         else:
             return self.render_to_response(context)
 
