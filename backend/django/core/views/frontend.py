@@ -10,6 +10,7 @@ from django.urls import reverse_lazy
 from django.views.generic import DetailView, ListView, TemplateView, View
 from django.views.generic.edit import DeleteView, UpdateView
 from formtools.wizard.views import SessionWizardView
+from smart.settings import PROJECT_SUGGESTION_MAX
 
 from core.forms import (
     AdvancedWizardForm,
@@ -80,6 +81,8 @@ class ProjectCode(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             ctx["project_uses_irr"] = "true"
         else:
             ctx["project_uses_irr"] = "false"
+
+        ctx["project_suggestion_max"] = PROJECT_SUGGESTION_MAX
 
         return ctx
 
