@@ -1001,8 +1001,22 @@ def get_label_history(request, project_pk):
     if project_extras.proj_permission_level(project, profile) < 2:
         permission_filter &= Q(profile=profile)
 
-    incomplete_irr_data =  DataLabel.objects.filter(profile=profile, data__project=project_pk, data__irr_ind=True).values_list("data__pk", flat=True)
-    pending_irr_data = IRRLog.objects.filter(permission_filter & Q(data__project=project_pk, data__irr_ind=True)).values_list("data__pk", flat=True)
+    admin_queue_data = DataQueue.objects.filter(
+        queue__project=project, queue__type="admin"
+    ).values_list("data__pk", flat=True)
+    
+    pending_irr_data = IRRLog.objects.filter(
+        permission_filter & Q(data__in=admin_queue_data)
+    ).values_list("data__pk", flat=True)
+
+    incomplete_irr_data_labeled =  DataLabel.objects.filter(profile=profile, data__project=project_pk, data__irr_ind=True).values_list("data__pk", flat=True)
+    # incomplete irr data that was sent to adjudication is unlabeled - so in the IRRLog table, not DataLabel
+    incomplete_irr_data_adjudicated = IRRLog.objects.filter(
+       profile=profile, data__project=project_pk, data__irr_ind=True
+    ).exclude(data__in=pending_irr_data).values_list("data__pk", flat=True)
+
+    incomplete_irr_data = list(set(incomplete_irr_data_labeled) | set(incomplete_irr_data_adjudicated))
+    
     # finalized and historic IRR data have the same data pk's - we distinguish them later in this function
     finalized_irr_data = IRRLog.objects.filter(permission_filter & Q(data__project=project_pk, data__irr_ind=False)).values_list("data__pk", flat=True)
     
@@ -1187,9 +1201,7 @@ def get_label_history(request, project_pk):
         data_df.loc[data_df["is_historic"] == True, "type"] = "IRR Historic"
         data_df.drop(columns=["is_historic"], inplace=True)
         data_df["edit"] = data_df["edit"].fillna("Yes")
-        # User's can't edit Incomplete IRR that isn't their own, even admin. Profile will be na because of left join above.
         data_df.loc[(data_df["type"] == "IRR Incomplete"), "edit"] = "Yes"
-        data_df.loc[(data_df["type"] == "IRR Incomplete") & (data_df["profile"].isna()), "edit"] = "No"
         data_df.loc[(data_df["type"] == "IRR Pending") & (data_df["profile"].isna()), "edit"] = "No"
         data_df.loc[(data_df["type"] == "IRR Finalized"), "edit"] = "Yes"
     else:
