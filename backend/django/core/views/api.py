@@ -10,7 +10,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
-from core.models import Project
+from core.models import Project, IRRLog
 from core.permissions import IsAdminOrCreator
 from core.templatetags import project_extras
 from core.utils.util import get_labeled_data
@@ -132,6 +132,30 @@ def download_model(request, project_pk, unverified):
 
     response = HttpResponse(s.getvalue(), content_type="application/x-zip-compressed")
     response["Content-Disposition"] = "attachment;"
+
+    return response
+
+
+@api_view(["GET"])
+@permission_classes((IsAdminOrCreator,))
+def download_irr_log(request, project_pk):
+    response = HttpResponse(
+        content_type="text/csv",
+        headers={
+            "Content-Disposition": f'attachment; filename="irr_log_{project_pk}.csv"'
+        },
+    )
+
+    writer = csv.writer(response)
+    writer.writerow(["text", "label", "username", "timestamp"])
+
+    logs = IRRLog.objects.filter(data__project_id=project_pk).select_related(
+        "data", "profile", "label"
+    )
+
+    for log in logs:
+        label_name = log.label.name if log.label else ""
+        writer.writerow([log.data.text, label_name, log.profile.user, log.timestamp])
 
     return response
 
