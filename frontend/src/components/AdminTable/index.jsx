@@ -28,19 +28,18 @@ class AdminTable extends React.Component {
     }
 
     render() {
-        const { admin_data, irr_log, labels, message, adminLabel, discardData } = this.props;
+        const { admin_data, irr_log, message, adminLabel, discardData } = this.props;
 
         const getIrrEntry = data_id => {
             const relevant_irr_entries = irr_log.filter(entry => entry.data === data_id);
             const irr_entry_formatted = {};
             for (let entry of relevant_irr_entries) {
                 const username = entry.profile;
-                const label_id = entry.label;
-                if (!label_id) {
+                if (entry.label === null) {
                     // situation where the irr data was adjudicated instead of labeled
                     irr_entry_formatted[username] = { name: "", description: "" };
                 } else {
-                    irr_entry_formatted[username] = labels.find(label => label.pk === label_id);
+                    irr_entry_formatted[username] = { name: entry.label_name, description: entry.label_description };
                 }
             }
             return irr_entry_formatted;
@@ -143,7 +142,6 @@ class AdminTable extends React.Component {
 AdminTable.propTypes = {
     getAdmin: PropTypes.func.isRequired,
     admin_data: PropTypes.arrayOf(PropTypes.object),
-    labels: PropTypes.arrayOf(PropTypes.object),
     message: PropTypes.string,
     adminLabel: PropTypes.func.isRequired,
     discardData: PropTypes.func.isRequired
