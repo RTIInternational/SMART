@@ -139,7 +139,6 @@ const formatDataForCard = (item, page) => {
             labelID: item.labelID,
             text: item.data,
             metadata: item.metadata,
-            irr_ind: item.irr_ind,
         };
     case PAGES.SKEW:
         return {
