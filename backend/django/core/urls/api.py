@@ -101,9 +101,7 @@ urlpatterns = [
     re_path(
         r"^download_data/(?P<project_pk>\d+)/(?P<unverified>\d)/$", api.download_data
     ),
-    re_path(
-        r"^download_irr_log/(?P<project_pk>\d+)/$", api.download_irr_log
-    ),
+    re_path(r"^download_irr_log/(?P<project_pk>\d+)/$", api.download_irr_log),
     re_path(
         r"^download_model/(?P<project_pk>\d+)/(?P<unverified>\d)/$", api.download_model
     ),
