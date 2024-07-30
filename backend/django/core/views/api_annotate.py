@@ -1241,6 +1241,9 @@ def get_label_history(request, project_pk):
         data_df["edit"] = data_df["edit"].fillna("Yes")
         data_df.loc[(data_df["type"] == "IRR Incomplete"), "edit"] = "Yes"
         data_df.loc[
+            (data_df["type"] == "IRR Incomplete") & (data_df["label"] == ""), "edit"
+        ] = "No"
+        data_df.loc[
             (data_df["type"] == "IRR Pending") & (data_df["profile"].isna()), "edit"
         ] = "No"
         data_df.loc[(data_df["type"] == "IRR Finalized"), "edit"] = "Yes"
