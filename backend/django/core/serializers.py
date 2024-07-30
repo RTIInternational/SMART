@@ -102,13 +102,21 @@ class DataLabelSerializer(serializers.HyperlinkedModelSerializer):
 
 class IRRLogModelSerializer(serializers.ModelSerializer):
     profile = serializers.StringRelatedField(many=False, read_only=True)
+    label_name = serializers.SerializerMethodField()
+    label_description = serializers.SerializerMethodField()
     timestamp = serializers.DateTimeField(
         default_timezone=pytz.timezone(TIME_ZONE_FRONTEND), format="%Y-%m-%d, %I:%M %p"
     )
 
     class Meta:
         model = IRRLog
-        fields = ("data", "profile", "label", "timestamp")
+        fields = ("data", "profile", "label", "label_name", "label_description", "timestamp")
+    
+    def get_label_name(self, obj):
+        return obj.label.name if obj.label else None
+
+    def get_label_description(self, obj):
+        return obj.label.description if obj.label else None
 
 
 class IRRLog(serializers.HyperlinkedModelSerializer):
