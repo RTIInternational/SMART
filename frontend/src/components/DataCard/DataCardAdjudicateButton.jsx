@@ -5,6 +5,7 @@ const DataCardAdjudicateButton = ({ cardData, fn }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [message, setMessage] = useState("");
 
+    if (cardData.irr_ind) return null;
     const handleSkip = (event) => {
         event.preventDefault();
         fn({ ...cardData, oldLabelID: cardData.labelID, message });
