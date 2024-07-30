@@ -142,7 +142,6 @@ class AdminTable extends React.Component {
 AdminTable.propTypes = {
     getAdmin: PropTypes.func.isRequired,
     admin_data: PropTypes.arrayOf(PropTypes.object),
-    labels: PropTypes.arrayOf(PropTypes.object),
     message: PropTypes.string,
     adminLabel: PropTypes.func.isRequired,
     discardData: PropTypes.func.isRequired
