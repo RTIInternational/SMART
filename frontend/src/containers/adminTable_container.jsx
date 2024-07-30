@@ -12,7 +12,6 @@ const mapStateToProps = (state) => {
     return {
         admin_data: state.adminTables.admin_data,
         irr_log: state.adminTables.irr_log,
-        labels: state.smart.labels,
         message: state.card.message,
         admin_counts: state.adminTables.admin_counts
     };
