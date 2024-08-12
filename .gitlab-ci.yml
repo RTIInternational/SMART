@@ -18,7 +18,7 @@ setup:
   stage: setup
   script:
     - cd envs/dev
-    - docker volume create vol_smart_pgdata && docker volume create vol_smart_data
+    - docker volume create vol_smart_pgdata_15_2 && docker volume create vol_smart_data
     - docker-compose up -d
   after_script:
     - cd envs/dev
@@ -54,6 +54,6 @@ cleanup:
   script:
     - cd envs/dev
     - docker-compose down
-    - docker volume remove vol_smart_pgdata
+    - docker volume remove vol_smart_pgdata_15_2
     - docker volume remove vol_smart_data
   when: always
