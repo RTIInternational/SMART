@@ -17,11 +17,11 @@ SMART uses Docker in development to aid in dependency management. First, install
 	$ cd smart/envs/dev
 	$ docker-compose build
 
-Next, create the docker volumes where persistent data will be stored: ``docker volume create --name=vol_smart_pgdata`` and ``docker volume create --name=vol_smart_data``.
+Next, create the docker volumes where persistent data will be stored: ``docker volume create --name=vol_smart_pgdata_15_2`` and ``docker volume create --name=vol_smart_data``.
 
 ::
 
-	$ docker volume create --name=vol_smart_pgdata
+	$ docker volume create --name=vol_smart_pgdata_15_2
 	$ docker volume create --name=vol_smart_data
 
 Then, migrate the database to ensure the schema is prepared for the application.

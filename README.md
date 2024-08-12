@@ -34,7 +34,7 @@ docker-compose build
 Next, create the docker volumes where persistent data will be stored.
 
 ```bash
-docker volume create --name=vol_smart_pgdata
+docker volume create --name=vol_smart_pgdata_15_2
 docker volume create --name=vol_smart_data
 ```
 

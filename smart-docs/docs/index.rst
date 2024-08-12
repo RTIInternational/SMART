@@ -19,7 +19,7 @@ Quick Start
 	$ git clone https://github.com/RTIInternational/SMART.git
 	$ cd smart/envs/dev/
 	$ docker-compose build
-	$ docker volume create --name=vol_smart_pgdata
+	$ docker volume create --name=vol_smart_pgdata_15_2
 	$ docker volume create --name=vol_smart_data
   $ docker-compose run --rm backend ./migrate.sh
 	$ docker-compose up -d
