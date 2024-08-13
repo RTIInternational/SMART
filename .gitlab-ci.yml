@@ -10,7 +10,7 @@ build:
   stage: build
   script:
     - cd envs/dev
-    - docker-compose build
+    - docker compose build
 
 setup:
   tags:
@@ -19,32 +19,32 @@ setup:
   script:
     - cd envs/dev
     - docker volume create vol_smart_pgdata && docker volume create vol_smart_data
-    - docker-compose up -d
+    - docker compose up -d
   after_script:
     - cd envs/dev
-    - docker-compose stop
+    - docker compose stop
 
 test_frontend:
   tags:
     - docker-shell
   script:
     - cd envs/dev
-    - docker-compose start
+    - docker compose start
     - docker exec -i smart_frontend bash -c "./run_tests.sh"
   after_script:
     - cd envs/dev
-    - docker-compose stop
+    - docker compose stop
 
 test_backend:
   tags:
     - docker-shell
   script:
     - cd envs/dev
-    - docker-compose start
+    - docker compose start
     - docker exec -i backend bash -c "./run_tests.sh"
   after_script:
     - cd envs/dev
-    - docker-compose stop
+    - docker compose stop
 
 cleanup:
   tags:
@@ -53,7 +53,7 @@ cleanup:
   allow_failure: true
   script:
     - cd envs/dev
-    - docker-compose down
+    - docker compose down
     - docker volume remove vol_smart_pgdata
     - docker volume remove vol_smart_data
   when: always
