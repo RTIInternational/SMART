@@ -121,8 +121,15 @@ class IRRLogModelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = IRRLog
-        fields = ("data", "profile", "label", "label_name", "label_description", "timestamp")
-    
+        fields = (
+            "data",
+            "profile",
+            "label",
+            "label_name",
+            "label_description",
+            "timestamp",
+        )
+
     def get_label_name(self, obj):
         return obj.label.name if obj.label else None
 

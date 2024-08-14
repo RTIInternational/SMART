@@ -409,6 +409,13 @@ class LabelMetaDataField(models.Model):
     def __str__(self):
         return self.field_name
 
+    def get_unique_options(self):
+        unique_list = list(
+            set(self.labelmetadata_set.all().values_list("value", flat=True))
+        )
+        unique_list.sort()
+        return unique_list
+
 
 class LabelMetaData(models.Model):
     class Meta:

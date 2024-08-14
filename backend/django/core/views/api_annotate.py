@@ -78,8 +78,59 @@ class SearchLabelsView(ListAPIView):
         project = Project.objects.get(pk=self.kwargs["project_pk"])
         filter_text = self.request.GET.get("searchString")
 
+        label_category = self.request.GET.get("category")
+        if label_category is not None:
+            category_label_list = LabelMetaData.objects.filter(
+                label_metadata_field=project.category.label_metadata_field,
+                value=label_category,
+            ).values_list("label__pk", flat=True)
+            return Label.objects.filter(
+                project=project, pk__in=category_label_list
+            ).filter(
+                Q(name__icontains=filter_text) | Q(description__icontains=filter_text)
+            )
+
         return Label.objects.filter(project=project).filter(
             Q(name__icontains=filter_text) | Q(description__icontains=filter_text)
+        )
+
+
+@api_view(["GET"])
+@permission_classes((IsCoder,))
+def get_label_categories(request, project_pk, data_pk):
+    """Get the set of label category options.
+
+    Args:
+        request: The request to the endpoint
+        project_pk: Primary key of project
+    Returns:
+        label_category_options: The label options
+    """
+    project = Project.objects.get(pk=project_pk)
+    if not hasattr(project, "category"):
+        return Response({"label_category_options": None})
+    else:
+        category_options = project.category.label_metadata_field.get_unique_options()
+        data_options = Data.objects.get(pk=data_pk)
+        data_metadata_field = project.category.data_metadata_field
+        if MetaData.objects.filter(
+            metadata_field=data_metadata_field, data=data_options
+        ).exists():
+            data_category = MetaData.objects.get(
+                metadata_field=data_metadata_field, data=data_options
+            ).value
+            if data_category not in category_options:
+                data_category = ""
+        else:
+            data_category = ""
+        return Response(
+            {
+                "label_category_options": [
+                    {"value": key, "label": f"Category: {key}"}
+                    for key in category_options
+                ],
+                "data_category": data_category,
+            }
         )
 
 
