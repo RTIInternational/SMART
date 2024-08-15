@@ -30,12 +30,13 @@ class Skew extends React.Component {
         this.state = {
             filteredData: undefined,
             isSearching: false,
-            search: ''
+            search: '',
         };
         this.handleSearch = this.handleSearch.bind(this);
     }
 
     componentDidMount() {
+        this.props.setFilterStr("");
         this.props.getUnlabeled();
         this.props.getLabelCounts();
     }
@@ -58,22 +59,12 @@ class Skew extends React.Component {
 
     handleSearch(event) {
         event.preventDefault();
-        this.setState({ isSearching: true });
-        if (this.state.search.length > 0) {
-            fetch(`/api/search_data_unlabeled_table/${window.PROJECT_ID}?text=${this.state.search}`)
-                .then(res => res.json().then(result => {
-                    this.setState({ filteredData: result.data });
-                    this.setState({ isSearching: false });
-                }))
-                .catch(error => console.log(error));
-        } else {
-            this.setState({ filteredData: undefined });
-            this.setState({ isSearching: false });
-        }
+        this.props.setFilterStr(this.state.search);
+        this.props.getUnlabeled();
     }
 
     render() {
-        const { unlabeled_data, labels, skewLabel, label_counts, message, modifyMetadataValues } = this.props;
+        const { unlabeled_data, skewLabel, label_counts, message } = this.props;
 
         if (message.length > 0){
             let message_new = message[0];
@@ -138,7 +129,12 @@ class Skew extends React.Component {
                     Note: The first 50 unlabeled data items appear in the table. If you are looking for a specific value, use the search input to filter the data.
                 </p>
                 <form onSubmit={this.handleSearch}>
-                    <input className="skew-input" onChange={event => this.setState({ search: event.target.value })} placeholder="Search Data..." value={this.state.search} />
+                    <input 
+                        className="skew-input" 
+                        onChange={event => this.setState({ search: event.target.value })} 
+                        placeholder="Search Data..." 
+                        value={this.state.search} 
+                    />
                     {!this.state.isSearching ? (
                         <button className="btn btn-info skew-search-button" type="submit">Search</button>
                     ) : (
@@ -146,11 +142,11 @@ class Skew extends React.Component {
                     )}
                 </form>
                 <ReactTable
-                    data={this.state.filteredData ? this.state.filteredData : unlabeled_data}
+                    data={unlabeled_data}
                     columns={COLUMNS}
                     showPageSizeOptions={false}
                     pageSize={
-                        this.state.filteredData ? this.state.filteredData.length < 50 ? this.state.filteredData.length : 50 : unlabeled_data.length < 50 ? unlabeled_data.length : 50
+                        unlabeled_data.length < 50 ? unlabeled_data.length : 50
                     }
                     SubComponent={row => {
                         return (
@@ -181,7 +177,8 @@ Skew.propTypes = {
     getLabelCounts: PropTypes.func.isRequired,
     label_counts: PropTypes.arrayOf(PropTypes.object),
     message: PropTypes.string,
-    modifyMetadataValues: PropTypes.func.isRequired
+    modifyMetadataValues: PropTypes.func.isRequired,
+    setFilterStr: PropTypes.func.isRequired,
 };
 
 export default Skew;

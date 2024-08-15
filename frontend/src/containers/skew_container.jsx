@@ -2,7 +2,7 @@ import React from 'react';
 import { connect } from 'react-redux';
 import { modifyMetadataValues } from '../actions/card';
 
-import { getUnlabeled, skewLabel, getLabelCounts } from '../actions/skew';
+import { getUnlabeled, skewLabel, getLabelCounts, setFilterStr } from '../actions/skew';
 import Skew from '../components/Skew';
 
 const PROJECT_ID = window.PROJECT_ID;
@@ -31,6 +31,9 @@ const mapDispatchToProps = (dispatch) => {
         },
         modifyMetadataValues: (dataPk, metadatas) => {
             dispatch(modifyMetadataValues(dataPk, metadatas, PROJECT_ID));
+        },
+        setFilterStr: (filterStr) => {
+            dispatch(setFilterStr(filterStr));
         }
     };
 };
