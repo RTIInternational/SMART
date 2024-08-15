@@ -15,7 +15,16 @@ import Select from 'react-select';
 
 const DataCard = ({ data, page, actions }) => {
     const { data: labels } = useLabels();
-    const { data: labelCategoryOptions } = useLabelCategoryOptions(data.text.pk);
+
+    const { mutate: changeToSkip } = useChangeToSkip();
+    const { mutate: modifyLabel } = useModifyLabel();
+    const allHandlers = {
+        changeToSkip,
+        modifyLabel,
+        actions,
+    };
+    const cardData = formatDataForCard(data, page);
+    const { data: labelCategoryOptions } = useLabelCategoryOptions(cardData.dataID);
 
     const parseLabelCategoryOptions = (labelCategoryOptions) => {
         if (labelCategoryOptions != null) {
@@ -30,19 +39,12 @@ const DataCard = ({ data, page, actions }) => {
         setSelectedCategory(parseLabelCategoryOptions(labelCategoryOptions));
     }, [labelCategoryOptions]);
 
-    const { mutate: changeToSkip } = useChangeToSkip();
-    const { mutate: modifyLabel } = useModifyLabel();
-    const allHandlers = {
-        changeToSkip,
-        modifyLabel,
-        actions,
-    };
-    const cardData = formatDataForCard(data, page);
+
     const handlers = getHandlers(allHandlers, page);
 
     const labelCountLow = (labels) => labels.labels.length <= 5;
     const labelCountHigh = (labels) => labels.total_labels >= PROJECT_SUGGESTION_MAX;
-    const labelCategory = (labelCategoryOptions) => labelCategoryOptions.label_category_options != null;
+    const labelCategory = (labelCategoryOptions) => (labelCategoryOptions != null) && (labelCategoryOptions.label_category_options != null);
 
     
     const show = {

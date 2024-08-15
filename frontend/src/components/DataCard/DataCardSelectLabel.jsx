@@ -6,7 +6,6 @@ import { AsyncPaginate } from 'react-select-async-paginate';
 
 const DataCardSelectLabel = ({ cardData, fn, category, includeModal }) => {
     const [selectedLabelID, setSelectedLabelID] = useState(null);
-    console.log(category);
 
     async function loadOptions(searchString, loadedOptions, { page }) {
         const response = await fetch(
@@ -32,9 +31,12 @@ const DataCardSelectLabel = ({ cardData, fn, category, includeModal }) => {
         };
     }
 
+
+
     return (
         <div className="label-select-wrapper">
             <AsyncPaginate
+                key={category}
                 placeholder="Select label..."
                 value=""
                 className="rounded"
