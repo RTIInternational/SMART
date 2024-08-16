@@ -79,7 +79,7 @@ class SearchLabelsView(ListAPIView):
         filter_text = self.request.GET.get("searchString")
 
         label_category = self.request.GET.get("category")
-        if label_category is not None:
+        if label_category:
             category_label_list = LabelMetaData.objects.filter(
                 label_metadata_field=project.category.label_metadata_field,
                 value=label_category,

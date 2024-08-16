@@ -61,11 +61,12 @@ class LabelSerializer(serializers.ModelSerializer):
 
     def to_representation(self, obj):
         base_representation = super().to_representation(obj)
-        base_representation["description"] = (
-            base_representation["description"]
-            + " | "
-            + " | ".join(base_representation["labelmetadata"])
-        )
+        if len(base_representation["labelmetadata"]) > 0:
+            base_representation["description"] = (
+                base_representation["description"]
+                + " | "
+                + " | ".join(base_representation["labelmetadata"])
+            )
         return base_representation
 
 

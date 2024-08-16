@@ -6,10 +6,10 @@ import { AsyncPaginate } from 'react-select-async-paginate';
 
 const DataCardSelectLabel = ({ cardData, fn, category, includeModal }) => {
     const [selectedLabelID, setSelectedLabelID] = useState(null);
-
     async function loadOptions(searchString, loadedOptions, { page }) {
+        const cleanCat = category || "";
         const response = await fetch(
-            `/api/search_labels/${window.PROJECT_ID}/?${new URLSearchParams({ searchString, page, category }).toString()}`
+            `/api/search_labels/${window.PROJECT_ID}/?${new URLSearchParams({ searchString, page, category: cleanCat }).toString()}`
         );
         const labels = await response.json();
 
