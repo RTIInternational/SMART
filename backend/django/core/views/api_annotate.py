@@ -794,8 +794,13 @@ def embeddings_comparison(request, project_pk):
             data_metadata_obj = MetaData.objects.get(
                 data=data_obj, metadata_field=project.category.data_metadata_field
             )
-            if (data_metadata_obj.value is not None) and (
-                data_metadata_obj.value.strip() != ""
+            if (
+                (data_metadata_obj.value is not None)
+                and (data_metadata_obj.value.strip() != "")
+                and (
+                    data_metadata_obj.value
+                    in project.category.label_metadata_field.get_unique_options()
+                )
             ):
                 embeddings_category = data_metadata_obj.value
                 label_metadata_obj = LabelMetaData.objects.filter(
