@@ -147,7 +147,7 @@ def download_irr_log(request, project_pk):
     )
 
     writer = csv.writer(response)
-    writer.writerow(["text", "label", "username", "timestamp"])
+    writer.writerow(["id", "text", "label", "username", "timestamp"])
 
     logs = IRRLog.objects.filter(data__project_id=project_pk).select_related(
         "data", "profile", "label"
@@ -155,7 +155,9 @@ def download_irr_log(request, project_pk):
 
     for log in logs:
         label_name = log.label.name if log.label else ""
-        writer.writerow([log.data.text, label_name, log.profile.user, log.timestamp])
+        writer.writerow(
+            [log.data.pk, log.data.text, label_name, log.profile.user, log.timestamp]
+        )
 
     return response
 

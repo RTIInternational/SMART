@@ -30,6 +30,7 @@ from core.models import (
     Queue,
     RecycleBin,
     VerifiedDataLabel,
+    LabelMetaData,
 )
 from core.pagination import LabelViewPagination
 from core.permissions import IsAdminOrCreator, IsCoder
@@ -77,8 +78,59 @@ class SearchLabelsView(ListAPIView):
         project = Project.objects.get(pk=self.kwargs["project_pk"])
         filter_text = self.request.GET.get("searchString")
 
+        label_category = self.request.GET.get("category")
+        if label_category:
+            category_label_list = LabelMetaData.objects.filter(
+                label_metadata_field=project.category.label_metadata_field,
+                value=label_category,
+            ).values_list("label__pk", flat=True)
+            return Label.objects.filter(
+                project=project, pk__in=category_label_list
+            ).filter(
+                Q(name__icontains=filter_text) | Q(description__icontains=filter_text)
+            )
+
         return Label.objects.filter(project=project).filter(
             Q(name__icontains=filter_text) | Q(description__icontains=filter_text)
+        )
+
+
+@api_view(["GET"])
+@permission_classes((IsCoder,))
+def get_label_categories(request, project_pk, data_pk):
+    """Get the set of label category options.
+
+    Args:
+        request: The request to the endpoint
+        project_pk: Primary key of project
+    Returns:
+        label_category_options: The label options
+    """
+    project = Project.objects.get(pk=project_pk)
+    if not hasattr(project, "category"):
+        return Response({"label_category_options": None})
+    else:
+        category_options = project.category.label_metadata_field.get_unique_options()
+        data_options = Data.objects.get(pk=data_pk)
+        data_metadata_field = project.category.data_metadata_field
+        if MetaData.objects.filter(
+            metadata_field=data_metadata_field, data=data_options
+        ).exists():
+            data_category = MetaData.objects.get(
+                metadata_field=data_metadata_field, data=data_options
+            ).value
+            if data_category not in category_options:
+                data_category = ""
+        else:
+            data_category = ""
+        return Response(
+            {
+                "label_category_options": [
+                    {"value": key, "label": f"Category: {key}"}
+                    for key in category_options
+                ],
+                "data_category": data_category,
+            }
         )
 
 
@@ -729,8 +781,44 @@ def embeddings_comparison(request, project_pk):
     project = Project.objects.get(pk=project_pk)
     project_labels = Label.objects.filter(project=project)
 
+    data_pk = request.GET.get("dataID")
+    data_obj = Data.objects.get(pk=data_pk)
+
+    embeddings_category = None
+
+    if hasattr(project, "category"):
+        # filter the labels to be the same category value as the data
+        if MetaData.objects.filter(
+            data=data_obj, metadata_field=project.category.data_metadata_field
+        ).exists():
+            data_metadata_obj = MetaData.objects.get(
+                data=data_obj, metadata_field=project.category.data_metadata_field
+            )
+            if (
+                (data_metadata_obj.value is not None)
+                and (data_metadata_obj.value.strip() != "")
+                and (
+                    data_metadata_obj.value
+                    in project.category.label_metadata_field.get_unique_options()
+                )
+            ):
+                embeddings_category = data_metadata_obj.value
+                label_metadata_obj = LabelMetaData.objects.filter(
+                    label_metadata_field=project.category.label_metadata_field,
+                    value=data_metadata_obj.value,
+                )
+                project_labels = project_labels.filter(
+                    pk__in=label_metadata_obj.values_list("label__pk", flat=True)
+                )
+
+    # if the subset is less than 5 just return everything
+    if len(project_labels) <= 5:
+        return Response(
+            {"suggestions": LabelSerializer(project_labels, many=True).data}
+        )
+
     # Request and cache label embeddings
-    cached_embeddings = get_embeddings(project_pk)
+    cached_embeddings = get_embeddings(project_pk, embeddings_category)
     if cached_embeddings:
         project_labels_embeddings = cached_embeddings
     else:
@@ -739,7 +827,7 @@ def embeddings_comparison(request, project_pk):
                 "embedding", flat=True
             )
         )
-        cache_embeddings(project_pk, project_labels_embeddings)
+        cache_embeddings(project_pk, embeddings_category, project_labels_embeddings)
 
     text = request.GET.get("text")
     text_embedding = embeddings_model.encode(text)

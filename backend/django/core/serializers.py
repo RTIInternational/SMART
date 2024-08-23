@@ -53,9 +53,21 @@ class CoreModelSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class LabelSerializer(serializers.ModelSerializer):
+    labelmetadata = serializers.StringRelatedField(many=True, read_only=True)
+
     class Meta:
         model = Label
-        fields = ("pk", "name", "project", "description")
+        fields = ("pk", "name", "project", "description", "labelmetadata")
+
+    def to_representation(self, obj):
+        base_representation = super().to_representation(obj)
+        if len(base_representation["labelmetadata"]) > 0:
+            base_representation["description"] = (
+                base_representation["description"]
+                + " | "
+                + " | ".join(base_representation["labelmetadata"])
+            )
+        return base_representation
 
 
 class DataSerializer(serializers.ModelSerializer):
@@ -110,8 +122,15 @@ class IRRLogModelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = IRRLog
-        fields = ("data", "profile", "label", "label_name", "label_description", "timestamp")
-    
+        fields = (
+            "data",
+            "profile",
+            "label",
+            "label_name",
+            "label_description",
+            "timestamp",
+        )
+
     def get_label_name(self, obj):
         return obj.label.name if obj.label else None
 
