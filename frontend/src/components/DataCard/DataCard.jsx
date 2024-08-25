@@ -1,4 +1,4 @@
-import React, { Fragment } from "react";
+import React, { Fragment, useState, useEffect } from "react";
 import { Card, ButtonToolbar } from "react-bootstrap";
 
 import DataCardAdjudicateButton from "./DataCardAdjudicateButton";
@@ -7,13 +7,15 @@ import DataCardMetadata from "./DataCardMetadata";
 import DataCardSelectLabel from "./DataCardSelectLabel";
 import DataCardSuggestedLabels from "./DataCardSuggestedLabels";
 import DataCardText from "./DataCardText";
-import { useModifyLabel, useChangeToSkip, useLabels } from "../../hooks";
+import { useModifyLabel, useChangeToSkip, useLabels, useLabelCategoryOptions } from "../../hooks";
 import DataCardLabelButtons from "./DataCardLabelButtons";
 import DataCardDiscardButton from "./DataCardDiscardButton";
 import { PROJECT_SUGGESTION_MAX } from "../../store";
+import Select from 'react-select';
 
 const DataCard = ({ data, page, actions }) => {
     const { data: labels } = useLabels();
+
     const { mutate: changeToSkip } = useChangeToSkip();
     const { mutate: modifyLabel } = useModifyLabel();
     const allHandlers = {
@@ -22,11 +24,29 @@ const DataCard = ({ data, page, actions }) => {
         actions,
     };
     const cardData = formatDataForCard(data, page);
+    const { data: labelCategoryOptions } = useLabelCategoryOptions(cardData.dataID);
+
+    const parseLabelCategoryOptions = (labelCategoryOptions) => {
+        if (labelCategoryOptions != null) {
+            return labelCategoryOptions.data_category;
+        } else {
+            return null;
+        }
+    };
+    const [selectedCategory, setSelectedCategory] = useState(parseLabelCategoryOptions(labelCategoryOptions));
+
+    useEffect(() => {
+        setSelectedCategory(parseLabelCategoryOptions(labelCategoryOptions));
+    }, [labelCategoryOptions]);
+
+
     const handlers = getHandlers(allHandlers, page);
 
     const labelCountLow = (labels) => labels.labels.length <= 5;
     const labelCountHigh = (labels) => labels.total_labels >= PROJECT_SUGGESTION_MAX;
+    const labelCategory = (labelCategoryOptions) => (labelCategoryOptions != null) && (labelCategoryOptions.label_category_options != null);
 
+    
     const show = {
         skipButton: handlers.handleSkip != null,
         adjudicateButton: handlers.handleAdjudicate != null,
@@ -36,6 +56,7 @@ const DataCard = ({ data, page, actions }) => {
         labelButtons: labels && labelCountLow(labels) && (handlers.handleSelectLabel != null),
         labelSuggestions: labels && (!labelCountLow(labels)) && (!labelCountHigh(labels)) && (handlers.handleSelectLabel != null),
         labelSelect: labels && (!labelCountLow(labels)) && (handlers.handleSelectLabel != null),
+        labelCategories: labels && (!labelCountLow(labels)) && (handlers.handleSelectLabel != null) && labelCategory(labelCategoryOptions),
         discardButton: handlers.handleDiscard != null,
         confirmationModal: page == PAGES.HISTORY && cardData.labelID // excludes unlabeled data
     };
@@ -82,6 +103,23 @@ const DataCard = ({ data, page, actions }) => {
                     />
                 </Fragment>
             )}
+            {show.labelCategories && (
+                <Fragment>
+                    <div className="label-select-wrapper" >
+                        <div className="toolbar-gap" />
+                        <Select
+                            placeholder="Select Label Category..."
+                            value = {
+                                labelCategoryOptions.label_category_options.filter(option => option.value === selectedCategory)
+                            }
+                            onChange={(value) => {
+                                setSelectedCategory(value.value);
+                            }}
+                            options={labelCategoryOptions.label_category_options}
+                        />
+                    </div>
+                </Fragment>
+            )}
             {show.labelSelect && (
                 <Fragment>
                     <div className="select-discard-wrapper" >
@@ -89,6 +127,7 @@ const DataCard = ({ data, page, actions }) => {
                         <DataCardSelectLabel
                             cardData={cardData}
                             fn={handlers.handleSelectLabel}
+                            category={selectedCategory}
                             includeModal={show.confirmationModal}
                         />
                         <DataCardDiscardButton 

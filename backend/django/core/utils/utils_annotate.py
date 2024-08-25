@@ -299,12 +299,18 @@ def createUnresolvedAdjudicateMessage(project, data, message):
     AdjudicateDescription.objects.create(project=project, data=data, message=message)
 
 
-def cache_embeddings(project_pk, embeddings):
-    cache.set(project_pk, embeddings)
+def cache_embeddings(project_pk, embeddings_category, embeddings):
+    key = project_pk
+    if embeddings_category is not None:
+        key += embeddings_category.replace(" ", "_")
+    cache.set(key, embeddings)
 
 
-def get_embeddings(project_pk):
-    return cache.get(project_pk)
+def get_embeddings(project_pk, embeddings_category):
+    key = project_pk
+    if embeddings_category is not None:
+        key += embeddings_category.replace(" ", "_")
+    return cache.get(key)
 
 
 def update_last_action(project, profile):

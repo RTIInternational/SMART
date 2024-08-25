@@ -28,7 +28,7 @@ This project uses `docker` containers organized by `docker-compose` to ease depe
 First, install docker and docker-compose. Then navigate to `envs/dev` and to build all the images run:
 
 ```bash
-docker-compose build
+docker compose build
 ```
 
 Next, create the docker volumes where persistent data will be stored.
@@ -41,27 +41,27 @@ docker volume create --name=vol_smart_data
 Then, migrate the database to ensure the schema is prepared for the application. 
 
 ```bash
-docker-compose run --rm backend ./migrate.sh
+docker compose run --rm backend ./migrate.sh
 ```
 
 ### Workflow During Development
 
-Run `docker-compose up` to start all docker containers.  This will start up the containers in the foreground so you can see the logs.  If you prefer to run the containers in the background use `docker-compose up -d`. When switching between branches there is no need to run any additional commands (except build if there is dependency change).
+Run `docker compose up` to start all docker containers.  This will start up the containers in the foreground so you can see the logs.  If you prefer to run the containers in the background use `docker compose up -d`. When switching between branches there is no need to run any additional commands (except build if there is dependency change).
 
 ### Dependency Changes
 
 If there is ever a dependency change than you will need to re-build the containers using the following commands:
 
 ```shell
-docker-compose build <container with new dependency>
-docker-compose rm <container with new dependency>
-docker-compose up
+docker compose build <container with new dependency>
+docker compose rm <container with new dependency>
+docker compose up
 ```
 
 If your database is blank, you will need to run migrations to initialize all the required schema objects; you can start a blank backend container and run the migration django management command with the following command:
 
 ```shell
-docker-compose run --rm backend ./migrate.sh
+docker compose run --rm backend ./migrate.sh
 ```
 
 #### Dependency management in Python
@@ -69,9 +69,9 @@ docker-compose run --rm backend ./migrate.sh
 We use [pip-tools](https://github.com/jazzband/pip-tools) to manage Python dependencies. To change the dependencies:
 
 1. Edit [requirements.in](./backend/docker/requirements.in) file to add, remove, or update dependencies as needed. Include only the primary dependencies—those directly required by our source code—in this file. pip-tools will automatically manage and incorporate any transitive dependencies. For routine maintenance, you may specify both primary and transitive dependencies with pinned versions to ensure consistent updates.
-1. Run `docker-compose run --rm backend pip-compile docker/requirements.in` to generate a new [requirements.txt](./backend/docker/requirements.txt). Note that pip-tools uses the existing `requirements.txt` file when building a new one, so that it can maintain existing versions. To upgrade a package to the newest version compatible with the other libraries, just remove it from the existing `requirements.txt` before running pip-compile.
+1. Run `docker compose run --rm backend pip-compile docker/requirements.in` to generate a new [requirements.txt](./backend/docker/requirements.txt). Note that pip-tools uses the existing `requirements.txt` file when building a new one, so that it can maintain existing versions. To upgrade a package to the newest version compatible with the other libraries, just remove it from the existing `requirements.txt` before running pip-compile.
     - If you encounter an error while running with docker, a possible workaround is to create a virtual environment within `backend/docker`, install `pip-tools` within that environment, and then run `pip-compile requirements.in` directly from there. This method bypasses network issues that might occur within Docker.
-1. Run `docker-compose build backend` to install the updated requirements into the Docker image.
+1. Run `docker compose build backend` to install the updated requirements into the Docker image.
 
 ### Custom Environment Variables
 
@@ -94,10 +94,10 @@ All date-times in the SMART backend and database are set to UTC (Coordinated Uni
 
 ### Running tests
 
-Backend tests use [py.test](https://docs.pytest.org/en/latest/) and [flake8](http://flake8.pycqa.org/en/latest/).  To run them, use the following `docker-compose` command from the `env/dev` directory:
+Backend tests use [py.test](https://docs.pytest.org/en/latest/) and [flake8](http://flake8.pycqa.org/en/latest/).  To run them, use the following `docker compose` command from the `env/dev` directory:
 
 ```
-docker-compose run --rm backend ./run_tests.sh <args>
+docker compose run --rm backend ./run_tests.sh <args>
 ```
 
 Where `<args>` are arguments to be passed to py.test.  Use `py.test -h` to see all the options, but a few useful ones are highlighted below:
@@ -108,10 +108,10 @@ Where `<args>` are arguments to be passed to py.test.  Use `py.test -h` to see a
  - `--reuse-db`: Don't drop/recreate the database between test runs.  This is useful for for reducing test runtime.  You must not pass this flag if the schema has changed since the last test run.
 
 
-Frontend tests use [mocha](https://mochajs.org/api/mocha.js.html) and [eslint](https://eslint.org/docs/user-guide/getting-started).  To run them, use the following `docker-compose` command from the `env/dev` directory:
+Frontend tests use [mocha](https://mochajs.org/api/mocha.js.html) and [eslint](https://eslint.org/docs/user-guide/getting-started).  To run them, use the following `docker compose` command from the `env/dev` directory:
 
 ```
-docker-compose run --rm smart_frontend ./run_tests.sh
+docker compose run --rm smart_frontend ./run_tests.sh
 ```
 
 ### Contributing

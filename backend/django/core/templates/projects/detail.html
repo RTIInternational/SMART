@@ -168,7 +168,23 @@
                 <li class="list-group-item">
                   <dt>Metadata Fields Displayed with Data</dt>
                   {% for meta in project.metadatafields.all %}
+                      {% if meta.field_name == project.category.field_name %}
+                        <dd>- [CATEGORY] {{ meta.field_name }} </dd>
+                      {% else %}
+                        <dd>- {{ meta.field_name }}</dd>
+                      {% endif %}
+                  {% endfor %}
+                </li>
+                {% endif %}
+                {% if project.labelmetadatafields != None %}
+                <li class="list-group-item">
+                  <dt>Metadata Fields Displayed with Labels</dt>
+                  {% for meta in project.labelmetadatafields.all %}
+                    {% if meta.field_name == project.category.field_name %}
+                      <dd>- [CATEGORY] {{ meta.field_name }} </dd>
+                    {% else %}
                       <dd>- {{ meta.field_name }}</dd>
+                    {% endif %}
                   {% endfor %}
                 </li>
                 {% endif %}
@@ -204,7 +220,7 @@
                 {% for label in project.labels.all %}
                   <li class="list-group-item">
                     <dt>{{ label.name }}</dt>
-                    <dd>{{ label.description }}</dd>
+                    <dd>{{ label.description }} {% for meta in label.labelmetadata.all %} | {{ meta }} {% endfor %}</dd>
                   </li>
                 {% endfor %}
               </ul>

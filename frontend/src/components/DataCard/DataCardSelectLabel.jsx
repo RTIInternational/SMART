@@ -4,12 +4,12 @@ import ConfirmationModal from "./ConfirmationModal";
 import { AsyncPaginate } from 'react-select-async-paginate';
 
 
-const DataCardSelectLabel = ({ cardData, fn, includeModal }) => {
+const DataCardSelectLabel = ({ cardData, fn, category, includeModal }) => {
     const [selectedLabelID, setSelectedLabelID] = useState(null);
-
     async function loadOptions(searchString, loadedOptions, { page }) {
+        const cleanCat = category || "";
         const response = await fetch(
-            `/api/search_labels/${window.PROJECT_ID}/?${new URLSearchParams({ searchString, page }).toString()}`
+            `/api/search_labels/${window.PROJECT_ID}/?${new URLSearchParams({ searchString, page, category: cleanCat }).toString()}`
         );
         const labels = await response.json();
 
@@ -31,9 +31,12 @@ const DataCardSelectLabel = ({ cardData, fn, includeModal }) => {
         };
     }
 
+
+
     return (
         <div className="label-select-wrapper">
             <AsyncPaginate
+                key={category}
                 placeholder="Select label..."
                 value=""
                 className="rounded"

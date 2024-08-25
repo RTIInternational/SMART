@@ -18,12 +18,12 @@ from core.forms import (
     DataUpdateWizardForm,
     DataWizardForm,
     ExternalDatabaseWizardForm,
-    LabelDescriptionFormSet,
-    LabelFormSet,
+    LabelWizardForm,
     PermissionsFormSet,
     ProjectUpdateOverviewForm,
     ProjectUpdateAdvancedForm,
     ProjectWizardForm,
+    LabelUpdateWizardForm,
 )
 from core.models import (
     AssignedData,
@@ -33,6 +33,8 @@ from core.models import (
     MetaDataField,
     Project,
     TrainingSet,
+    Category,
+    LabelMetaDataField,
 )
 from core.templatetags import project_extras
 from core.utils.util import (
@@ -40,8 +42,10 @@ from core.utils.util import (
     get_projects_umbrellas,
     project_status,
     save_codebook_file,
-    update_label_embeddings,
     upload_data,
+    create_label_metadata,
+    update_label_descriptions_metadata,
+    create_or_update_project_category,
 )
 from core.utils.utils_annotate import batch_unassign, leave_coding_page
 from core.utils.utils_external_db import delete_external_db_file, save_external_db_file
@@ -146,7 +150,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
     file_storage = FileSystemStorage(location=settings.DATA_DIR)
     form_list = [
         ("project", ProjectWizardForm),
-        ("labels", LabelFormSet),
+        ("labels", LabelWizardForm),
         ("permissions", PermissionsFormSet),
         ("codebook", CodeBookWizardForm),
         ("external", ExternalDatabaseWizardForm),
@@ -168,12 +172,10 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
     def get_form_kwargs(self, step):
         kwargs = {}
+
         if step == "data":
-            temp = []
-            for label in self.get_cleaned_data_for_step("labels"):
-                if "name" in label.keys():
-                    temp.append(label["name"])
-            kwargs["labels"] = temp
+            all_labels = self.get_cleaned_data_for_step("labels").get("label_data_file")
+            kwargs["labels"] = all_labels["Label"].tolist()
             external_data = self.get_cleaned_data_for_step("external")
             if "engine_database" in external_data:
                 kwargs["database_type"] = external_data["database_type"]
@@ -197,9 +199,6 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
     def get_form_prefix(self, step=None, form=None):
         prefix = ""
-
-        if step == "labels":
-            prefix = "label_set"
         if step == "permissions":
             prefix = "permission_set"
         if step == "advanced":
@@ -341,9 +340,15 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             # Training Set
             TrainingSet.objects.create(project=proj_obj, set_number=0)
 
-            # Labels
-            labels.instance = proj_obj
-            labels.save()
+            label_data = labels.cleaned_data["label_data_file"]
+            label_data["Label"] = label_data["Label"].astype(str)
+            label_objects = [
+                Label(name=d["Label"], description=d["Description"], project=proj_obj)
+                for d in label_data.to_dict(orient="records")
+            ]
+            Label.objects.bulk_create(label_objects)
+
+            create_label_metadata(proj_obj, label_data, label_objects)
 
             # Permissions
             permissions.instance = proj_obj
@@ -392,6 +397,12 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
                 MetaDataField.objects.create(
                     project=proj_obj, field_name=field, use_with_dedup=use_with_dedup
                 )
+
+            # set project category
+            label_metadata = [
+                c for c in label_data if c not in ["Label", "Description"]
+            ]
+            create_or_update_project_category(proj_obj, label_metadata, metadata_fields)
 
             add_queue(project=proj_obj, length=2000000, type="admin")
             irr_queue = add_queue(project=proj_obj, length=2000000, type="irr")
@@ -470,14 +481,53 @@ class ProjectUpdateAdvanced(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
         kwargs = super().get_form_kwargs()
         project = self.get_object()
         kwargs["percentage_irr"] = project.percentage_irr
+        kwargs["project"] = project.pk
         return kwargs
 
     def form_valid(self, form):
         context = self.get_context_data()
+        cleaned_data = form.cleaned_data
         if form.is_valid():
-            with transaction.atomic():
-                self.object = form.save()
-                return redirect(self.get_success_url())
+            self.object.allow_coders_view_labels = cleaned_data[
+                "allow_coders_view_labels"
+            ]
+            chosen_category = cleaned_data["category"]
+            project_category = Category.objects.filter(project=self.object)
+            if chosen_category == "None":
+                # delete the project category if it exists
+                if project_category.exists():
+                    project_category.delete()
+            else:
+                if project_category.exists():
+                    existing_category = Category.objects.get(project=self.object)
+                    if existing_category.field_name != chosen_category:
+                        # update the category
+                        label_field = LabelMetaDataField.objects.get(
+                            project=self.object, field_name=chosen_category
+                        )
+                        data_field = MetaDataField.objects.get(
+                            project=self.object, field_name=chosen_category
+                        )
+                        Category.objects.filter(project=self.object).update(
+                            field_name=chosen_category,
+                            label_metadata_field=label_field,
+                            data_metadata_field=data_field,
+                        )
+                else:
+                    label_field = LabelMetaDataField.objects.get(
+                        project=self.object, field_name=chosen_category
+                    )
+                    data_field = MetaDataField.objects.get(
+                        project=self.object, field_name=chosen_category
+                    )
+                    Category.objects.create(
+                        project=self.object,
+                        field_name=chosen_category,
+                        label_metadata_field=label_field,
+                        data_metadata_field=data_field,
+                    )
+
+            return redirect(self.get_success_url())
         else:
             return self.render_to_response(context)
 
@@ -522,9 +572,7 @@ class ProjectUpdateData(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         data = super(ProjectUpdateData, self).get_context_data(**kwargs)
-
         data["num_data"] = Data.objects.filter(project=data["project"]).count()
-
         return data
 
     def form_valid(self, form):
@@ -790,8 +838,9 @@ class ProjectUpdatePermissions(LoginRequiredMixin, UserPassesTestMixin, View):
             return self.get(request)
 
 
-class ProjectUpdateLabel(LoginRequiredMixin, UserPassesTestMixin, View):
+class ProjectUpdateLabel(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Project
+    form_class = LabelUpdateWizardForm
     template_name = "projects/update/labels.html"
     permission_denied_message = (
         "You must be an Admin or Project Creator to access the Project Update page."
@@ -806,43 +855,38 @@ class ProjectUpdateLabel(LoginRequiredMixin, UserPassesTestMixin, View):
             >= 2
         )
 
+    def get_form_kwargs(self):
+        form_kwargs = super(ProjectUpdateLabel, self).get_form_kwargs()
+
+        form_kwargs["labels"] = list(
+            Label.objects.filter(project=form_kwargs["instance"]).values_list(
+                "name", flat=True
+            )
+        )
+
+        del form_kwargs["instance"]
+
+        return form_kwargs
+
     def get_context_data(self, **kwargs):
-        context = {}
+        context = super(ProjectUpdateLabel, self).get_context_data(**kwargs)
         project = Project.objects.get(pk=self.kwargs["pk"])
         context["project"] = project
-
-        if self.request.POST:
-            context["label_descriptions"] = LabelDescriptionFormSet(
-                self.request.POST,
-                instance=project,
-                prefix="label_descriptions_set",
-                form_kwargs={"action": "update"},
-            )
-        else:
-            context["label_descriptions"] = LabelDescriptionFormSet(
-                instance=project,
-                prefix="label_descriptions_set",
-                form_kwargs={"action": "update"},
-            )
+        context["labels"] = list(
+            Label.objects.filter(project=project).values_list("name", flat=True)
+        )
         return context
 
     def get_success_url(self):
         context = self.get_context_data()
         return context["project"].get_absolute_url()
 
-    def get(self, request, *args, **kwargs):
-        return render(request, self.template_name, context=self.get_context_data())
-
-    def post(self, request, *args, **kwargs):
+    def form_valid(self, form):
         context = self.get_context_data()
-        labels = context["label_descriptions"]
-        if labels.is_valid():
-            with transaction.atomic():
-                labels.instance = context["project"]
-                labels.save()
 
-            update_label_embeddings(context["project"])
-
+        if form.is_valid():
+            # update label descriptions
+            update_label_descriptions_metadata(context["project"], form.cleaned_data)
             return redirect(self.get_success_url())
         else:
             return self.render_to_response(context)

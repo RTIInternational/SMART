@@ -4,7 +4,7 @@ from io import StringIO
 import pandas as pd
 from django import forms
 from django.core.exceptions import ValidationError
-from django.forms.widgets import RadioSelect, Select, Textarea, TextInput
+from django.forms.widgets import RadioSelect, Select
 from pandas.errors import ParserError
 
 from core.utils.utils_external_db import (
@@ -14,9 +14,9 @@ from core.utils.utils_external_db import (
     test_connection,
     test_login,
 )
-from core.utils.utils_form import clean_data_helper
+from core.utils.utils_form import clean_data_helper, clean_label_data_helper
 
-from .models import ExternalDatabase, Label, Project, ProjectPermissions
+from .models import ExternalDatabase, Project, ProjectPermissions
 
 
 def read_data_file(data_file):
@@ -34,6 +34,9 @@ def read_data_file(data_file):
     MAX_FILE_SIZE = 500 * 1000 * 1000
     if data_file is None:
         raise ValidationError("ERROR: no file specified.")
+
+    if data_file.size == 0:
+        raise ValidationError("File is empty")
 
     if data_file.size > MAX_FILE_SIZE:
         raise ValidationError(
@@ -141,43 +144,30 @@ class ProjectUpdateAdvancedForm(forms.ModelForm):
         model = Project
         fields = ["allow_coders_view_labels"]
 
+    category = forms.ChoiceField(
+        required=True,
+    )
+
     def __init__(self, *args, **kwargs):
+        project = Project.objects.get(pk=kwargs.pop("project"))
+        if hasattr(project, "category"):
+            start_val = project.category.field_name
+        else:
+            start_val = "None"
+        data_metadata = project.metadatafields.values_list("field_name", flat=True)
+        label_metadata = project.labelmetadatafields.values_list(
+            "field_name", flat=True
+        )
+        options = list(set(data_metadata) & set(label_metadata)) + ["None"]
+
         percentage_irr = kwargs.pop("percentage_irr")
         super(ProjectUpdateAdvancedForm, self).__init__(*args, **kwargs)
+        self.fields["category"].choices = [(opt, opt) for opt in options]
+        self.fields["category"].initial = start_val
         if percentage_irr > 0:
             self.fields["allow_coders_view_labels"].widget.attrs[
                 "disabled"
             ] = "disabled"
-
-
-class LabelForm(forms.ModelForm):
-    class Meta:
-        model = Label
-        fields = "__all__"
-
-    name = forms.CharField(widget=TextInput(attrs={"class": "form-control"}))
-    description = forms.CharField(
-        required=False,
-        initial="",
-        widget=Textarea(attrs={"class": "form-control", "rows": "5"}),
-    )
-
-
-class LabelDescriptionForm(forms.ModelForm):
-    class Meta:
-        model = Label
-        fields = ["name", "description"]
-
-    name = forms.CharField(
-        disabled=True, widget=TextInput(attrs={"class": "form-control"})
-    )
-    description = forms.CharField(
-        required=False, widget=Textarea(attrs={"class": "form-control", "rows": "5"})
-    )
-
-    def __init__(self, *args, **kwargs):
-        self.action = kwargs.pop("action", None)
-        super(LabelDescriptionForm, self).__init__(*args, **kwargs)
 
 
 class ProjectPermissionsForm(forms.ModelForm):
@@ -213,24 +203,6 @@ class ProjectPermissionsForm(forms.ModelForm):
         )
 
 
-LabelFormSet = forms.inlineformset_factory(
-    Project,
-    Label,
-    form=LabelForm,
-    min_num=2,
-    validate_min=True,
-    extra=0,
-    can_delete=True,
-    absolute_max=55000,
-)
-LabelDescriptionFormSet = forms.inlineformset_factory(
-    Project,
-    Label,
-    form=LabelDescriptionForm,
-    can_delete=False,
-    extra=0,
-    absolute_max=55000,
-)
 PermissionsFormSet = forms.inlineformset_factory(
     Project, ProjectPermissions, form=ProjectPermissionsForm, extra=1, can_delete=True
 )
@@ -404,6 +376,44 @@ class CodeBookWizardForm(forms.Form):
             return cleanCodebookDataHelper(data)
         else:
             return ""
+
+
+class LabelWizardForm(forms.Form):
+    label_data_file = forms.FileField(required=True)
+
+    def __init__(self, *args, **kwargs):
+        super(LabelWizardForm, self).__init__(*args, **kwargs)
+
+    def clean_label_data_file(self):
+        data = self.cleaned_data.get("label_data_file", False)
+        if data:
+            try:
+                data_file = read_data_file(data)
+                return clean_label_data_helper(data_file)
+            except pd.errors.EmptyDataError:
+                return pd.DataFrame({"Label": []})
+        else:
+            raise ValidationError("ERROR: no file provided")
+
+
+class LabelUpdateWizardForm(forms.Form):
+    data = forms.FileField()
+
+    def __init__(self, *args, **kwargs):
+        self.supplied_labels = kwargs.pop("labels", None)
+        super(LabelUpdateWizardForm, self).__init__(*args, **kwargs)
+
+    def clean(self):
+        data = self.cleaned_data.get("data", False)
+        if data:
+            try:
+                data_file = read_data_file(data)
+                existing_labels = self.supplied_labels
+                return clean_label_data_helper(data_file, existing_labels)
+            except pd.errors.EmptyDataError:
+                return pd.DataFrame({"Label": []})
+        else:
+            raise ValidationError("ERROR: no file provided")
 
 
 class ExternalDatabaseWizardForm(forms.ModelForm):
