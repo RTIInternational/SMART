@@ -53,6 +53,10 @@ annotate_patterns = [
     re_path(r"^get_card_deck/(?P<project_pk>\d+)/$", api_annotate.get_card_deck),
     re_path(r"^get_labels/(?P<project_pk>\d+)/$", api_annotate.get_labels),
     re_path(
+        r"^get_label_category_options/(?P<project_pk>\d+)/(?P<data_pk>\d+)/$",
+        api_annotate.get_label_categories,
+    ),
+    re_path(
         r"^recycle_bin_table/(?P<project_pk>\d+)/$", api_annotate.recycle_bin_table
     ),
     re_path(
@@ -66,7 +70,6 @@ annotate_patterns = [
     ),
     re_path(r"^embeddings", api_annotate.embeddings_calculations),
     re_path(r"^comparisons/(?P<project_pk>\d+)/$", api_annotate.embeddings_comparison),
-    re_path(r"^get_labels/(?P<project_pk>\d+)/$", api_annotate.get_labels),
     re_path(
         r"^search_labels/(?P<project_pk>\d+)/$", api_annotate.SearchLabelsView.as_view()
     ),

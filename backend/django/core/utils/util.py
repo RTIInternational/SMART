@@ -30,6 +30,9 @@ from core.models import (
     RecycleBin,
     TrainingSet,
     VerifiedDataLabel,
+    LabelMetaDataField,
+    LabelMetaData,
+    Category,
 )
 from core.utils.utils_queue import fill_queue
 from smart.settings import TIME_ZONE_FRONTEND
@@ -813,3 +816,122 @@ def get_unlabelled_data_objs(project_id: int) -> int:
     with connection.cursor() as cursor:
         cursor.execute(query, [project_id] * 5)
         return cursor.fetchone()[0]
+
+
+def create_label_metadata(project, label_data, label_list):
+    """This function creates LabelMetadataField objects for each new field and
+    LabelMetadata objects for each label-field pair.
+
+    Args:
+        project: a Project object
+        label_data: a pandas dataframe with the label metadata fields
+        label_list: a list of label objects for the project
+    """
+    label_metadata = [c for c in label_data if c not in ["Label", "Description"]]
+    if len(label_metadata) > 0:
+        for metadata_col in label_metadata:
+            label_metadata_field = LabelMetaDataField.objects.create(
+                project=project, field_name=metadata_col
+            )
+            all_metadata_values = label_data[metadata_col].tolist()
+            all_label_metadata_objects = [
+                LabelMetaData(
+                    label=label_list[i],
+                    label_metadata_field=label_metadata_field,
+                    value=all_metadata_values[i],
+                )
+                for i in range(len(all_metadata_values))
+            ]
+            LabelMetaData.objects.bulk_create(
+                all_label_metadata_objects, batch_size=8000
+            )
+
+
+def create_or_update_project_category(project, label_metadata, data_metadata):
+    """This function takes a field which overlaps between the label and data metadata
+    and sets it to the project category to filter the suggestions by."""
+    metadata_both = list(set(data_metadata) & set(label_metadata))
+    if len(metadata_both) > 0:
+        # by default just pick the first overlap
+        if Category.objects.filter(project=project).exists():
+            Category.objects.filter(project=project).update(
+                field_name=metadata_both[0],
+                label_metadata_field=LabelMetaDataField.objects.get(
+                    field_name=metadata_both[0], project=project
+                ),
+                data_metadata_field=MetaDataField.objects.get(
+                    field_name=metadata_both[0], project=project
+                ),
+            )
+        else:
+            Category.objects.create(
+                project=project,
+                field_name=metadata_both[0],
+                label_metadata_field=LabelMetaDataField.objects.get(
+                    field_name=metadata_both[0], project=project
+                ),
+                data_metadata_field=MetaDataField.objects.get(
+                    field_name=metadata_both[0], project=project
+                ),
+            )
+
+
+def update_label_descriptions_metadata(project, new_data):
+    """This function takes in a dataset with new descriptions and possibly metadata for
+    an existing label set and updates both the descriptions and any metadata.
+
+    It adds new metadata if needed and may set project category if not set.
+    """
+    # get the set of labels in the data
+    project_labels = Label.objects.filter(
+        project=project, name__in=new_data["Label"].tolist()
+    )
+
+    label_dict = new_data.set_index("Label").to_dict()
+    for label in project_labels:
+        label.description = label_dict["Description"][label.name]
+    Label.objects.bulk_update(project_labels, ["description"], batch_size=800)
+    update_label_embeddings(project)
+
+    # loop over all metadata fields
+    label_metadata = [c for c in new_data if c not in ["Label", "Description"]]
+    for metadata_col in label_metadata:
+        label_metadata_field, created = LabelMetaDataField.objects.get_or_create(
+            project=project, field_name=metadata_col
+        )
+        if created:
+            # create objects for each label in the entire label set
+            new_label_metadata_objects = [
+                (
+                    LabelMetaData(
+                        label=label,
+                        label_metadata_field=label_metadata_field,
+                        value=label_dict[metadata_col][label.name],
+                    )
+                    if label.name in label_dict[metadata_col].keys()
+                    else LabelMetaData(
+                        label=label, label_metadata_field=label_metadata_field, value=""
+                    )
+                )
+                for label in Label.objects.filter(project=project)
+            ]
+            LabelMetaData.objects.bulk_create(
+                new_label_metadata_objects, batch_size=8000
+            )
+        else:
+            # update objects for each label, just the ones affected
+            existing_metadata_objects = LabelMetaData.objects.filter(
+                label__name__in=new_data["Label"].tolist(),
+                label_metadata_field=label_metadata_field,
+            )
+            for m in existing_metadata_objects:
+                m.value = label_dict[metadata_col][m.label.name]
+            LabelMetaData.objects.bulk_update(
+                existing_metadata_objects, ["value"], batch_size=8000
+            )
+
+    # check if the project category needs to be updated
+    data_metadata = MetaDataField.objects.filter(project=project).values_list(
+        "field_name", flat=True
+    )
+    create_or_update_project_category(project, label_metadata, data_metadata)

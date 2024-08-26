@@ -28,10 +28,9 @@
 
           <h1>Labels</h1>
           <h3>Description</h3>
-          <p>In the <strong>Labels</strong> section, we will create categories for labeling. These labeled observations will be used to train a classification model that predicts which of these categories a new observation is most likely to be.</p>
+          <p>On this page, we will create categories for labeling. These labeled observations will be used to train a classification model that predicts which of these categories a new observation is most likely to be.</p>
           <h3>Instructions</h3>
-          <p>Please fill-in below the names of the categories you are interested in predicting.  If you have more than two labels, use the <code>add label</code> button to add more rows to the form. If you decide that you want to remove a label after adding it, use the <code>remove label</code> button to remove the label name.</p>
-          <p>You may also upload a .csv file containing labels and their descriptions (label and description columns required).</p>
+          <p>Upload a .csv or .xlsx file containing labels and their descriptions (label and description columns required). Additional fields wil be treated as label metadata and will be shown along with the labels when annotating.</p>
           
           <p><i>Labeling Notes:</i></p>
           <ul class="list-group">
@@ -39,55 +38,16 @@
             <li class="list-group-item">If you plan on uploading a data file that contains labels, the label categories in the file must match those provided on this page.</li>
             <li class="list-group-item">SMART has been tested with up to 50,000 labels.</li>
             <li class="list-group-item">You cannot update the labels for a project after the project is created.</li>
-            <li class="list-group-item">Any labels currently in the table below will be overwritten by the file data if you upload a .csv file.</li>
             <li class="list-group-item">.csv's use commas to split fields. If you are using the .csv upload and have commas in your label descriptions please put double quotes "" around the description text to ensure the file reader parses it correctly.</li>
           </ul>
+          <hr>
+          <p><a href="{% static 'example-labels.csv' %}">An example dataset can be downloaded from here</a>.</p>
           <div class="form-group">
-            <label class="control-label" for="{{ wizard.form.data.id_for_label }}"></label>
-            <label class="control-label" for="{{ wizard.form.data.id_for_label }}">{{ wizard.form.data.label }}</label>
-            <hr>
-            <p><a href="{% static 'example-labels.csv' %}">An example dataset can be downloaded from here</a>.</p>
-            <input class="form-control" id="{{ wizard.form.data.id_for_label }}" maxlength="30" name="{{ wizard.form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" onChange="handleUpload(event)" onclick="this.value = null;" />
-            <button id="rmFileBtn" class="inline-btn">remove uploaded labels</button>
+            <label class="control-label" for="{{ wizard.form.label_data_file.id_for_label }}"></label>
+            <label class="control-label" for="{{ wizard.form.label_data_file.id_for_label }}">{{ wizard.form.label_data_file.label }}</label>
+            <input class="form-control" id="{{ wizard.form.label_data_file.id_for_label }}" maxlength="30" name="{{ wizard.form.label_data_file.html_name }}" type="file" placeholder="{{ form.label_data_file.label }}"  />
+            <div class="error-messages">{{ wizard.form.label_data_file.errors }}</div>
           </div>
-          <br />
-          <div class="fixed-wiz">
-            <div class="wizard_nav_bar">
-              <button class="btn btn-info" name="wizard_goto_step" type="submit" value="project">1. Info</button>
-              <input class="btn btn-primary" type="submit" value="Next Step"/>
-              <p class="pull-right">Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
-            </div>
-          </div>
-          <br />
-          <table class="table table-striped" id="form-table">
-            {{ wizard.form.management_form }}
-            <div class="error-messages">{{ wizard.form.non_form_errors }}</div>
-            {% for form in wizard.form %}
-              {% if forloop.first %}
-                <thead>
-                <tr>
-                  {% for field in form.visible_fields %}{% if field != data %}
-                    <th>{{ field.label|capfirst }}</th>
-                  {% endif %}{% endfor %}
-                </tr>
-                </thead>
-                {% endif %}
-                <tr class="formset_row_label">
-                  {% for field in form.visible_fields %}
-                    <td>
-                      {# Include the hidden fields in the form #}
-                      {% if forloop.first %}
-                        {% for hidden in form.hidden_fields %}
-                          {{ hidden }}
-                        {% endfor %}
-                      {% endif %}
-                      <div class="error-messages">{{ field.errors.as_ul }}</div>
-                      {{ field }}
-                    </td>
-                  {% endfor %}
-                </tr>
-            {% endfor %}
-          </table>
           <div class="wizard_nav_bar">
             <button class="btn btn-info" name="wizard_goto_step" type="submit" value="project">1. Info</button>
             <input class="btn btn-primary" type="submit" value="Next Step"/>
@@ -102,136 +62,4 @@
 
 {% block scripts_body %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/0.71/jquery.csv-0.71.min.js"></script>
-<script type="text/javascript">
-  function handleUpload(event) {
-    $('.error-messages').empty();
-    if (event.target.files[0] && event.target.files[0].name.includes('.csv')) {
-      $('.overlay').show();
-      $('#loading_text').html("Please wait. Generating labels...");
-      $("#second_progress").addClass("loader");
-      var reader = new FileReader();
-      try {
-        reader.readAsText(event.target.files[0]);
-        reader.onload = function(event){
-          var csv = event.target.result;
-          var data = $.csv.toArrays(csv);
-          if(data[0][0] === 'Label' && data[0][1] === 'Description') {
-            data.shift();
-
-            // remove existing labels (keep add button)
-            document.querySelectorAll('.formset-row-label').forEach(e => e.remove());
-
-            const tbody = $('#form-table > tbody');
-
-            $('#id_label_set-TOTAL_FORMS').val(`${data.length + 2}`);
-
-            // add 3 unecessary labels (Django keeps removing the last three inserted rows)
-
-            for (const index in [0, 1, 2]) {
-              data.push(["abc", "to be removed"]);
-            };
-
-            // add new labels
-            const appendHTML = data.map((label, index) => `<tr class="formset_row_label dynamic-form uploaded-label-row-${index + 2}">
-              <td>
-                <input type="hidden" name="label_set-${index + 2}-project" id="id_label_set-${index + 2}-project" value=""/></input>
-                <input type="hidden" name="label_set-${index + 2}-id" id="id_label_set-${index + 2}-id" value=""></input>
-                <div class="error-messages"></div>
-                <input type="text" name="label_set-${index + 2}-name" class="form-control" id="id_label_set-${index + 2}-name" value="${label[0]}"></input>
-              </td>
-              <td>
-                <div class="error-messages"></div>
-                <textarea name="label_set-${index + 2}-description" cols="40" rows="5" class="form-control" id="id_label_set-${index + 2}-description" value="${label[1]}">${label[1]}</textarea>
-              </td>
-              <td>
-                <div class="error-messages"></div>
-                <p class="delete-row delete-label" onClick="deleteLabel(${index + 2})" style="">remove label</p>
-              </td>
-            </tr>`);
-
-            // add two "dummy" labels at top
-            let dummyHTML = [0, 1].map((index) => 
-              `
-              <tr class="formset_row_label dynamic-form" style="display: none;">
-                <td>
-                  <input type="hidden" name="label_set-${index}-project" id="id_label_set-${index}-project">
-                  <input type="hidden" name="label_set-${index}-id" id="id_label_set-${index}-id">
-                  <div class="error-messages"></div>
-                  <input type="text" name="label_set-${index}-name" class="form-control" id="id_label_set-${index}-name" value="hidden-${index}">
-                </td>
-                <td>
-                  <div class="error-messages"></div>
-                  <textarea name="label_set-${index}-description" cols="40" rows="5" class="form-control" id="id_label_set-${index}-description"></textarea>
-                </td>
-                <td>
-                  <div class="error-messages"></div>
-                  <input type="hidden" name="label_set-${index}-DELETE" id="id_label_set-${index}-DELETE" value="on">
-                </td>
-              </tr>
-              `
-            ).join("");
-
-            $('#form-table > tbody').prepend(dummyHTML + appendHTML);
-
-            if(data.length > 100) {
-              $('.fixed-wiz').css({ 'display': 'flex' });
-            }
-          } else {
-            $('.error-messages').eq(1).append('<ul class="error-list"><li>There was an error processing your label file. Please make sure your .csv file only contains a Label and Description column and try again.</li></ul>');
-          }
-          if($('.formset_row_label').length > data.length -1) {
-            $('.formset_row_label').slice(data.length - 1).remove();
-          }
-          $('.overlay').hide();
-        }
-      } catch (error) {
-        $('.error-messages').eq(1).append('<ul class="error-list"><li>There was an error processing your label file. Please try again.</li></ul>');
-      }
-    } else {
-      $('.error-messages').eq(1).append('<ul class="error-list"><li>There was an error processing your label file. Please make sure your file is a .csv and has a Label and Description column.</li></ul>');
-    }
-  }
-  function deleteLabel(index) {
-    $(`.uploaded-label-row-${index}`).remove();
-  }
-  $('.formset_row_label').formset({
-    addText: 'add label',
-    deleteText: 'remove label',
-    prefix: 'label_set',
-    added: function() {
-      // Reset drop down and errors from both columns when adding new rows
-      $('tr.formset_row_label').last().children(':first').find('ul.errorlist li').empty();
-    }
-  });
-  $("#rmFileBtn").click(function(event) {
-    event.preventDefault();
-    // Remove uploaded file
-    $("input[type='file']").val("");
-
-    // Remove uploaded label fields
-    $('.formset_row_label').remove();
-    
-    // Reset form back to original state
-    let dummyHTML = [0, 1].map((index) => 
-      `
-      <tr class="formset_row_label dynamic-form">
-        <td>
-          <input type="hidden" name="label_set-0-project" id="id_label_set-${index}-project">
-          <input type="hidden" name="label_set-0-id" id="id_label_set-${index}-id">
-          <div class="error-messages"></div>
-          <input type="text" name="label_set-${index}-name" class="form-control" id="id_label_set-${index}-name">
-        </td>
-        <td>
-          <div class="error-messages"></div>
-          <textarea name="label_set-${index}-description" cols="40" rows="5" class="form-control" id="id_label_set-${index}-description"></textarea>
-        </td>
-        <td>
-          <div class="error-messages"></div>
-          <input type="hidden" name="label_set-${index}-DELETE" id="id_label_set-${index}-DELETE">
-        <a class="delete-row" href="javascript:void(0)" style="display: none;">remove label</a></td>
-      </tr>
-      `).join("");
-    $('#form-table > tbody').prepend(dummyHTML);
-  })
-</script>
 {% endblock %}
