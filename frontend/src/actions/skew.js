@@ -6,15 +6,18 @@ import { setMessage } from './card';
 
 export const SET_UNLABELED_DATA = 'SET_UNLABELED_DATA';
 export const SET_LABEL_COUNTS = 'SET_LABEL_COUNTS';
+export const SET_FILTER_STR = 'SET_FILTER_STR';
 
 export const set_unlabeled_data = createAction(SET_UNLABELED_DATA);
 export const set_label_counts = createAction(SET_LABEL_COUNTS);
+export const set_filter_str = createAction(SET_FILTER_STR);
 
 
 //Get the data for the skew table
 export const getUnlabeled = (projectID) => {
-    let apiURL = `/api/data_unlabeled_table/${projectID}/`;
-    return dispatch => {
+    return (dispatch, getState) => {
+        const filterStr = getState().skew.filter_str;
+        const apiURL = `/api/data_unlabeled_table/${projectID}?text=${filterStr}`;
         return fetch(apiURL, getConfig())
             .then(response => {
                 if (response.ok) {
@@ -90,5 +93,11 @@ export const skewLabel = (dataID, labelID, projectID) => {
                     dispatch(getLabelCounts(projectID));
                 }
             });
+    };
+};
+
+export const setFilterStr = (filterStr) => {
+    return dispatch => {
+        dispatch(set_filter_str(filterStr));
     };
 };

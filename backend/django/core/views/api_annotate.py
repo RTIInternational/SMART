@@ -708,45 +708,17 @@ def data_unlabeled_table(request, project_pk):
     Returns:
         data: a list of data information
     """
-    unlabeled_data = get_unlabeled_data(project_pk)[:50]
+    unlabeled_data = get_unlabeled_data(project_pk)
+    filter_str = request.GET.get("text", "")
+    if filter_str:
+        unlabeled_data = unlabeled_data.filter(text__icontains=filter_str.lower())
+    unlabeled_data = unlabeled_data[:50]
     serialized_data = DataSerializer(unlabeled_data, many=True).data
     data = [
         {"Text": d["text"], "metadata": d["metadata"], "ID": d["pk"]}
         for d in serialized_data
     ]
     return Response({"data": data})
-
-
-@api_view(["GET"])
-@permission_classes((IsAdminOrCreator,))
-def search_data_unlabeled_table(request, project_pk):
-    """This returns the unlabeled data not in a queue for the skew table filtered for a
-    search input.
-
-    Args:
-        request: The POST request
-        project_pk: Primary key of the project
-    Returns:
-        data: a filtered list of data information
-    """
-    project = Project.objects.get(pk=project_pk)
-    profile = request.user.profile
-    update_last_action(project, profile)
-    unlabeled_data = get_unlabeled_data(project_pk)
-    text = request.GET.get("text")
-    unlabeled_data = unlabeled_data.filter(text__icontains=text.lower())
-    serialized_data = DataSerializer(unlabeled_data, many=True).data
-    data = [
-        {
-            "data": d["text"],
-            "metadata": d["metadata"],
-            "id": d["pk"],
-            "project": project_pk,
-        }
-        for d in serialized_data
-    ]
-    return Response({"data": data[:50]})
-
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
