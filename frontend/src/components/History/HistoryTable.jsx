@@ -244,8 +244,10 @@ const HistoryTable = () => {
         getSortedRowModel: getSortedRowModel(),
         initialState: {
             pagination: {
-                pageSize: 100
-            }
+                // setting arbitrary high number to avoid items being cut off
+                // actual page size is driven by data length
+                pageSize: 10000,
+            },
         },
         pageCount: historyData ? historyData.total_pages : 1,
         onColumnVisibilityChange: setColumnVisibility,
@@ -425,12 +427,12 @@ const HistoryTable = () => {
                     ))}
                 </thead>
                 <tbody>
-                    {table.getRowModel().rows.map(row => (
+                    {table.getRowModel().rows.map((row, index) => (
                         <Fragment key={row.id}>
                             <tr>
                                 {row.getVisibleCells().map(cell => (
                                     <td className="align-middle" key={cell.id}>
-                                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                        { index }{flexRender(cell.column.columnDef.cell, cell.getContext())}
                                     </td>
                                 ))}
                             </tr>
