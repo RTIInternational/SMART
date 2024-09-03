@@ -427,12 +427,12 @@ const HistoryTable = () => {
                     ))}
                 </thead>
                 <tbody>
-                    {table.getRowModel().rows.map((row, index) => (
+                    {table.getRowModel().rows.map(row => (
                         <Fragment key={row.id}>
                             <tr>
                                 {row.getVisibleCells().map(cell => (
                                     <td className="align-middle" key={cell.id}>
-                                        { index }{flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                     </td>
                                 ))}
                             </tr>
