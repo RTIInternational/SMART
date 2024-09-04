@@ -244,8 +244,10 @@ const HistoryTable = () => {
         getSortedRowModel: getSortedRowModel(),
         initialState: {
             pagination: {
-                pageSize: 100
-            }
+                // setting arbitrary high number to avoid items being cut off
+                // actual page size is driven by data length
+                pageSize: 10000,
+            },
         },
         pageCount: historyData ? historyData.total_pages : 1,
         onColumnVisibilityChange: setColumnVisibility,
