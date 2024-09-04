@@ -334,7 +334,11 @@ def skip_data(request, data_pk):
 
         # log the data and check IRR but don't put in admin queue yet
         IRRLog.objects.create(
-            data=data, profile=profile, label=None, timestamp=timezone.now()
+            data=data,
+            profile=profile,
+            label=None,
+            timestamp=timezone.now(),
+            time_to_label=None,
         )
         # if the IRR history has more than the needed number of labels , it is
         # already processed so don't do anything else
@@ -393,7 +397,11 @@ def annotate_data(request, data_pk):
         # if the IRR history has more than the needed number of labels , it is
         # already processed so just add this label to the history.
         IRRLog.objects.create(
-            data=data, profile=profile, label=label, timestamp=timezone.now()
+            data=data,
+            profile=profile,
+            label=label,
+            timestamp=timezone.now(),
+            time_to_label=labeling_time,
         )
         assignment = AssignedData.objects.get(data=data, profile=profile)
         assignment.delete()
@@ -614,7 +622,11 @@ def modify_label_to_skip(request, data_pk):
                 # if it was irr, add it to the log
                 if len(IRRLog.objects.filter(data=data, profile=profile)) == 0:
                     IRRLog.objects.create(
-                        data=data, profile=profile, label=None, timestamp=timezone.now()
+                        data=data,
+                        profile=profile,
+                        label=None,
+                        timestamp=timezone.now(),
+                        time_to_label=None,
                     )
             else:
                 # if it's not irr, add it to the admin queue immediately
@@ -719,6 +731,7 @@ def data_unlabeled_table(request, project_pk):
         for d in serialized_data
     ]
     return Response({"data": data})
+
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
