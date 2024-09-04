@@ -34,7 +34,6 @@ from core.models import (
     Project,
     TrainingSet,
     Category,
-    LabelMetaDataField,
 )
 from core.templatetags import project_extras
 from core.utils.util import (
@@ -402,7 +401,12 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             label_metadata = [
                 c for c in label_data if c not in ["Label", "Description"]
             ]
-            create_or_update_project_category(proj_obj, label_metadata, metadata_fields)
+            metadata_both = list(
+                set([m.lower() for m in metadata_fields])
+                & set([m.lower() for m in label_metadata])
+            )
+            if len(metadata_both) > 0:
+                create_or_update_project_category(proj_obj, metadata_both[0])
 
             add_queue(project=proj_obj, length=2000000, type="admin")
             irr_queue = add_queue(project=proj_obj, length=2000000, type="irr")
@@ -498,35 +502,7 @@ class ProjectUpdateAdvanced(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
                 if project_category.exists():
                     project_category.delete()
             else:
-                if project_category.exists():
-                    existing_category = Category.objects.get(project=self.object)
-                    if existing_category.field_name != chosen_category:
-                        # update the category
-                        label_field = LabelMetaDataField.objects.get(
-                            project=self.object, field_name=chosen_category
-                        )
-                        data_field = MetaDataField.objects.get(
-                            project=self.object, field_name=chosen_category
-                        )
-                        Category.objects.filter(project=self.object).update(
-                            field_name=chosen_category,
-                            label_metadata_field=label_field,
-                            data_metadata_field=data_field,
-                        )
-                else:
-                    label_field = LabelMetaDataField.objects.get(
-                        project=self.object, field_name=chosen_category
-                    )
-                    data_field = MetaDataField.objects.get(
-                        project=self.object, field_name=chosen_category
-                    )
-                    Category.objects.create(
-                        project=self.object,
-                        field_name=chosen_category,
-                        label_metadata_field=label_field,
-                        data_metadata_field=data_field,
-                    )
-
+                create_or_update_project_category(self.object, chosen_category)
             return redirect(self.get_success_url())
         else:
             return self.render_to_response(context)

@@ -168,7 +168,7 @@
                 <li class="list-group-item">
                   <dt>Metadata Fields Displayed with Data</dt>
                   {% for meta in project.metadatafields.all %}
-                      {% if meta.field_name == project.category.field_name %}
+                      {% if meta.field_name.lower == project.category.field_name.lower %}
                         <dd>- [CATEGORY] {{ meta.field_name }} </dd>
                       {% else %}
                         <dd>- {{ meta.field_name }}</dd>
@@ -180,7 +180,7 @@
                 <li class="list-group-item">
                   <dt>Metadata Fields Displayed with Labels</dt>
                   {% for meta in project.labelmetadatafields.all %}
-                    {% if meta.field_name == project.category.field_name %}
+                    {% if meta.field_name.lower == project.category.field_name.lower %}
                       <dd>- [CATEGORY] {{ meta.field_name }} </dd>
                     {% else %}
                       <dd>- {{ meta.field_name }}</dd>
@@ -217,7 +217,7 @@
           <div id="label-panel" class="panel-collapse collapse">
             <div class="panel-body">
               <ul class="list-group-flush">
-                {% for label in project.labels.all %}
+                {% for label in project.first_100_labels %}
                   <li class="list-group-item">
                     <dt>{{ label.name }}</dt>
                     <dd>{{ label.description }} {% for meta in label.labelmetadata.all %} | {{ meta }} {% endfor %}</dd>
