@@ -895,7 +895,7 @@ def update_label_descriptions_metadata(project, new_data):
     label_metadata = [c for c in new_data if c not in ["Label", "Description"]]
     for metadata_col in label_metadata:
         label_metadata_field, created = LabelMetaDataField.objects.get_or_create(
-            project=project, field_name=metadata_col
+            project=project, field_name__iexact=metadata_col
         )
         if created:
             # create objects for each label in the entire label set
