@@ -155,9 +155,11 @@ class ProjectUpdateAdvancedForm(forms.ModelForm):
         else:
             start_val = "None"
         data_metadata = project.metadatafields.values_list("field_name", flat=True)
+        data_metadata = [m.lower().capitalize() for m in data_metadata]
         label_metadata = project.labelmetadatafields.values_list(
             "field_name", flat=True
         )
+        label_metadata = [lm.lower().capitalize() for lm in label_metadata]
         options = list(set(data_metadata) & set(label_metadata)) + ["None"]
 
         percentage_irr = kwargs.pop("percentage_irr")

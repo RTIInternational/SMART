@@ -847,33 +847,31 @@ def create_label_metadata(project, label_data, label_list):
             )
 
 
-def create_or_update_project_category(project, label_metadata, data_metadata):
+def create_or_update_project_category(project, new_category):
     """This function takes a field which overlaps between the label and data metadata
     and sets it to the project category to filter the suggestions by."""
-    metadata_both = list(set(data_metadata) & set(label_metadata))
-    if len(metadata_both) > 0:
-        # by default just pick the first overlap
-        if Category.objects.filter(project=project).exists():
-            Category.objects.filter(project=project).update(
-                field_name=metadata_both[0],
-                label_metadata_field=LabelMetaDataField.objects.get(
-                    field_name=metadata_both[0], project=project
-                ),
-                data_metadata_field=MetaDataField.objects.get(
-                    field_name=metadata_both[0], project=project
-                ),
-            )
-        else:
-            Category.objects.create(
-                project=project,
-                field_name=metadata_both[0],
-                label_metadata_field=LabelMetaDataField.objects.get(
-                    field_name=metadata_both[0], project=project
-                ),
-                data_metadata_field=MetaDataField.objects.get(
-                    field_name=metadata_both[0], project=project
-                ),
-            )
+    # by default just pick the first overlap
+    if Category.objects.filter(project=project).exists():
+        Category.objects.filter(project=project).update(
+            field_name=new_category,
+            label_metadata_field=LabelMetaDataField.objects.get(
+                field_name__iexact=new_category, project=project
+            ),
+            data_metadata_field=MetaDataField.objects.get(
+                field_name__iexact=new_category, project=project
+            ),
+        )
+    else:
+        Category.objects.create(
+            project=project,
+            field_name=new_category,
+            label_metadata_field=LabelMetaDataField.objects.get(
+                field_name__iexact=new_category, project=project
+            ),
+            data_metadata_field=MetaDataField.objects.get(
+                field_name__iexact=new_category, project=project
+            ),
+        )
 
 
 def update_label_descriptions_metadata(project, new_data):
@@ -897,7 +895,7 @@ def update_label_descriptions_metadata(project, new_data):
     label_metadata = [c for c in new_data if c not in ["Label", "Description"]]
     for metadata_col in label_metadata:
         label_metadata_field, created = LabelMetaDataField.objects.get_or_create(
-            project=project, field_name=metadata_col
+            project=project, field_name__iexact=metadata_col
         )
         if created:
             # create objects for each label in the entire label set
@@ -934,4 +932,9 @@ def update_label_descriptions_metadata(project, new_data):
     data_metadata = MetaDataField.objects.filter(project=project).values_list(
         "field_name", flat=True
     )
-    create_or_update_project_category(project, label_metadata, data_metadata)
+    metadata_both = list(
+        set([m.lower() for m in data_metadata])
+        & set([m.lower() for m in label_metadata])
+    )
+    if len(metadata_both) > 0:
+        create_or_update_project_category(project, metadata_both[0])

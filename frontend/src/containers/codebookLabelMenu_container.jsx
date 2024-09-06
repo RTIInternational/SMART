@@ -3,7 +3,16 @@ import { connect } from 'react-redux';
 
 import CodebookLabelMenu from '../components/CodebookLabelMenu';
 
-const CodebookLabelMenuContainer = (props) => <CodebookLabelMenu {...props} />;
+const CODEBOOK_URL = window.CODEBOOK_URL;
+
+const CodebookLabelMenuContainer = (props) => {
+    if (CODEBOOK_URL != "") {
+        return (<CodebookLabelMenu {...props} />);
+    } else {
+        return (<div></div>);
+    }
+
+};
 
 const mapStateToProps = (state) => {
     return {};
