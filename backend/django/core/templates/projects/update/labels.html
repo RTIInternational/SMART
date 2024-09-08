@@ -4,12 +4,18 @@
 {% load render_bundle from webpack_loader %}
 
 {% block content %}
+<div class="overlay">
+  <div class="overlay_contents">
+      <div id="second_progress"></div>
+      <span id="loading_text"></span>
+  </div>
+</div>
 <div class="row">
   <div class="col-md-8 col-md-offset-2">
     <div class="card">
       <div class="cardface">
         {{ form.media.css }}
-        <form action="." method="post" enctype="multipart/form-data">
+        <form action="." method="post" enctype="multipart/form-data" onsubmit="addASpinner()">
           {% csrf_token %}
           <h1>Update Label Descriptions/Metadata</h1>
           <p>This section lets you update your label descriptions or add/update metadata. Please upload a csv or excel file containing the fields 'Label', 'Description',
@@ -20,6 +26,7 @@
           <div class="form-group">
             <label class="control-label" for="{{ form.data.id_for_label }}">{{ form.data.label }}</label>
             <input class="form-control" id="{{ form.data.id_for_label }}" maxlength="30" name="{{ form.data.html_name }}" type="file" placeholder="{{ form.data.label }}" />
+            <div class="error-messages">{{ form.non_field_errors }}</div>
             <div class="error-messages">{{ form.data.errors }}</div>
             <div class="error-messages">{{ form.all.errors }}</div>
           </div>
@@ -29,4 +36,17 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts_body %}
+<script type="text/javascript">
+      function addASpinner() {
+        $('.overlay').show();
+        $('#loading_text').html("Please wait. Uploading labels...");
+        $("#second_progress").addClass("loader");
+        setTimeout(function() {
+            $('#loading_text').html("STILL Processing labels...");
+        }, 30000)
+    }
+</script>
 {% endblock %}

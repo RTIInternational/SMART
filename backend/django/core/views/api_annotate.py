@@ -79,11 +79,17 @@ class SearchLabelsView(ListAPIView):
         filter_text = self.request.GET.get("searchString")
 
         label_category = self.request.GET.get("category")
-        if label_category:
-            category_label_list = LabelMetaData.objects.filter(
-                label_metadata_field=project.category.label_metadata_field,
-                value=label_category,
-            ).values_list("label__pk", flat=True)
+        if label_category and label_category != "all":
+            if label_category == "None":
+                category_label_list = LabelMetaData.objects.filter(
+                    label_metadata_field=project.category.label_metadata_field,
+                    value="nan",
+                ).values_list("label__pk", flat=True)
+            else:
+                category_label_list = LabelMetaData.objects.filter(
+                    label_metadata_field=project.category.label_metadata_field,
+                    value=label_category,
+                ).values_list("label__pk", flat=True)
             return Label.objects.filter(
                 project=project, pk__in=category_label_list
             ).filter(
@@ -120,12 +126,15 @@ def get_label_categories(request, project_pk, data_pk):
                 metadata_field=data_metadata_field, data=data_options
             ).value
             if data_category not in category_options:
-                data_category = ""
+                data_category = "all"
         else:
-            data_category = ""
+            data_category = "all"
+
+        category_options = [c if str(c) != "nan" else "None" for c in category_options]
         return Response(
             {
-                "label_category_options": [
+                "label_category_options": [{"value": "all", "label": "Category: all"}]
+                + [
                     {"value": key, "label": f"Category: {key}"}
                     for key in category_options
                 ],
@@ -150,9 +159,10 @@ def get_labels(request, project_pk):
     total_labels = Label.objects.filter(project=project).count()
 
     # If the number of labels is > 100, just return the first 100
-    serialized_labels = LabelSerializer(labels, many=True).data
-    if len(serialized_labels) > 100:
-        serialized_labels = serialized_labels[:100]
+    if total_labels < 100:
+        serialized_labels = LabelSerializer(labels, many=True).data
+    else:
+        serialized_labels = []
 
     return Response({"labels": serialized_labels, "total_labels": total_labels})
 
@@ -380,6 +390,13 @@ def annotate_data(request, data_pk):
             "ERROR: this card was no longer assigned. Either "
             "your cards were un-assigned by an administrator or the label was clicked twice. "
             "Please refresh the page to get new assigned items to annotate."
+        )
+        return Response(response)
+
+    if not data.irr_ind and DataLabel.objects.filter(data=data).exists():
+        response["error"] = (
+            "ERROR: this card has been labeled by someone else in another tab."
+            "Please refresh the page to get new items to annotate."
         )
         return Response(response)
 
@@ -708,44 +725,17 @@ def data_unlabeled_table(request, project_pk):
     Returns:
         data: a list of data information
     """
-    unlabeled_data = get_unlabeled_data(project_pk)[:50]
+    unlabeled_data = get_unlabeled_data(project_pk)
+    filter_str = request.GET.get("text", "")
+    if filter_str:
+        unlabeled_data = unlabeled_data.filter(text__icontains=filter_str.lower())
+    unlabeled_data = unlabeled_data[:50]
     serialized_data = DataSerializer(unlabeled_data, many=True).data
     data = [
         {"Text": d["text"], "metadata": d["metadata"], "ID": d["pk"]}
         for d in serialized_data
     ]
     return Response({"data": data})
-
-
-@api_view(["GET"])
-@permission_classes((IsAdminOrCreator,))
-def search_data_unlabeled_table(request, project_pk):
-    """This returns the unlabeled data not in a queue for the skew table filtered for a
-    search input.
-
-    Args:
-        request: The POST request
-        project_pk: Primary key of the project
-    Returns:
-        data: a filtered list of data information
-    """
-    project = Project.objects.get(pk=project_pk)
-    profile = request.user.profile
-    update_last_action(project, profile)
-    unlabeled_data = get_unlabeled_data(project_pk)
-    text = request.GET.get("text")
-    unlabeled_data = unlabeled_data.filter(text__icontains=text.lower())
-    serialized_data = DataSerializer(unlabeled_data, many=True).data
-    data = [
-        {
-            "data": d["text"],
-            "metadata": d["metadata"],
-            "id": d["pk"],
-            "project": project_pk,
-        }
-        for d in serialized_data
-    ]
-    return Response({"data": data[:50]})
 
 
 @api_view(["POST"])

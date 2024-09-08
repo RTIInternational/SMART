@@ -23,6 +23,13 @@ def clean_data_helper(
     if len(data) < 1:
         raise ValidationError("Data is empty.")
 
+    lower_cols = [c.lower() for c in data.columns]
+    if len(lower_cols) > len(set(lower_cols)):
+        raise ValidationError(
+            "There are duplicate fields in this file. To avoid confusion "
+            "SMART requires all fields to have unique names."
+        )
+
     found_metadata_fields = [
         c for c in data.columns if c not in ["Text", "Label", "ID"]
     ]
@@ -106,8 +113,15 @@ def clean_label_data_helper(data, existing_labels=[]):
             f"New labels were found in this file: {', '.join(new_labels)}"
         )
 
-    if len(data) < 2:
+    if len(data) < 2 and len(existing_labels) == 0:
         raise ValidationError("At least two labels are required.")
+
+    lower_cols = [c.lower() for c in data.columns]
+    if len(lower_cols) > len(set(lower_cols)):
+        raise ValidationError(
+            "There are duplicate fields in this file. To avoid confusion "
+            "SMART requires all fields to have unique names."
+        )
 
     if len(data["Label"].unique()) < len(data):
         label_counts = data["Label"].value_counts()
