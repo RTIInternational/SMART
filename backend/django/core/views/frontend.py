@@ -9,8 +9,10 @@ from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.views.generic import DetailView, ListView, TemplateView, View
 from django.views.generic.edit import DeleteView, UpdateView
+from django.db import connection
 from formtools.wizard.views import SessionWizardView
 from smart.settings import PROJECT_SUGGESTION_MAX
+from io import StringIO
 
 from core.forms import (
     AdvancedWizardForm,
@@ -341,13 +343,34 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
             label_data = labels.cleaned_data["label_data_file"]
             label_data["Label"] = label_data["Label"].astype(str)
-            label_objects = [
-                Label(name=d["Label"], description=d["Description"], project=proj_obj)
-                for d in label_data.to_dict(orient="records")
-            ]
-            Label.objects.bulk_create(label_objects)
+            label_data["project"] = proj_obj.pk
 
-            create_label_metadata(proj_obj, label_data, label_objects)
+            stream = StringIO()
+            label_data[["Label", "Description", "project"]].to_csv(
+                stream,
+                sep="\t",
+                header=False,
+                index=False,
+                columns=["Label", "Description", "project"],
+                escapechar="\\",
+                doublequote=False,
+            )
+            stream.seek(0)
+
+            with connection.cursor() as c:
+                c.copy_from(
+                    stream,
+                    Label._meta.db_table,
+                    sep="\t",
+                    null="",
+                    columns=[
+                        "name",
+                        "description",
+                        "project_id",
+                    ],
+                )
+
+            create_label_metadata(proj_obj, label_data)
 
             # Permissions
             permissions.instance = proj_obj

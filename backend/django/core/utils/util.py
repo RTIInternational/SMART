@@ -158,20 +158,15 @@ def create_data_from_csv(df, project):
     df["project"] = project.pk
     df["irr_ind"] = False
 
-    # Replace tabs since thats our delimiter, remove carriage returns since copy_from doesnt like them
-    # escape all backslashes because it seems to fix "end-of-copy marker corrupt"
-    df["Text"] = (
-        df["Text"]
-        .astype(str)
-        .apply(
-            lambda x: x.replace("\t", " ")
-            .replace("\r", " ")
-            .replace("\n", " ")
-            .replace("\\", "\\\\")
-        )
+    df.to_csv(
+        stream,
+        sep="\t",
+        header=False,
+        index=False,
+        columns=columns,
+        escapechar="\\",
+        doublequote=False,
     )
-
-    df.to_csv(stream, sep="\t", header=False, index=False, columns=columns)
     stream.seek(0)
 
     with connection.cursor() as c:
@@ -218,7 +213,15 @@ def create_labels_from_csv(df, project):
     # these data are preloaded
     df["pre_loaded"] = True
 
-    df.to_csv(stream, sep="\t", header=False, index=False, columns=columns)
+    df.to_csv(
+        stream,
+        sep="\t",
+        header=False,
+        index=False,
+        columns=columns,
+        escapechar="\\",
+        doublequote=False,
+    )
     stream.seek(0)
 
     with connection.cursor() as c:
@@ -250,6 +253,8 @@ def create_metadata_objects_from_csv(df, project):
             header=False,
             index=False,
             columns=df_meta.columns.values.tolist(),
+            escapechar="\\",
+            doublequote=False,
         )
         stream.seek(0)
         with connection.cursor() as c:
@@ -818,33 +823,54 @@ def get_unlabelled_data_objs(project_id: int) -> int:
         return cursor.fetchone()[0]
 
 
-def create_label_metadata(project, label_data, label_list):
+def create_label_metadata(project, label_data):
     """This function creates LabelMetadataField objects for each new field and
     LabelMetadata objects for each label-field pair.
 
     Args:
         project: a Project object
         label_data: a pandas dataframe with the label metadata fields
-        label_list: a list of label objects for the project
     """
-    label_metadata = [c for c in label_data if c not in ["Label", "Description"]]
+    label_objects = pd.DataFrame(
+        list(Label.objects.filter(project=project).values("id", "name"))
+    ).rename(columns={"name": "Label", "id": "label_id"})
+    label_data = label_data.merge(label_objects, on="Label", how="left")
+    print(label_data)
+
+    label_metadata = [
+        c for c in label_data if c not in ["Label", "Description", "label_id"]
+    ]
     if len(label_metadata) > 0:
         for metadata_col in label_metadata:
+            field_name = str(metadata_col)
             label_metadata_field = LabelMetaDataField.objects.create(
-                project=project, field_name=metadata_col
+                project=project, field_name=field_name
             )
-            all_metadata_values = label_data[metadata_col].tolist()
-            all_label_metadata_objects = [
-                LabelMetaData(
-                    label=label_list[i],
-                    label_metadata_field=label_metadata_field,
-                    value=all_metadata_values[i],
+            df_meta = label_data[["label_id", field_name]].rename(
+                columns={field_name: "value"}
+            )
+            df_meta["label_metadata_field_id"] = label_metadata_field.pk
+            print(df_meta)
+            df_meta = df_meta[["label_id", "label_metadata_field_id", "value"]]
+            stream = StringIO()
+            df_meta.to_csv(
+                stream,
+                sep="\t",
+                header=False,
+                index=False,
+                columns=df_meta.columns.values.tolist(),
+                escapechar="\\",
+                doublequote=False,
+            )
+            stream.seek(0)
+            with connection.cursor() as c:
+                c.copy_from(
+                    stream,
+                    LabelMetaData._meta.db_table,
+                    sep="\t",
+                    null="",
+                    columns=df_meta.columns.values.tolist(),
                 )
-                for i in range(len(all_metadata_values))
-            ]
-            LabelMetaData.objects.bulk_create(
-                all_label_metadata_objects, batch_size=8000
-            )
 
 
 def create_or_update_project_category(project, new_category):
