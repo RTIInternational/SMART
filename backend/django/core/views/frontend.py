@@ -343,15 +343,16 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
             label_data = labels.cleaned_data["label_data_file"]
             label_data["Label"] = label_data["Label"].astype(str)
+            label_data["Description"] = label_data["Description"].astype(str).fillna("")
             label_data["project"] = proj_obj.pk
 
             stream = StringIO()
-            label_data[["Label", "Description", "project"]].to_csv(
+            label_data[["Label", "project", "Description"]].to_csv(
                 stream,
                 sep="\t",
                 header=False,
                 index=False,
-                columns=["Label", "Description", "project"],
+                columns=["Label", "project", "Description"],
                 escapechar="\\",
                 doublequote=False,
             )
@@ -365,8 +366,8 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
                     null="",
                     columns=[
                         "name",
-                        "description",
                         "project_id",
+                        "description",
                     ],
                 )
 
