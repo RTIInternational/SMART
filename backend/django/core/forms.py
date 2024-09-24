@@ -46,28 +46,19 @@ def read_data_file(data_file):
 
     try:
         if data_file.content_type == "text/tab-separated-values":
-            data = pd.read_csv(
-                data_file,
-                sep="\t",
-                encoding="utf-8"
-            ).dropna(axis=0, how="all")
+            data = pd.read_csv(data_file, sep="\t", encoding="utf-8").dropna(
+                axis=0, how="all"
+            )
         elif data_file.content_type == "text/csv":
-            data = pd.read_csv(
-                data_file, encoding="utf-8"
-            ).dropna(axis=0, how="all")
+            data = pd.read_csv(data_file, encoding="utf-8").dropna(axis=0, how="all")
         elif data_file.content_type.startswith(
             "application/vnd"
         ) and data_file.name.endswith(".csv"):
-            data = pd.read_csv(
-                data_file, encoding="utf-8"
-            ).dropna(axis=0, how="all")
+            data = pd.read_csv(data_file, encoding="utf-8").dropna(axis=0, how="all")
         elif data_file.content_type.startswith(
             "application/vnd"
         ) and data_file.name.endswith(".xlsx"):
-            data = (
-                pd.read_excel(data_file, dtype=str)
-                .dropna(axis=0, how="all")
-            )
+            data = pd.read_excel(data_file, dtype=str).dropna(axis=0, how="all")
         else:
             raise ValidationError(
                 "File type is not supported.  Received {0} but only {1} are supported.".format(

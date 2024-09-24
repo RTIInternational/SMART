@@ -73,7 +73,11 @@ def clean_data_helper(
             )
 
     labels_in_data = data["Label"].dropna(inplace=False).unique()
-    if (supplied_labels is not None) and len(labels_in_data) > 0 and len(set(labels_in_data) - set(supplied_labels)) > 0:
+    if (
+        (supplied_labels is not None)
+        and len(labels_in_data) > 0
+        and len(set(labels_in_data) - set(supplied_labels)) > 0
+    ):
         just_in_data = set(labels_in_data) - set(supplied_labels)
         raise ValidationError(
             f"There are extra labels in the file which were not created in step 2: {just_in_data}"
