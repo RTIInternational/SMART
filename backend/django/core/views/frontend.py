@@ -176,7 +176,9 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
         if step == "data":
             all_labels = self.get_cleaned_data_for_step("labels").get("label_data_file")
-            kwargs["labels"] = all_labels["Label"].tolist()
+            if all_labels is not None:
+                all_labels = all_labels["Label"].tolist()
+            kwargs["labels"] = all_labels
             external_data = self.get_cleaned_data_for_step("external")
             if "engine_database" in external_data:
                 kwargs["database_type"] = external_data["database_type"]
@@ -261,10 +263,10 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         proj = form_dict["project"]
         labels = form_dict["labels"]
         permissions = form_dict["permissions"]
-        advanced = form_dict["advanced"]
+        codebook_data = form_dict["codebook"]
         external = form_dict["external"]
         data = form_dict["data"]
-        codebook_data = form_dict["codebook"]
+        advanced = form_dict["advanced"]
 
         with transaction.atomic():
             # Project

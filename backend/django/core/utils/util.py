@@ -838,7 +838,7 @@ def create_label_metadata(project, label_data):
     print(label_data)
 
     label_metadata = [
-        c for c in label_data if c not in ["Label", "Description", "label_id"]
+        c for c in label_data if c not in ["Label", "Description", "label_id", "project"]
     ]
     if len(label_metadata) > 0:
         for metadata_col in label_metadata:
