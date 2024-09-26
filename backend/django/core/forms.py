@@ -341,6 +341,7 @@ class DataWizardForm(forms.ModelForm):
         self.cleaned_data["data"] = clean_data_helper(
             data_df, labels, dedup_on, dedup_fields
         )
+
         return self.cleaned_data
 
 

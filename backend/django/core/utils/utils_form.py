@@ -115,13 +115,14 @@ def clean_label_data_helper(data, existing_labels=[]):
     new_labels = list(new_labels_all - set(existing_labels))
 
     # # try adding quotes around the "new" labels and see if they match now
-    data["Label"] = data["Label"].apply(
-        lambda s: (
-            f'"{s}"'.replace("\\n", "\n").replace("\\t", "\t").replace("\\r", "\r")
-            if s in new_labels
-            else s
+    if len(existing_labels) > 0 and len(new_labels) > 0:
+        data["Label"] = data["Label"].apply(
+            lambda s: (
+                f'"{s}"'.replace("\\n", "\n").replace("\\t", "\t").replace("\\r", "\r")
+                if s in new_labels
+                else s
+            )
         )
-    )
     new_labels_all = set(data["Label"].unique())
     fixed_labels = list(new_labels_all - set(existing_labels))
 

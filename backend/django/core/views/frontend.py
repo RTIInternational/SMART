@@ -178,6 +178,7 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             all_labels = self.get_cleaned_data_for_step("labels").get("label_data_file")
             if all_labels is not None:
                 all_labels = all_labels["Label"].tolist()
+
             kwargs["labels"] = all_labels
             external_data = self.get_cleaned_data_for_step("external")
             if "engine_database" in external_data:
