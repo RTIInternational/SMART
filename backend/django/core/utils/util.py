@@ -334,9 +334,9 @@ def add_data(project, df):
 
     df["hash"] = ""
     for f in dedup_on_fields:
-        df["hash"] += df[f].astype(str) + "_"
+        df["hash"] += df[f].fillna("None").astype(str) + "_"
 
-    df["hash"] += df["Text"].astype(str)
+    df["hash"] += df["Text"].fillna("None").astype(str)
     df["hash"] = df["hash"].apply(md5_hash)
 
     df.drop_duplicates(subset=["hash"], keep="first", inplace=True)
@@ -841,18 +841,10 @@ def create_label_metadata(project, label_data):
     df_label_ids = set(label_data["Label"].tolist())
 
     need_quotes = df_label_ids - existing_label_ids
-    label_data["Label"] = label_data["Label"].apply(
-        lambda s: (
-            f'"{s}"'.replace("\\n", "\n").replace("\\t", "\t").replace("\\r", "\r")
-            if s in need_quotes
-            else s
-        )
-    )
+    label_data["Label"] = label_data["Label"].apply(lambda s: f'"{s}"'.replace('\\n', '\n').replace('\\t', '\t').replace('\\r', '\r') if s in need_quotes else s)
     df_label_ids = set(label_data["Label"].tolist())
     if len(df_label_ids - existing_label_ids) > 0:
-        raise ValidationError(
-            "ERROR loading in label metadata. Something is going wrong with the label file."
-        )
+        raise ValidationError("ERROR loading in label metadata. Something is going wrong with the label file.")
 
     label_data = label_data.merge(label_objects, on="Label", how="inner")
 
