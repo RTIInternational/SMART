@@ -12,6 +12,7 @@ from django.contrib.auth import get_user_model
 from django.db import connection, transaction
 from django.utils import timezone
 from sentence_transformers import SentenceTransformer
+from django.core.exceptions import ValidationError
 
 from core import tasks
 from core.models import (
@@ -834,8 +835,26 @@ def create_label_metadata(project, label_data):
     label_objects = pd.DataFrame(
         list(Label.objects.filter(project=project).values("id", "name"))
     ).rename(columns={"name": "Label", "id": "label_id"})
-    label_data = label_data.merge(label_objects, on="Label", how="left")
-    print(label_data)
+
+    # for some labels we will need to add quotes and un-escape strings for the merge to work
+    existing_label_ids = set(label_objects["Label"].tolist())
+    df_label_ids = set(label_data["Label"].tolist())
+
+    need_quotes = df_label_ids - existing_label_ids
+    label_data["Label"] = label_data["Label"].apply(
+        lambda s: (
+            f'"{s}"'.replace("\\n", "\n").replace("\\t", "\t").replace("\\r", "\r")
+            if s in need_quotes
+            else s
+        )
+    )
+    df_label_ids = set(label_data["Label"].tolist())
+    if len(df_label_ids - existing_label_ids) > 0:
+        raise ValidationError(
+            "ERROR loading in label metadata. Something is going wrong with the label file."
+        )
+
+    label_data = label_data.merge(label_objects, on="Label", how="inner")
 
     label_metadata = [
         c
@@ -852,7 +871,6 @@ def create_label_metadata(project, label_data):
                 columns={field_name: "value"}
             )
             df_meta["label_metadata_field_id"] = label_metadata_field.pk
-            print(df_meta)
             df_meta = df_meta[["label_id", "label_metadata_field_id", "value"]]
             stream = StringIO()
             df_meta.to_csv(
