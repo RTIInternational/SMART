@@ -79,9 +79,16 @@ def clean_data_helper(
         and len(set(labels_in_data) - set(supplied_labels)) > 0
     ):
         just_in_data = set(labels_in_data) - set(supplied_labels)
-        raise ValidationError(
-            f"There are extra labels in the file which were not created in step 2: {just_in_data}"
-        )
+        # add a correction for label descriptions with weird characters
+        labels_in_data_fixed = [
+            f'"{s}"'.replace("\\n", "\n").replace("\\t", "\t").replace("\\r", "\r")
+            for s in just_in_data
+        ] + list(set(labels_in_data) - just_in_data)
+
+        if len(set(labels_in_data_fixed) - set(supplied_labels)) > 0:
+            raise ValidationError(
+                f"There are extra labels in the file which were not in step 2 of project creation: {just_in_data}"
+            )
 
     if "ID" in data.columns:
         # there should be no null values

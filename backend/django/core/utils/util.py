@@ -202,6 +202,16 @@ def create_labels_from_csv(df, project):
     stream = StringIO()
 
     labels = {label.name: label.pk for label in project.labels.all()}
+
+    df["Label"] = df["Label"].apply(
+        lambda s: s.replace("\\n", "\n").replace("\\t", "\t").replace("\\r", "\r")
+    )
+
+    existing_labels = set(labels.keys())
+    df_labels = set(df["Label"].tolist())
+
+    quote_labels = df_labels - existing_labels
+    df["Label"] = df["Label"].apply(lambda s: f'"{s}"' if s in quote_labels else s)
     df["data_id"] = df["hash"].apply(
         lambda x: Data.objects.get(hash=x, project=project).pk
     )
@@ -841,10 +851,18 @@ def create_label_metadata(project, label_data):
     df_label_ids = set(label_data["Label"].tolist())
 
     need_quotes = df_label_ids - existing_label_ids
-    label_data["Label"] = label_data["Label"].apply(lambda s: f'"{s}"'.replace('\\n', '\n').replace('\\t', '\t').replace('\\r', '\r') if s in need_quotes else s)
+    label_data["Label"] = label_data["Label"].apply(
+        lambda s: (
+            f'"{s}"'.replace("\\n", "\n").replace("\\t", "\t").replace("\\r", "\r")
+            if s in need_quotes
+            else s
+        )
+    )
     df_label_ids = set(label_data["Label"].tolist())
     if len(df_label_ids - existing_label_ids) > 0:
-        raise ValidationError("ERROR loading in label metadata. Something is going wrong with the label file.")
+        raise ValidationError(
+            "ERROR loading in label metadata. Something is going wrong with the label file."
+        )
 
     label_data = label_data.merge(label_objects, on="Label", how="inner")
 
