@@ -90,7 +90,7 @@ export const skewLabel = (dataID, labelID, projectID) => {
                     dispatch(setMessage(response.error));
                 } else {
                     dispatch(getUnlabeled(projectID));
-                    dispatch(getLabelCounts(projectID));
+                    //dispatch(getLabelCounts(projectID));
                 }
             });
     };

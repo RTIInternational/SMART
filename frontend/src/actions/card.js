@@ -74,7 +74,7 @@ export const annotateCard = (dataID, labelID, num_cards_left, start_time, projec
                     if (is_admin) {
                         dispatch(getAdmin(projectID));
                         queryClient.invalidateQueries(["adminCounts", projectID]);
-                        dispatch(getLabelCounts(projectID));
+                        //dispatch(getLabelCounts(projectID));
                     }
                 }
             });

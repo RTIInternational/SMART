@@ -102,7 +102,7 @@ export const adminLabel = (dataID, labelID, projectID) => {
                 } else {
                     dispatch(getUnlabeled(projectID));
                     queryClient.invalidateQueries(["history", projectID]); // is this necessary?
-                    dispatch(getLabelCounts(projectID));
+                    //dispatch(getLabelCounts(projectID));
                     dispatch(getAdmin(projectID));
                     queryClient.invalidateQueries(["adminCounts", projectID]);
                 }

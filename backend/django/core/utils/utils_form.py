@@ -73,11 +73,22 @@ def clean_data_helper(
             )
 
     labels_in_data = data["Label"].dropna(inplace=False).unique()
-    if len(labels_in_data) > 0 and len(set(labels_in_data) - set(supplied_labels)) > 0:
+    if (
+        (supplied_labels is not None)
+        and len(labels_in_data) > 0
+        and len(set(labels_in_data) - set(supplied_labels)) > 0
+    ):
         just_in_data = set(labels_in_data) - set(supplied_labels)
-        raise ValidationError(
-            f"There are extra labels in the file which were not created in step 2: {just_in_data}"
-        )
+        # add a correction for label descriptions with weird characters
+        labels_in_data_fixed = [
+            f'"{s}"'.replace("\\n", "\n").replace("\\t", "\t").replace("\\r", "\r")
+            for s in just_in_data
+        ] + list(set(labels_in_data) - just_in_data)
+
+        if len(set(labels_in_data_fixed) - set(supplied_labels)) > 0:
+            raise ValidationError(
+                f"There are extra labels in the file which were not in step 2 of project creation: {just_in_data}"
+            )
 
     if "ID" in data.columns:
         # there should be no null values
@@ -107,8 +118,22 @@ def clean_label_data_helper(data, existing_labels=[]):
         if field not in data.columns:
             raise ValidationError(f"File is missing required field '{field}'.")
 
-    new_labels = list(set(data["Label"].unique()) - set(existing_labels))
-    if len(new_labels) > 0 and len(existing_labels) > 0:
+    new_labels_all = set(data["Label"].unique())
+    new_labels = list(new_labels_all - set(existing_labels))
+
+    # # try adding quotes around the "new" labels and see if they match now
+    if len(existing_labels) > 0 and len(new_labels) > 0:
+        data["Label"] = data["Label"].apply(
+            lambda s: (
+                f'"{s}"'.replace("\\n", "\n").replace("\\t", "\t").replace("\\r", "\r")
+                if s in new_labels
+                else s
+            )
+        )
+    new_labels_all = set(data["Label"].unique())
+    fixed_labels = list(new_labels_all - set(existing_labels))
+
+    if len(new_labels) > 0 and len(existing_labels) > 0 and len(fixed_labels) > 0:
         raise ValidationError(
             f"New labels were found in this file: {', '.join(new_labels)}"
         )
