@@ -9,4 +9,5 @@ while [ $n -ne 0 ]; do
     n=$?
 done
 
-python ./manage.py runserver 0.0.0.0:8000
+timestamp=$(date +"%Y%m%d_%H%M%S")
+python -m memray run --native --follow-fork --aggregate -o /var/log/memray_${timestamp}.bin ./manage.py runserver 0.0.0.0:8000 
