@@ -141,7 +141,11 @@ def skip_data(datum, profile):
     project = datum.project
 
     IRRLog.objects.create(
-        data=datum, profile=profile, label=None, timestamp=timezone.now()
+        data=datum,
+        profile=profile,
+        label=None,
+        timestamp=timezone.now(),
+        time_to_label=None,
     )
     num_history = IRRLog.objects.filter(data=datum).count()
     # if the datum is irr or processed irr, dont add to admin queue yet
@@ -195,7 +199,11 @@ def label_data(label, datum, profile, time):
             # already processed so just add this label to the history.
             if num_history >= datum.project.num_users_irr:
                 IRRLog.objects.create(
-                    data=datum, profile=profile, label=label, timestamp=timezone.now()
+                    data=datum,
+                    profile=profile,
+                    label=label,
+                    timestamp=timezone.now(),
+                    time_to_label=time,
                 )
                 DataLabel.objects.get(data=datum, profile=profile).delete()
             else:
@@ -220,7 +228,13 @@ def process_irr_label(data, label):
     if (labeled.count() + skipped.count()) >= project.num_users_irr:
         # add all labels to IRRLog
         history_list = [
-            IRRLog(data=data, profile=d.profile, label=d.label, timestamp=d.timestamp)
+            IRRLog(
+                data=data,
+                profile=d.profile,
+                label=d.label,
+                timestamp=d.timestamp,
+                time_to_label=d.time_to_label,
+            )
             for d in labeled
         ]
         with transaction.atomic():

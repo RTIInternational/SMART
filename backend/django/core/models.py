@@ -293,6 +293,7 @@ class IRRLog(models.Model):
     profile = models.ForeignKey("Profile", on_delete=models.CASCADE)
     label = models.ForeignKey("Label", null=True, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(null=True, default=None)
+    time_to_label = models.IntegerField(null=True, default=None)
 
 
 class DataLabel(models.Model):
