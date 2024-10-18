@@ -416,10 +416,12 @@ class LabelMetaDataField(models.Model):
         return self.field_name
 
     def get_unique_options(self):
-        unique_list = list(
-            set(self.labelmetadata_set.all().values_list("value", flat=True))
+        unique_list = (
+            self.labelmetadata_set.all()
+            .order_by("value")
+            .values_list("value", flat=True)
+            .distinct()
         )
-        unique_list.sort()
         return unique_list
 
 

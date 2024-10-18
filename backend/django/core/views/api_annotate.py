@@ -79,12 +79,17 @@ class SearchLabelsView(ListAPIView):
         filter_text = self.request.GET.get("searchString")
 
         label_category = self.request.GET.get("category")
-        if label_category and label_category != "all":
-            if label_category == "None":
-                category_label_list = LabelMetaData.objects.filter(
-                    label_metadata_field=project.category.label_metadata_field,
-                    value="nan",
-                ).values_list("label__pk", flat=True)
+        if hasattr(project, "category") and label_category != "all":
+            if label_category == "None" or label_category == "":
+                category_label_list = (
+                    LabelMetaData.objects.filter(
+                        label_metadata_field=project.category.label_metadata_field
+                    )
+                    .filter(
+                        Q(value__isnull=True) | Q(value="nan"),
+                    )
+                    .values_list("label__pk", flat=True)
+                )
             else:
                 category_label_list = LabelMetaData.objects.filter(
                     label_metadata_field=project.category.label_metadata_field,
