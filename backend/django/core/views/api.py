@@ -157,7 +157,7 @@ def download_irr_log(request, project_pk):
         label_name = log.label.name if log.label else ""
         writer.writerow(
             [
-                log.data.pk,
+                log.data.upload_id,
                 log.data.text,
                 label_name,
                 log.profile.user,
