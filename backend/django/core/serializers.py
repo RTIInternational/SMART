@@ -61,11 +61,14 @@ class LabelSerializer(serializers.ModelSerializer):
 
     def to_representation(self, obj):
         base_representation = super().to_representation(obj)
-        if len(base_representation["labelmetadata"]) > 0:
+        if str(base_representation["description"]) == "nan":
+            base_representation["description"] = ""
+
+        metadata = [m for m in base_representation["labelmetadata"] if str(m) != ""]
+
+        if len(metadata) > 0:
             base_representation["description"] = (
-                base_representation["description"]
-                + " | "
-                + " | ".join(base_representation["labelmetadata"])
+                base_representation["description"] + " | " + " | ".join(metadata)
             )
         return base_representation
 

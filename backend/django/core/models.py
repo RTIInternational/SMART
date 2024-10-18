@@ -108,6 +108,12 @@ class Project(models.Model):
     def labeled_data_count(self):
         return self.data_set.all().filter(datalabel__isnull=False).count()
 
+    def first_100_labels(self):
+        if self.labels.count() > 100:
+            return self.labels.all()[:100]
+        else:
+            return self.labels.all()
+
     def unverified_labeled_data_count(self):
         return (
             self.data_set.all()
@@ -431,6 +437,8 @@ class LabelMetaData(models.Model):
     value = models.TextField(null=True, blank=True)
 
     def __str__(self):
+        if str(self.value) == "nan":
+            return ""
         return f"{str(self.label_metadata_field)}: {self.value}"
 
 

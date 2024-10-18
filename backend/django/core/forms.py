@@ -1,5 +1,4 @@
 import copy
-from io import StringIO
 
 import pandas as pd
 from django import forms
@@ -48,30 +47,32 @@ def read_data_file(data_file):
     try:
         if data_file.content_type == "text/tab-separated-values":
             data = pd.read_csv(
-                StringIO(data_file.read().decode("utf8", "ignore")),
+                data_file,
                 sep="\t",
+                encoding="utf-8",
                 dtype=str,
             ).dropna(axis=0, how="all")
         elif data_file.content_type == "text/csv":
             data = pd.read_csv(
-                StringIO(data_file.read().decode("utf8", "ignore")),
+                data_file,
+                encoding="utf-8",
                 dtype=str,
             ).dropna(axis=0, how="all")
         elif data_file.content_type.startswith(
             "application/vnd"
         ) and data_file.name.endswith(".csv"):
             data = pd.read_csv(
-                StringIO(data_file.read().decode("utf8", "ignore")),
+                data_file,
+                encoding="utf-8",
                 dtype=str,
             ).dropna(axis=0, how="all")
         elif data_file.content_type.startswith(
             "application/vnd"
         ) and data_file.name.endswith(".xlsx"):
-            data = (
-                pd.read_excel(data_file, dtype=str)
-                .dropna(axis=0, how="all")
-                .replace(r"\n", " ", regex=True)
-            )
+            data = pd.read_excel(
+                data_file,
+                dtype=str,
+            ).dropna(axis=0, how="all")
         else:
             raise ValidationError(
                 "File type is not supported.  Received {0} but only {1} are supported.".format(
@@ -81,13 +82,14 @@ def read_data_file(data_file):
     except ParserError:
         # If there was an error while parsing then raise invalid file error
         raise ValidationError(
-            "Unable to read file.  Please ensure it passes all the requirments"
+            "Unable to read file.  Please ensure it passes all the requirements"
         )
     except UnicodeDecodeError:
         # Some files are not in utf-8, let's just reject those.
         raise ValidationError(
             "Unable to read the file.  Please ensure that the file is encoded in UTF-8."
         )
+
     return data
 
 
@@ -155,9 +157,11 @@ class ProjectUpdateAdvancedForm(forms.ModelForm):
         else:
             start_val = "None"
         data_metadata = project.metadatafields.values_list("field_name", flat=True)
+        data_metadata = [m.lower().capitalize() for m in data_metadata]
         label_metadata = project.labelmetadatafields.values_list(
             "field_name", flat=True
         )
+        label_metadata = [lm.lower().capitalize() for lm in label_metadata]
         options = list(set(data_metadata) & set(label_metadata)) + ["None"]
 
         percentage_irr = kwargs.pop("percentage_irr")
@@ -337,6 +341,7 @@ class DataWizardForm(forms.ModelForm):
         self.cleaned_data["data"] = clean_data_helper(
             data_df, labels, dedup_on, dedup_fields
         )
+
         return self.cleaned_data
 
 
@@ -391,7 +396,7 @@ class LabelWizardForm(forms.Form):
                 data_file = read_data_file(data)
                 return clean_label_data_helper(data_file)
             except pd.errors.EmptyDataError:
-                return pd.DataFrame({"Label": []})
+                return None
         else:
             raise ValidationError("ERROR: no file provided")
 

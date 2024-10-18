@@ -42,7 +42,7 @@ const DataCard = ({ data, page, actions }) => {
 
     const handlers = getHandlers(allHandlers, page);
 
-    const labelCountLow = (labels) => labels.labels.length <= 5;
+    const labelCountLow = (labels) => labels.total_labels <= 5;
     const labelCountHigh = (labels) => labels.total_labels >= PROJECT_SUGGESTION_MAX;
     const labelCategory = (labelCategoryOptions) => (labelCategoryOptions != null) && (labelCategoryOptions.label_category_options != null);
 

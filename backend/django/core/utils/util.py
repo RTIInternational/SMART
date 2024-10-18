@@ -12,6 +12,7 @@ from django.contrib.auth import get_user_model
 from django.db import connection, transaction
 from django.utils import timezone
 from sentence_transformers import SentenceTransformer
+from django.core.exceptions import ValidationError
 
 from core import tasks
 from core.models import (
@@ -158,20 +159,15 @@ def create_data_from_csv(df, project):
     df["project"] = project.pk
     df["irr_ind"] = False
 
-    # Replace tabs since thats our delimiter, remove carriage returns since copy_from doesnt like them
-    # escape all backslashes because it seems to fix "end-of-copy marker corrupt"
-    df["Text"] = (
-        df["Text"]
-        .astype(str)
-        .apply(
-            lambda x: x.replace("\t", " ")
-            .replace("\r", " ")
-            .replace("\n", " ")
-            .replace("\\", "\\\\")
-        )
+    df.to_csv(
+        stream,
+        sep="\t",
+        header=False,
+        index=False,
+        columns=columns,
+        escapechar="\\",
+        doublequote=False,
     )
-
-    df.to_csv(stream, sep="\t", header=False, index=False, columns=columns)
     stream.seek(0)
 
     with connection.cursor() as c:
@@ -206,6 +202,16 @@ def create_labels_from_csv(df, project):
     stream = StringIO()
 
     labels = {label.name: label.pk for label in project.labels.all()}
+
+    df["Label"] = df["Label"].apply(
+        lambda s: s.replace("\\n", "\n").replace("\\t", "\t").replace("\\r", "\r")
+    )
+
+    existing_labels = set(labels.keys())
+    df_labels = set(df["Label"].tolist())
+
+    quote_labels = df_labels - existing_labels
+    df["Label"] = df["Label"].apply(lambda s: f'"{s}"' if s in quote_labels else s)
     df["data_id"] = df["hash"].apply(
         lambda x: Data.objects.get(hash=x, project=project).pk
     )
@@ -218,7 +224,15 @@ def create_labels_from_csv(df, project):
     # these data are preloaded
     df["pre_loaded"] = True
 
-    df.to_csv(stream, sep="\t", header=False, index=False, columns=columns)
+    df.to_csv(
+        stream,
+        sep="\t",
+        header=False,
+        index=False,
+        columns=columns,
+        escapechar="\\",
+        doublequote=False,
+    )
     stream.seek(0)
 
     with connection.cursor() as c:
@@ -250,6 +264,8 @@ def create_metadata_objects_from_csv(df, project):
             header=False,
             index=False,
             columns=df_meta.columns.values.tolist(),
+            escapechar="\\",
+            doublequote=False,
         )
         stream.seek(0)
         with connection.cursor() as c:
@@ -328,9 +344,9 @@ def add_data(project, df):
 
     df["hash"] = ""
     for f in dedup_on_fields:
-        df["hash"] += df[f].astype(str) + "_"
+        df["hash"] += df[f].fillna("None").astype(str) + "_"
 
-    df["hash"] += df["Text"].astype(str)
+    df["hash"] += df["Text"].fillna("None").astype(str)
     df["hash"] = df["hash"].apply(md5_hash)
 
     df.drop_duplicates(subset=["hash"], keep="first", inplace=True)
@@ -818,62 +834,100 @@ def get_unlabelled_data_objs(project_id: int) -> int:
         return cursor.fetchone()[0]
 
 
-def create_label_metadata(project, label_data, label_list):
+def create_label_metadata(project, label_data):
     """This function creates LabelMetadataField objects for each new field and
     LabelMetadata objects for each label-field pair.
 
     Args:
         project: a Project object
         label_data: a pandas dataframe with the label metadata fields
-        label_list: a list of label objects for the project
     """
-    label_metadata = [c for c in label_data if c not in ["Label", "Description"]]
+    label_objects = pd.DataFrame(
+        list(Label.objects.filter(project=project).values("id", "name"))
+    ).rename(columns={"name": "Label", "id": "label_id"})
+
+    # for some labels we will need to add quotes and un-escape strings for the merge to work
+    existing_label_ids = set(label_objects["Label"].tolist())
+    df_label_ids = set(label_data["Label"].tolist())
+
+    need_quotes = df_label_ids - existing_label_ids
+    label_data["Label"] = label_data["Label"].apply(
+        lambda s: (
+            f'"{s}"'.replace("\\n", "\n").replace("\\t", "\t").replace("\\r", "\r")
+            if s in need_quotes
+            else s
+        )
+    )
+    df_label_ids = set(label_data["Label"].tolist())
+    if len(df_label_ids - existing_label_ids) > 0:
+        raise ValidationError(
+            "ERROR loading in label metadata. Something is going wrong with the label file."
+        )
+
+    label_data = label_data.merge(label_objects, on="Label", how="inner")
+
+    label_metadata = [
+        c
+        for c in label_data
+        if c not in ["Label", "Description", "label_id", "project"]
+    ]
     if len(label_metadata) > 0:
         for metadata_col in label_metadata:
+            field_name = str(metadata_col)
             label_metadata_field = LabelMetaDataField.objects.create(
-                project=project, field_name=metadata_col
+                project=project, field_name=field_name
             )
-            all_metadata_values = label_data[metadata_col].tolist()
-            all_label_metadata_objects = [
-                LabelMetaData(
-                    label=label_list[i],
-                    label_metadata_field=label_metadata_field,
-                    value=all_metadata_values[i],
+            df_meta = label_data[["label_id", field_name]].rename(
+                columns={field_name: "value"}
+            )
+            df_meta["label_metadata_field_id"] = label_metadata_field.pk
+            df_meta = df_meta[["label_id", "label_metadata_field_id", "value"]]
+            stream = StringIO()
+            df_meta.to_csv(
+                stream,
+                sep="\t",
+                header=False,
+                index=False,
+                columns=df_meta.columns.values.tolist(),
+                escapechar="\\",
+                doublequote=False,
+            )
+            stream.seek(0)
+            with connection.cursor() as c:
+                c.copy_from(
+                    stream,
+                    LabelMetaData._meta.db_table,
+                    sep="\t",
+                    null="",
+                    columns=df_meta.columns.values.tolist(),
                 )
-                for i in range(len(all_metadata_values))
-            ]
-            LabelMetaData.objects.bulk_create(
-                all_label_metadata_objects, batch_size=8000
-            )
 
 
-def create_or_update_project_category(project, label_metadata, data_metadata):
+def create_or_update_project_category(project, new_category):
     """This function takes a field which overlaps between the label and data metadata
     and sets it to the project category to filter the suggestions by."""
-    metadata_both = list(set(data_metadata) & set(label_metadata))
-    if len(metadata_both) > 0:
-        # by default just pick the first overlap
-        if Category.objects.filter(project=project).exists():
-            Category.objects.filter(project=project).update(
-                field_name=metadata_both[0],
-                label_metadata_field=LabelMetaDataField.objects.get(
-                    field_name=metadata_both[0], project=project
-                ),
-                data_metadata_field=MetaDataField.objects.get(
-                    field_name=metadata_both[0], project=project
-                ),
-            )
-        else:
-            Category.objects.create(
-                project=project,
-                field_name=metadata_both[0],
-                label_metadata_field=LabelMetaDataField.objects.get(
-                    field_name=metadata_both[0], project=project
-                ),
-                data_metadata_field=MetaDataField.objects.get(
-                    field_name=metadata_both[0], project=project
-                ),
-            )
+    # by default just pick the first overlap
+    if Category.objects.filter(project=project).exists():
+        Category.objects.filter(project=project).update(
+            field_name=new_category,
+            label_metadata_field=LabelMetaDataField.objects.get(
+                field_name__iexact=new_category, project=project
+            ),
+            data_metadata_field=MetaDataField.objects.get(
+                field_name__iexact=new_category, project=project
+            ),
+        )
+    else:
+        Category.objects.create(
+            project=project,
+            field_name=new_category,
+            label_metadata_field=LabelMetaDataField.objects.get(
+                field_name__iexact=new_category, project=project
+            ),
+            data_metadata_field=MetaDataField.objects.get(
+                field_name__iexact=new_category, project=project
+            ),
+        )
 
 
 def update_label_descriptions_metadata(project, new_data):
@@ -897,7 +951,7 @@ def update_label_descriptions_metadata(project, new_data):
     label_metadata = [c for c in new_data if c not in ["Label", "Description"]]
     for metadata_col in label_metadata:
         label_metadata_field, created = LabelMetaDataField.objects.get_or_create(
-            project=project, field_name=metadata_col
+            project=project, field_name__iexact=metadata_col
         )
         if created:
             # create objects for each label in the entire label set
@@ -934,4 +988,9 @@ def update_label_descriptions_metadata(project, new_data):
     data_metadata = MetaDataField.objects.filter(project=project).values_list(
         "field_name", flat=True
     )
-    create_or_update_project_category(project, label_metadata, data_metadata)
+    metadata_both = list(
+        set([m.lower() for m in data_metadata])
+        & set([m.lower() for m in label_metadata])
+    )
+    if len(metadata_both) > 0:
+        create_or_update_project_category(project, metadata_both[0])

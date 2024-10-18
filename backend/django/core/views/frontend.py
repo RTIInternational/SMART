@@ -9,8 +9,10 @@ from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.views.generic import DetailView, ListView, TemplateView, View
 from django.views.generic.edit import DeleteView, UpdateView
+from django.db import connection
 from formtools.wizard.views import SessionWizardView
 from smart.settings import PROJECT_SUGGESTION_MAX
+from io import StringIO
 
 from core.forms import (
     AdvancedWizardForm,
@@ -34,7 +36,6 @@ from core.models import (
     Project,
     TrainingSet,
     Category,
-    LabelMetaDataField,
 )
 from core.templatetags import project_extras
 from core.utils.util import (
@@ -175,7 +176,10 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
         if step == "data":
             all_labels = self.get_cleaned_data_for_step("labels").get("label_data_file")
-            kwargs["labels"] = all_labels["Label"].tolist()
+            if all_labels is not None:
+                all_labels = all_labels["Label"].tolist()
+
+            kwargs["labels"] = all_labels
             external_data = self.get_cleaned_data_for_step("external")
             if "engine_database" in external_data:
                 kwargs["database_type"] = external_data["database_type"]
@@ -260,10 +264,10 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
         proj = form_dict["project"]
         labels = form_dict["labels"]
         permissions = form_dict["permissions"]
-        advanced = form_dict["advanced"]
+        codebook_data = form_dict["codebook"]
         external = form_dict["external"]
         data = form_dict["data"]
-        codebook_data = form_dict["codebook"]
+        advanced = form_dict["advanced"]
 
         with transaction.atomic():
             # Project
@@ -342,13 +346,35 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
 
             label_data = labels.cleaned_data["label_data_file"]
             label_data["Label"] = label_data["Label"].astype(str)
-            label_objects = [
-                Label(name=d["Label"], description=d["Description"], project=proj_obj)
-                for d in label_data.to_dict(orient="records")
-            ]
-            Label.objects.bulk_create(label_objects)
+            label_data["Description"] = label_data["Description"].astype(str).fillna("")
+            label_data["project"] = proj_obj.pk
 
-            create_label_metadata(proj_obj, label_data, label_objects)
+            stream = StringIO()
+            label_data[["Label", "project", "Description"]].to_csv(
+                stream,
+                sep="\t",
+                header=False,
+                index=False,
+                columns=["Label", "project", "Description"],
+                escapechar="\\",
+                doublequote=False,
+            )
+            stream.seek(0)
+
+            with connection.cursor() as c:
+                c.copy_from(
+                    stream,
+                    Label._meta.db_table,
+                    sep="\t",
+                    null="",
+                    columns=[
+                        "name",
+                        "project_id",
+                        "description",
+                    ],
+                )
+
+            create_label_metadata(proj_obj, label_data)
 
             # Permissions
             permissions.instance = proj_obj
@@ -402,7 +428,12 @@ class ProjectCreateWizard(LoginRequiredMixin, SessionWizardView):
             label_metadata = [
                 c for c in label_data if c not in ["Label", "Description"]
             ]
-            create_or_update_project_category(proj_obj, label_metadata, metadata_fields)
+            metadata_both = list(
+                set([m.lower() for m in metadata_fields])
+                & set([m.lower() for m in label_metadata])
+            )
+            if len(metadata_both) > 0:
+                create_or_update_project_category(proj_obj, metadata_both[0])
 
             add_queue(project=proj_obj, length=2000000, type="admin")
             irr_queue = add_queue(project=proj_obj, length=2000000, type="irr")
@@ -498,35 +529,7 @@ class ProjectUpdateAdvanced(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
                 if project_category.exists():
                     project_category.delete()
             else:
-                if project_category.exists():
-                    existing_category = Category.objects.get(project=self.object)
-                    if existing_category.field_name != chosen_category:
-                        # update the category
-                        label_field = LabelMetaDataField.objects.get(
-                            project=self.object, field_name=chosen_category
-                        )
-                        data_field = MetaDataField.objects.get(
-                            project=self.object, field_name=chosen_category
-                        )
-                        Category.objects.filter(project=self.object).update(
-                            field_name=chosen_category,
-                            label_metadata_field=label_field,
-                            data_metadata_field=data_field,
-                        )
-                else:
-                    label_field = LabelMetaDataField.objects.get(
-                        project=self.object, field_name=chosen_category
-                    )
-                    data_field = MetaDataField.objects.get(
-                        project=self.object, field_name=chosen_category
-                    )
-                    Category.objects.create(
-                        project=self.object,
-                        field_name=chosen_category,
-                        label_metadata_field=label_field,
-                        data_metadata_field=data_field,
-                    )
-
+                create_or_update_project_category(self.object, chosen_category)
             return redirect(self.get_success_url())
         else:
             return self.render_to_response(context)

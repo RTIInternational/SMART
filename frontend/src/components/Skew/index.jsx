@@ -38,7 +38,7 @@ class Skew extends React.Component {
     componentDidMount() {
         this.props.setFilterStr("");
         this.props.getUnlabeled();
-        this.props.getLabelCounts();
+        //this.props.getLabelCounts();
     }
 
     getText(row) {
