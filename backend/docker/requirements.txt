@@ -301,7 +301,7 @@ torch==1.10.1
     #   torchvision
 torchvision==0.11.2
     # via sentence-transformers
-tqdm==4.62.3
+tqdm==4.66.3
     # via
     #   huggingface-hub
     #   nltk
